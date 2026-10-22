@@ -1,0 +1,55 @@
+# what-changed configuration.
+#
+# One target per check that scripts/check-changed.sh runs, each with the paths whose content decides
+# whether that check has to run again. A target runs whenever any file under one of its paths changes.
+
+# The tool versions and the installed packages decide the result of every check.
+always:
+  - package.json
+  - bun.lock
+  - mise.toml
+  - what-changed.yaml
+
+# Docs and logs change no check's result.
+ignore:
+  - .md
+  - .txt
+  - .log
+
+targets:
+  # bun run compile: type-checks everything tsconfig.json includes.
+  - name: compile
+    paths:
+      - frontend
+      - tsconfig.json
+      - vite.config.ts
+
+  # bun run test: the frontend's Jest unit tests.
+  - name: test
+    paths:
+      - frontend
+      - tsconfig.json
+      - jest.config.js
+
+  # bun run test:zig: bundles the frontend, which the backend embeds, then runs the backend's Zig unit tests.
+  - name: test-zig
+    paths:
+      - backend
+      - frontend
+      - build.zig
+      - build.zig.zon
+      - vite.config.ts
+      - scripts/bundle-ui.sh
+      - scripts/zig-packages.sh
+
+  # bun run test:smoke: builds the whole app with the test hooks and drives it.
+  - name: test-smoke
+    paths:
+      - backend
+      - frontend
+      - native
+      - scripts
+      - smoke-tests
+      - build.zig
+      - build.zig.zon
+      - vite.config.ts

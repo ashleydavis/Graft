@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+# Refuses a commit when a check that its changes affect fails. Runs scripts/check-changed.sh, which
+# runs only the checks whose watched files changed. See pre-commit.md.
+#
+# Named pre-commit with no extension, because Git finds a hook only by that exact name.
+
+set -uo pipefail
+
+#
+# The working tree being committed. The hook is a link into the shared hooks directory, so its own
+# path names the checkout the link points at, not the worktree the commit is made in.
+#
+REPO_DIR="$(git rev-parse --show-toplevel)"
+
+#
+# Git exports these to hooks. The tests run git in temporary repos of their own, and with these set
+# those git commands would act on this repository's index instead.
+#
+unset GIT_INDEX_FILE GIT_DIR GIT_WORK_TREE GIT_PREFIX
+
+cd "$REPO_DIR"
+
+echo "pre-commit: running the checks the changes affect."
+
+#
+# Runs the checks through mise when it is installed, so they use the tool versions mise.toml locks
+# rather than whatever is first on PATH.
+#
+run_checks() {
+    if command -v mise > /dev/null 2>&1; then
+        mise exec -- bash ./scripts/check-changed.sh changed
+    else
+        bash ./scripts/check-changed.sh changed
+    fi
+}
+
+if ! run_checks; then
+    echo "pre-commit: a check failed, so the commit was refused. Fix it and commit again." >&2
+    exit 1
+fi
+
+echo "pre-commit: every check passed."

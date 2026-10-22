@@ -4,7 +4,7 @@ How to get Graft ready to run, test and develop. Once set up, see [development.m
 
 ## Prerequisites
 
-- [mise](https://mise.jdx.dev), which installs the tools `mise.toml` locks to exact versions: Zig, Bun, Node and jq.
+- [mise](https://mise.jdx.dev), which installs the tools `mise.toml` locks to exact versions: Zig, Bun, Node, jq and what-changed.
 - Git, on `PATH`. Graft runs the real `git`. So do its smoke tests and the unit tests of its Git interface.
 - The system packages Ziggy needs on each platform, listed in Ziggy's [Dependencies](https://github.com/ashleydavis/ziggy/blob/v0.0.13/docs/user-guide/dependencies.md):
   - Linux:
@@ -24,9 +24,10 @@ From the repo root:
 ```bash
 mise trust && mise install
 bun install
+bash scripts/install-hooks.sh install
 ```
 
-`bun install` installs the frontend's packages, Ziggy's frontend types among them. The Zig build fetches Ziggy itself into `zig-pkg/` the first time it runs.
+`scripts/install-hooks.sh` installs the Git pre-commit hook, which runs the checks a commit's changes affect and refuses the commit when one fails. It is needed once per clone. `bun install` installs the frontend's packages, Ziggy's frontend types among them. The Zig build fetches Ziggy itself into `zig-pkg/` the first time it runs.
 
 Then run Graft with the command for your platform:
 
@@ -47,4 +48,4 @@ mise trust && mise install
 bun install
 ```
 
-Skipping it breaks `bun run compile` and `bun run test` with missing modules (TypeScript, Jest and Ziggy's types). It also runs the tools from whatever is on `PATH` instead of the versions `mise.toml` locks. The Zig build fetches its own dependencies on the first build in the worktree.
+The pre-commit hook is shared by every worktree of the clone, so a worktree does not install it again. Skipping the setup breaks `bun run compile` and `bun run test` with missing modules (TypeScript, Jest and Ziggy's types). It also runs the tools from whatever is on `PATH` instead of the versions `mise.toml` locks. The Zig build fetches its own dependencies on the first build in the worktree.
