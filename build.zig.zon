@@ -1,0 +1,20 @@
+.{
+    .name = .graft,
+    .version = "1.0.0",
+    .fingerprint = 0x1dcec44770fd322,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{
+        // Ziggy, at a version tag of its repository. Every other place that takes Ziggy (package.json, the Xcode projects and
+        // native/android/app/build.gradle) names the same version.
+        .ziggy = .{
+            .url = "git+https://github.com/ashleydavis/ziggy.git?ref=v0.0.13#ea05468d22e51ae5c8e24721ee76560980f9b25e",
+            .hash = "ziggy-0.0.0-Yh04riVoGwDmRRTSFm4ypfN9kHdSRLmC03gZSSNLP8F6",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "backend",
+        "native",
+    },
+}

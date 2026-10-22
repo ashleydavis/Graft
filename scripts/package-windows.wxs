@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The MSI installer for Graft on Windows, compiled by WiX Toolset 3 (candle and light). Built by
+    package-windows.sh, which defines:
+        Version     the app's version, as major.minor.build
+        SourceDir   the directory holding graft.exe, which is the whole app
+    The installer is unsigned and installs for the current user only, into %LOCALAPPDATA%\Programs\Graft, so it
+    needs no administrator rights. It adds a Start menu shortcut, and Windows Installer adds the entry in Installed apps.
+-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <!-- The UpgradeCode stays the same for every version, so installing a newer one replaces the older one. -->
+    <Product Id="*" Name="Graft" Language="1033" Version="$(var.Version)" Manufacturer="Ziggy" UpgradeCode="D0ED4F70-AF02-4C5E-8DDA-0C31C2FD86E7">
+        <Package InstallerVersion="500" Compressed="yes" InstallScope="perUser" InstallPrivileges="limited" Platform="x64" />
+        <MajorUpgrade DowngradeErrorMessage="A newer version of Graft is already installed." />
+        <MediaTemplate EmbedCab="yes" />
+
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="LocalAppDataFolder">
+                <Directory Id="ProgramsFolder" Name="Programs">
+                    <Directory Id="INSTALLFOLDER" Name="Graft" />
+                </Directory>
+            </Directory>
+            <Directory Id="ProgramMenuFolder" />
+        </Directory>
+
+        <!--
+            A per-user component's key path must be a registry value under HKCU rather than a file, which is what Windows
+            Installer checks to know whether the component is installed. RemoveFolder takes the folders away on uninstall when
+            they are left empty.
+        -->
+        <DirectoryRef Id="INSTALLFOLDER">
+            <Component Id="AppExecutable" Guid="4F6898F7-04E1-4EF6-93D1-B9675C4171CF" Win64="yes">
+                <File Id="GraftExe" Source="$(var.SourceDir)\graft.exe" KeyPath="no" />
+                <RegistryValue Root="HKCU" Key="Software\au.com.codecapers.graft" Name="InstallDir" Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
+                <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
+                <RemoveFolder Id="RemoveProgramsFolder" Directory="ProgramsFolder" On="uninstall" />
+            </Component>
+        </DirectoryRef>
+
+        <DirectoryRef Id="ProgramMenuFolder">
+            <Component Id="StartMenuShortcut" Guid="D76EB2A4-820E-4ED9-9D7A-C626548DC939" Win64="yes">
+                <Shortcut Id="GraftShortcut" Name="Graft" Target="[INSTALLFOLDER]graft.exe" WorkingDirectory="INSTALLFOLDER" />
+                <RegistryValue Root="HKCU" Key="Software\au.com.codecapers.graft" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+            </Component>
+        </DirectoryRef>
+
+        <Feature Id="App" Title="Graft" Level="1">
+            <ComponentRef Id="AppExecutable" />
+            <ComponentRef Id="StartMenuShortcut" />
+        </Feature>
+    </Product>
+</Wix>
