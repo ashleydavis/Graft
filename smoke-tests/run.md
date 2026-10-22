@@ -1,10 +1,10 @@
 # run.sh
 
-Runs the app's smoke tests for one platform: each directory here that holds a `test.sh` starts the real app and checks what it shows. Invoked by the `package.json` scripts `test:smoke`, `test:smoke:android` and `test:smoke:ios`, never directly. Terms are defined in [Ziggy's glossary](https://github.com/ashleydavis/ziggy/blob/main/docs/glossary.md).
+Runs the app's smoke tests for one platform: each directory here that holds a `test.sh` starts the real app and checks what it shows. Invoked by `run-desktop.sh`, which the `package.json` script `test:smoke` runs, never directly. Terms are defined in [Ziggy's glossary](https://github.com/ashleydavis/ziggy/blob/main/docs/glossary.md).
 
 ## Arguments
 
-- `<platform>`: `linux`, `windows`, `macos`, `android` or `ios` (a connected iPhone or iPad when there is one, see `lib/ios-device.sh`, otherwise a simulator). Each has a library in `lib/<platform>.sh` that builds the app, starts it and stops it.
+- `<platform>`: `linux`, `windows` or `macos`. Each has a library in `lib/<platform>.sh` that builds the app, starts it and stops it.
 - `[scenario]`: optional directory name, to run one smoke test.
 
 ## Behaviour
@@ -14,10 +14,6 @@ Builds the app for the platform with the test hooks, then runs each `test.sh`, o
 ## Smoke tests
 
 - `hello-world-app`: hello world example. Pressing each button logs the backend's message response to the hello-world message, and the hello-world task's output and how it ended. Change it into your own smoke test, or delete it.
-- `desktop-only/hello-menu`: hello world example, run only on Linux, Windows and macOS because a phone has no menu. Choosing Say Hello From Zig and Say Hello From the UI each writes its line to the log. Change it into your own smoke test, or delete it.
+- `desktop-only/hello-menu`: hello world example of the menu. Choosing Say Hello From Zig and Say Hello From the UI each writes its line to the log. Change it into your own smoke test, or delete it.
 
 To add one, make a directory here with a `test.sh` that sources `../lib/common.sh`.
-
-## Building on Android
-
-The Android library builds the test APK and the release APK one after the other through the one Gradle project and synced library directory of the checkout. Two runs building at the same time would swap the library under each other, so `ziggy_platform_prepare` in `lib/android.sh` holds a lock file inside that build directory for the whole build. A second run waits for the first to finish building, then builds its own.

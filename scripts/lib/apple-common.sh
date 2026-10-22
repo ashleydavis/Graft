@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Shared by the MacOS and iOS scripts of Graft. It is sourced, never run. See apple-common.md.
+# Shared by the MacOS scripts of Graft. It is sourced, never run. See apple-common.md.
 
 APPLE_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APPLE_EXAMPLE_DIR="$(cd "$APPLE_LIB_DIR/../.." && pwd)"
@@ -89,7 +89,7 @@ apple_sync_native() {
         (cd "$APPLE_EXAMPLE_DIR" && zig build graft-backend -Dtarget="$zig_target" -Doptimize="$optimize" -p "$native_dir") || apple_fail "the Zig build failed."
     fi
     # A workaround for a bug in Zig 0.16.0, which is the pinned version. Its archive writer puts the contents of a long-named
-    # member at an offset that is not a multiple of 8, and Xcode 26's linker refuses such an archive: the macOS and iOS jobs of
+    # member at an offset that is not a multiple of 8, and Xcode 26's linker refuses such an archive: the macOS jobs of
     # Graft workflow failed with "ld: 64-bit mach-o member 'libgraft_zcu.o' not 8-byte aligned in
     # '.../lib/libgraft.a'". The fix is on Zig's master (ziglang/zig issue 35280) and will not reach 0.16.x. Writing the
     # archive again with libtool straight from Zig's archive did not work: libtool warned "64-bit mach-o member
@@ -109,90 +109,4 @@ apple_sync_native() {
     mv "$library.aligned" "$library" || apple_fail "could not replace the Zig library with the aligned one."
     find "$members_dir" -type f -delete
     find "$members_dir" -depth -type d -empty -delete
-}
-
-# Prints the identifier of the iOS simulator to use, booting it if it is not running. It never creates or deletes a
-# simulator. The environment variable ZIGGY_IOS_SIMULATOR (a name or an identifier) names one. Without it, a simulator that
-# is already running is used, and failing that the first available iPhone.
-apple_pick_simulator() {
-    apple_require_tool xcrun jq
-    local listing wanted udid state
-    listing="$(xcrun simctl list devices available -j)" || apple_fail "xcrun simctl list failed."
-    wanted="${ZIGGY_IOS_SIMULATOR:-}"
-    if [ -n "$wanted" ]; then
-        udid="$(printf '%s' "$listing" | jq -r --arg wanted "$wanted" '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name == $wanted or .udid == $wanted)] | first | .udid // empty')"
-        if [ -z "$udid" ]; then
-            apple_fail "there is no available iOS simulator named or identified '$wanted'. List them with: xcrun simctl list devices available"
-        fi
-    else
-        udid="$(printf '%s' "$listing" | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.state == "Booted")] | first | .udid // empty')"
-        if [ -z "$udid" ]; then
-            udid="$(printf '%s' "$listing" | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))] | first | .udid // empty')"
-        fi
-        if [ -z "$udid" ]; then
-            apple_fail "there is no available iPhone simulator. Install one in Xcode (Settings, Platforms) or set ZIGGY_IOS_SIMULATOR."
-        fi
-    fi
-    state="$(printf '%s' "$listing" | jq -r --arg udid "$udid" '[.devices[][] | select(.udid == $udid)] | first | .state')"
-    if [ "$state" != "Booted" ]; then
-        xcrun simctl bootstatus "$udid" -b >&2 || apple_fail "could not boot the simulator $udid."
-    fi
-    printf '%s\n' "$udid"
-}
-
-# Prints the Apple development team to sign a device build with. The environment variable ZIGGY_IOS_TEAM names one.
-# Without it, the team of the account signed in to Xcode (Preferences, Accounts) is used, if there is exactly one.
-apple_pick_team() {
-    local teams count
-    if [ -n "${ZIGGY_IOS_TEAM:-}" ]; then
-        printf '%s\n' "$ZIGGY_IOS_TEAM"
-        return
-    fi
-    teams="$(defaults export com.apple.dt.Xcode - | plutil -extract IDEProvisioningTeams xml1 -o - - 2> /dev/null | grep -A1 '<key>teamID</key>' | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p' | sort -u)"
-    count="$(printf '%s' "$teams" | grep -c . || true)"
-    if [ "$count" = "0" ]; then
-        apple_fail "Xcode has no signed in account to sign a device build with. Sign in under Xcode, Preferences, Accounts, or set ZIGGY_IOS_TEAM."
-    fi
-    if [ "$count" != "1" ]; then
-        apple_fail "Xcode has several teams ($(printf '%s' "$teams" | tr '\n' ' ')). Set ZIGGY_IOS_TEAM to the one to sign with."
-    fi
-    printf '%s\n' "$teams"
-}
-
-# Prints the path of native-run, which bun install puts in the node_modules/.bin of the app's directory or of a directory above
-# it (the root of the repository, when the app is a workspace of one). Fails when it is in neither.
-apple_native_run_path() {
-    local directory="$APPLE_EXAMPLE_DIR"
-    while true; do
-        if [ -x "$directory/node_modules/.bin/native-run" ]; then
-            printf '%s\n' "$directory/node_modules/.bin/native-run"
-            return
-        fi
-        if [ "$directory" = "/" ]; then
-            apple_fail "native-run is not installed in the node_modules of $APPLE_EXAMPLE_DIR or of a directory above it. Run bun install."
-        fi
-        directory="$(dirname "$directory")"
-    done
-}
-
-# Prints the identifier of the connected iOS device to run on, or nothing when none is connected. The environment variable
-# ZIGGY_IOS_DEVICE names one. Without it, the first connected device is used.
-apple_connected_device() {
-    apple_require_tool jq
-    if [ -n "${ZIGGY_IOS_DEVICE:-}" ]; then
-        printf '%s\n' "$ZIGGY_IOS_DEVICE"
-        return
-    fi
-    "$(apple_native_run_path)" ios --list --json | jq -r '.devices | first | .id // empty' || apple_fail "native-run could not list the iOS devices."
-}
-
-# Prints the identifier of the connected iOS device to run on, as apple_connected_device chooses it, and fails when none
-# is connected.
-apple_pick_device() {
-    local udid
-    udid="$(apple_connected_device)" || exit 1
-    if [ -z "$udid" ]; then
-        apple_fail "there is no iOS device connected. Plug one in, unlock it and trust this Mac."
-    fi
-    printf '%s\n' "$udid"
 }

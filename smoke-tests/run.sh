@@ -17,10 +17,10 @@ PLATFORM="${1:-}"
 SCENARIO_FILTER="${2:-}"
 
 case "$PLATFORM" in
-    linux|windows|macos|android|ios)
+    linux|windows|macos)
         ;;
     *)
-        echo "Usage: run.sh <linux|windows|macos|android|ios> [scenario name]" >&2
+        echo "Usage: run.sh <linux|windows|macos> [scenario name]" >&2
         exit 2
         ;;
 esac
@@ -59,8 +59,8 @@ if ! ziggy_platform_prepare "$RUN_DIR"; then
     exit 1
 fi
 #
-# Prints the scenario directories, one per line, in name order: every folder here that holds a test.sh, and on a desktop platform
-# every folder in desktop-only that holds one too, because a phone has no menu or window of its own to test.
+# Prints the scenario directories, one per line, in name order: every folder here that holds a test.sh, and every folder in
+# desktop-only that holds one too.
 #
 list_scenarios() {
     {

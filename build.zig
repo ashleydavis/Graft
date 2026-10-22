@@ -4,7 +4,7 @@ const ziggy_build = @import("ziggy");
 //
 // Builds Graft, an app built on Ziggy the way every app is: it takes Ziggy as the dependency named "ziggy" in
 // build.zig.zon, builds its backend as a library with the `graft-backend` step, and its Linux and Windows native apps with the
-// `graft-linux` and `graft-windows` steps. The Xcode projects and the Android project are built by the app's scripts,
+// `graft-linux` and `graft-windows` steps. The Xcode project is built by the app's scripts,
 // which run the `graft-backend` step to build the backend's library. `graft-dev` runs it in dev mode, with the
 // frontend in a browser, which comes with the backend. `test` runs the unit tests of the template's backend.
 //

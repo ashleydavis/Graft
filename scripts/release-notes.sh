@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Prints the release notes for a build: one bullet per commit made since the last release tag.
 #
-# Used by the release workflow, which lists the commits in the GitHub release of Graft, and by the
-# template's Android tester distribution, which lists them in the note testers read beside the build.
+# Used by the release workflows, which list the commits in the GitHub release of Graft.
 #
 # Nothing is written and nothing but the notes goes to stdout, so a caller can capture it directly.
 #
@@ -13,9 +12,6 @@
 #                            passes the tag it is building, so a tagged release reports what changed
 #                            since the tag before it rather than nothing at all.
 #   --empty-message <text>   What to print when no commit matches (default: "- No changes found").
-#   --limit <n>              Keep only the newest n bullets and report how many were left out. Firebase
-#                            App Distribution rejects long release notes outright, so the Android
-#                            tester builds pass one; a GitHub release has no such limit and does not.
 set -euo pipefail
 
 # git reads the repository the script is in, wherever it is called from.
@@ -24,7 +20,6 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 PREFIX=""
 EXCLUDE_TAG=""
 EMPTY_MESSAGE="- No changes found"
-LIMIT=""
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -40,12 +35,8 @@ while [ $# -gt 0 ]; do
             EMPTY_MESSAGE="$2"
             shift 2
             ;;
-        --limit)
-            LIMIT="$2"
-            shift 2
-            ;;
         *)
-            echo "ERROR: unknown argument '$1'. Options: --prefix, --exclude-tag, --empty-message, --limit." >&2
+            echo "ERROR: unknown argument '$1'. Options: --prefix, --exclude-tag, --empty-message." >&2
             exit 1
             ;;
     esac
@@ -109,21 +100,6 @@ done <<< "$SUBJECTS"
 if [ -z "$NOTES" ]; then
     echo "$EMPTY_MESSAGE"
     exit 0
-fi
-
-# Truncating reports how much was cut rather than trailing off, so a reader can tell the notes are a
-# window on the changes and not the whole of them.
-if [ -n "$LIMIT" ]; then
-    TOTAL="$(printf '%s' "$NOTES" | wc -l)"
-    if [ "$TOTAL" -gt "$LIMIT" ]; then
-        LEFT_OUT=$(( TOTAL - LIMIT ))
-        # sed rather than head, which stops reading once it has its lines and closes the pipe. The
-        # printf feeding it is then killed by SIGPIPE, and `set -o pipefail` makes that the status of
-        # the assignment, so `set -e` ended the whole script with 141 the moment there were more
-        # commits than the limit. sed reads to the end and exits 0.
-        NOTES="$(printf '%s' "$NOTES" | sed -n "1,${LIMIT}p")"$'\n'
-        NOTES="$NOTES- ...and $LEFT_OUT older changes."$'\n'
-    fi
 fi
 
 printf '%s' "$NOTES"

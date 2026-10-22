@@ -25,7 +25,6 @@ The native app draws the backend's menu (`ziggy_menu_json`, made at compile time
 - Developer tools are on in release builds too. `developerExtrasEnabled` is set on the web view's preferences (gives Inspect Element in the context menu), and `isInspectable` is set where the toolchain's SDK has it (macOS 13.3 and later, so not in a build with Xcode 14.2). The Toggle Developer Tools item uses the private WebKit interface `-[WKWebView _inspector]` with `isVisible`, `show` and `hide`, because there is no public call that opens the inspector on these SDKs. If a selector is missing the app prints a message to standard error and Inspect Element still works. Apple may reject an app that uses a private interface from the App Store, which matters only if this is ever distributed there.
 - None of this was compiled or run. It was written on Linux against the AppKit and WebKit APIs from memory of the Xcode 14.2 SDKs.
 
-The iOS native app shows no menu: the menu code is compiled for macOS only.
 
 ## File and directory pickers
 
@@ -33,7 +32,7 @@ The pick-files, pick-folder and pick-file messages open `NSOpenPanel` (files, or
 
 ## Choosing a menu item from a test
 
-In a test hooks build the backend can choose a menu item by action through the `menu_action` callback (the control connection's `menu` command). The native app copies the action, moves to the main thread and runs `ZiggyMenu.perform(action:)`, the same function a click on the item runs for every action the native app owns, so a test runs what a click runs. An action the native app does not own goes to the backend as a menu-action system message, whatever it is. iOS leaves the callback unset.
+In a test hooks build the backend can choose a menu item by action through the `menu_action` callback (the control connection's `menu` command). The native app copies the action, moves to the main thread and runs `ZiggyMenu.perform(action:)`, the same function a click on the item runs for every action the native app owns, so a test runs what a click runs. An action the native app does not own goes to the backend as a menu-action system message, whatever it is.
 
 - The edit actions (undo, redo, cut, copy, paste, select-all) normally reach the web view because a click leaves it first responder. A test choice first makes the window key and the web view first responder (`makeKeyAndOrderFront`, `makeFirstResponder`), then sends the selector to the responder chain with `sendAction(_:to: nil:from:)`. If nothing handles the selector, the native app prints that to standard error. Whether WKWebView handles `undo:` and `redo:` is untested.
 - The window sets `.fullScreenPrimary` so toggle-fullscreen works. The change animates, so a test should wait for the frontend's size to settle.
