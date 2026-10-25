@@ -1,0 +1,63 @@
+const std = @import("std");
+const ziggy_build = @import("ziggy");
+
+//
+// Builds Graft, an app built on Ziggy the way every app is: it takes Ziggy as the dependency named "ziggy" in
+// build.zig.zon, builds its backend as a library with the `graft-backend` step, and its Linux and Windows native apps with the
+// `graft-linux` and `graft-windows` steps. The Xcode projects and the Android project are built by the app's scripts,
+// which run the `graft-backend` step to build the backend's library. `graft-dev` runs it in dev mode, with the
+// frontend in a browser, which comes with the backend. `test` runs the unit tests of the template's backend.
+//
+pub fn build(b: *std.Build) !void {
+    const target = b.standardTargetOptions(.{});
+    // Whether the test hooks (the test control connection) are built into the app. Never for a release.
+    const test_hooks = b.option(bool, "test-hooks", "Build the test hooks (the test control connection) into the app (never for a release)") orelse false;
+    // Whether the Windows native app is compiled without linking WebView2's loader, to check it on a machine that cannot link.
+    const compile_only = b.option(bool, "compile-only", "Compile the Windows native app without linking the WebView2 loader, to check it on a machine that cannot link") orelse false;
+    // Whether the desktop executables leave out their debug information. Only the release packages do: a dev or test build keeps it, so
+    // a panic there prints where it happened.
+    const strip = b.option(bool, "strip", "Leave the debug information out of the desktop executables (for a release)") orelse false;
+    // ReleaseSafe by default: the tests keep the safety checks.
+    const optimize = b.option(std.builtin.OptimizeMode, "optimize", "Prioritize performance, safety, or binary size (default: ReleaseSafe)") orelse .ReleaseSafe;
+
+    const ziggy = ziggy_build.dependency(b, target, optimize, test_hooks);
+    const core = try ziggy_build.addAppBackend(b, ziggy, .{
+        .name = "graft",
+        .title = "Graft",
+        .backend_source_file = "backend/src/app.zig",
+        .ui_directory = "dist",
+        .imports = &.{},
+    }, target, optimize);
+    const app: ziggy_build.INativeApp = .{
+        .name = "graft",
+        .title = "Graft",
+        .directory = ".",
+        .linux_icon = null,
+        .windows_resource = null,
+    };
+    try ziggy_build.addLinuxNativeApp(b, app, strip, target, optimize, ziggy, core.static_library);
+    try ziggy_build.addWindowsNativeApp(b, app, compile_only, strip, target, optimize, ziggy, core.static_library);
+
+    // The unit tests of the template's backend, which run it with Ziggy's test hooks compiled in.
+    const test_ziggy = ziggy_build.dependency(b, target, optimize, true);
+    const template_for_tests = b.createModule(.{
+        .root_source_file = b.path("backend/src/app.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    template_for_tests.addImport("ziggy", test_ziggy.module);
+    template_for_tests.addImport("ui-files", try ziggy_build.embedUi(b, test_ziggy.module, "ziggy", "dist"));
+    const test_step = b.step("test", "Run the unit tests of Graft's core");
+    const test_binary_step = b.step("test-binary-graft-backend", "Build the unit test program of Graft's core and install it to test-bin without running it");
+    try ziggy_build.addDirectoryTests(b, test_step, "backend", &.{
+        .{
+            .name = "ziggy",
+            .module = test_ziggy.module,
+        },
+        .{
+            .name = "graft-backend",
+            .module = template_for_tests,
+        },
+    }, target, optimize, test_binary_step);
+}
