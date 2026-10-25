@@ -6,7 +6,7 @@ Graft has three kinds of test, laid out as in the Ziggy template:
 - **Backend unit tests**: Zig tests under `backend/src/test/`, named after the file they test (`hello-world.test.zig`), found by the build's `addDirectoryTests`. They start the backend with Ziggy's fake native app and send it what the frontend would. Run them with `bun run test:zig`.
 - **Smoke tests**: one directory per test under `smoke-tests/`, each with a `test.sh`. Run them all with `bun run test:smoke` or one with `bun run test:smoke <directory>`.
 
-Run every suite with:
+Run the suites whose watched files changed with `bash scripts/check-changed.sh changed`, which the Git pre-commit hook also runs. Run every suite with:
 
 ```bash
 bun run compile && bun run test && bun run test:zig && bun run test:smoke

@@ -13,3 +13,4 @@ out/
 webview2-sdk/
 wix/
 native/windows/package/
+.what-changed/

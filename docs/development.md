@@ -4,7 +4,7 @@ This guide covers everything needed to develop, test and contribute to Graft. Fo
 
 ## Prerequisites
 
-mise (with Zig, Bun, Node and jq at the versions `mise.toml` locks), Git and the system packages Ziggy needs on your platform. [setup.md](setup.md) has the full list and how to install each.
+mise (with Zig, Bun, Node, jq and what-changed at the versions `mise.toml` locks), Git and the system packages Ziggy needs on your platform. [setup.md](setup.md) has the full list and how to install each.
 
 ## Setting up
 
@@ -46,10 +46,12 @@ backend/             The Zig backend.
   src/lib/           The message handlers, task handlers and menu.
   src/test/          The backend's Zig unit tests.
 native/              The native project for each platform (linux, windows and macos).
-scripts/             The scripts to set up, build, run, package and clean the app, each with a markdown file beside it.
+scripts/             The scripts to set up, build, run, package, clean and check the app, each with a markdown file beside it.
+.githooks/           The Git pre-commit hook, which scripts/install-hooks.sh installs.
 smoke-tests/         The smoke tests: one directory per test, each with a test.sh. The helpers are in lib/.
 .github/workflows/   The CI workflow and one release workflow per platform.
 .claude/commands/    The /ziggy: Claude Code commands that came with the template.
+what-changed.yaml    The files each check watches, for scripts/check-changed.sh.
 docs/                Setup, development, architecture, the user guide, the spec, the testing manual and the rules.
 ```
 
@@ -85,6 +87,16 @@ The runner builds the app with the test hooks, then runs each `test.sh` in a hid
 bun run compile && bun run test && bun run test:zig && bun run test:smoke
 ```
 
+### Changed tests
+
+```bash
+bash scripts/check-changed.sh changed  # The checks whose watched files changed since each last passed.
+bash scripts/check-changed.sh all      # Every check, changed or not.
+bash scripts/check-changed.sh plan     # Lists the checks that changed and runs none.
+```
+
+what-changed decides which checks changed, from the files each target in `what-changed.yaml` watches. The script records a check as passed only when it runs that check and it passes, so running a check through `bun run` records nothing. The Git pre-commit hook runs `changed` before every commit and refuses the commit when a check fails. A change to a file that no check watches, such as a doc, runs no checks. `git commit --no-verify` skips the hook for one commit.
+
 `/ziggy:check` runs every check this machine can run, cheapest first. It then fixes what fails.
 
 ## Code conventions
@@ -98,7 +110,7 @@ Graft follows the developer's global rules in https://github.com/ashleydavis/age
 3. Add or change the page under `frontend/src/pages/<page>/`. Keep its logic in plain functions under `src/lib/`. Give every element a smoke test touches a `data-id`.
 4. Write unit tests for every new or changed function, TypeScript and Zig alike, to full coverage, with the Git interface, the file system and IO mocked.
 5. Add a smoke test under `smoke-tests/<name>/test.sh` for each way the feature can be used. It runs the real app on a real `git` repo in the test's temporary directory.
-6. Run all the tests. Then run the app with `bun run <platform>` and screenshot every affected view in light and dark mode.
+6. Run the changed tests with `bash scripts/check-changed.sh changed`. Then run the app with `bun run <platform>` and screenshot every affected view in light and dark mode.
 7. Update the user guide, the architecture doc and any other doc the change affects.
 
 ## Related docs
