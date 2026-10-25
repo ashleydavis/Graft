@@ -12,23 +12,21 @@
 #       Starts the app for one scenario, recording what it started through launch_in_process_group. For the test build
 #       it starts the app in test mode, and sets ZIGGY_CONTROL_HOST and
 #       ZIGGY_CONTROL_PORT to where the test control connection can be reached from the host. Returns non-zero when the
-#       app did not come up. With keep-data it starts the app again on the data the last run left, instead of fresh data,
-#       and on a phone on the same device and the same install.
+#       app did not come up. With keep-data it starts the app again on the data the last run left, instead of fresh data.
 #
 #   ziggy_platform_stop <test_dir> [keep-device]
-#       Stops the app and everything it started. With keep-device a phone stays claimed, so a restart finds its data.
+#       Stops the app and everything it started.
 #
 #   ziggy_platform_devtools_visible <test_dir> <the frontend's area before they opened>   (desktop platforms)
 #       Succeeds when the developer tools are showing. How a script sees them differs: on Linux and macOS they dock inside the
 #       window and shrink the frontend's area, and on Windows they are a window of their own.
 #
 #   ziggy_platform_leave_app <test_dir>
-#       Takes the app out of the user's sight without ending it: on a desktop it closes the window (the File menu's Close Window), on
-#       Android it presses Home, and on the iOS simulator it opens another app over it. Returns non-zero when it cannot, which is
-#       the case on a connected iPhone or iPad.
+#       Takes the app out of the user's sight without ending it: it closes the window (the File menu's Close Window). Returns non-zero
+#       when it cannot.
 #
 #   ziggy_platform_process_alive <test_dir>
-#       Succeeds when the app's process is running, whether or not its window or activity is in sight.
+#       Succeeds when the app's process is running, whether or not its window is in sight.
 #
 #   ziggy_platform_data_dir <test_dir>
 #       Prints the directory the app uses for its private data in this scenario, when the host can read it, or nothing.

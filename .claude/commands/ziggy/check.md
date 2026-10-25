@@ -11,8 +11,6 @@ Run the app's checks from its directory, one after another, cheapest first. Read
 3. `bun run compile:zig`: builds the backend and the native apps.
 4. `bun run test:zig`: the backend's unit tests.
 5. `bun run test:smoke`: the smoke tests on this machine's desktop platform.
-6. `bun run test:smoke:android`, when an Android emulator or device is attached (`adb devices` lists one).
-7. `bun run test:smoke:ios`, on a Mac with a simulator or a connected device.
 
 A run that fails is a bug in the app or in its test: find the cause and fix it, then run that check again. Never skip, loosen or delete a test to make it pass.
 

@@ -2,7 +2,7 @@
 
 An app built on [Ziggy](https://github.com/ashleydavis/ziggy), with JavaScript/TypeScript, HTML and CSS for the frontend and Zig for everything else.
 
-The same code-base builds for Linux, Windows, macOS, Android and iOS, using each platform's system web view for the frontend. It starts from Ziggy's template, with a hello world of a message, a task and a menu, each with its tests, for you to change into your own code.
+The same code-base builds for Linux, Windows and macOS, using each platform's system web view for the frontend. It starts from Ziggy's template, with a hello world of a message, a task and a menu, each with its tests, for you to change into your own code.
 
 Check Ziggy's [glossary](https://github.com/ashleydavis/ziggy/blob/main/docs/glossary.md) to understand the jargon.
 
@@ -11,7 +11,7 @@ Check Ziggy's [glossary](https://github.com/ashleydavis/ziggy/blob/main/docs/glo
 Install what your platform needs first: see Ziggy's [Dependencies](https://github.com/ashleydavis/ziggy/blob/main/docs/user-guide/dependencies.md).
 
 ```bash
-bun run setup       # Once per machine, only to build for Windows, Android or iOS.
+bun run setup       # Once per machine, only to build for Windows.
 
 bun run compile     # Type-checks the frontend.
 bun run test        # Runs the frontend's unit tests.

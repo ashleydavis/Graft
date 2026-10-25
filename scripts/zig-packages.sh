@@ -17,8 +17,8 @@ case "$ACTION" in
         ;;
     cross)
         # The template's backend library for every platform that is not this one, with and without the test hooks. The
-        # Apple targets carry the oldest OS version each is meant to run on.
-        for target in aarch64-macos.11.0 x86_64-macos.11.0 aarch64-ios.14.0 aarch64-ios.14.0-simulator x86_64-ios.14.0-simulator x86_64-windows-gnu aarch64-windows-gnu x86_64-linux-gnu aarch64-linux-gnu; do
+        # macOS targets carry the oldest OS version each is meant to run on.
+        for target in aarch64-macos.11.0 x86_64-macos.11.0 x86_64-windows-gnu aarch64-windows-gnu x86_64-linux-gnu aarch64-linux-gnu; do
             for hooks in false true; do
                 echo "Cross-building the template core for $target (test hooks: $hooks)"
                 (cd "$EXAMPLE_DIR" && zig build graft-backend -Dtarget="$target" -Dtest-hooks="$hooks" -p "backend/zig-out/cross/$target-$hooks")
