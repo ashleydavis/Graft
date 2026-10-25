@@ -36,13 +36,13 @@ See `docs/architecture.md` for the reasons.
 Run the suites whose watched files changed, as what-changed reports them (the pre-commit hook runs this before every commit):
 
 ```bash
-bash scripts/check-changed.sh changed
+bash scripts/test-everything.sh
 ```
 
-Run every suite, one after another:
+Run every suite, changed or not:
 
 ```bash
-bun run compile && bun run test && bun run test:zig && bun run test:smoke
+bash scripts/test-everything.sh --force
 ```
 
 - `bun run compile`: type-checks the frontend.
@@ -53,7 +53,7 @@ bun run compile && bun run test && bun run test:zig && bun run test:smoke
 ## Configuration
 
 - `mise.toml`: the exact versions of Zig, Bun, Node, jq and what-changed.
-- `what-changed.yaml`: which files each check watches, for `scripts/check-changed.sh`.
+- `what-changed.yaml`: which files each check watches, for `scripts/test-everything.sh`.
 - `ZIGGY_TEST_MODE` and `ZIGGY_TEST_PORT_FILE`: read only by a build with the test hooks (`-Dtest-hooks=true`). The first switches the test hooks on and the second names the file the control connection's port is written to. The smoke test scripts set both. Neither is set by default.
 - Graft's own settings and state files are not decided yet.
 

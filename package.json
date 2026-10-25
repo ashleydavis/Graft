@@ -5,10 +5,10 @@
   "description": "Graft: a desktop Git client built on Ziggy.",
   "type": "module",
   "scripts": {
-    "compile": "tsc --noEmit",
+    "compile": "tsc --noEmit && what-changed baseline capture compile",
     "c": "bun run compile",
     "bundle:ui": "bash ./scripts/bundle-ui.sh",
-    "test": "jest",
+    "test": "jest && what-changed baseline capture test",
     "t": "bun run test",
     "dev": "zig build graft-dev",
     "dev:ui": "vite",
@@ -33,8 +33,8 @@
     "clean": "bash ./scripts/clean.sh",
     "setup": "bash ./scripts/setup.sh",
     "compile:zig": "bash ./scripts/zig-packages.sh build && bash ./scripts/zig-packages.sh cross",
-    "test:zig": "bash ./scripts/zig-packages.sh test",
-    "test:smoke": "bash ./smoke-tests/run-desktop.sh"
+    "test:zig": "bash ./scripts/zig-packages.sh test && what-changed baseline capture test-zig",
+    "test:smoke": "bash ./smoke-tests/run-desktop.sh && what-changed baseline capture test-smoke"
   },
   "dependencies": {
     "ziggy": "git+https://github.com/ashleydavis/ziggy.git#v0.0.19"

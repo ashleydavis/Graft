@@ -42,4 +42,4 @@ mkdir -p "$HOOKS_DIR"
 ln -sfn "$HOOK_SOURCE" "$HOOK_TARGET"
 
 echo "Installed the pre-commit hook: $HOOK_TARGET links to $HOOK_SOURCE."
-echo "Each commit runs scripts/check-changed.sh changed. Skip it for one commit with git commit --no-verify."
+echo "Each commit runs scripts/test-everything.sh. Skip it for one commit with git commit --no-verify."

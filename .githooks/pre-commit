@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Refuses a commit when a check that its changes affect fails. Runs scripts/check-changed.sh, which
+# Refuses a commit when a check that its changes affect fails. Runs scripts/test-everything.sh, which
 # runs only the checks whose watched files changed. See pre-commit.md.
 #
 # Named pre-commit with no extension, because Git finds a hook only by that exact name.
@@ -29,9 +29,9 @@ echo "pre-commit: running the checks the changes affect."
 #
 run_checks() {
     if command -v mise > /dev/null 2>&1; then
-        mise exec -- bash ./scripts/check-changed.sh changed
+        mise exec -- bash ./scripts/test-everything.sh
     else
-        bash ./scripts/check-changed.sh changed
+        bash ./scripts/test-everything.sh
     fi
 }
 

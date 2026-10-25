@@ -1,6 +1,6 @@
 # what-changed configuration.
 #
-# One target per check that scripts/check-changed.sh runs, each with the paths whose content decides
+# One target per check that scripts/test-everything.sh runs, each with the paths whose content decides
 # whether that check has to run again. A target runs whenever any file under one of its paths changes.
 
 # The tool versions and the installed packages decide the result of every check.

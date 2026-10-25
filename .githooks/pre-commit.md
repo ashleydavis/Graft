@@ -1,6 +1,6 @@
 # pre-commit
 
-The Git pre-commit hook. Before each commit it runs `scripts/check-changed.sh changed`, which runs only the checks whose watched files changed. It refuses the commit when one fails. A commit whose changes no check watches, such as a docs-only change, runs no checks.
+The Git pre-commit hook. Before each commit it runs `scripts/test-everything.sh`, which runs only the checks whose watched files changed. It refuses the commit when one fails. A commit whose changes no check watches, such as a docs-only change, runs no checks.
 
 ## Usage
 
