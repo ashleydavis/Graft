@@ -7,8 +7,8 @@
         // Ziggy, at a version tag of its repository. Every other place that takes Ziggy (package.json and the Xcode project)
         // names the same version.
         .ziggy = .{
-            .url = "git+https://github.com/ashleydavis/ziggy.git?ref=v0.0.13#ea05468d22e51ae5c8e24721ee76560980f9b25e",
-            .hash = "ziggy-0.0.0-Yh04riVoGwDmRRTSFm4ypfN9kHdSRLmC03gZSSNLP8F6",
+            .url = "git+https://github.com/ashleydavis/ziggy.git?ref=v0.0.19#e87dcb7c571f8004340fc7ba51ce0fbf14704d4d",
+            .hash = "ziggy-0.0.0-Yh04ruxbHQAHoV1Fv4lHlHKf-dN8uWtoBzDzxz9cAPBd",
         },
     },
     .paths = .{

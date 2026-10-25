@@ -111,4 +111,4 @@ Graft's UI grows one small piece at a time, one ticket at a time. Each page, but
 - [development.md](development.md): how to develop, test and contribute.
 - [setup.md](setup.md): how to set up the project and a worktree.
 - [spec/README.md](spec/README.md): what the system does, feature by feature.
-- Ziggy's [architecture](https://github.com/ashleydavis/ziggy/blob/v0.0.13/docs/development/architecture.md): the message bridge, tasks, menus and test hooks in detail.
+- Ziggy's [architecture](https://github.com/ashleydavis/ziggy/blob/v0.0.19/docs/development/architecture.md): the message bridge, tasks, menus and test hooks in detail.

@@ -37,7 +37,7 @@
     "test:smoke": "bash ./smoke-tests/run-desktop.sh"
   },
   "dependencies": {
-    "ziggy": "git+https://github.com/ashleydavis/ziggy.git#v0.0.13"
+    "ziggy": "git+https://github.com/ashleydavis/ziggy.git#v0.0.19"
   },
   "devDependencies": {
     "@types/jest": "^29.4.0",
