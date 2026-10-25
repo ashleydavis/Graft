@@ -111,7 +111,7 @@ Graft follows the developer's global rules in https://github.com/ashleydavis/age
 3. Add or change the page under `frontend/src/pages/<page>/`. Keep its logic in plain functions under `src/lib/`. Give every element a smoke test touches a `data-id`.
 4. Write unit tests for every new or changed function, TypeScript and Zig alike, to full coverage, with the Git interface, the file system and IO mocked.
 5. Add a smoke test under `smoke-tests/<name>/test.sh` for each way the feature can be used. It runs the real app on a real `git` repo in the test's temporary directory.
-6. Run the changed tests with `bash scripts/test-everything.sh`. Then run the app with `bun run <platform>` and screenshot every affected view in light and dark mode.
+6. Run the changed tests with `bash scripts/test-everything.sh`. Then run the app with `bun run <platform>` and screenshot every affected view once, in the mode Graft shows by default. Graft has no light/dark mode setting yet.
 7. Update the user guide, the architecture doc and any other doc the change affects.
 
 ## Related docs
