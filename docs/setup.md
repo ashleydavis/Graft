@@ -6,7 +6,7 @@ How to get Graft ready to run, test and develop. Once set up, see [development.m
 
 - [mise](https://mise.jdx.dev), which installs the tools `mise.toml` locks to exact versions: Zig, Bun, Node, jq and what-changed.
 - Git, on `PATH`. Graft runs the real `git`. So do its smoke tests and the unit tests of its Git interface.
-- The system packages Ziggy needs on each platform, listed in Ziggy's [Dependencies](https://github.com/ashleydavis/ziggy/blob/v0.0.13/docs/user-guide/dependencies.md):
+- The system packages Ziggy needs on each platform, listed in Ziggy's [Dependencies](https://github.com/ashleydavis/ziggy/blob/v0.0.19/docs/user-guide/dependencies.md):
   - Linux:
 
     ```bash

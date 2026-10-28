@@ -33,7 +33,7 @@ Dev mode, which is for the developer:
 bun run dev
 ```
 
-Dev mode starts Vite's dev server, builds the dev backend and opens the frontend in the default browser once both are up. Saving a file under `frontend/` reloads the page through Vite. Saving a Zig file rebuilds and restarts the dev backend. The page reloads once it is back and running tasks are lost. Native-only features (the menu, screenshots and native calls) fail with `NativeCallMissing` in the browser. File and directory dialogs work only on Linux, through zenity. See Ziggy's [Dev mode](https://github.com/ashleydavis/ziggy/blob/v0.0.13/docs/user-guide/dev-mode.md).
+Dev mode starts Vite's dev server, builds the dev backend and opens the frontend in the default browser once both are up. Saving a file under `frontend/` reloads the page through Vite. Saving a Zig file rebuilds and restarts the dev backend. The page reloads once it is back and running tasks are lost. Native-only features (the menu, screenshots and native calls) fail with `NativeCallMissing` in the browser. File and directory dialogs work only on Linux, through zenity. See Ziggy's [Dev mode](https://github.com/ashleydavis/ziggy/blob/v0.0.19/docs/user-guide/dev-mode.md).
 
 ## Project structure
 
@@ -120,4 +120,4 @@ Graft follows the developer's global rules in https://github.com/ashleydavis/age
 - [user-guide.md](user-guide.md): how a user installs and uses Graft.
 - [spec/README.md](spec/README.md): what Graft does, feature by feature.
 - [testing-manual/README.md](testing-manual/README.md): manual test steps for each feature.
-- Ziggy's [user guide](https://github.com/ashleydavis/ziggy/blob/v0.0.13/docs/user-guide.md): messages, tasks, menus, native calls, testing and scripts.
+- Ziggy's [user guide](https://github.com/ashleydavis/ziggy/blob/v0.0.19/docs/user-guide.md): messages, tasks, menus, native calls, testing and scripts.
