@@ -20,7 +20,7 @@ The Git and Zig rules of this project are in [git.md](git.md) and [zig.md](zig.m
 - The backend's message handlers, task handlers and menu live in `backend/src/lib/` and are registered in `backend/src/app.zig`.
 - Every element a smoke test touches has a `data-id`.
 - Icons come from the free version of Font Awesome.
-- Styling uses MaterialUI components and Tailwind classes. Graft has no light/dark mode setting yet, and its default mode is taken to be dark mode.
+- Styling uses MaterialUI components and Tailwind classes. Graft has no light/dark mode yet. Do not add one or choose a mode.
 - The frontend talks to the backend only through `window.ziggy`.
 - The code that came from the Ziggy template is Graft's own: change it the same way as the rest. Ziggy's own code is never patched.
 

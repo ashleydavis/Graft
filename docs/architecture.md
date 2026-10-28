@@ -26,7 +26,7 @@ flowchart LR
 ### Frontend
 
 - Lives in `frontend/`. TypeScript, React, TanStack, MaterialUI, Tailwind and Font Awesome icons, bundled by Vite and embedded in the app.
-- Owns everything the user sees: the pages, the layout, the state of the window and light and dark mode.
+- Owns everything the user sees: the pages, the layout and the state of the window.
 - Keeps its logic in plain functions under `src/lib/`, so the UI is a thin layer over unit tested code.
 - Must not reach Git, the file system or the computer. It asks the backend through `window.ziggy`.
 
