@@ -13,6 +13,7 @@ import { repoPathFromSearch } from "./lib/commits";
 import { ITestCommand, performTestCommand, testResultToJson } from "./lib/test-commands";
 import { AboutPage } from "./pages/about";
 import { CommitsPage } from "./pages/commits";
+import { HelpPage } from "./pages/help";
 
 //
 // What listenForTestCommands needs of window.ziggy, so a test can give it a fake with only these.
@@ -21,14 +22,15 @@ export type TestCommandBridge = Pick<IZiggyBridge, "onTestCommand" | "sendTestRe
 
 //
 // Makes the router that picks the page to show. Every page shows in the main content area of the
-// app's layout. The app opens on the About page, which links to the commits page. The history is
-// kept in memory, because the web view loads the frontend from the app's own address, whose path
-// is the file index.html and not a page of Graft's. The commits page reads the repo named in that
-// address's query, through window.ziggy.
+// app's layout. The app opens on the About page, which links to the commits page. The Help page
+// sits beside them. The history is kept in memory, because the web view loads the frontend from the
+// app's own address, whose path is the file index.html and not a page of Graft's. The commits page
+// reads the repo named in that address's query through window.ziggy. The layout's breadcrumb trail
+// starts with that repo.
 //
 export function createAppRouter(): AnyRouter {
     const rootRoute = createRootRoute({
-        component: AppLayout,
+        component: () => <AppLayout repoPath={repoPathFromSearch(window.location.search)} />,
     });
     const aboutRoute = createRoute({
         getParentRoute: () => rootRoute,
@@ -40,8 +42,13 @@ export function createAppRouter(): AnyRouter {
         path: "/commits",
         component: () => <CommitsPage bridge={window.ziggy} repoPath={repoPathFromSearch(window.location.search)} />,
     });
+    const helpRoute = createRoute({
+        getParentRoute: () => rootRoute,
+        path: "/help",
+        component: HelpPage,
+    });
     return createRouter({
-        routeTree: rootRoute.addChildren([aboutRoute, commitsRoute]),
+        routeTree: rootRoute.addChildren([aboutRoute, commitsRoute, helpRoute]),
         history: createMemoryHistory({
             initialEntries: ["/"],
         }),

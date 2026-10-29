@@ -1,14 +1,15 @@
 //
 // Tests the app's layout: renders it as the root of a router with a stand-in page and checks it
 // lays out the top bar, the left sidebar, the main content area holding the page and the right
-// sidebar, that the left sidebar starts expanded and the right sidebar closed and that the top
-// bar's buttons minimise and expand the left sidebar and slide the right sidebar in and out.
+// sidebar, that the left sidebar starts expanded and the right sidebar closed, that the top
+// bar's buttons minimise and expand the left sidebar and slide the right sidebar in and out and
+// that the top bar's breadcrumb trail follows the page shown and its drop-down opens another page.
 //
 
 import { act, render, screen } from "@testing-library/react";
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { createElement } from "react";
-import { AppLayout } from "../../components/app-layout";
+import { AppLayout, navigationFailureReporter } from "../../components/app-layout";
 
 //
 // The router scrolls the window to the top when it shows a page. jsdom reports window.scrollTo as
@@ -18,11 +19,14 @@ jest.spyOn(window, "scrollTo").mockImplementation(() => {
 });
 
 //
-// Renders the layout around a stand-in page, because the layout shows the router's current page.
+// Renders the layout for the repo at /repos/graft around a stand-in for the About page and the
+// Help page, because the layout shows the router's current page and its trail follows it.
 //
 async function renderAppLayout(): Promise<HTMLElement> {
     const rootRoute = createRootRoute({
-        component: AppLayout,
+        component: () => createElement(AppLayout, {
+            repoPath: "/repos/graft",
+        }),
     });
     const pageRoute = createRoute({
         getParentRoute: () => rootRoute,
@@ -31,8 +35,13 @@ async function renderAppLayout(): Promise<HTMLElement> {
             "data-id": "stand-in-page",
         }, "The page"),
     });
+    const helpRoute = createRoute({
+        getParentRoute: () => rootRoute,
+        path: "/help",
+        component: () => createElement("p", null, "The Help page"),
+    });
     const router = createRouter({
-        routeTree: rootRoute.addChildren([pageRoute]),
+        routeTree: rootRoute.addChildren([pageRoute, helpRoute]),
         history: createMemoryHistory({
             initialEntries: ["/"],
         }),
@@ -101,5 +110,36 @@ describe("AppLayout", () => {
         });
         expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
         expect(elementWithDataId(container, "left-sidebar-commits-link-label")).not.toBeUndefined();
+    });
+
+    test("the top bar's trail starts with the repo and names the page shown", async () => {
+        const container = await renderAppLayout();
+        const trailArea = elementWithDataId(container, "top-bar-trail");
+        expect(elementWithDataId(container, "top-bar")?.contains(trailArea ?? null)).toBe(true);
+        expect(elementWithDataId(container, "breadcrumb-repo")?.textContent).toBe("graft");
+        expect(elementWithDataId(container, "breadcrumb-repo")?.getAttribute("title")).toBe("/repos/graft");
+        expect(elementWithDataId(container, "breadcrumb-page")?.textContent).toBe("About");
+    });
+
+    test("picking another page in the trail's drop-down opens it and the trail follows", async () => {
+        const container = await renderAppLayout();
+        act(() => {
+            elementWithDataId(container, "breadcrumb-page")?.click();
+        });
+        act(() => {
+            document.querySelector<HTMLElement>("[data-id=\"breadcrumb-option-help\"]")?.click();
+        });
+        await screen.findByText("The Help page");
+        expect(elementWithDataId(container, "breadcrumb-page")?.textContent).toBe("Help");
+    });
+});
+
+describe("navigationFailureReporter", () => {
+    test("reports which page could not be opened and why", () => {
+        const consoleError = jest.spyOn(console, "error").mockImplementation(() => {
+        });
+        navigationFailureReporter("/help")(new Error("the route is missing"));
+        expect(consoleError).toHaveBeenCalledWith("Graft could not open the page at /help: Error: the route is missing. The page stays as it was, so look at the router's routes for that path.");
+        consoleError.mockRestore();
     });
 });

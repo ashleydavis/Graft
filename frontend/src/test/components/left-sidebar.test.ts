@@ -1,7 +1,7 @@
 //
-// Tests the left sidebar: renders it expanded and minimised in a router with an About page and a
-// commits page and checks its width, which links it shows with which labels, where they go and
-// which one is highlighted.
+// Tests the left sidebar: renders it expanded and minimised in a router with an About page, a
+// commits page and a Help page and checks its width, which links it shows with which labels, where
+// they go and which one is highlighted.
 //
 
 import { act, render, screen } from "@testing-library/react";
@@ -42,8 +42,13 @@ async function renderLeftSidebar(isMinimised: boolean): Promise<HTMLElement> {
         path: "/commits",
         component: () => createElement("p", null, "The commits page"),
     });
+    const helpRoute = createRoute({
+        getParentRoute: () => rootRoute,
+        path: "/help",
+        component: () => createElement("p", null, "The Help page"),
+    });
     const router = createRouter({
-        routeTree: rootRoute.addChildren([aboutRoute, commitsRoute]),
+        routeTree: rootRoute.addChildren([aboutRoute, commitsRoute, helpRoute]),
         history: createMemoryHistory({
             initialEntries: ["/"],
         }),
@@ -69,6 +74,7 @@ describe("LeftSidebar", () => {
         expect(sidebar?.classList.contains("w-60")).toBe(true);
         expect(sidebar?.classList.contains("w-16")).toBe(false);
         expect(elementWithDataId(container, "left-sidebar-commits-link-label")?.textContent).toBe("Commits");
+        expect(elementWithDataId(container, "left-sidebar-help-link-label")?.textContent).toBe("Help");
         expect(elementWithDataId(container, "left-sidebar-about-link-label")?.textContent).toBe("About");
     });
 
@@ -79,7 +85,9 @@ describe("LeftSidebar", () => {
         expect(sidebar?.classList.contains("w-60")).toBe(false);
         expect(elementWithDataId(container, "left-sidebar-commits-link-label")).toBeUndefined();
         expect(elementWithDataId(container, "left-sidebar-about-link-label")).toBeUndefined();
+        expect(elementWithDataId(container, "left-sidebar-help-link-label")).toBeUndefined();
         expect(elementWithDataId(container, "left-sidebar-commits-link")?.querySelector("svg[data-icon=\"code-commit\"]")).not.toBeNull();
+        expect(elementWithDataId(container, "left-sidebar-help-link")?.querySelector("svg[data-icon=\"circle-question\"]")).not.toBeNull();
         expect(elementWithDataId(container, "left-sidebar-about-link")?.querySelector("svg[data-icon=\"circle-info\"]")).not.toBeNull();
         expect(sidebar?.textContent).toBe("");
     });
@@ -90,19 +98,30 @@ describe("LeftSidebar", () => {
         expect(elementWithDataId(container, "left-sidebar-commits-link")?.getAttribute("title")).toBe("Commits");
         expect(elementWithDataId(container, "left-sidebar-about-link")?.getAttribute("aria-label")).toBe("About");
         expect(elementWithDataId(container, "left-sidebar-about-link")?.getAttribute("title")).toBe("About");
+        expect(elementWithDataId(container, "left-sidebar-help-link")?.getAttribute("aria-label")).toBe("Help");
+        expect(elementWithDataId(container, "left-sidebar-help-link")?.getAttribute("title")).toBe("Help");
     });
 
-    test("links to the commits page and the About page", async () => {
+    test("links to the commits page, the Help page and the About page", async () => {
         const container = await renderLeftSidebar(false);
         expect(elementWithDataId(container, "left-sidebar-commits-link")?.getAttribute("href")).toBe("/commits");
+        expect(elementWithDataId(container, "left-sidebar-help-link")?.getAttribute("href")).toBe("/help");
         expect(elementWithDataId(container, "left-sidebar-about-link")?.getAttribute("href")).toBe("/");
     });
 
     test("holds only the links to the pages Graft has", async () => {
         const container = await renderLeftSidebar(false);
         const sidebar = elementWithDataId(container, "left-sidebar");
-        expect(sidebar?.querySelectorAll("a").length).toBe(2);
+        expect(sidebar?.querySelectorAll("a").length).toBe(3);
         expect(sidebar?.querySelectorAll("button").length).toBe(0);
+    });
+
+    test("puts the Help link above the About link, apart from the commits link", async () => {
+        const container = await renderLeftSidebar(false);
+        const helpLink = elementWithDataId(container, "left-sidebar-help-link");
+        expect(helpLink?.parentElement).toBe(elementWithDataId(container, "left-sidebar-about-link")?.parentElement);
+        expect(helpLink?.nextElementSibling).toBe(elementWithDataId(container, "left-sidebar-about-link"));
+        expect(helpLink?.parentElement).not.toBe(elementWithDataId(container, "left-sidebar-commits-link")?.parentElement);
     });
 
     test("highlights the link to the page being shown, and only that one", async () => {

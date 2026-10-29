@@ -4,7 +4,7 @@
 //
 
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faCircleInfo, faCodeCommit } from "@fortawesome/free-solid-svg-icons";
+import { faCircleInfo, faCircleQuestion, faCodeCommit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "@tanstack/react-router";
 import { JSX } from "react";
@@ -65,10 +65,10 @@ export function SidebarLink({ to, icon, label, dataId, isMinimised }: ISidebarLi
 }
 
 //
-// Shows the links to Graft's pages: Commits at the top, with the pages about the repo, and About at
-// the bottom, apart from them, because it is about the app itself. Expanded, each link shows its
-// icon and name. Minimised, the sidebar narrows to a strip of icons, which leaves more of the
-// window to the page while every link stays one click away.
+// Shows the links to Graft's pages: Commits at the top with the pages about the repo. Help and
+// About sit at the bottom, apart from them, because they are about the app itself. Expanded, each
+// link shows its icon and name. Minimised, the sidebar narrows to a strip of icons, which leaves
+// more of the window to the page while every link stays one click away.
 //
 export function LeftSidebar({ isMinimised }: ILeftSidebarProps): JSX.Element {
     return (
@@ -80,6 +80,7 @@ export function LeftSidebar({ isMinimised }: ILeftSidebarProps): JSX.Element {
                 <SidebarLink to="/commits" icon={faCodeCommit} label="Commits" dataId="left-sidebar-commits-link" isMinimised={isMinimised} />
             </nav>
             <nav>
+                <SidebarLink to="/help" icon={faCircleQuestion} label="Help" dataId="left-sidebar-help-link" isMinimised={isMinimised} />
                 <SidebarLink to="/" icon={faCircleInfo} label="About" dataId="left-sidebar-about-link" isMinimised={isMinimised} />
             </nav>
         </aside>
