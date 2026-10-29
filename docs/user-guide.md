@@ -20,4 +20,8 @@ Several Graft windows can be open at once, for example one on each virtual deskt
 
 ## Using Graft
 
-Not decided yet. Each feature of Graft has its own section here.
+Each feature of Graft has its own section here.
+
+### About page
+
+Graft opens on its About page, which shows Graft's name, its icon and what Graft is.

@@ -1,4 +1,5 @@
 import { watch } from 'node:fs';
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, Plugin } from 'vite';
 
 //
@@ -38,7 +39,18 @@ if (useWatchPolling) {
 }
 
 export default defineConfig({
-    plugins: [classicScript()],
+    plugins: [
+        //
+        // Tailwind's optimizer drops the @layer statement at the top of main.css, which puts
+        // MaterialUI's layer after Tailwind's utilities, so MaterialUI's styles would beat
+        // Tailwind's classes. The build sets minify to false, so the optimizer has no other job
+        // here.
+        //
+        tailwindcss({
+            optimize: false,
+        }),
+        classicScript(),
+    ],
     server: {
         watch: {
             usePolling: useWatchPolling,

@@ -65,11 +65,18 @@ fi
 list_scenarios() {
     {
         ls -d "$SMOKE_DIR"/*/
-        case "$PLATFORM" in
-            linux|windows|macos)
-                ls -d "$SMOKE_DIR"/desktop-only/*/
-                ;;
-        esac
+
+        #
+        # Git keeps a directory only while it holds a file, so desktop-only is there only while it
+        # holds a smoke test.
+        #
+        if [ -d "$SMOKE_DIR/desktop-only" ]; then
+            case "$PLATFORM" in
+                linux|windows|macos)
+                    ls -d "$SMOKE_DIR"/desktop-only/*/
+                    ;;
+            esac
+        fi
     } | sed 's#/$##' | while IFS= read -r directory; do
         if [ -f "$directory/test.sh" ]; then
             printf '%s\n' "$directory"
