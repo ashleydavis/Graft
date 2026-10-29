@@ -16,7 +16,7 @@ bash scripts/test-everything.sh --force
 
 These apply to every change.
 
-- All code is unit tested to 100% coverage as it is written, TypeScript and Zig alike: 100% unit test coverage over every source file. This rule is for unit tests. It has nothing to do with smoke tests. Smoke tests never count towards unit test coverage.
+- All code is unit tested to 100% coverage as it is written, TypeScript and Zig alike: 100% unit test coverage over every source file. This rule is for unit tests. It has nothing to do with smoke tests. Smoke tests never count towards unit test coverage. Coverage is the percentage Jest (TypeScript) and kcov (Zig) report.
 - The unit tests of the Git interface function, the one that starts `git`, run the real `git` on a temporary repo and check only that the interface works with it. They are the only unit tests allowed to use `git` or any other external dependency. Every other unit test mocks them: the Git interface, the file system, IO, the network and anything else. TypeScript unit tests use Jest's `__mocks__` for this.
 - Each feature is smoke tested in as many ways as it can be used.
 - Smoke tests use real `git`.
