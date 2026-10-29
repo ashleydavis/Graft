@@ -39,11 +39,7 @@ Run the suites whose watched files changed, as what-changed reports them (the pr
 bash scripts/test-everything.sh
 ```
 
-Run every suite, changed or not:
-
-```bash
-bash scripts/test-everything.sh --force
-```
+Never run `scripts/test-everything.sh` with `--force`. Always run it without the flag.
 
 - `bun run compile`: type-checks the frontend.
 - `bun run test`: the frontend's Jest unit tests.
