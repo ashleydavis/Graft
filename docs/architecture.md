@@ -38,6 +38,8 @@ flowchart LR
 - Starts `git` through one Git interface function, `run_git` in `backend/src/lib/git-interface.zig`. It starts `git` with the arguments it is given and reports the exit code, standard output and standard error. Every other piece of backend code that needs Git calls it.
 - Wraps each Git command in a function that builds its arguments and parses its output, such as the `log` wrapper in `backend/src/lib/git-log.zig`. A wrapper takes the Git interface function as an argument, so its unit tests pass a mock.
 - The `log` wrapper reads one page of commits at a time with `git log -z`, its fields split by the unit separator (0x1f). A later page starts from the last commit of the previous page and skips it, so a new commit on top does not shift the pages.
+- The `log` wrapper also reads one commit by its hash, for the commit details pane. The `diff-tree` wrapper in `backend/src/lib/git-diff-tree.zig` reads what one commit changed with `git diff-tree`: its changed files and the diff of one of them. Both refuse a hash that is not hexadecimal, so git reads text from the frontend only as a commit.
+- The commits page queues one task per pane: the commits task for the commit pane, the commit details task (the commit and its changed files) for the commit details pane and the file diff task for the file pane.
 - Must not share state between threads or use locks.
 
 ### Native apps
