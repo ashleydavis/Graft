@@ -1,9 +1,9 @@
 //
 // Tests the commit list: renders it with commits, while they load and with an error, and checks
-// what it shows in each case.
+// what it shows in each case and that clicking a commit reports its hash.
 //
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { ICommit } from "../../../../lib/commits";
 import { CommitList } from "../../../../pages/commits/components/commit-list";
@@ -30,6 +30,7 @@ describe("CommitList", () => {
         const { container } = render(createElement(CommitList, {
             commits: [commit],
             error: undefined,
+            onSelectCommit: jest.fn(),
         }));
         expect(container.querySelector("[data-id=\"commit-list\"]")?.textContent).toBe("The first commit (Ada Author, 1111111)");
     });
@@ -38,6 +39,7 @@ describe("CommitList", () => {
         render(createElement(CommitList, {
             commits: undefined,
             error: undefined,
+            onSelectCommit: jest.fn(),
         }));
         expect(screen.getByText("Loading the commits.").getAttribute("data-id")).toBe("commits-loading");
     });
@@ -46,7 +48,19 @@ describe("CommitList", () => {
         render(createElement(CommitList, {
             commits: undefined,
             error: "It broke.",
+            onSelectCommit: jest.fn(),
         }));
         expect(screen.getByText("It broke.").getAttribute("data-id")).toBe("commits-error");
+    });
+
+    test("reports the hash of the commit the user clicks", () => {
+        const onSelectCommit = jest.fn();
+        render(createElement(CommitList, {
+            commits: [commit],
+            error: undefined,
+            onSelectCommit,
+        }));
+        fireEvent.click(screen.getByText(/The first commit/));
+        expect(onSelectCommit).toHaveBeenCalledWith(commit.hash);
     });
 });

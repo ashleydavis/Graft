@@ -26,8 +26,24 @@ pub fn describe_error(err: anyerror) ?[]const u8 {
         return "The commits were asked for with a page size of 0. Ask for at least one commit.";
     }
     if (err == error.InvalidCommitHash) {
-        return "The commits were asked for after a commit hash that is not hexadecimal. Give the" ++
-            " hash of a commit.";
+        return "A commit was asked for by a hash that is not hexadecimal. Give the hash of a" ++
+            " commit.";
+    }
+    if (err == error.CommitReadFailed) {
+        return "Running git log failed, so the commit's details could not be read. Check that" ++
+            " the repo has the commit. What git said is in Graft's log.";
+    }
+    if (err == error.GitDiffTreeFailed) {
+        return "Running git diff-tree failed, so the commit's changes could not be read. Check" ++
+            " that the repo has the commit. What git said is in Graft's log.";
+    }
+    if (err == error.UnexpectedGitDiffTreeOutput) {
+        return "Git diff-tree wrote output Graft could not read, so the commit's changed files" ++
+            " could not be read. Check that the git on PATH is a standard git.";
+    }
+    if (err == error.InvalidFilePath) {
+        return "A file's diff was asked for with an empty path. Give the path of a file the" ++
+            " commit changed.";
     }
     return null;
 }
