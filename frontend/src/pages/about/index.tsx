@@ -1,10 +1,11 @@
 //
-// The About page: says what Graft is.
+// The About page: says what Graft is, with a link to the commits page.
 //
 
 import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Avatar } from "@mui/material";
+import { Link } from "@tanstack/react-router";
 import { JSX } from "react";
 
 //
@@ -23,6 +24,7 @@ export function AboutPage(): JSX.Element {
             <p data-id="about-description">
                 Graft is a desktop Git client with a simple, intuitive UI that supports your own process instead of getting in the way.
             </p>
+            <Link to="/commits" data-id="about-commits-link">Commits</Link>
         </main>
     );
 }

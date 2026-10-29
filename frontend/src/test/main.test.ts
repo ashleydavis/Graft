@@ -1,10 +1,11 @@
 //
 // Tests how the frontend starts: loading main.tsx draws the app into the test's document, where
-// the router opens on the About page, and the smoke tests' commands are answered only in test
-// mode. The bridge to the backend is a fake made of Jest mocks.
+// the router opens on the About page and its links change between the About page and the commits
+// page, and the smoke tests' commands are answered only in test mode. The bridge to the backend
+// is a fake made of Jest mocks.
 //
 
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import { ITestCommand } from "../lib/test-commands";
 import { createAppRouter, listenForTestCommands, TestCommandBridge } from "../main";
 import type { ITestCommandEvent } from "ziggy";
@@ -40,6 +41,34 @@ describe("main", () => {
     test("the app opens on the About page", async () => {
         const heading = await screen.findByText("About Graft");
         expect(heading.getAttribute("data-id")).toBe("about-heading");
+    });
+
+    test("the links change from the About page to the commits page and back", async () => {
+        const ziggy = {
+            addTask: jest.fn(),
+            onTaskCompleted: jest.fn(),
+            removeTaskCompletedListener: jest.fn(),
+        };
+        Object.defineProperty(window, "ziggy", {
+            value: ziggy,
+            configurable: true,
+        });
+        await screen.findByText("About Graft");
+        act(() => {
+            screen.getByText("Commits").click();
+        });
+        expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
+        expect(ziggy.addTask).toHaveBeenCalledWith(expect.objectContaining({
+            taskType: "commits",
+            data: {
+                repoPath: "/tmp/graft/test-repo",
+                pageSize: 50,
+            },
+        }));
+        act(() => {
+            screen.getByText("About").click();
+        });
+        expect((await screen.findByText("About Graft")).getAttribute("data-id")).toBe("about-heading");
     });
 });
 

@@ -170,6 +170,26 @@ wait_for_text() {
 
 
 #
+# Waits until the element with the data-id is on the page, and fails when it never is. The
+# frontend answers commands before React has drawn the page, and text_of reports a missing
+# element as a failure, so the page is waited for first.
+# Usage: wait_for_element <data-id> <seconds>
+#
+wait_for_element() {
+    local waited=0
+    local answer=""
+    while [ "$waited" -lt "$2" ]; do
+        answer="$(control "{\"command\":\"exists\",\"dataId\":\"$1\"}")"
+        if [ "$(printf '%s' "$answer" | jq -r '.ok')" = "true" ]; then
+            return 0
+        fi
+        sleep 1
+        waited=$((waited + 1))
+    done
+    fail "the page never showed $1. The last answer was: $answer"
+}
+
+#
 # Chooses a menu item as a user would, through the native app, so the native app's own actions really happen and any other action reaches the
 # frontend. Usage: choose_menu_item <action>
 #
