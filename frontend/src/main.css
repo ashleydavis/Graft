@@ -1,0 +1,8 @@
+/*
+ * Graft's stylesheet: Tailwind's styles and classes.
+ *
+ * MaterialUI puts its styles in the mui layer, which comes before Tailwind's utilities layer,
+ * so a Tailwind class on a MaterialUI component wins over the component's own style.
+ */
+@layer theme, base, mui, components, utilities;
+@import "tailwindcss";

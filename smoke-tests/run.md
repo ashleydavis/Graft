@@ -13,7 +13,6 @@ Builds the app for the platform with the test hooks, then runs each `test.sh`, o
 
 ## Smoke tests
 
-- `hello-world-app`: hello world example. Pressing each button logs the backend's message response to the hello-world message, and the hello-world task's output and how it ended. Change it into your own smoke test, or delete it.
-- `desktop-only/hello-menu`: hello world example of the menu. Choosing Say Hello From Zig and Say Hello From the UI each writes its line to the log. Change it into your own smoke test, or delete it.
+- `about-page`: the app opens on the About page, which shows its heading, what Graft is and its icon.
 
-To add one, make a directory here with a `test.sh` that sources `../lib/common.sh`.
+To add one, make a directory here with a `test.sh` that sources `../lib/common.sh`. A smoke test that runs only on the desktop platforms goes in `desktop-only/<name>/` and sources `../../lib/common.sh`.

@@ -37,12 +37,28 @@
     "test:smoke": "bash ./smoke-tests/run-desktop.sh && what-changed baseline capture test-smoke"
   },
   "dependencies": {
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "11.14.1",
+    "@fortawesome/fontawesome-svg-core": "7.3.1",
+    "@fortawesome/free-solid-svg-icons": "7.3.1",
+    "@fortawesome/react-fontawesome": "3.5.0",
+    "@mui/material": "9.5.0",
+    "@tanstack/react-router": "1.170.46",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "tailwindcss": "4.3.3",
     "ziggy": "git+https://github.com/ashleydavis/ziggy.git#v0.0.19"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
     "@types/jest": "^29.4.0",
     "@types/node": "^22.9.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "jest": "^29.0.1",
+    "jest-environment-jsdom": "29.7.0",
     "ts-jest": "^29.0.5",
     "typescript": "^5.3.3",
     "vite": "^5.1.6"

@@ -39,6 +39,9 @@ Dev mode starts Vite's dev server, builds the dev backend and opens the frontend
 
 ```
 frontend/            The frontend: index.html and the TypeScript and React code under src/, which runs in the system web view.
+  src/main.tsx       Starts the frontend: the router, which opens on the About page, and the answers to the smoke tests' commands.
+  src/main.css       Tailwind's styles, with MaterialUI's styles in a CSS layer before Tailwind's classes.
+  src/pages/         One directory per page, each with its index.tsx.
   src/lib/           Plain, unit tested code the frontend shares, such as the commands the test hooks perform.
   src/test/          The frontend's Jest unit tests, mirroring the paths of the files they test.
 backend/             The Zig backend.
@@ -76,7 +79,7 @@ bun run test:zig  # Builds the backend and runs its Zig unit tests.
 
 ```bash
 bun run test:smoke                                # Every smoke test, on this machine's desktop platform.
-bash smoke-tests/run-desktop.sh hello-world-app   # One smoke test, by its directory name.
+bash smoke-tests/run-desktop.sh about-page        # One smoke test, by its directory name.
 ```
 
 The runner builds the app with the test hooks, then runs each `test.sh` in a hidden window, with its own temporary directory and a timeout.
