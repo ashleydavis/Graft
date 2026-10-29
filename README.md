@@ -2,7 +2,7 @@
 
 An app built on [Ziggy](https://github.com/ashleydavis/ziggy), with JavaScript/TypeScript, HTML and CSS for the frontend and Zig for everything else.
 
-The same code-base builds for Linux, Windows and macOS, using each platform's system web view for the frontend. Its frontend opens on the About page. Its backend keeps the Ziggy template's hello world of a message, a task and a menu, each with its tests, for you to change into your own code.
+The same code-base builds for Linux, Windows and macOS, using each platform's system web view for the frontend. Its frontend opens on the About page, which links to the commits page. The commits page lists the newest commits of the repo at `/tmp/graft/test-repo`, which `scripts/test/create-test-repo.sh` creates. The backend reads them with `git log` in a background task.
 
 Check Ziggy's [glossary](https://github.com/ashleydavis/ziggy/blob/main/docs/glossary.md) to understand the jargon.
 
@@ -28,7 +28,7 @@ bun run dev         # Runs the frontend in your browser with dev mode, which rel
 ## Where things are
 
 - `frontend/`: the frontend (TypeScript, React, TanStack Router, MaterialUI, Tailwind and Font Awesome), which runs in the system web view.
-- `backend/`: the Zig backend, with its message handlers, task handlers and menu.
+- `backend/`: the Zig backend, with the Git interface, its task handlers and menu.
 - `native/`: the native project for each platform.
 - `scripts/`: the scripts to set up, build, run and package the app, each with a markdown file beside it.
 - `smoke-tests/`: the smoke tests, which drive the real app.

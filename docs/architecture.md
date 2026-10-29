@@ -35,7 +35,9 @@ flowchart LR
 - Lives in `backend/`. Zig, declared to Ziggy in `backend/src/app.zig`.
 - Owns every call to `git`, every file read and write and anything else that reaches the computer.
 - Message handlers run on the backend's main thread and answer quickly. Anything slow is a task on a worker thread.
-- Starts `git` through one Git interface function. Every other piece of backend code that needs Git calls it.
+- Starts `git` through one Git interface function, `run_git` in `backend/src/lib/git-interface.zig`. It starts `git` with the arguments it is given and reports the exit code, standard output and standard error. Every other piece of backend code that needs Git calls it.
+- Wraps each Git command in a function that builds its arguments and parses its output, such as the `log` wrapper in `backend/src/lib/git-log.zig`. A wrapper takes the Git interface function as an argument, so its unit tests pass a mock.
+- The `log` wrapper reads one page of commits at a time with `git log -z`, its fields split by the unit separator (0x1f). A later page starts from the last commit of the previous page and skips it, so a new commit on top does not shift the pages.
 - Must not share state between threads or use locks.
 
 ### Native apps
@@ -87,6 +89,7 @@ Graft's UI grows one small piece at a time, one ticket at a time. Each page, but
 - **Expensive work runs in tasks.** Rejected: running it in message handlers, because they share the main thread with every other message and a slow one would hold up the whole UI.
 - **Threads share no state.** Rejected: shared state with locks. Threads that talk only by messages need no locks. Each piece of the backend's state belongs to one thread.
 - **Graft runs the `git` command.** One Git interface function starts it. Every other unit test mocks that function.
+- **A task handler is made with the Git interface function it runs.** Ziggy passes a task handler only its standard arguments, so `commits_task_handler` takes the Git interface function at compile time: the app registers the handler made with `run_git` and a unit test registers one made with the mock. Rejected: a global holding the function, which tests would have to swap.
 - **No Git interfaces, abstractions or mocks until a feature needs them.** Rejected: designing them upfront, which is overengineering for features that do not exist yet.
 - **Graft owns the template code and depends on Ziggy.** The template is a starting point to change freely. Ziggy is upgraded with `/ziggy:upgrade`.
 - **One process per window.** Several instances of Graft can run at once, for example on different virtual desktops. Each is a separate process with one window, so instances share no state in memory.

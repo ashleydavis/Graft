@@ -51,6 +51,7 @@ Never run `scripts/test-everything.sh` with `--force`. Always run it without the
 - `mise.toml`: the exact versions of Zig, Bun, Node, jq and what-changed.
 - `what-changed.yaml`: which files each check watches, for `scripts/test-everything.sh`.
 - `ZIGGY_TEST_MODE` and `ZIGGY_TEST_PORT_FILE`: read only by a build with the test hooks (`-Dtest-hooks=true`). The first switches the test hooks on and the second names the file the control connection's port is written to. The smoke test scripts set both. Neither is set by default.
+- `GRAFT_TEST_REPO`: the path of the repo the app reads, in place of `/tmp/graft/test-repo`. Read only by a build with the test hooks running in test mode. The smoke tests set it to a test repo of their own.
 - Graft's own settings and state files are not decided yet.
 
 ## Docs
