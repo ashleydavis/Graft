@@ -8,6 +8,7 @@ What every smoke test uses: it starts the app, talks to its test control connect
 - `text_of <data-id>`: prints the text of the element with the data-id.
 - `wait_for_text <data-id> <text> [seconds]`: waits until the element's text contains the text.
 - `wait_for_element <data-id> <seconds>`: waits until the element with the data-id is on the page.
+- `wait_for_missing_element <data-id> <seconds>`: waits until the element with the data-id has gone from the page.
 - `choose_menu_item <action>`: chooses a menu item through the native app, as a user would.
 - `viewport_size`: prints the size of the area the frontend is drawn in.
 

@@ -190,6 +190,26 @@ wait_for_element() {
 }
 
 #
+# Waits until the element with the data-id has gone from the page, and fails when it stays. A
+# test uses it to check that something the frontend draws only in one state, such as a label or a
+# panel's content, has gone.
+# Usage: wait_for_missing_element <data-id> <seconds>
+#
+wait_for_missing_element() {
+    local waited=0
+    local answer=""
+    while [ "$waited" -lt "$2" ]; do
+        answer="$(control "{\"command\":\"exists\",\"dataId\":\"$1\"}")"
+        if [ "$(printf '%s' "$answer" | jq -r '.ok')" = "false" ]; then
+            return 0
+        fi
+        sleep 1
+        waited=$((waited + 1))
+    done
+    fail "the page still showed $1. The last answer was: $answer"
+}
+
+#
 # Chooses a menu item as a user would, through the native app, so the native app's own actions really happen and any other action reaches the
 # frontend. Usage: choose_menu_item <action>
 #
