@@ -22,6 +22,10 @@ Several Graft windows can be open at once, for example one on each virtual deskt
 
 Each feature of Graft has its own section here.
 
+### Layout
+
+Every page shows in the main content area in the middle of the window. A top bar runs across the top, with Graft's name. The left sidebar has a link to each page: **Commits** at the top and **About** at the bottom. The menu button at the left of the top bar minimises the left sidebar to a strip of icons and expands it again. The button at the right of the top bar slides the right sidebar in and out.
+
 ### About page
 
 Graft opens on its About page, which shows Graft's name, its icon and what Graft is. Its **Commits** link opens the commits page.
