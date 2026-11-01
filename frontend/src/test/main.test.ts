@@ -1,8 +1,9 @@
 //
-// Tests how the frontend starts: loading main.tsx draws the app into the test's document, where
-// the router opens on the About page in the layout's main content area and its links change
-// between the About page and the commits page, and the smoke tests' commands are answered only in
-// test mode. The bridge to the backend is a fake made of Jest mocks.
+// Tests how the frontend starts: loading main.tsx draws the app into the test's document, where the
+// router opens on the About page in the layout's main content area and its links change between the
+// About page and the commits page. The Help page is on the router, with the trail following each
+// page and its drop-down opening the About page again. The smoke tests' commands are answered only
+// in test mode. The bridge to the backend is a fake made of Jest mocks.
 //
 
 import { act, screen, waitFor } from "@testing-library/react";
@@ -82,6 +83,29 @@ describe("main", () => {
             elementWithDataId("commits-about-link")?.click();
         });
         expect((await screen.findByText("About Graft")).getAttribute("data-id")).toBe("about-heading");
+    });
+
+    test("the Help page is on the router and the trail starts with the repo Graft reads and names each page", async () => {
+        await screen.findByText("About Graft");
+        expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("test-repo");
+        expect(elementWithDataId("breadcrumb-repo")?.getAttribute("title")).toBe("/tmp/graft/test-repo");
+        expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("About");
+        act(() => {
+            elementWithDataId("left-sidebar-help-link")?.click();
+        });
+        expect((await screen.findByText("Help", {
+            selector: "h1",
+        })).getAttribute("data-id")).toBe("help-heading");
+        expect(elementWithDataId("main-content")?.contains(elementWithDataId("help-page") ?? null)).toBe(true);
+        expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("Help");
+        act(() => {
+            elementWithDataId("breadcrumb-page")?.click();
+        });
+        act(() => {
+            elementWithDataId("breadcrumb-option-about")?.click();
+        });
+        expect((await screen.findByText("About Graft")).getAttribute("data-id")).toBe("about-heading");
+        expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("About");
     });
 });
 

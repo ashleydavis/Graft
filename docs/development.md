@@ -39,7 +39,7 @@ Dev mode starts Vite's dev server, builds the dev backend and opens the frontend
 
 ```
 frontend/            The frontend: index.html and the TypeScript and React code under src/, which runs in the system web view.
-  src/main.tsx       Starts the frontend: the router, which opens on the About page, and the answers to the smoke tests' commands.
+  src/main.tsx       Starts the frontend: the router and the answers to the smoke tests' commands. The router opens on the About page and holds the commits and Help pages.
   src/main.css       Tailwind's styles, with MaterialUI's styles in a CSS layer before Tailwind's classes.
   src/pages/         One directory per page, each with its index.tsx.
   src/components/    The components more than one page uses, such as the layout every page shows in.
