@@ -1,8 +1,8 @@
 //
 // Tests how the frontend starts: loading main.tsx draws the app into the test's document, where
-// the router opens on the About page and its links change between the About page and the commits
-// page, and the smoke tests' commands are answered only in test mode. The bridge to the backend
-// is a fake made of Jest mocks.
+// the router opens on the About page in the layout's main content area and its links change
+// between the About page and the commits page, and the smoke tests' commands are answered only in
+// test mode. The bridge to the backend is a fake made of Jest mocks.
 //
 
 import { act, screen, waitFor } from "@testing-library/react";
@@ -16,6 +16,16 @@ import type { ITestCommandEvent } from "ziggy";
 //
 jest.spyOn(window, "scrollTo").mockImplementation(() => {
 });
+
+//
+// The element with the data-id. The page links are found by data-id, because the left sidebar
+// links to the same pages with the same names.
+//
+function elementWithDataId(dataId: string): HTMLElement | undefined {
+    const element = document.querySelector<HTMLElement>(`[data-id="${dataId}"]`) ?? undefined;
+    expect(element).not.toBeUndefined();
+    return element;
+}
 
 //
 // Makes a fake bridge whose sendTestResult settles the way the test asks.
@@ -38,9 +48,11 @@ function registeredCallback(bridge: TestCommandBridge): (event: ITestCommandEven
 }
 
 describe("main", () => {
-    test("the app opens on the About page", async () => {
+    test("the app opens on the About page, in the layout's main content area", async () => {
         const heading = await screen.findByText("About Graft");
         expect(heading.getAttribute("data-id")).toBe("about-heading");
+        expect(elementWithDataId("main-content")?.contains(heading)).toBe(true);
+        expect(elementWithDataId("app-layout")?.contains(elementWithDataId("main-content") ?? null)).toBe(true);
     });
 
     test("the links change from the About page to the commits page and back", async () => {
@@ -55,9 +67,10 @@ describe("main", () => {
         });
         await screen.findByText("About Graft");
         act(() => {
-            screen.getByText("Commits").click();
+            elementWithDataId("about-commits-link")?.click();
         });
         expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
+        expect(elementWithDataId("main-content")?.contains(elementWithDataId("commits-page") ?? null)).toBe(true);
         expect(ziggy.addTask).toHaveBeenCalledWith(expect.objectContaining({
             taskType: "commits",
             data: {
@@ -66,7 +79,7 @@ describe("main", () => {
             },
         }));
         act(() => {
-            screen.getByText("About").click();
+            elementWithDataId("commits-about-link")?.click();
         });
         expect((await screen.findByText("About Graft")).getAttribute("data-id")).toBe("about-heading");
     });

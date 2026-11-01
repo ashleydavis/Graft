@@ -19,9 +19,9 @@ bun run macos
 ## Steps
 
 1. Wait for Graft's window to open.
-2. Check the window shows the About page: a green circle with a code branch icon, the heading "About Graft" and under it the sentence "Graft is a desktop Git client with a simple, intuitive UI that supports your own process instead of getting in the way."
+2. Check the main content area shows the About page: a green circle with a code branch icon, the heading "About Graft" and under it the sentence "Graft is a desktop Git client with a simple, intuitive UI that supports your own process instead of getting in the way."
 3. Check that under the sentence there is a link, "Commits".
-4. Check the page shows only the icon, the heading, the sentence and the link.
+4. Check the About page shows only the icon, the heading, the sentence and the link.
 5. Close the window.
 
 ## Expected result

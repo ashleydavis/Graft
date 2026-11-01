@@ -8,6 +8,7 @@ import { AnyRouter, createMemoryHistory, createRootRoute, createRoute, createRou
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import type { IZiggyBridge } from "ziggy";
+import { AppLayout } from "./components/app-layout";
 import { repoPathFromSearch } from "./lib/commits";
 import { ITestCommand, performTestCommand, testResultToJson } from "./lib/test-commands";
 import { AboutPage } from "./pages/about";
@@ -19,13 +20,16 @@ import { CommitsPage } from "./pages/commits";
 export type TestCommandBridge = Pick<IZiggyBridge, "onTestCommand" | "sendTestResult" | "testUiReady">;
 
 //
-// Makes the router that picks the page to show. The app opens on the About page, which links to
-// the commits page. The history is kept in memory, because the web view loads the frontend from
-// the app's own address, whose path is the file index.html and not a page of Graft's. The commits
-// page reads the repo named in that address's query, through window.ziggy.
+// Makes the router that picks the page to show. Every page shows in the main content area of the
+// app's layout. The app opens on the About page, which links to the commits page. The history is
+// kept in memory, because the web view loads the frontend from the app's own address, whose path
+// is the file index.html and not a page of Graft's. The commits page reads the repo named in that
+// address's query, through window.ziggy.
 //
 export function createAppRouter(): AnyRouter {
-    const rootRoute = createRootRoute();
+    const rootRoute = createRootRoute({
+        component: AppLayout,
+    });
     const aboutRoute = createRoute({
         getParentRoute: () => rootRoute,
         path: "/",
