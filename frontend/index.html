@@ -4,22 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Graft</title>
-    <style>
-        :root { color-scheme: light dark; }
-        html, body { height: 100%; }
-        body { font-family: sans-serif; margin: 0; padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; }
-        h1 { margin: 0; }
-        button { padding: 6px 10px; }
-        pre { flex: 1; min-height: 0; overflow: auto; margin: 0; border: 1px solid #8888; padding: 8px; white-space: pre-wrap; word-break: break-word; }
-    </style>
+    <link rel="stylesheet" href="/src/main.css" />
 </head>
 <body>
-    <h1 data-id="heading">Graft</h1>
-    <div>
-        <button data-id="send-message">Send the hello world message</button>
-        <button data-id="start-task">Start the hello world task</button>
-    </div>
-    <pre data-id="log"></pre>
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>
