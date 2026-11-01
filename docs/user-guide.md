@@ -24,11 +24,15 @@ Each feature of Graft has its own section here.
 
 ### Layout
 
-Every page shows in the main content area in the middle of the window. A top bar runs across the top, with Graft's name. The left sidebar has a link to each page: **Commits** at the top and **About** at the bottom. The menu button at the left of the top bar minimises the left sidebar to a strip of icons and expands it again. The button at the right of the top bar slides the right sidebar in and out.
+Every page shows in the main content area in the middle of the window. A top bar runs across the top, with Graft's name and the breadcrumb trail, which names the repo and the page you are on. On the Help and About pages, click the page's name in the trail to switch between them. The left sidebar has a link to each page: **Commits** at the top and **Help** and **About** at the bottom. The menu button at the left of the top bar minimises the left sidebar to a strip of icons and expands it again. The button at the right of the top bar slides the right sidebar in and out.
 
 ### About page
 
 Graft opens on its About page, which shows Graft's name, its icon and what Graft is. Its **Commits** link opens the commits page.
+
+### Help page
+
+The Help page says how to move between Graft's pages.
 
 ### Commits page
 

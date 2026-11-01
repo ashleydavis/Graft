@@ -1,11 +1,31 @@
 //
 // Tests the top bar: renders it with each state of the two sidebars and checks it shows Graft's
-// name, that each button's label says what a click does next and that a click asks for the change.
+// name, that each button's label says what a click does next, that a click asks for the change and
+// that it shows the breadcrumb trail it is given between the buttons.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { ITopBarProps, TopBar } from "../../components/top-bar";
+import { ITrailStep } from "../../lib/breadcrumb-trail";
+
+//
+// A trail of two plain steps, as the commits page has.
+//
+const trail: ITrailStep[] = [
+    {
+        label: "graft",
+        tooltip: "/repos/graft",
+        dataId: "breadcrumb-repo",
+        options: [],
+    },
+    {
+        label: "Commits",
+        tooltip: "Commits",
+        dataId: "breadcrumb-page",
+        options: [],
+    },
+];
 
 //
 // Renders the top bar with the sidebar states given and Jest mocks for its callbacks.
@@ -16,6 +36,8 @@ function renderTopBar(isLeftSidebarMinimised: boolean, isRightSidebarOpen: boole
         onToggleLeftSidebar: jest.fn(),
         isRightSidebarOpen,
         onToggleRightSidebar: jest.fn(),
+        trail,
+        onNavigate: jest.fn(),
     };
     render(createElement(TopBar, props));
     return props;
@@ -65,16 +87,27 @@ describe("TopBar", () => {
         expect(props.onToggleLeftSidebar).not.toHaveBeenCalled();
     });
 
-    test("holds only Graft's name and the two sidebar buttons", () => {
+    test("shows the breadcrumb trail between Graft's name and the right sidebar's button", () => {
+        renderTopBar(false, false);
+        const trailArea = screen.getByText("Commits").closest("[data-id=\"top-bar-trail\"]");
+        expect(trailArea).not.toBeNull();
+        expect(trailArea?.textContent).toBe("graftCommits");
+        expect(trailArea?.previousElementSibling?.getAttribute("data-id")).toBe("top-bar-name");
+        expect(trailArea?.nextElementSibling?.getAttribute("data-id")).toBe("right-sidebar-toggle");
+    });
+
+    test("holds only Graft's name, the breadcrumb trail and the two sidebar buttons", () => {
         const { container } = render(createElement(TopBar, {
             isLeftSidebarMinimised: false,
             onToggleLeftSidebar: jest.fn(),
             isRightSidebarOpen: false,
             onToggleRightSidebar: jest.fn(),
+            trail,
+            onNavigate: jest.fn(),
         }));
         const topBar = container.querySelector("[data-id=\"top-bar\"]");
         expect(topBar?.querySelectorAll("button").length).toBe(2);
         expect(topBar?.querySelectorAll("a").length).toBe(0);
-        expect(topBar?.textContent).toBe("Graft");
+        expect(topBar?.textContent).toBe("GraftgraftCommits");
     });
 });
