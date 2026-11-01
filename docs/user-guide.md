@@ -24,4 +24,10 @@ Each feature of Graft has its own section here.
 
 ### About page
 
-Graft opens on its About page, which shows Graft's name, its icon and what Graft is.
+Graft opens on its About page, which shows Graft's name, its icon and what Graft is. Its **Commits** link opens the commits page.
+
+### Commits page
+
+The commits page lists the first page of the repo's commits, newest first: each commit's title, its author and the first seven characters of its hash. While Graft reads them the page says the commits are loading, and when git cannot read them the page says why. Its **About** link goes back to the About page.
+
+Graft reads the repo at `/tmp/graft/test-repo`. `scripts/test/create-test-repo.sh` creates a test repo there.

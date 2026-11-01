@@ -46,10 +46,11 @@ frontend/            The frontend: index.html and the TypeScript and React code 
   src/test/          The frontend's Jest unit tests, mirroring the paths of the files they test.
 backend/             The Zig backend.
   src/app.zig        Graft's declaration to Ziggy: its messages, tasks, menu and built frontend.
-  src/lib/           The message handlers, task handlers and menu.
-  src/test/          The backend's Zig unit tests.
+  src/lib/           The Git interface, the Git wrappers, the message handlers, task handlers and menu.
+  src/test/          The backend's Zig unit tests and the mock of the Git interface function (git-mock.zig).
 native/              The native project for each platform (linux, windows and macos).
 scripts/             The scripts to set up, build, run, package, clean and check the app, each with a markdown file beside it.
+  test/              The scripts tests use, such as create-test-repo.sh, which creates a test repo in a known state.
 .githooks/           The Git pre-commit hook, which scripts/install-hooks.sh installs.
 smoke-tests/         The smoke tests: one directory per test, each with a test.sh. The helpers are in lib/.
 .github/workflows/   The CI workflow and one release workflow per platform.
@@ -83,6 +84,12 @@ bash smoke-tests/run-desktop.sh about-page        # One smoke test, by its direc
 ```
 
 The runner builds the app with the test hooks, then runs each `test.sh` in a hidden window, with its own temporary directory and a timeout.
+
+A smoke test that reads a repo creates its own with `scripts/test/create-test-repo.sh "$ZIGGY_TEST_DIR/repo"` and gives the app its path through `GRAFT_TEST_REPO`, so each smoke test running in parallel reads a repo of its own. A run of the app outside the smoke tests reads `/tmp/graft/test-repo`, which `./scripts/test/create-test-repo.sh` creates.
+
+### Git in the unit tests
+
+The unit tests of the Git interface function (`backend/src/test/git-interface.test.zig`) are the only ones that run `git`, in a repo of their own under the project's `tmp/`. Code that runs Git takes the Git interface function as an argument, and its unit tests pass `git_mock.mock_git` from `backend/src/test/git-mock.zig`, which checks the arguments it is given and answers as the test says.
 
 Run one smoke test with `smoke-tests/run-desktop.sh`, not `bun run test:smoke`: `bun run` adds extra arguments to the end of the script, after the baseline capture.
 
