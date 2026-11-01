@@ -15,7 +15,7 @@ The Git and Zig rules of this project are in [git.md](git.md) and [zig.md](zig.m
 
 ## Project conventions
 
-- File names are kebab-case, in TypeScript and Zig alike (`hello-world.ts`, `hello-world.zig`).
+- File names are kebab-case, in TypeScript and Zig alike (`test-commands.ts`, `git-log.zig`).
 - The frontend's `src/` splits into `pages/` (one directory per page, `pages/<page>/index.tsx`, with components only that page uses under `pages/<page>/components/`), `components/` (components more than one page uses) plus `lib/` (plain code that is not UI).
 - The backend's message handlers, task handlers and menu live in `backend/src/lib/` and are registered in `backend/src/app.zig`.
 - Every element a smoke test touches has a `data-id`.
