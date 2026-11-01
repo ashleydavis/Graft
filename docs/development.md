@@ -42,6 +42,7 @@ frontend/            The frontend: index.html and the TypeScript and React code 
   src/main.tsx       Starts the frontend: the router, which opens on the About page, and the answers to the smoke tests' commands.
   src/main.css       Tailwind's styles, with MaterialUI's styles in a CSS layer before Tailwind's classes.
   src/pages/         One directory per page, each with its index.tsx.
+  src/components/    The components more than one page uses, such as the layout every page shows in.
   src/lib/           Plain, unit tested code the frontend shares, such as the commands the test hooks perform.
   src/test/          The frontend's Jest unit tests, mirroring the paths of the files they test.
 backend/             The Zig backend.
