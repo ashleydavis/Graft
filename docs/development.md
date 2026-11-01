@@ -48,7 +48,7 @@ frontend/            The frontend: index.html and the TypeScript and React code 
 backend/             The Zig backend.
   src/app.zig        Graft's declaration to Ziggy: its messages, tasks, menu and built frontend.
   src/lib/           The Git interface, the Git wrappers, the message handlers, task handlers and menu.
-  src/test/          The backend's Zig unit tests and the mock of the Git interface function (git-mock.zig).
+  src/test/          The backend's Zig unit tests and the mocks of the Git interface function (git-mock.zig).
 native/              The native project for each platform (linux, windows and macos).
 scripts/             The scripts to set up, build, run, package, clean and check the app, each with a markdown file beside it.
   test/              The scripts tests use, such as create-test-repo.sh, which creates a test repo in a known state.
@@ -90,7 +90,7 @@ A smoke test that reads a repo creates its own with `scripts/test/create-test-re
 
 ### Git in the unit tests
 
-The unit tests of the Git interface function (`backend/src/test/git-interface.test.zig`) are the only ones that run `git`, in a repo of their own under the project's `tmp/`. Code that runs Git takes the Git interface function as an argument, and its unit tests pass `git_mock.mock_git` from `backend/src/test/git-mock.zig`, which checks the arguments it is given and answers as the test says.
+The unit tests of the Git interface function (`backend/src/test/git-interface.test.zig`) are the only ones that run `git`, in a repo of their own under the project's `tmp/`. Code that runs Git takes the Git interface function as an argument. Its unit tests pass `git_mock.mock_git` from `backend/src/test/git-mock.zig`, which checks the arguments it is given and answers as the test says. Code that starts `git` more than once, such as the commit details task, gets `git_mock.mock_git_calls`, which answers each call by the arguments it was given.
 
 Run one smoke test with `smoke-tests/run-desktop.sh`, not `bun run test:smoke`: `bun run` adds extra arguments to the end of the script, after the baseline capture.
 

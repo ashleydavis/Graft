@@ -1,6 +1,6 @@
 //
-// The `log` wrapper: reads one page of a repo's commits through the Git interface function and
-// parses them.
+// The `log` wrapper: reads a repo's commits through the Git interface function and parses them,
+// one page at a time or one commit by its hash.
 //
 
 const std = @import("std");
@@ -173,6 +173,65 @@ pub fn read_log_page(
         .commits = commits,
     };
 }
+
+//
+// Reads the one commit the hash names from the repo by running `git log -z --max-count=1` through
+// `run_git`, for the commit details pane. Its strings point into git's output, allocated with the
+// allocator, so the caller passes an arena. When git fails, what it wrote goes to the log and the
+// function returns error.CommitReadFailed.
+//
+pub fn read_commit(
+    io: std.Io,
+    log: ILog,
+    allocator: std.mem.Allocator,
+    run_git: git_interface.RunGit,
+    request: CommitRequest,
+) !Commit {
+    if (!is_commit_hash(request.hash)) {
+        return error.InvalidCommitHash;
+    }
+    assert(request.repo_path.len > 0);
+
+    const result = try run_git(io, allocator, &.{
+        "-C",
+        request.repo_path,
+        "log",
+        "-z",
+        "--max-count=1",
+        log_format,
+        request.hash,
+    });
+    if (result.exit_code != 0) {
+        log.tool("git", .{
+            .stdout = result.stdout,
+            .stderr = result.stderr,
+        });
+        log.@"error"("git log exited with an error, so the commit could not be read.");
+        return error.CommitReadFailed;
+    }
+    const commits = try parse_log_output(allocator, result.stdout, 1);
+    if (commits.len != 1) {
+        return error.UnexpectedGitLogOutput;
+    }
+    assert(commits.len == 1);
+    return commits[0];
+}
+
+//
+// Which commit to read: the repo and the commit's hash, in a struct because both are text and
+// could be mixed up.
+//
+pub const CommitRequest = struct {
+    //
+    // The path of the repo to read.
+    //
+    repo_path: []const u8,
+
+    //
+    // The full or shortened hash of the commit.
+    //
+    hash: []const u8,
+};
 
 //
 // The arguments `read_log_page` starts git with: the first page starts from HEAD, and a later page
