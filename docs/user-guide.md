@@ -38,4 +38,6 @@ The Help page says how to move between Graft's pages.
 
 The commits page lists the first page of the repo's commits, newest first: each commit's title, its author and the first seven characters of its hash. While Graft reads them the page says the commits are loading, and when git cannot read them the page says why. Its **About** link goes back to the About page.
 
+The commit list is the first of the page's columns. Click a commit to open a column to its right with the commit's details and the files it changed. Click one of those files to open another column to the right with the file's diff in that commit. Each new column has a **Close** button and closing the commit's column closes the file's column with it. When the columns are wider than the window, scroll the page sideways.
+
 Graft reads the repo at `/tmp/graft/test-repo`. `scripts/test/create-test-repo.sh` creates a test repo there.

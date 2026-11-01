@@ -1,7 +1,7 @@
 //
 // Tests the `log` wrapper with the mock of the Git interface function in place of `git`: the
-// arguments it starts git with for the first page and for a later page, how it parses git's output
-// into commits, and every way the request or git's output can be refused.
+// arguments it starts git with for the first page, for a later page and for one commit, how it
+// parses git's output into commits, and every way the request or git's output can be refused.
 //
 
 const std = @import("std");
@@ -378,4 +378,162 @@ test "is_commit_hash accepts hexadecimal digits only" {
     try std.testing.expect(!git_log.is_commit_hash(""));
     try std.testing.expect(!git_log.is_commit_hash("--all"));
     try std.testing.expect(!git_log.is_commit_hash("abc g"));
+}
+
+//
+// The arguments `read_commit` starts git with for the second commit of the repo at "repo".
+//
+const commit_args: []const []const u8 = &.{
+    "-C",
+    "repo",
+    "log",
+    "-z",
+    "--max-count=1",
+    format_arg,
+    second_hash,
+};
+
+//
+// The request for the second commit of the repo at "repo".
+//
+const commit_request: git_log.CommitRequest = .{
+    .repo_path = "repo",
+    .hash = second_hash,
+};
+
+//
+// What `git log -z --max-count=1` writes for the second commit of `two_commits_output`.
+//
+const second_commit_output = second_hash ++ "\x1f" ++ first_hash ++ "\x1f" ++
+    "HEAD -> main, tag: v1\x1f" ++
+    "Ada Author\x1fada@example.com\x1f2026-01-02T03:04:05+10:00\x1f" ++
+    "Cy Committer\x1fcy@example.com\x1f2026-01-02T03:04:06+10:00\x1f" ++
+    "The second commit\x1fThe first line.\nThe second line.\n\x00";
+
+test "read_commit reads the one commit the hash names and parses its fields" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = commit_args,
+        .exit_code = 0,
+        .stdout = second_commit_output,
+        .stderr = "",
+        .start_error = null,
+    });
+    const commit = try git_log.read_commit(
+        io,
+        ConsoleLog.init(),
+        arena.allocator(),
+        mock,
+        commit_request,
+    );
+    try std.testing.expectEqualStrings(second_hash, commit.hash);
+    try std.testing.expectEqual(@as(usize, 1), commit.parentHashes.len);
+    try std.testing.expectEqualStrings(first_hash, commit.parentHashes[0]);
+    try std.testing.expectEqualStrings("Cy Committer", commit.committerName);
+    try std.testing.expectEqualStrings("The second commit", commit.title);
+    try std.testing.expectEqualStrings("The first line.\nThe second line.", commit.description);
+}
+
+test "read_commit refuses a hash that git could read as an option without starting git" {
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = &.{},
+        .exit_code = 0,
+        .stdout = "",
+        .stderr = "",
+        .start_error = error.GitStartedWhenItShouldNotBe,
+    });
+    try std.testing.expectError(error.InvalidCommitHash, git_log.read_commit(
+        io,
+        ConsoleLog.init(),
+        std.testing.allocator,
+        mock,
+        .{
+            .repo_path = "repo",
+            .hash = "--all",
+        },
+    ));
+}
+
+test "read_commit fails with CommitReadFailed when git exits with an error" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = commit_args,
+        .exit_code = 128,
+        .stdout = "",
+        .stderr = "fatal: bad object\n",
+        .start_error = null,
+    });
+    try std.testing.expectError(error.CommitReadFailed, git_log.read_commit(
+        io,
+        ConsoleLog.init(),
+        arena.allocator(),
+        mock,
+        commit_request,
+    ));
+}
+
+test "read_commit refuses output that holds no commit" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = commit_args,
+        .exit_code = 0,
+        .stdout = "",
+        .stderr = "",
+        .start_error = null,
+    });
+    try std.testing.expectError(error.UnexpectedGitLogOutput, git_log.read_commit(
+        io,
+        ConsoleLog.init(),
+        arena.allocator(),
+        mock,
+        commit_request,
+    ));
+}
+
+test "read_commit refuses output that holds more than one commit" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = commit_args,
+        .exit_code = 0,
+        .stdout = two_commits_output,
+        .stderr = "",
+        .start_error = null,
+    });
+    try std.testing.expectError(error.UnexpectedGitLogOutput, git_log.read_commit(
+        io,
+        ConsoleLog.init(),
+        arena.allocator(),
+        mock,
+        commit_request,
+    ));
+}
+
+//
+// Reads the second commit with the allocator, for the allocation failure test. The commit is
+// allocated in an arena over the allocator, as a task's is.
+//
+fn read_second_commit(allocator: std.mem.Allocator) !void {
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = commit_args,
+        .exit_code = 0,
+        .stdout = second_commit_output,
+        .stderr = "",
+        .start_error = null,
+    });
+    _ = try git_log.read_commit(io, ConsoleLog.init(), arena.allocator(), mock, commit_request);
+}
+
+test "read_commit frees everything when an allocation fails" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, read_second_commit, .{});
 }

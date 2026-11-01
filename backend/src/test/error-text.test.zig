@@ -22,6 +22,13 @@ test "describe_error describes each error the commits task can fail with" {
     try expect_description(error.InvalidCommitHash, "not hexadecimal");
 }
 
+test "describe_error describes each error the commit details and file diff tasks can fail with" {
+    try expect_description(error.CommitReadFailed, "the commit's details could not be read");
+    try expect_description(error.GitDiffTreeFailed, "Running git diff-tree failed");
+    try expect_description(error.UnexpectedGitDiffTreeOutput, "Graft could not read");
+    try expect_description(error.InvalidFilePath, "empty path");
+}
+
 test "describe_error has no description of an error that is not Graft's" {
     const description = error_text.describe_error(error.OutOfMemory);
     try std.testing.expectEqual(@as(?[]const u8, null), description);
