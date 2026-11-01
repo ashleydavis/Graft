@@ -4,7 +4,7 @@ Runs the checks whose watched files changed since each last passed, so a change 
 
 ## Usage
 
-`bash scripts/test-everything.sh [--force] [--plan]`, from anywhere: it runs from the app's directory. `what-changed` and `bun` must be on `PATH`, at the versions `mise.toml` locks.
+`bash scripts/test-everything.sh [--plan]`, from anywhere: it runs from the app's directory. `what-changed` and `bun` must be on `PATH`, at the versions `mise.toml` locks.
 
 ## Options
 

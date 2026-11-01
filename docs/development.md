@@ -83,12 +83,6 @@ The runner builds the app with the test hooks, then runs each `test.sh` in a hid
 
 Run one smoke test with `smoke-tests/run-desktop.sh`, not `bun run test:smoke`: `bun run` adds extra arguments to the end of the script, after the baseline capture.
 
-### All tests
-
-```bash
-bash scripts/test-everything.sh --force
-```
-
 ### Changed tests
 
 ```bash
