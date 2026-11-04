@@ -44,10 +44,12 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Setup Zig (version from mise.toml)
+      # what-changed is installed too because `bun run test:smoke` ends with `what-changed baseline capture test-smoke`. Without
+      # it every smoke test passed and the step still failed with "what-changed: command not found" (exit code 127).
+      - name: Setup Zig and what-changed (versions from mise.toml)
         uses: jdx/mise-action@v2
         with:
-          install_args: zig jq
+          install_args: zig jq github:ashleydavis/what-changed
 
       - name: Cache Bun dependencies
         uses: actions/cache@v4

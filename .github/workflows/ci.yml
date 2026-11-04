@@ -38,6 +38,13 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      # `bun run compile` ends with `what-changed baseline capture compile`. Without it the compile passed and the step still
+      # failed with "what-changed: command not found" (exit code 127).
+      - name: Setup what-changed (version from mise.toml)
+        uses: jdx/mise-action@v2
+        with:
+          install_args: github:ashleydavis/what-changed
+
       - name: Cache Bun dependencies
         uses: actions/cache@v4
         with:
@@ -72,6 +79,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+
+      # `bun run test` ends with `what-changed baseline capture test`. Without it every unit test passed and the step still
+      # failed with "what-changed: command not found" (exit code 127).
+      - name: Setup what-changed (version from mise.toml)
+        uses: jdx/mise-action@v2
+        with:
+          install_args: github:ashleydavis/what-changed
 
       - name: Cache Bun dependencies
         uses: actions/cache@v4
