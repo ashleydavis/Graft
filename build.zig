@@ -9,7 +9,10 @@ const ziggy_build = @import("ziggy");
 // frontend in a browser, which comes with the backend. `test` runs the unit tests of the template's backend.
 //
 pub fn build(b: *std.Build) !void {
-    const target = b.standardTargetOptions(.{});
+    // The baseline CPU of the build machine's architecture and OS, not the build machine's own CPU. With Zig's default, a build
+    // without -Dtarget used every instruction the build machine has: the Linux release built on the GitHub runner crashed on a
+    // user's computer with SIGILL on `vmovups %zmm0`, an AVX-512 instruction. -Dtarget and -Dcpu still choose another target.
+    const target = b.standardTargetOptions(.{ .default_target = .{ .cpu_model = .baseline } });
     // Whether the test hooks (the test control connection) are built into the app. Never for a release.
     const test_hooks = b.option(bool, "test-hooks", "Build the test hooks (the test control connection) into the app (never for a release)") orelse false;
     // Whether the Windows native app is compiled without linking WebView2's loader, to check it on a machine that cannot link.
