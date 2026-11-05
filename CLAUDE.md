@@ -25,6 +25,7 @@ See `docs/architecture.md` for the reasons.
 - Threads share no state and use no locks. They talk only by messages.
 - Several instances of Graft can run at once, for example on different virtual desktops. Each instance is a separate process with one window.
 - Graft runs on Linux, Windows and macOS (Intel and Apple silicon).
+- iOS and Android are not supported. "All platforms" means the supported platforms only: never build, test, fix or run workflows for any other platform, and ignore its old releases.
 
 ## How to run
 
