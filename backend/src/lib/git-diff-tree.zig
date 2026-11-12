@@ -9,7 +9,7 @@ const git_interface = @import("git-interface.zig");
 const git_log = @import("git-log.zig");
 
 const assert = std.debug.assert;
-const ILog = ziggy.log.ILog;
+const TaskServices = ziggy.task_runner.TaskServices;
 
 //
 // One file a commit changed. The field names are camelCase because the struct is turned into the
@@ -90,11 +90,12 @@ pub const FileDiffRequest = struct {
 // with `--numstat` for its line counts, because git writes only one of the two when given both.
 // git lists no files for a merge commit, as `git log` shows none. The list and its strings are
 // allocated with the allocator, so the caller passes an arena. When git fails, what it wrote goes
-// to the log and the function returns error.GitDiffTreeFailed.
+// to the task's log and the function returns error.GitDiffTreeFailed. The help panel shows the
+// command without `-z`, so git lists one file to a line.
 //
 pub fn read_changed_files(
     io: std.Io,
-    log: ILog,
+    services: TaskServices,
     allocator: std.mem.Allocator,
     run_git: git_interface.RunGit,
     request: ChangedFilesRequest,
@@ -104,28 +105,46 @@ pub fn read_changed_files(
     }
     assert(request.repo_path.len > 0);
 
-    const name_status = try read_changed_files_git(io, log, allocator, run_git, &.{
-        "-C",
-        request.repo_path,
-        "diff-tree",
-        "-r",
-        "-z",
-        "--root",
-        "--no-commit-id",
-        "--name-status",
-        request.hash,
+    const name_status = try read_changed_files_git(io, services, allocator, run_git, .{
+        .repo_path = request.repo_path,
+        .args = &.{
+            "diff-tree",
+            "-r",
+            "-z",
+            "--root",
+            "--no-commit-id",
+            "--name-status",
+            request.hash,
+        },
+        .shown_args = &.{
+            "diff-tree",
+            "-r",
+            "--root",
+            "--no-commit-id",
+            "--name-status",
+            request.hash,
+        },
     });
     const files = try parse_name_status_output(allocator, name_status);
-    const numstat = try read_changed_files_git(io, log, allocator, run_git, &.{
-        "-C",
-        request.repo_path,
-        "diff-tree",
-        "-r",
-        "-z",
-        "--root",
-        "--no-commit-id",
-        "--numstat",
-        request.hash,
+    const numstat = try read_changed_files_git(io, services, allocator, run_git, .{
+        .repo_path = request.repo_path,
+        .args = &.{
+            "diff-tree",
+            "-r",
+            "-z",
+            "--root",
+            "--no-commit-id",
+            "--numstat",
+            request.hash,
+        },
+        .shown_args = &.{
+            "diff-tree",
+            "-r",
+            "--root",
+            "--no-commit-id",
+            "--numstat",
+            request.hash,
+        },
     });
     try parse_numstat_output(files, numstat);
     assert(files.len <= name_status.len);
@@ -135,25 +154,27 @@ pub fn read_changed_files(
 
 //
 // Runs one `git diff-tree` for `read_changed_files` and returns what git wrote to its standard
-// output. When git fails, what it wrote goes to the log and the function returns
+// output. When git fails, what it wrote goes to the task's log and the function returns
 // error.GitDiffTreeFailed.
 //
 fn read_changed_files_git(
     io: std.Io,
-    log: ILog,
+    services: TaskServices,
     allocator: std.mem.Allocator,
     run_git: git_interface.RunGit,
-    args: []const []const u8,
+    command: git_interface.GitCommand,
 ) ![]const u8 {
-    assert(args.len > 0);
+    assert(command.args.len > 0);
 
-    const result = try run_git(io, allocator, args);
+    const result = try run_git(io, services, allocator, command);
     if (result.exit_code != 0) {
-        log.tool("git", .{
+        services.log.tool("git", .{
             .stdout = result.stdout,
             .stderr = result.stderr,
         });
-        log.@"error"("git diff-tree exited with an error, so the changed files could not be read.");
+        services.log.@"error"(
+            "git diff-tree exited with an error, so the changed files could not be read.",
+        );
         return error.GitDiffTreeFailed;
     }
     assert(result.exit_code.? == 0);
@@ -163,12 +184,13 @@ fn read_changed_files_git(
 //
 // Reads the diff of one file in the commit by running `git diff-tree -r -p` through `run_git`,
 // limited to the file's path, compared as `read_changed_files` compares. The diff is git's text,
-// allocated with the allocator. When git fails, what it wrote goes to the log and the function
-// returns error.GitDiffTreeFailed.
+// allocated with the allocator. When git fails, what it wrote goes to the task's log and the
+// function returns error.GitDiffTreeFailed. The help panel shows the same command, because Graft
+// reads git's own output.
 //
 pub fn read_file_diff(
     io: std.Io,
-    log: ILog,
+    services: TaskServices,
     allocator: std.mem.Allocator,
     run_git: git_interface.RunGit,
     request: FileDiffRequest,
@@ -185,9 +207,7 @@ pub fn read_file_diff(
     //
     // The path follows `--`, so git reads it as a path even when it starts with a dash.
     //
-    const result = try run_git(io, allocator, &.{
-        "-C",
-        request.repo_path,
+    const args: []const []const u8 = &.{
         "diff-tree",
         "-r",
         "-p",
@@ -196,13 +216,20 @@ pub fn read_file_diff(
         request.hash,
         "--",
         request.path,
+    };
+    const result = try run_git(io, services, allocator, .{
+        .repo_path = request.repo_path,
+        .args = args,
+        .shown_args = args,
     });
     if (result.exit_code != 0) {
-        log.tool("git", .{
+        services.log.tool("git", .{
             .stdout = result.stdout,
             .stderr = result.stderr,
         });
-        log.@"error"("git diff-tree exited with an error, so the file's diff could not be read.");
+        services.log.@"error"(
+            "git diff-tree exited with an error, so the file's diff could not be read.",
+        );
         return error.GitDiffTreeFailed;
     }
     return result.stdout;

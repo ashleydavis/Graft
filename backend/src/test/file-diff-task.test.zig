@@ -37,6 +37,20 @@ const diff_args: []const []const u8 = &.{
 };
 
 //
+// The arguments the help panel is given to show for the same command.
+//
+const diff_shown_args: []const []const u8 = &.{
+    "diff-tree",
+    "-r",
+    "-p",
+    "--root",
+    "--no-commit-id",
+    commit_hash,
+    "--",
+    "README.md",
+};
+
+//
 // The data the frontend queues the task with for README.md in the commit.
 //
 const readme_data = "{\"repoPath\":\"/repo\",\"hash\":\"" ++ commit_hash ++
@@ -90,6 +104,7 @@ fn expect_task_message(
 test "the file diff task gives the file's diff as its result" {
     const mock = comptime git_mock.mock_git(.{
         .expected_args = diff_args,
+        .expected_shown_args = diff_shown_args,
         .exit_code = 0,
         .stdout = "diff --git a/README.md b/README.md\n+# Test repo\n",
         .stderr = "",
@@ -106,6 +121,7 @@ test "the file diff task gives the file's diff as its result" {
 test "the file diff task fails with a description of the error when git diff-tree fails" {
     const mock = comptime git_mock.mock_git(.{
         .expected_args = diff_args,
+        .expected_shown_args = diff_shown_args,
         .exit_code = 128,
         .stdout = "",
         .stderr = "fatal: bad object\n",
@@ -121,6 +137,7 @@ test "the file diff task fails with a description of the error when git diff-tre
 test "the file diff task fails with a description of the error when the path is empty" {
     const mock = comptime git_mock.mock_git(.{
         .expected_args = &.{},
+        .expected_shown_args = &.{},
         .exit_code = 0,
         .stdout = "",
         .stderr = "",
