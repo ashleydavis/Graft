@@ -8,4 +8,4 @@ The layout every page shows in: a top bar across the window with the breadcrumb 
 
 ## Sub-features
 
-None.
+- [git-commands](git-commands/index.md): the Git commands the open page has run, shown in the right sidebar.
