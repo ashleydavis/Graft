@@ -36,6 +36,8 @@ The button at the far right of the top bar slides the right sidebar in and out.
 
 The button next to it, which shows the current theme's icon, opens the theme menu, where you pick Graft's colours: **Light**, **Dark** or **System**, which follows your system's light or dark theme. Graft starts on **System** and remembers your choice the next time it opens. The setting is `theme` in Graft's config file, `~/.config/graft/config.toml` on Linux and macOS and `%APPDATA%\Graft\config.toml` on Windows.
 
+Graft remembers whether the left sidebar is minimised and whether the right sidebar is open, and starts with them as you left them.
+
 ### About page
 
 Graft opens on its About page, which shows Graft's name, its icon and what Graft is. Its **Commits** link opens the commits page.
