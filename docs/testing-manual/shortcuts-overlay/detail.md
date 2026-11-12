@@ -25,15 +25,16 @@ bun run macos
 ## Steps
 
 1. Wait for Graft's window to open on the welcome page.
-2. Press `?`. Check the overlay shows over the page with the heading "Keyboard shortcuts" and the text "Placeholder: Graft's keyboard shortcuts are listed here.", and the page behind it is dimmed.
+2. Press `?`. Check the overlay shows over the page with the heading "Keyboard shortcuts", a search box with the focus and the shortcuts in columns, and the page behind it is dimmed. Check the first shortcut is "Open repo" with Ctrl+O (Command+O on macOS), and that the menu items with shortcuts, such as Quit, Reload and Zoom In, are listed with the keys the menus show.
 3. Click outside the overlay. Check it stays open.
-4. Press `?`. Check the overlay closes.
-5. Press `?` again, then press Escape. Check the overlay closes.
-6. Click "About" in the breadcrumb trail. Check the drop-down opens with the focus in its search box.
-7. Press `?`. Check the search box shows `?`, the drop-down shows that no page matches "?" and the overlay stays closed.
-8. Press Escape to close the drop-down, then pick Dark from the theme menu in the top bar. Press `?` and check the overlay shows in dark colours. Press `?` to close it.
-9. Close the window.
+4. Type `open`. Check only "Open repo" is listed. Clear the search and type `ctrl+q` (on macOS, `⌘Q`). Check only "Quit" is listed. Type `branch` in place of it and check the overlay says no shortcut matches "branch".
+5. Clear the search and type `?`. Check the search box shows `?`, only "Keyboard Shortcuts" is listed and the overlay stays open.
+6. Press Escape. Check the overlay closes. Press `?` again and check the search box is empty and every shortcut is listed, then press Escape.
+7. Click "About" in the breadcrumb trail. Check the drop-down opens with the focus in its search box.
+8. Press `?`. Check the search box shows `?`, the drop-down shows that no page matches "?" and the overlay stays closed.
+9. Press Escape to close the drop-down, then pick Dark from the theme menu in the top bar. Press `?` and check the overlay and its shortcuts show in dark colours. Press Escape to close it.
+10. Close the window.
 
 ## Expected result
 
-`?` shows and closes the keyboard shortcuts overlay, Escape closes it, a click outside leaves it open and `?` typed in a text box types the character and leaves the overlay closed.
+`?` shows the keyboard shortcuts overlay, which lists every shortcut of Ziggy's action list in columns, starting with Open repo's Ctrl+O. Its search box filters them by label or keys and types `?` without closing the overlay. Escape closes it, a click outside leaves it open and `?` typed in another text box types the character and leaves the overlay closed.
