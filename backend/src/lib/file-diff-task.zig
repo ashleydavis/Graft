@@ -77,7 +77,7 @@ pub fn file_diff_task_handler(comptime run_git: git_interface.RunGit) FileDiffTa
             _ = timers;
             assert(context.task_id.len > 0);
 
-            const diff = try git_diff_tree.read_file_diff(io, services.log, allocator, run_git, .{
+            const diff = try git_diff_tree.read_file_diff(io, services, allocator, run_git, .{
                 .repo_path = payload.repoPath,
                 .hash = payload.hash,
                 .path = payload.path,

@@ -1,8 +1,9 @@
 //
-// A fake of what AppTheme needs of window.ziggy, which a test puts on window.ziggy: Graft's config
-// file holds the theme setting the test gives, and the system's theme is the one the test sets. A test can make each call fail, and
-// changes a config value from outside Graft with changeConfig, which tells every listener the way
-// Ziggy's core does.
+// A fake of what AppTheme and AppLayout need of window.ziggy, which a test puts on window.ziggy:
+// Graft's config file holds the theme setting the test gives, the system's theme is the one the
+// test sets and Graft's state file holds the values the test gives. A test can make each call
+// fail, and changes a config value from outside Graft with changeConfig, which calls every listener
+// the way Ziggy's core does.
 //
 
 import type { IConfigChangedEvent, IJsonValue, IZiggyBridge } from "ziggy";
@@ -26,14 +27,26 @@ export interface IFakeThemeZiggyOptions {
 
     // When given, setConfig fails with it.
     setConfigError?: Error;
+
+    // What the state file holds, by key path. Missing means the state file is empty.
+    savedState?: Record<string, IJsonValue | undefined>;
+
+    // When given, getState fails with it.
+    getStateError?: Error;
+
+    // When given, setState fails with it.
+    setStateError?: Error;
 }
 
 //
 // The calls of window.ziggy AppTheme makes, which a test controls.
 //
-export interface IFakeThemeZiggy extends Pick<IZiggyBridge, "getConfig" | "setConfig" | "getSystemTheme" | "onConfigChanged" | "removeConfigChangedListener"> {
+export interface IFakeThemeZiggy extends Pick<IZiggyBridge, "getConfig" | "setConfig" | "getSystemTheme" | "onConfigChanged" | "removeConfigChangedListener" | "getState" | "setState"> {
     // Every value setConfig was asked to write, as [key path, value], in order.
     writes: [string, IJsonValue | undefined][];
+
+    // Every value setState was asked to write, as [key path, value], in order.
+    stateWrites: [string, IJsonValue | undefined][];
 
     // Changes the system's theme the fake answers with.
     setSystemTheme(systemTheme: "light" | "dark"): void;
@@ -53,6 +66,7 @@ export function makeFakeThemeZiggy(options: IFakeThemeZiggyOptions): IFakeThemeZ
     let systemTheme = options.systemTheme;
     const fake: IFakeThemeZiggy = {
         writes: [],
+        stateWrites: [],
         getConfig<TValue extends IJsonValue>(path: string): Promise<TValue | undefined> {
             expect(path).toBe("theme");
             if (options.getConfigError !== undefined) {
@@ -64,6 +78,19 @@ export function makeFakeThemeZiggy(options: IFakeThemeZiggyOptions): IFakeThemeZ
             fake.writes.push([path, value]);
             if (options.setConfigError !== undefined) {
                 return Promise.reject(options.setConfigError);
+            }
+            return Promise.resolve();
+        },
+        getState<TValue extends IJsonValue>(path: string): Promise<TValue | undefined> {
+            if (options.getStateError !== undefined) {
+                return Promise.reject(options.getStateError);
+            }
+            return Promise.resolve(options.savedState?.[path] as TValue | undefined);
+        },
+        setState(path: string, value: IJsonValue | undefined): Promise<void> {
+            fake.stateWrites.push([path, value]);
+            if (options.setStateError !== undefined) {
+                return Promise.reject(options.setStateError);
             }
             return Promise.resolve();
         },

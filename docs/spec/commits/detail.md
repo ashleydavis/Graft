@@ -6,7 +6,7 @@ The commits page lists the newest commits of the open repo (see [open-repo](../o
 
 ## Behaviour
 
-- While a repo is open, the About page links to the commits page, and the commits page links back to the About page.
+- While a repo is open, the left sidebar's "Commits" link opens the commits page, and the commits page links back to the About page.
 - The page reads the open repo. Opening another repo shows that repo's commits in its place, with no commit open. While no repo is open the page shows "No repo is open. Choose File, then Open repo, to open one."
 - A smoke test gives the app the path of its own test repo through `GRAFT_TEST_REPO`, which the app reads only when it was started with `--remote-control`.
 - `scripts/test/create-test-repo.sh` creates a test repo in a known state with a few commits, at `/tmp/graft/test-repo` or at the path given as its argument.
@@ -26,7 +26,7 @@ The commits page lists the newest commits of the open repo (see [open-repo](../o
 - [x] A mock of the Git interface function exists for unit testing the `log` wrapper and future Git abstractions.
 - [x] A Ziggy background task runs the `log` wrapper and delivers the parsed first page to the UI.
 - [x] A commits page on the TanStack router shows the first page of commits as a plain unstyled list.
-- [x] While a repo is open, the About page links to the commits page and the commits page links to the About page.
+- [x] While a repo is open, the left sidebar links to the commits page and the commits page links to the About page.
 - [x] The page reads the open repo, and a smoke test gives the app the path of its own test repo.
 - [x] A script under `scripts/test/` creates the test repo in a known state with a few commits, at `/tmp/graft/test-repo` or at the path given as its argument.
 

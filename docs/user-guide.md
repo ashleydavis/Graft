@@ -32,17 +32,23 @@ A top bar runs across the top, with Graft's name and the breadcrumb trail, which
 
 The left sidebar has a link to each page: **Commits** at the top and **Help** and **About** at the bottom. The **Commits** link shows only while a repo is open. The menu button at the left of the top bar minimises the left sidebar to a strip of icons and expands it again.
 
-The button at the far right of the top bar slides the right sidebar in and out.
+The button at the far right of the top bar slides the right sidebar in and out. The right sidebar shows the Git commands the page you are on has run, the most recent first, under the `cd` that moves a terminal into the repo. Click the copy button beside one to copy it, then paste it into a terminal to run it yourself.
 
 The button next to it, which shows the current theme's icon, opens the theme menu, where you pick Graft's colours: **Light**, **Dark** or **System**, which follows your system's light or dark theme. Graft starts on **System** and remembers your choice the next time it opens. The setting is `theme` in Graft's config file, `~/.config/graft/config.toml` on Linux and macOS and `%APPDATA%\Graft\config.toml` on Windows.
+
+Graft remembers whether the left sidebar is minimised and whether the right sidebar is open, and starts with them as you left them.
 
 ### Opening a repo
 
 Graft starts with no repo open. Choose **File**, then **Open repo**, and pick the repo's folder in the folder picker. The commits page opens on that repo's commits. Opening another repo the same way shows it in place of the one before. The repo stays open while you move between pages, until Graft closes.
 
+### Keyboard shortcuts overlay
+
+Press `?` to show the keyboard shortcuts overlay over the page. Press `?` again or Escape to close it. While you type in a text box, such as the search box of the breadcrumb trail's drop-down, `?` types the character instead. The overlay shows placeholder text in place of the shortcuts.
+
 ### About page
 
-Graft opens on its About page, which shows Graft's name, its icon and what Graft is. While a repo is open, its **Commits** link opens the commits page.
+Graft opens on its About page, which shows Graft's name, its icon, its version and what Graft is. It links to Graft, Playbook and Ziggy on GitHub and to the Graft video series on YouTube, which open in your web browser. It names Graft's licence, the MIT licence.
 
 ### Help page
 

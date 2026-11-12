@@ -52,6 +52,10 @@ bun run macos
 26. Choose Dark from the menu, then close the window.
 27. Start Graft again. Check the window is dark grey from the start, apart from the white splash screen, and the theme menu's button shows the moon.
 28. Choose System from the menu, and close the window.
+29. Start Graft again. Click the menu button in the top bar to minimise the left sidebar, and click the button at the far right of the top bar to open the right sidebar. Close the window.
+30. Start Graft again. Check the left sidebar is minimised to its strip of icons and the right sidebar is open.
+31. Click the menu button to expand the left sidebar and click the right sidebar's button to close it. Close the window.
+32. Start Graft again. Check the left sidebar is expanded and the right sidebar is closed.
 
 ## Expected result
 
@@ -62,3 +66,5 @@ The top bar's breadcrumb trail names the open repo and the page shown. On the He
 The menu button minimises and expands the left sidebar, and its links work in both states. The button at the far right of the top bar slides the right sidebar in and out.
 
 The theme menu moves Graft between light, dark and the system's theme, ticks the one in use, and Graft starts on the theme last picked.
+
+Graft starts with the left sidebar minimised or expanded and the right sidebar open or closed, as they were left when it last closed.

@@ -28,6 +28,7 @@ flowchart LR
 - Lives in `frontend/`. TypeScript, React, TanStack, MaterialUI, Tailwind and Font Awesome icons, bundled by Vite and embedded in the app.
 - Owns everything the user sees: the pages, the layout and the state of the window. The open repo's path is part of that state, kept in `RepoContext` above the router so it stays loaded while the user moves between pages.
 - Keeps its logic in plain functions under `src/lib/`, so the UI is a thin layer over unit tested code.
+- The layout listens for every task's `git-command` event and keeps each page's commands by the source its tasks are queued under, for as long as the app runs, so the right sidebar's Git commands panel shows the commands of the page that is open.
 - Must not reach Git, the file system or the computer. It asks the backend through `window.ziggy`.
 
 ### Backend
@@ -35,8 +36,8 @@ flowchart LR
 - Lives in `backend/`. Zig, declared to Ziggy in `backend/src/app.zig`.
 - Owns every call to `git`, every file read and write and anything else that reaches the computer.
 - Message handlers run on the backend's main thread and answer quickly. Anything slow is a task on a worker thread.
-- Starts `git` through one Git interface function, `run_git` in `backend/src/lib/git-interface.zig`. It starts `git` with the arguments it is given and reports the exit code, standard output and standard error. Every other piece of backend code that needs Git calls it.
-- Wraps each Git command in a function that builds its arguments and parses its output, such as the `log` wrapper in `backend/src/lib/git-log.zig`. A wrapper takes the Git interface function as an argument, so its unit tests pass a mock.
+- Starts `git` through one Git interface function, `run_git` in `backend/src/lib/git-interface.zig`. It takes the task's services and a Git command: the repo, the arguments Graft runs and the arguments the help panel shows. It sends a `git-command` task event with `cd <repo>` and `git <shown arguments>`, each quoted for a POSIX shell, then starts `git -C <repo>` with the arguments and reports the exit code, standard output and standard error. Every other piece of backend code that needs Git calls it.
+- Wraps each Git command in a function that builds its arguments and parses its output, such as the `log` wrapper in `backend/src/lib/git-log.zig`. Beside the arguments it runs, each wrapper decides the arguments the help panel shows, which leave out what only Graft's parsing needs (`-z` and a `--format` with separator characters), so the command shown works pasted into a terminal in the repo. A wrapper takes the Git interface function as an argument, so its unit tests pass a mock.
 - The `log` wrapper reads one page of commits at a time with `git log -z`, its fields split by the unit separator (0x1f). A later page starts from the last commit of the previous page and skips it, so a new commit on top does not shift the pages.
 - The `log` wrapper also reads one commit by its hash, for the commit details pane. The `diff-tree` wrapper in `backend/src/lib/git-diff-tree.zig` reads what one commit changed with `git diff-tree`: its changed files and the diff of one of them. Both refuse a hash that is not hexadecimal, so git reads text from the frontend only as a commit.
 - File, Open repo runs the `open-repo` action, whose handler is in the frontend. It sends the `pick-repo-folder` message, whose response comes from a task of that name, because the system folder picker it shows waits for the user.
@@ -60,6 +61,7 @@ flowchart LR
 - The native app passes each message to the backend through Ziggy's C interface. The backend's main thread finds the handler registered for its name and sends back what it returns.
 - A message handler can have a task give its response, so a slow answer still reaches the frontend as one message response.
 - The backend sends the frontend events of its own with `sendEvent`. The native app sends a menu item the frontend runs as a menu event.
+- The backend declares Graft's actions in `backend/src/lib/actions.zig` and the frontend registers each one's handler with `window.ziggy.registerAction`. Ziggy runs an action's keyboard shortcut in the frontend, so the Keyboard Shortcuts action's `?` shows and closes the keyboard shortcuts overlay.
 - Every message, response and event is the JSON text of one object.
 
 ## Where work runs
@@ -76,7 +78,7 @@ A user action that needs data from Git:
 
 1. The frontend queues a task as `interactive` and shows that it is loading.
 2. The native app passes the `add-task` message to the backend, which queues the task.
-3. A worker thread runs the task. It calls the Git interface function, which starts `git` in the repo's folder and reads its output.
+3. A worker thread runs the task. It calls the Git interface function, which sends the frontend a `git-command` task event naming the command, then starts `git` in the repo's folder and reads its output.
 4. The task parses the output and returns it as its result.
 5. The native app delivers the `task-completed` event to the frontend, which renders the result.
 6. If `git` fails, the task fails with an error that says what went wrong. The frontend shows it.
@@ -93,6 +95,7 @@ Graft's UI grows one small piece at a time, one ticket at a time. Each page, but
 - **Threads share no state.** Rejected: shared state with locks. Threads that talk only by messages need no locks. Each piece of the backend's state belongs to one thread.
 - **Graft runs the `git` command.** One Git interface function starts it. Every other unit test mocks that function.
 - **A task handler is made with the Git interface function it runs.** Ziggy passes a task handler only its standard arguments, so `commits_task_handler` takes the Git interface function at compile time: the app registers the handler made with `run_git` and a unit test registers one made with the mock. Rejected: a global holding the function, which tests would have to swap.
+- **The Git interface function sends the frontend each command it starts.** Every Git operation goes through it, so the panel lists every command Graft runs from one place. The command shown is decided by the wrapper and written as a command line in the backend, so the frontend only shows text. Rejected: building the command line in the frontend, which would have to know each wrapper's arguments.
 - **No Git interfaces, abstractions or mocks until a feature needs them.** Rejected: designing them upfront, which is overengineering for features that do not exist yet.
 - **Graft owns the template code and depends on Ziggy.** The template is a starting point to change freely. Ziggy is upgraded with `/ziggy:upgrade`.
 - **One process per window.** Several instances of Graft can run at once, for example on different virtual desktops. Each is a separate process with one window, so instances share no state in memory.

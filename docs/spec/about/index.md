@@ -4,7 +4,7 @@
 **Spec:** Settled
 **Implementation:** Complete
 
-The page Graft opens on. It shows Graft's name, its icon and what Graft is, and links to the commits page while a repo is open.
+The page Graft opens on. It shows Graft's name, its icon, its version and what Graft is. It links to Graft, Playbook and Ziggy on GitHub and to the Graft video series on YouTube. It names Graft's licence.
 
 ## Sub-features
 
