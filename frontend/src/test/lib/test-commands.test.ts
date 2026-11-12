@@ -23,6 +23,11 @@ interface IFakeElement extends IFoundElement {
 const WINDOW_WIDTH = 1000;
 
 //
+// The height of the window the fake finder reports, which the viewport test reads back.
+//
+const WINDOW_HEIGHT = 700;
+
+//
 // Makes a fake element with the text and value, whose edges are at the left of the window.
 //
 function makeElement(text: string | null, value: string | undefined): IFakeElement {
@@ -67,6 +72,7 @@ function makeFinder(element: IFoundElement): IElementFinder {
             return dataId === "target" ? element : null;
         },
         windowWidth: WINDOW_WIDTH,
+        windowHeight: WINDOW_HEIGHT,
     };
 }
 
@@ -76,6 +82,15 @@ describe("performTestCommand", () => {
             command: "ready",
         })).toEqual({
             ok: true,
+        });
+    });
+
+    test("viewport reports the window's width and height without an element", () => {
+        expect(performTestCommand(makeFinder(makeElement("", undefined)), {
+            command: "viewport",
+        })).toEqual({
+            ok: true,
+            value: "1000x700",
         });
     });
 

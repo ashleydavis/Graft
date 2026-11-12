@@ -109,6 +109,7 @@ export function listenForTestCommands(search: string, page: Document): void {
             const finder = {
                 find: (dataId: string) => page.querySelector<HTMLElement>(`[data-id="${dataId}"]`),
                 windowWidth: window.innerWidth,
+                windowHeight: window.innerHeight,
             };
             window.ziggy.sendTestResult(event.requestId, testResultToJson(performTestCommand(finder, event.command)))
                 .catch(error => {
