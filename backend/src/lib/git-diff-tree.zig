@@ -26,6 +26,24 @@ pub const ChangedFile = struct {
     // The file's path from the root of the repo.
     //
     path: []const u8,
+
+    //
+    // How many lines the commit added to the file, as `git diff-tree --numstat` counts them, so
+    // the commit details pane can show the size of each change. Zero for a binary file.
+    //
+    linesAdded: u32,
+
+    //
+    // How many lines the commit deleted from the file, counted as `linesAdded` is. Zero for a
+    // binary file.
+    //
+    linesDeleted: u32,
+
+    //
+    // Whether git found the file binary and so counted no lines of it, so the pane shows that in
+    // place of the line counts.
+    //
+    isBinary: bool,
 };
 
 //
@@ -66,8 +84,10 @@ pub const FileDiffRequest = struct {
 };
 
 //
-// Reads the files the commit changed by running `git diff-tree -r -z --name-status` through
-// `run_git`, compared with its first parent, or with an empty tree for the first commit (`--root`).
+// Reads the files the commit changed and the lines it added to and deleted from each, compared
+// with its first parent, or with an empty tree for the first commit (`--root`). It runs
+// `git diff-tree -r -z` through `run_git` twice: with `--name-status` for each file's status and
+// with `--numstat` for its line counts, because git writes only one of the two when given both.
 // git lists no files for a merge commit, as `git log` shows none. The list and its strings are
 // allocated with the allocator, so the caller passes an arena. When git fails, what it wrote goes
 // to the task's log and the function returns error.GitDiffTreeFailed. The help panel shows the
@@ -85,7 +105,7 @@ pub fn read_changed_files(
     }
     assert(request.repo_path.len > 0);
 
-    const result = try run_git(io, services, allocator, .{
+    const name_status = try read_changed_files_git(io, services, allocator, run_git, .{
         .repo_path = request.repo_path,
         .args = &.{
             "diff-tree",
@@ -105,6 +125,48 @@ pub fn read_changed_files(
             request.hash,
         },
     });
+    const files = try parse_name_status_output(allocator, name_status);
+    const numstat = try read_changed_files_git(io, services, allocator, run_git, .{
+        .repo_path = request.repo_path,
+        .args = &.{
+            "diff-tree",
+            "-r",
+            "-z",
+            "--root",
+            "--no-commit-id",
+            "--numstat",
+            request.hash,
+        },
+        .shown_args = &.{
+            "diff-tree",
+            "-r",
+            "--root",
+            "--no-commit-id",
+            "--numstat",
+            request.hash,
+        },
+    });
+    try parse_numstat_output(files, numstat);
+    assert(files.len <= name_status.len);
+    assert(files.len <= numstat.len);
+    return files;
+}
+
+//
+// Runs one `git diff-tree` for `read_changed_files` and returns what git wrote to its standard
+// output. When git fails, what it wrote goes to the task's log and the function returns
+// error.GitDiffTreeFailed.
+//
+fn read_changed_files_git(
+    io: std.Io,
+    services: TaskServices,
+    allocator: std.mem.Allocator,
+    run_git: git_interface.RunGit,
+    command: git_interface.GitCommand,
+) ![]const u8 {
+    assert(command.args.len > 0);
+
+    const result = try run_git(io, services, allocator, command);
     if (result.exit_code != 0) {
         services.log.tool("git", .{
             .stdout = result.stdout,
@@ -115,9 +177,8 @@ pub fn read_changed_files(
         );
         return error.GitDiffTreeFailed;
     }
-    const files = try parse_name_status_output(allocator, result.stdout);
-    assert(files.len <= result.stdout.len);
-    return files;
+    assert(result.exit_code.? == 0);
+    return result.stdout;
 }
 
 //
@@ -177,12 +238,13 @@ pub fn read_file_diff(
 //
 // Parses the output of `git diff-tree -z --name-status` into changed files. Without rename or copy
 // detection git writes each file as its status then its path, each ended by a NUL, so the output
-// is pairs of fields and ends with a NUL.
+// is pairs of fields and ends with a NUL. Each file's line counts start at zero, for
+// `parse_numstat_output` to fill in.
 //
 pub fn parse_name_status_output(
     allocator: std.mem.Allocator,
     output: []const u8,
-) ![]const ChangedFile {
+) ![]ChangedFile {
     const field_count = std.mem.count(u8, output, &.{0});
     if (field_count % 2 != 0) {
         return error.UnexpectedGitDiffTreeOutput;
@@ -207,9 +269,56 @@ pub fn parse_name_status_output(
         file.* = .{
             .status = status,
             .path = path,
+            .linesAdded = 0,
+            .linesDeleted = 0,
+            .isBinary = false,
         };
     }
     assert(fields.rest().len == 0);
     assert(files.len * 2 == field_count);
     return files;
+}
+
+//
+// Parses the output of `git diff-tree -z --numstat` into the line counts of the files
+// `parse_name_status_output` read from the same commit. Without rename or copy detection git
+// writes each file as the lines added, a tab, the lines deleted, a tab and its path, ended by a
+// NUL, in the same order as `--name-status` lists them. A binary file's counts are each "-". The
+// output must list the same files in the same order, or the counts would go to the wrong file.
+//
+pub fn parse_numstat_output(files: []ChangedFile, output: []const u8) !void {
+    if (std.mem.count(u8, output, &.{0}) != files.len) {
+        return error.UnexpectedGitDiffTreeOutput;
+    }
+    if (output.len > 0) {
+        if (output[output.len - 1] != 0) {
+            return error.UnexpectedGitDiffTreeOutput;
+        }
+    }
+
+    var entries = std.mem.splitScalar(u8, output, 0);
+    for (files) |*file| {
+        var fields = std.mem.splitScalar(u8, entries.next().?, '\t');
+        const added = fields.next().?;
+        const deleted = fields.next() orelse return error.UnexpectedGitDiffTreeOutput;
+        const path = fields.rest();
+        if (!std.mem.eql(u8, path, file.path)) {
+            return error.UnexpectedGitDiffTreeOutput;
+        }
+        if (std.mem.eql(u8, added, "-")) {
+            if (!std.mem.eql(u8, deleted, "-")) {
+                return error.UnexpectedGitDiffTreeOutput;
+            }
+            file.isBinary = true;
+        } else {
+            file.linesAdded = std.fmt.parseInt(u32, added, 10) catch {
+                return error.UnexpectedGitDiffTreeOutput;
+            };
+            file.linesDeleted = std.fmt.parseInt(u32, deleted, 10) catch {
+                return error.UnexpectedGitDiffTreeOutput;
+            };
+        }
+        if (file.isBinary) assert(file.linesAdded == 0);
+    }
+    assert(entries.rest().len == 0);
 }

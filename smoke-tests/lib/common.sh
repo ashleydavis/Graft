@@ -283,6 +283,26 @@ wait_for_missing_element() {
 }
 
 #
+# Waits until the element with the data-id has its left and right edges inside the window, so the
+# user can see it, and fails with where its edges are when it never does. A pane that opens beyond
+# the window's right edge scrolls into view smoothly, so the scroll is waited for.
+# Usage: wait_for_in_view <data-id> <seconds>
+#
+wait_for_in_view() {
+    local waited=0
+    local answer=""
+    while [ "$waited" -lt "$2" ]; do
+        answer="$(control "{\"command\":\"in-view\",\"dataId\":\"$1\"}")"
+        if [ "$(printf '%s' "$answer" | jq -r '.ok')" = "true" ]; then
+            return 0
+        fi
+        sleep 1
+        waited=$((waited + 1))
+    done
+    fail "$1 never came into view. The last answer was: $answer"
+}
+
+#
 # Chooses a menu item as a user would, through the native app, so the native app's own actions really happen and any other action reaches the
 # frontend. Usage: choose_menu_item <action>
 #
