@@ -18,8 +18,8 @@ bun run macos
 
 ## Steps
 
-1. Wait for Graft's window to open.
-2. Check the main content area shows the About page: a green circle with a code branch icon, the heading "About Graft", under it "Version dev" and under that the sentence "Graft is a desktop Git client with a simple, intuitive UI that supports your own process instead of getting in the way."
+1. Wait for Graft's window to open on the welcome page.
+2. Click About in the left sidebar. Check the main content area shows the About page: a green circle with a code branch icon, the heading "About Graft", under it "Version dev" and under that the sentence "Graft is a desktop Git client with a simple, intuitive UI that supports your own process instead of getting in the way."
 3. Check that under the sentence there are the links "Graft on GitHub", "Playbook on GitHub", "Ziggy on GitHub" and "The Graft video series on YouTube".
 4. Check that under the links the page says "Graft is released under the MIT licence."
 5. Click "Graft on GitHub". Check your web browser opens https://github.com/ashleydavis/Graft and Graft's window still shows the About page.
@@ -31,4 +31,4 @@ bun run macos
 
 ## Expected result
 
-Graft opens straight on the About page, with its icon, heading, version, description, links and licence. Each link opens in the web browser.
+The left sidebar's About link opens the About page, with its icon, heading, version, description, links and licence. Each link opens in the web browser.

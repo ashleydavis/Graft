@@ -134,7 +134,7 @@ export function CommitColumns({ repoPath }: ICommitColumnsProps): JSX.Element {
         <main ref={pageRef} tabIndex={-1} data-id="commits-page" className="outline-none flex min-h-full w-max min-w-full flex-col gap-4 bg-gray-50 p-6 dark:bg-transparent">
             <div className="flex items-baseline gap-4">
                 <h1 data-id="commits-heading" className="text-2xl font-bold">Commits</h1>
-                <Link to="/" data-id="commits-about-link" className="text-sm text-blue-700 hover:underline dark:text-blue-400">About</Link>
+                <Link to="/about" data-id="commits-about-link" className="text-sm text-blue-700 hover:underline dark:text-blue-400">About</Link>
             </div>
             <div ref={columnsRef} data-id="commit-columns" className="flex items-start gap-3">
                 <CommitPane commits={commits} error={error} selectedHash={explorer.selectedHash} openHash={explorer.openHash} isActive={explorer.activePaneIndex === 0} dateFormat={dateFormat} onSelectCommit={hash => setExplorer(selectCommit(hash))} />

@@ -1,6 +1,6 @@
 # right-sidebar/test.sh
 
-Smoke test of the right sidebar. It starts the real app with remote control on, and checks the right sidebar starts closed, with its content absent. It slides the sidebar in with the top bar's button and checks its content shows, then slides it out with the same button and checks its content is gone. The About page stays in the main content area throughout.
+Smoke test of the right sidebar. It starts the real app with remote control on, opens the About page with the left sidebar's About link and checks the right sidebar starts closed, with its content absent. It slides the sidebar in with the top bar's button and checks its content shows, then slides it out with the same button and checks its content is gone. The About page stays in the main content area throughout.
 
 ## How it is invoked
 

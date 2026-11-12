@@ -21,7 +21,7 @@ if [ "$ZIGGY_SMOKE_PLATFORM" = "macos" ]; then
 fi
 
 start_test_app
-wait_for_element about-page 30
+wait_for_element welcome-page 30
 wait_for_missing_element breadcrumb-repo 30
 
 # The next folder picker returns the test repo as chosen, so it shows no dialog.

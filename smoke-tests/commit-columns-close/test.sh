@@ -18,7 +18,7 @@ root_hash="$(git -C "$repo" rev-list --max-parents=0 HEAD)" || fail "could not r
 
 export GRAFT_TEST_REPO="$repo"
 start_test_app
-wait_for_element about-page 30
+wait_for_element welcome-page 30
 click left-sidebar-commits-link
 wait_for_element "commit-$root_hash" 30
 click "commit-$root_hash"
