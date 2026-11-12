@@ -17,6 +17,15 @@ export interface IChangedFile {
 
     // The file's path from the root of the repo.
     path: string;
+
+    // How many lines the commit added to the file. Zero for a binary file.
+    linesAdded: number;
+
+    // How many lines the commit deleted from the file. Zero for a binary file.
+    linesDeleted: number;
+
+    // Whether git found the file binary and so counted no lines of it.
+    isBinary: boolean;
 }
 
 //
@@ -118,7 +127,8 @@ export function unexpectedCommitDetails(): Result<ICommitDetails, IReadCommitsEr
 }
 
 //
-// Whether the value is a changed file as the commit details task gives it.
+// Checks whether the value is a changed file as the commit details task gives it: its status, path
+// and line counts there, each of its type.
 //
 export function isChangedFile(value: unknown): value is IChangedFile {
     if (typeof value !== "object") {
@@ -130,5 +140,14 @@ export function isChangedFile(value: unknown): value is IChangedFile {
     if (typeof Reflect.get(value, "status") !== "string") {
         return false;
     }
-    return typeof Reflect.get(value, "path") === "string";
+    if (typeof Reflect.get(value, "path") !== "string") {
+        return false;
+    }
+    if (typeof Reflect.get(value, "linesAdded") !== "number") {
+        return false;
+    }
+    if (typeof Reflect.get(value, "linesDeleted") !== "number") {
+        return false;
+    }
+    return typeof Reflect.get(value, "isBinary") === "boolean";
 }

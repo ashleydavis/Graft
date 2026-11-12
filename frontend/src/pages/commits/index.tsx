@@ -1,8 +1,7 @@
 //
-// The commits page: lists the first page of the repo's commits in the commit pane, to show that the
-// backend runs git log and the frontend receives what it read. Clicking a commit opens the commit
-// details pane to its right and clicking a changed file there opens the file pane to its right,
-// like the column view of a file browser.
+// The commits page: lists the first page of the repo's commits in the commit pane. Clicking a
+// commit opens the commit details pane to its right and clicking a changed file there opens the
+// file pane to its right, like the column view of a file browser.
 //
 
 import { Link } from "@tanstack/react-router";
@@ -27,17 +26,19 @@ export interface ICommitsPageProps {
 }
 
 //
-// Shows the first page of the repo's commits as a plain list, newest first, with a link back to
-// the About page. It shows that it is loading until the commits task ends, and what went wrong
-// when the commits could not be read. It owns which commit and which changed file are open, because
+// Shows the first page of the repo's commits, newest first, with a link back to the About page.
+// It shows that it is loading until the commits task ends, and what went wrong when the commits
+// could not be read. It owns which commit and which changed file are open, because
 // each pane opens the next: a newly clicked commit closes the file pane and closing the commit
-// details pane closes the file pane with it.
+// details pane closes the file pane with it. Dates are shown in the browser's own locale and time
+// zone.
 //
 export function CommitsPage({ repoPath }: ICommitsPageProps): JSX.Element {
     const [commits, setCommits] = useState<ICommit[] | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
     const [openHash, setOpenHash] = useState<string | undefined>(undefined);
     const [openPath, setOpenPath] = useState<string | undefined>(undefined);
+    const dateFormat = Intl.DateTimeFormat().resolvedOptions();
 
     function openCommit(hash: string): void {
         setOpenHash(hash);
@@ -65,13 +66,15 @@ export function CommitsPage({ repoPath }: ICommitsPageProps): JSX.Element {
     }, [repoPath]);
 
     return (
-        <main data-id="commits-page">
-            <h1 data-id="commits-heading">Commits</h1>
-            <Link to="/" data-id="commits-about-link">About</Link>
-            <div data-id="commit-columns" className="flex items-start gap-4">
-                <CommitPane commits={commits} error={error} onSelectCommit={openCommit} />
+        <main data-id="commits-page" className="flex min-h-full w-max min-w-full flex-col gap-4 bg-gray-50 p-6 dark:bg-transparent">
+            <div className="flex items-baseline gap-4">
+                <h1 data-id="commits-heading" className="text-2xl font-bold">Commits</h1>
+                <Link to="/" data-id="commits-about-link" className="text-sm text-blue-700 hover:underline dark:text-blue-400">About</Link>
+            </div>
+            <div data-id="commit-columns" className="flex items-start gap-3">
+                <CommitPane commits={commits} error={error} selectedHash={openHash} dateFormat={dateFormat} onSelectCommit={openCommit} />
                 {openHash !== undefined && (
-                    <CommitDetailsPane key={openHash} repoPath={repoPath} hash={openHash} onSelectFile={setOpenPath} onClose={closeCommit} />
+                    <CommitDetailsPane key={openHash} repoPath={repoPath} hash={openHash} selectedPath={openPath} dateFormat={dateFormat} onSelectFile={setOpenPath} onClose={closeCommit} />
                 )}
                 {openHash !== undefined && openPath !== undefined && (
                     <FilePane key={`${openHash} ${openPath}`} repoPath={repoPath} hash={openHash} path={openPath} onClose={() => setOpenPath(undefined)} />
