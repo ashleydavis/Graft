@@ -1,7 +1,8 @@
 //
 // Tests the app's layout: renders it as the root of a router with a stand-in page and checks it
 // lays out the top bar, the left sidebar, the main content area holding the page and the right
-// sidebar, that the left sidebar starts expanded and the right sidebar closed, that the top
+// sidebar, that the Keyboard Shortcuts action shows the keyboard shortcuts overlay over it, that
+// the left sidebar starts expanded and the right sidebar closed, that the top
 // bar's buttons minimise and expand the left sidebar and slide the right sidebar in and out and
 // that the top bar's breadcrumb trail follows the page shown and its drop-down opens another page.
 //
@@ -11,8 +12,11 @@ import { createMemoryHistory, createRootRoute, createRoute, createRouter, Router
 import { createElement } from "react";
 import { AppLayout, navigationFailureReporter } from "../../components/app-layout";
 import { AppTheme, systemDarkQuery } from "../../components/app-theme";
+import { shortcutsOverlayAction } from "../../components/shortcuts-overlay";
+import { IFakeActionZiggy, makeFakeActionZiggy } from "../fake-action-ziggy";
 import { makeFakeMediaQuery } from "../fake-media-query";
-import { installFakeThemeZiggy } from "../fake-theme-ziggy";
+import { makeFakeThemeZiggy } from "../fake-theme-ziggy";
+import { installFakeZiggy } from "../fake-ziggy";
 
 //
 // The router scrolls the window to the top when it shows a page. jsdom reports window.scrollTo as
@@ -25,9 +29,10 @@ jest.spyOn(window, "scrollTo").mockImplementation(() => {
 // Renders the layout for the repo at /repos/graft around a stand-in for the About page and the
 // Help page, because the layout shows the router's current page and its trail follows it. The
 // layout is inside the app's theme, as it is in the app, with no saved theme setting and a system
-// theme that is light.
+// theme that is light. window.ziggy also keeps the action handlers the layout registers, which
+// the test reaches through the fake it returns with the container.
 //
-async function renderAppLayout(): Promise<HTMLElement> {
+async function renderAppLayoutWithZiggy(): Promise<[HTMLElement, IFakeActionZiggy]> {
     const rootRoute = createRootRoute({
         component: () => createElement(AppLayout, {
             repoPath: "/repos/graft",
@@ -51,8 +56,11 @@ async function renderAppLayout(): Promise<HTMLElement> {
             initialEntries: ["/"],
         }),
     });
-    installFakeThemeZiggy({
-        systemTheme: "light",
+    const ziggy = installFakeZiggy({
+        ...makeFakeThemeZiggy({
+            systemTheme: "light",
+        }),
+        ...makeFakeActionZiggy(),
     });
     const { container } = render(createElement(AppTheme, {
         systemDark: makeFakeMediaQuery(systemDarkQuery, false),
@@ -61,6 +69,14 @@ async function renderAppLayout(): Promise<HTMLElement> {
         }),
     }));
     await screen.findByText("The page");
+    return [container, ziggy];
+}
+
+//
+// Renders the layout as renderAppLayoutWithZiggy does and returns its container only.
+//
+async function renderAppLayout(): Promise<HTMLElement> {
+    const [container] = await renderAppLayoutWithZiggy();
     return container;
 }
 
@@ -80,6 +96,16 @@ describe("AppLayout", () => {
         expect(row?.children[0]).toBe(elementWithDataId(container, "left-sidebar"));
         expect(row?.children[1]).toBe(elementWithDataId(container, "main-content"));
         expect(row?.children[2]).toBe(elementWithDataId(container, "right-sidebar"));
+    });
+
+    test("the Keyboard Shortcuts action shows the keyboard shortcuts overlay over the layout", async () => {
+        const [container, ziggy] = await renderAppLayoutWithZiggy();
+        expect(elementWithDataId(document.body, "shortcuts-overlay")).toBeUndefined();
+        await act(async () => {
+            await ziggy.runRegisteredAction(shortcutsOverlayAction);
+        });
+        expect(elementWithDataId(document.body, "shortcuts-overlay-placeholder")).not.toBeUndefined();
+        expect(elementWithDataId(container, "main-content")).not.toBeUndefined();
     });
 
     test("shows the page in the main content area", async () => {
