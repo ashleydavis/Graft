@@ -9,7 +9,7 @@ The Help page tells a user how to find their way around Graft. It is on the rout
 - The Help page's path is `/help`.
 - The left sidebar's "Help" link opens it. So does the "Help" entry of the breadcrumb trail's drop-down on the About page.
 - The page shows the heading "Help".
-- Under the heading it says: "The left sidebar and the breadcrumb trail in the top bar move between Graft's pages. Commits lists the repo's commits and About says what Graft is."
+- Under the heading it says: "The left sidebar and the breadcrumb trail in the top bar move between Graft's pages. File, then Open repo, opens a repo, and Commits lists its commits. About says what Graft is."
 - The page shows the heading and that text only.
 
 ## Acceptance criteria

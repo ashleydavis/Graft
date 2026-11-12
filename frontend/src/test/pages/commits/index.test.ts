@@ -4,13 +4,16 @@
 // or says why they could not be read. It also checks the columns: clicking a commit opens the
 // commit details pane and highlights the commit, clicking a changed file opens the file pane and
 // highlights the file and each pane closes, and that the page scrolls each pane that opens into view.
-// Dates are checked against the browser's own locale and time zone, which the page passes on.
+// Dates are checked against the browser's own locale and time zone, which the page passes on. The
+// page reads the open repo from a RepoProvider: it shows when no repo is open and reads another repo
+// afresh when one is opened in its place.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { createElement, JSX } from "react";
 import type { IAddTask, ITaskCompletedEvent } from "ziggy";
+import { RepoProvider, useRepo } from "../../../components/repo-context";
 import { ICommit } from "../../../lib/commits";
 import { formatDate, formatDateTime } from "../../../lib/date-format";
 import { CommitsPage, scrollLastPaneIntoView } from "../../../pages/commits";
@@ -49,16 +52,30 @@ function scrolledDataIds(): (string | null)[] {
 }
 
 //
-// Shows the commits page for the repo at "/repo" as the only page of a router, as the app does.
+// Shows a button that opens the repo at "/other-repo", as the open-repo action does, so a test can
+// open another repo while the commits page shows.
 //
-function renderCommitsPage(): void {
+function OpenOtherRepoButton(): JSX.Element {
+    const { openRepo } = useRepo();
+    return createElement("button", {
+        onClick: () => openRepo("/other-repo"),
+    }, "Open the other repo");
+}
+
+//
+// Shows the commits page as the only page of a router, as the app does, inside a RepoProvider
+// with the repo the test gives open, or none for undefined, beside a button that opens another
+// repo.
+//
+function renderCommitsPage(repoPath: string | undefined): void {
     const rootRoute = createRootRoute();
     const commitsRoute = createRoute({
         getParentRoute: () => rootRoute,
         path: "/",
-        component: (): JSX.Element => createElement(CommitsPage, {
-            repoPath: "/repo",
-        }),
+        component: (): JSX.Element => createElement("div", null,
+            createElement(OpenOtherRepoButton),
+            createElement(CommitsPage),
+        ),
     });
     const router = createRouter({
         routeTree: rootRoute.addChildren([commitsRoute]),
@@ -66,8 +83,11 @@ function renderCommitsPage(): void {
             initialEntries: ["/"],
         }),
     });
-    render(createElement(RouterProvider, {
-        router,
+    render(createElement(RepoProvider, {
+        initialRepoPath: repoPath,
+        children: createElement(RouterProvider, {
+            router,
+        }),
     }));
 }
 
@@ -145,7 +165,7 @@ const commitJson = {
 // README.md as its one changed file.
 //
 async function openCommitDetails(ziggy: FakeTaskZiggy): Promise<void> {
-    renderCommitsPage();
+    renderCommitsPage("/repo");
     await screen.findByText("Loading the commits.");
     completeTaskAt(ziggy, 0, {
         commits: [commitJson],
@@ -181,9 +201,33 @@ const commit: ICommit = {
 };
 
 describe("CommitsPage", () => {
+    test("shows that no repo is open and queues no task while no repo is open", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderCommitsPage(undefined);
+        expect((await screen.findByText(/No repo is open/)).getAttribute("data-id")).toBe("commits-no-repo");
+        expect(screen.getByText("Commits").getAttribute("data-id")).toBe("commits-heading");
+        expect(ziggy.addTask).not.toHaveBeenCalled();
+    });
+
+    test("reads the repo opened in place of the one shown, with no commit open", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        expect(elementWithDataId("changed-file-README.md").textContent).toContain("README.md");
+        fireEvent.click(screen.getByText("Open the other repo"));
+        expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
+        expect(document.querySelector("[data-id=\"changed-file-README.md\"]")).toBeNull();
+        const calls = (ziggy.addTask as jest.Mock).mock.calls;
+        const task: IAddTask = calls[calls.length - 1][0];
+        expect(task.taskType).toBe("commits");
+        expect(task.data).toEqual({
+            repoPath: "/other-repo",
+            pageSize: 50,
+        });
+    });
+
     test("queues the commits task for the repo's first page and shows that it is loading", async () => {
         const ziggy = installFakeTaskZiggy();
-        renderCommitsPage();
+        renderCommitsPage("/repo");
         expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
         expect(screen.getByText("Commits").getAttribute("data-id")).toBe("commits-heading");
         expect(screen.getByText("About").getAttribute("data-id")).toBe("commits-about-link");
@@ -197,7 +241,7 @@ describe("CommitsPage", () => {
 
     test("lists the commits once the task has read them", async () => {
         const ziggy = installFakeTaskZiggy();
-        renderCommitsPage();
+        renderCommitsPage("/repo");
         await screen.findByText("Loading the commits.");
         completeTask(ziggy, {
             taskId: "",
@@ -226,7 +270,7 @@ describe("CommitsPage", () => {
 
     test("says why the commits could not be read when the task failed", async () => {
         const ziggy = installFakeTaskZiggy();
-        renderCommitsPage();
+        renderCommitsPage("/repo");
         await screen.findByText("Loading the commits.");
         completeTask(ziggy, {
             taskId: "",
@@ -284,7 +328,7 @@ describe("CommitsPage", () => {
 
     test("scrolls nothing while no commit is open", async () => {
         const ziggy = installFakeTaskZiggy();
-        renderCommitsPage();
+        renderCommitsPage("/repo");
         await screen.findByText("Loading the commits.");
         completeTaskAt(ziggy, 0, {
             commits: [commitJson],

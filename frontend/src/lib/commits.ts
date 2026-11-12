@@ -116,16 +116,15 @@ export interface ICommitPageRequest {
 }
 
 //
-// Reads the path of the repo to show from the query of the frontend's address: the repo a smoke
-// test gave the app, or the test repo at /tmp/graft/test-repo, which scripts/test/create-test-repo.sh
-// creates.
+// Reads the path of the repo open when Graft starts from the query of the frontend's address: the
+// repo a smoke test gave the app, or undefined, so Graft starts with no repo open.
 //
-export function repoPathFromSearch(search: string): string {
+export function repoPathFromSearch(search: string): string | undefined {
     const repoPath = new URLSearchParams(search).get("repo");
     if (repoPath) {
         return repoPath;
     }
-    return "/tmp/graft/test-repo";
+    return undefined;
 }
 
 //

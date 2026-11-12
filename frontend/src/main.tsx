@@ -9,6 +9,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { AppLayout } from "./components/app-layout";
 import { AppTheme, systemDarkQuery } from "./components/app-theme";
+import { RepoProvider } from "./components/repo-context";
 import { repoPathFromSearch } from "./lib/commits";
 import { IDocumentLike, installSplashScreen } from "./lib/splash";
 import { ITestCommand, performTestCommand, testResultToJson } from "./lib/test-commands";
@@ -23,15 +24,14 @@ const splashBackground = "#FFFFFF";
 
 //
 // Makes the router that picks the page to show. Every page shows in the main content area of the
-// app's layout. The app opens on the About page. The commits page and the Help page
-// sit beside it. The history is kept in memory, because the web view loads the frontend from the
-// app's own address, whose path is the file index.html and not a page of Graft's. The commits page
-// reads the repo named in that address's query through window.ziggy. The layout's breadcrumb trail
-// starts with that repo.
+// app's layout. The app opens on the About page. The commits page and the Help page sit beside it.
+// The history is kept in memory, because the web view loads the frontend from the app's own
+// address, whose path is the file index.html and not a page of Graft's. The layout and the pages
+// read the open repo from RepoProvider, which startApp puts around the router.
 //
 export function createAppRouter(): AnyRouter {
     const rootRoute = createRootRoute({
-        component: () => <AppLayout repoPath={repoPathFromSearch(window.location.search)} />,
+        component: AppLayout,
     });
     const aboutRoute = createRoute({
         getParentRoute: () => rootRoute,
@@ -41,7 +41,7 @@ export function createAppRouter(): AnyRouter {
     const commitsRoute = createRoute({
         getParentRoute: () => rootRoute,
         path: "/commits",
-        component: () => <CommitsPage repoPath={repoPathFromSearch(window.location.search)} />,
+        component: CommitsPage,
     });
     const helpRoute = createRoute({
         getParentRoute: () => rootRoute,
@@ -58,14 +58,19 @@ export function createAppRouter(): AnyRouter {
 
 //
 // Shows the app's pages in the element, in the theme the user picks. MaterialUI's styles go in a
-// CSS layer of their own, so Tailwind's classes can style MaterialUI components (see main.css).
+// CSS layer of their own, so Tailwind's classes can style MaterialUI components (see main.css). The
+// open repo is kept above the router, so it stays loaded while the user moves between pages. Graft
+// starts with no repo open, or in a smoke test on the test repo the query of the frontend's
+// address names.
 //
 export function startApp(rootElement: HTMLElement): void {
     createRoot(rootElement).render(
         <StrictMode>
             <StyledEngineProvider enableCssLayer={true}>
                 <AppTheme systemDark={window.matchMedia(systemDarkQuery)}>
-                    <RouterProvider router={createAppRouter()} />
+                    <RepoProvider initialRepoPath={repoPathFromSearch(window.location.search)}>
+                        <RouterProvider router={createAppRouter()} />
+                    </RepoProvider>
                 </AppTheme>
             </StyledEngineProvider>
         </StrictMode>
