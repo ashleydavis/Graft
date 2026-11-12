@@ -42,6 +42,10 @@ Graft remembers whether the left sidebar is minimised and whether the right side
 
 Graft starts with no repo open, on its welcome page, which shows Graft's name and an **Open repo** button. Click **Open repo**, choose **File**, then **Open repo**, or press Ctrl+O (Command+O on macOS). Pick the repo's folder in the folder picker. The commits page opens on that repo's commits. Opening another repo the same way shows it in place of the one before. The repo stays open while you move between pages, until Graft closes.
 
+### Opening a new window
+
+Choose **File**, then **New window**, or press Ctrl+N (Command+N on macOS), to open another window of Graft. It opens on the welcome page with no repo open, so you can open a different repo in it. Each window runs on its own. Closing one leaves the others open.
+
 ### Keyboard shortcuts overlay
 
 Press `?` to show the keyboard shortcuts overlay over the page. It lists every keyboard shortcut of Graft's, with its keys as your platform shows them, in columns. Type in the search box at its top to show only the shortcuts whose name or keys match. The search box has the focus, so `?` typed there types the character. Press Escape to close the overlay. While you type in any other text box, such as the search box of the breadcrumb trail's drop-down, `?` types the character instead of showing the overlay.
