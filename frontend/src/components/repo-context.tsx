@@ -58,9 +58,9 @@ export function RepoProvider({ initialRepoPath, children }: IRepoProviderProps):
 }
 
 //
-// The open repo and its openRepo callback, for a component inside RepoProvider. It throws when
-// there is no RepoProvider around the component, because the component would otherwise never see a
-// repo.
+// Reads the open repo and its openRepo callback, for a component inside RepoProvider. It throws
+// when there is no RepoProvider around the component, because the component would otherwise never
+// see a repo.
 //
 export function useRepo(): IRepoContext {
     const context = useContext(RepoContext);

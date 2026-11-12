@@ -1,5 +1,5 @@
 //
-// Tests the app's layout: renders it as the root of a router with a stand-in page and checks it
+// Tests the app's layout: renders it as the root of a router with a mock page and checks it
 // lays out the top bar, the left sidebar, the main content area holding the page and the right
 // sidebar, that the left sidebar starts expanded and the right sidebar closed, that the top
 // bar's buttons minimise and expand the left sidebar and slide the right sidebar in and out and
@@ -61,7 +61,7 @@ async function renderAppLayout(repoPath: string | undefined): Promise<HTMLElemen
         getParentRoute: () => rootRoute,
         path: "/",
         component: () => createElement("p", {
-            "data-id": "stand-in-page",
+            "data-id": "mock-page",
         }, "The page"),
     });
     const helpRoute = createRoute({
@@ -115,7 +115,7 @@ describe("AppLayout", () => {
     test("shows the page in the main content area", async () => {
         installLayoutZiggy();
         const container = await renderAppLayout("/repos/graft");
-        expect(elementWithDataId(container, "main-content")?.contains(elementWithDataId(container, "stand-in-page") ?? null)).toBe(true);
+        expect(elementWithDataId(container, "main-content")?.contains(elementWithDataId(container, "mock-page") ?? null)).toBe(true);
     });
 
     test("starts with the left sidebar expanded and the right sidebar closed", async () => {
@@ -223,7 +223,7 @@ describe("AppLayout with no repo open", () => {
 
 describe("AppLayout's open-repo action", () => {
     //
-    // The handler the layout registered for the open-repo action.
+    // Returns the handler the layout registered for the open-repo action.
     //
     function registeredHandler(layoutZiggy: LayoutZiggy): IActionHandler {
         const registerAction = layoutZiggy.registerAction as jest.Mock;
@@ -265,7 +265,7 @@ describe("AppLayout's open-repo action", () => {
         await act(async () => {
             await registeredHandler(layoutZiggy)();
         });
-        expect(screen.getByText("The page").getAttribute("data-id")).toBe("stand-in-page");
+        expect(screen.getByText("The page").getAttribute("data-id")).toBe("mock-page");
         expect(elementWithDataId(container, "breadcrumb-repo")).toBeUndefined();
         expect(elementWithDataId(container, "left-sidebar-commits-link")).toBeUndefined();
     });

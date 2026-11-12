@@ -24,8 +24,8 @@ jest.spyOn(window, "scrollTo").mockImplementation(() => {
 });
 
 //
-// A button that opens the repo at "/other-repo", as the open-repo action does, so a test can open
-// another repo while the commits page shows.
+// Shows a button that opens the repo at "/other-repo", as the open-repo action does, so a test can
+// open another repo while the commits page shows.
 //
 function OpenOtherRepoButton(): JSX.Element {
     const { openRepo } = useRepo();
@@ -36,8 +36,8 @@ function OpenOtherRepoButton(): JSX.Element {
 
 //
 // Shows the commits page as the only page of a router, as the app does, inside a RepoProvider
-// with the repo the test gives open, or none for undefined, beside a button
-// that opens another repo.
+// with the repo the test gives open, or none for undefined, beside a button that opens another
+// repo.
 //
 function renderCommitsPage(repoPath: string | undefined): void {
     const rootRoute = createRootRoute();
@@ -156,7 +156,7 @@ const commit: ICommit = {
 };
 
 describe("CommitsPage", () => {
-    test("says no repo is open and queues no task while no repo is open", async () => {
+    test("shows that no repo is open and queues no task while no repo is open", async () => {
         const ziggy = installFakeTaskZiggy();
         renderCommitsPage(undefined);
         expect((await screen.findByText(/No repo is open/)).getAttribute("data-id")).toBe("commits-no-repo");
