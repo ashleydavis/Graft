@@ -61,7 +61,7 @@ wait_for_viewport() {
 }
 
 start_test_app
-wait_for_element about-page 30
+wait_for_element welcome-page 30
 actual_size="$(viewport_size)"
 
 press_key CmdOrCtrl+Plus
@@ -73,7 +73,7 @@ two_steps_in="$(wait_for_viewport_other_than "$one_step_in")" || exit 1
 
 # The next run starts zoomed in to the saved level.
 restart_test_app
-wait_for_element about-page 30
+wait_for_element welcome-page 30
 wait_for_viewport "$two_steps_in"
 
 press_key CmdOrCtrl+0
@@ -82,5 +82,5 @@ wait_for_viewport "$actual_size"
 
 # The next run starts at the actual size.
 restart_test_app
-wait_for_element about-page 30
+wait_for_element welcome-page 30
 wait_for_viewport "$actual_size"

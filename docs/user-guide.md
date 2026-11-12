@@ -40,7 +40,7 @@ Graft remembers whether the left sidebar is minimised and whether the right side
 
 ### Opening a repo
 
-Graft starts with no repo open. Choose **File**, then **Open repo**, or press Ctrl+O (Command+O on macOS), and pick the repo's folder in the folder picker. The commits page opens on that repo's commits. Opening another repo the same way shows it in place of the one before. The repo stays open while you move between pages, until Graft closes.
+Graft starts with no repo open, on its welcome page, which shows Graft's name and an **Open repo** button. Click **Open repo**, choose **File**, then **Open repo**, or press Ctrl+O (Command+O on macOS). Pick the repo's folder in the folder picker. The commits page opens on that repo's commits. Opening another repo the same way shows it in place of the one before. The repo stays open while you move between pages, until Graft closes.
 
 ### Keyboard shortcuts overlay
 
@@ -52,7 +52,7 @@ Press Ctrl+Plus or Ctrl+= to make everything in the window bigger, Ctrl+Minus to
 
 ### About page
 
-Graft opens on its About page, which shows Graft's name, its icon, its version and what Graft is. It links to Graft, Playbook and Ziggy on GitHub and to the Graft video series on YouTube, which open in your web browser. It names Graft's licence, the MIT licence.
+Click **About** in the left sidebar to open the About page, which shows Graft's name, its icon, its version and what Graft is. It links to Graft, Playbook and Ziggy on GitHub and to the Graft video series on YouTube, which open in your web browser. It names Graft's licence, the MIT licence.
 
 ### Help page
 
@@ -62,4 +62,6 @@ The Help page says how to move between Graft's pages.
 
 The commits page lists the first page of the open repo's commits, newest first, one row each: the commit's title, the branches, tags and HEAD that point at it, its author, the day it was written and the first seven characters of its hash. Dates follow your system's locale and time zone. While Graft reads them the page shows that the commits are loading, and when git cannot read them the page shows why. Its **About** link goes back to the About page.
 
-The commit list is the first of the page's columns. Click a commit to open a column to its right with the commit's full message, who wrote and made it and when, its hash, its parents and the files it changed. Each changed file shows its change type (A added, D deleted, M modified, T type changed), its path and the lines the commit added and deleted, or "binary" for a binary file. Click one of those files to open another column to the right with the file's diff in that commit, as git writes it. The open commit and the open file are highlighted. Each new column has a close button (an X) and closing the commit's column closes the file's column with it. When a new column opens beyond the right edge of the window, the page scrolls sideways to show it. When the columns are wider than the window, scroll the page sideways.
+The commit list is the first of the page's columns. Click a commit to open a column to its right with the commit's full message, who wrote and made it and when, its hash, its parents and the files it changed. Each changed file shows its change type (A added, D deleted, M modified, T type changed), its path and the lines the commit added and deleted, or "binary" for a binary file. Click one of those files to open another column to the right with the file's diff in that commit, as git writes it. The commit or file you clicked or moved to last in each column is selected, and the open commit's title is bold. Each new column has a close button (an X) and closing the commit's column closes the file's column with it. When a new column opens beyond the right edge of the window, the page scrolls sideways to show it. When the columns are wider than the window, scroll the page sideways.
+
+The columns can also be used from the keyboard, as in the column view of macOS Finder. The active column has a border in the theme's primary colour. Up and Down move the selection in the active column, Left and Right move to the column to the left or right, Enter opens the selected commit or file in a new column to the right, which becomes active. Escape closes the rightmost column. These keys are left to a text box that has the focus. Press Ctrl+1 (Cmd+1 on macOS) on any page to return to the commits page.

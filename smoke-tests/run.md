@@ -15,7 +15,8 @@ Puts the built app in place once for the platform, then runs each `test.sh`, one
 
 ## Smoke tests
 
-- `about-page`: the app opens on the About page, which shows its heading, what Graft is and its icon.
+- `welcome-page`: the app opens on the welcome page, whose Open repo button opens a repo on the commits page.
+- `about-page`: the About page, opened from the left sidebar, shows its heading, what Graft is and its icon.
 - `theme-menu`: the top bar's theme menu changes the theme to Dark, System and Light, showing each theme's icon and saving each choice in the config file.
 
 To add one, make a directory here with a `test.sh` that sources `../lib/common.sh`. A smoke test that runs only on the desktop platforms goes in `desktop-only/<name>/` and sources `../../lib/common.sh`.

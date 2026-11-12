@@ -1,12 +1,14 @@
 //
 // The commits page: lists the first page of the repo's commits in the commit pane. Clicking a
 // commit opens the commit details pane to its right and clicking a changed file there opens the
-// file pane to its right, like the column view of a file browser.
+// file pane to its right, like the column view of a file browser. The arrow keys, Enter and
+// Escape move through the panes as in the column view of macOS Finder.
 //
 
 import { Link } from "@tanstack/react-router";
-import { JSX, useEffect, useRef, useState } from "react";
+import { JSX, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRepo } from "../../components/repo-context";
+import { closeCommitDetailsPane, closeFilePane, explorerStateAfterKey, initialCommitExplorerState, isExplorerKey, isExplorerKeyTarget, selectCommit, selectFile } from "../../lib/commit-explorer";
 import { ICommit, readCommitPage } from "../../lib/commits";
 import { CommitDetailsPane } from "./components/commit-details-pane";
 import { CommitPane } from "./components/commit-pane";
@@ -47,29 +49,28 @@ export function CommitsPage(): JSX.Element {
 //
 // Shows the first page of the repo's commits, newest first, with a link back to the About page.
 // It shows that it is loading until the commits task ends, and what went wrong when the commits
-// could not be read. It owns which commit and which changed file are open, because
-// each pane opens the next: a newly clicked commit closes the file pane and closing the commit
-// details pane closes the file pane with it. Dates are shown in the browser's own locale and time
-// zone. When a pane opens, the page scrolls sideways to bring it into view, because the newest pane
-// is the one the user wants to read and it can open beyond the right edge of the window.
+// could not be read. It owns the commit explorer's state (lib/commit-explorer.ts): which pane is
+// active, which commit and file are selected and which are open, because each pane opens the next:
+// a newly clicked commit closes the file pane and closing the commit details pane closes the file
+// pane with it. Dates are shown in the browser's own locale and time zone. When a pane opens, the
+// page scrolls sideways to bring it into view, because the newest pane is the one the user wants
+// to read and it can open beyond the right edge of the window. While the page is shown it handles
+// the arrow keys, Enter and Escape itself, on the document in the capture phase, so the key reaches
+// it before a focused row's own Enter handling and the page does not also scroll. It leaves the
+// keys to a text box, link, button, menu or dialog that has the focus. It takes the focus when it
+// opens, so the keys work at once after the left sidebar's link or Ctrl+1 opened it, while the
+// focus would otherwise stay on the link outside the page. It takes the focus and sets up the key
+// listener with the items just drawn as React draws them (in layout effects), before the browser
+// paints, so a key pressed as soon as the page or its items show acts on them.
 //
 export function CommitColumns({ repoPath }: ICommitColumnsProps): JSX.Element {
     const [commits, setCommits] = useState<ICommit[] | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
-    const [openHash, setOpenHash] = useState<string | undefined>(undefined);
-    const [openPath, setOpenPath] = useState<string | undefined>(undefined);
+    const [explorer, setExplorer] = useState(initialCommitExplorerState);
+    const [filePaths, setFilePaths] = useState<string[]>([]);
+    const pageRef = useRef<HTMLElement>(null);
     const columnsRef = useRef<HTMLDivElement>(null);
     const dateFormat = Intl.DateTimeFormat().resolvedOptions();
-
-    function openCommit(hash: string): void {
-        setOpenHash(hash);
-        setOpenPath(undefined);
-    }
-
-    function closeCommit(): void {
-        setOpenHash(undefined);
-        setOpenPath(undefined);
-    }
 
     useEffect(() => {
         readCommitPage({
@@ -86,25 +87,72 @@ export function CommitColumns({ repoPath }: ICommitColumnsProps): JSX.Element {
         });
     }, [repoPath]);
 
+    useLayoutEffect(() => {
+        pageRef.current?.focus({
+            preventScroll: true,
+        });
+    }, []);
+
     useEffect(() => {
-        if (openHash) {
+        setFilePaths([]);
+    }, [explorer.openHash]);
+
+    useEffect(() => {
+        if (explorer.openHash) {
             scrollLastPaneIntoView(columnsRef.current);
         }
-    }, [openHash, openPath]);
+    }, [explorer.openHash, explorer.openPath]);
+
+    useLayoutEffect(() => {
+        const items = {
+            commitHashes: (commits ?? []).map(commit => commit.hash),
+            filePaths,
+        };
+
+        function onKeyDown(event: KeyboardEvent): void {
+            if (!isExplorerKey(event.key)) {
+                return;
+            }
+            const hasModifier = event.ctrlKey || event.altKey || event.metaKey;
+            if (!isExplorerKeyTarget(event.target, pageRef.current, hasModifier)) {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            setExplorer(state => explorerStateAfterKey(state, event.key, items));
+        }
+
+        document.addEventListener("keydown", onKeyDown, {
+            capture: true,
+        });
+        return () => document.removeEventListener("keydown", onKeyDown, {
+            capture: true,
+        });
+    }, [commits, filePaths]);
 
     return (
-        <main data-id="commits-page" className="flex min-h-full w-max min-w-full flex-col gap-4 bg-gray-50 p-6 dark:bg-transparent">
+        <main ref={pageRef} tabIndex={-1} data-id="commits-page" className="outline-none flex min-h-full w-max min-w-full flex-col gap-4 bg-gray-50 p-6 dark:bg-transparent">
             <div className="flex items-baseline gap-4">
                 <h1 data-id="commits-heading" className="text-2xl font-bold">Commits</h1>
-                <Link to="/" data-id="commits-about-link" className="text-sm text-blue-700 hover:underline dark:text-blue-400">About</Link>
+                <Link to="/about" data-id="commits-about-link" className="text-sm text-blue-700 hover:underline dark:text-blue-400">About</Link>
             </div>
             <div ref={columnsRef} data-id="commit-columns" className="flex items-start gap-3">
-                <CommitPane commits={commits} error={error} selectedHash={openHash} dateFormat={dateFormat} onSelectCommit={openCommit} />
-                {openHash !== undefined && (
-                    <CommitDetailsPane key={openHash} repoPath={repoPath} hash={openHash} selectedPath={openPath} dateFormat={dateFormat} onSelectFile={setOpenPath} onClose={closeCommit} />
+                <CommitPane commits={commits} error={error} selectedHash={explorer.selectedHash} openHash={explorer.openHash} isActive={explorer.activePaneIndex === 0} dateFormat={dateFormat} onSelectCommit={hash => setExplorer(selectCommit(hash))} />
+                {explorer.openHash !== undefined && (
+                    <CommitDetailsPane
+                        key={explorer.openHash}
+                        repoPath={repoPath}
+                        hash={explorer.openHash}
+                        selectedPath={explorer.selectedPath}
+                        isActive={explorer.activePaneIndex === 1}
+                        dateFormat={dateFormat}
+                        onSelectFile={path => setExplorer(state => selectFile(state, path))}
+                        onReadFiles={setFilePaths}
+                        onClose={() => setExplorer(closeCommitDetailsPane)}
+                    />
                 )}
-                {openHash !== undefined && openPath !== undefined && (
-                    <FilePane key={`${openHash} ${openPath}`} repoPath={repoPath} hash={openHash} path={openPath} onClose={() => setOpenPath(undefined)} />
+                {explorer.openHash !== undefined && explorer.openPath !== undefined && (
+                    <FilePane key={`${explorer.openHash} ${explorer.openPath}`} repoPath={repoPath} hash={explorer.openHash} path={explorer.openPath} isActive={explorer.activePaneIndex === 2} onClose={() => setExplorer(closeFilePane)} />
                 )}
             </div>
         </main>

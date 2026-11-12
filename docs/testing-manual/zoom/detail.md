@@ -20,7 +20,7 @@ On macOS, press Command in place of Ctrl in every step.
 
 ## Steps
 
-1. Wait for Graft's window to open on the About page.
+1. Wait for Graft's window to open on the welcome page.
 2. Press Ctrl+Plus. Check everything in the window gets bigger.
 3. Press Ctrl+= (the same key without Shift). Check everything gets bigger again.
 4. Press Ctrl+Minus. Check everything gets smaller by one step.

@@ -33,6 +33,13 @@ export const leftSidebarMinimisedStateKey = "sidebar.left.minimised";
 export const rightSidebarOpenStateKey = "sidebar.right.open";
 
 //
+// The name of the backend's Commit Explorer action (backend/src/lib/actions.zig), whose shortcut
+// is `CmdOrCtrl+1`. The layout registers its handler under this name and removes it under the same
+// name.
+//
+export const commitExplorerAction = "open-commit-explorer";
+
+//
 // Keeps a switch that is off until Graft's state file holds true for it, with the function that
 // flips it. It reads the switch from the state key through window.ziggy when the layout first
 // draws, and each flip writes the new value there, so the next run of Graft starts with it. Only
@@ -76,8 +83,10 @@ export function useSavedSwitch(stateKey: string, description: string): [boolean,
 // open. It holds the keyboard shortcuts overlay, so `?` shows it over every page. It registers the
 // handler of the open-repo action, which opens the folder the user picks and shows it in the
 // commit explorer, because the layout is inside both the router and the open repo's context for as
-// long as the window is open. For the same reason it holds the handlers of the zoom actions, which
-// zoom the window and keep its zoom level in Graft's state file.
+// long as the window is open. It registers the handler of the Commit Explorer action, which opens
+// the commits page, so Ctrl+1 (Cmd+1 on macOS) returns to the commit explorer from every page. For
+// the same reason it holds the handlers of the zoom actions, which zoom the window and keep its
+// zoom level in Graft's state file.
 //
 export function AppLayout(): JSX.Element {
     const [isLeftSidebarMinimised, toggleLeftSidebar] = useSavedSwitch(leftSidebarMinimisedStateKey, "whether the left sidebar is minimised");
@@ -106,6 +115,17 @@ export function AppLayout(): JSX.Element {
             to: path,
         }).catch(navigationFailureReporter(path));
     }
+
+    //
+    // The handler is registered again whenever the router's navigate changes, because openPage
+    // calls the navigate of the render that registered it.
+    //
+    useEffect(() => {
+        window.ziggy.registerAction(commitExplorerAction, () => openPage("/commits"));
+        return () => {
+            window.ziggy.removeAction(commitExplorerAction);
+        };
+    }, [navigate]);
 
     //
     // The handler is registered once. openRepo and openPage only call the provider's state setter
