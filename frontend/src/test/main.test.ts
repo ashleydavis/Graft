@@ -79,7 +79,7 @@ describe("main", () => {
         expect(elementWithDataId("app-layout")?.contains(elementWithDataId("main-content") ?? null)).toBe(true);
     });
 
-    test("the links change from the About page to the commits page and back", async () => {
+    test("the left sidebar opens the commits page and the commits page links back to the About page", async () => {
         const ziggy = {
             addTask: jest.fn(),
             onTaskCompleted: jest.fn(),
@@ -91,7 +91,7 @@ describe("main", () => {
         });
         await screen.findByText("About Graft");
         act(() => {
-            elementWithDataId("about-commits-link")?.click();
+            elementWithDataId("left-sidebar-commits-link")?.click();
         });
         expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
         expect(elementWithDataId("main-content")?.contains(elementWithDataId("commits-page") ?? null)).toBe(true);
