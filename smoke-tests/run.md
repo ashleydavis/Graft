@@ -17,6 +17,7 @@ Puts the built app in place once for the platform, then runs each `test.sh`, one
 
 - `welcome-page`: the app opens on the welcome page, whose Open repo button opens a repo on the commits page.
 - `about-page`: the About page, opened from the left sidebar, shows its heading, what Graft is and its icon.
+- `new-window`: the File menu's New window item and Ctrl+N each open another window of Graft as a process of its own, on the welcome page. Closing one leaves the others running.
 - `theme-menu`: the top bar's theme menu changes the theme to Dark, System and Light, showing each theme's icon and saving each choice in the config file.
 
 To add one, make a directory here with a `test.sh` that sources `../lib/common.sh`. A smoke test that runs only on the desktop platforms goes in `desktop-only/<name>/` and sources `../../lib/common.sh`.
