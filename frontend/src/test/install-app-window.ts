@@ -21,7 +21,7 @@ export const installedZiggy = {
     ...makeFakeThemeZiggy({
         systemTheme: "light",
     }),
-    ...makeFakeActionZiggy(),
+    ...makeFakeActionZiggy([]),
     onEvent: jest.fn(),
     frontendReady: jest.fn(),
     onTaskEvent: jest.fn(),
