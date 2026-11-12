@@ -26,7 +26,7 @@ flowchart LR
 ### Frontend
 
 - Lives in `frontend/`. TypeScript, React, TanStack, MaterialUI, Tailwind and Font Awesome icons, bundled by Vite and embedded in the app.
-- Owns everything the user sees: the pages, the layout and the state of the window.
+- Owns everything the user sees: the pages, the layout and the state of the window. The open repo's path is part of that state, kept in `RepoContext` above the router so it stays loaded while the user moves between pages.
 - Keeps its logic in plain functions under `src/lib/`, so the UI is a thin layer over unit tested code.
 - Must not reach Git, the file system or the computer. It asks the backend through `window.ziggy`.
 
@@ -39,6 +39,7 @@ flowchart LR
 - Wraps each Git command in a function that builds its arguments and parses its output, such as the `log` wrapper in `backend/src/lib/git-log.zig`. A wrapper takes the Git interface function as an argument, so its unit tests pass a mock.
 - The `log` wrapper reads one page of commits at a time with `git log -z`, its fields split by the unit separator (0x1f). A later page starts from the last commit of the previous page and skips it, so a new commit on top does not shift the pages.
 - The `log` wrapper also reads one commit by its hash, for the commit details pane. The `diff-tree` wrapper in `backend/src/lib/git-diff-tree.zig` reads what one commit changed with `git diff-tree`: its changed files and the diff of one of them. Both refuse a hash that is not hexadecimal, so git reads text from the frontend only as a commit.
+- File, Open repo runs the `open-repo` action, whose handler is in the frontend. It sends the `pick-repo-folder` message, whose response comes from a task of that name, because the system folder picker it shows waits for the user.
 - The commits page queues one task per pane: the commits task for the commit pane, the commit details task (the commit and its changed files) for the commit details pane and the file diff task for the file pane.
 - Must not share state between threads or use locks.
 

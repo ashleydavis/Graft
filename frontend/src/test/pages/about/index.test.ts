@@ -1,12 +1,13 @@
 //
 // Tests the About page: renders it in a router and checks it shows Graft's name, what Graft is,
 // its icon (a Font Awesome icon inside a MaterialUI Avatar that carries the Tailwind class) and
-// its link to the commits page.
+// its link to the commits page, which shows only while a repo is open.
 //
 
 import { render, screen } from "@testing-library/react";
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { createElement } from "react";
+import { RepoProvider } from "../../../components/repo-context";
 import { AboutPage } from "../../../pages/about";
 
 //
@@ -18,9 +19,9 @@ jest.spyOn(window, "scrollTo").mockImplementation(() => {
 
 //
 // Shows the About page as the only page of a router, because its link to the commits page needs
-// one, as the app's pages have.
+// one, as the app's pages have, inside a RepoProvider with the repo open, or none.
 //
-async function renderAboutPage(): Promise<HTMLElement> {
+async function renderAboutPage(repoPath: string | undefined): Promise<HTMLElement> {
     const rootRoute = createRootRoute();
     const aboutRoute = createRoute({
         getParentRoute: () => rootRoute,
@@ -33,8 +34,11 @@ async function renderAboutPage(): Promise<HTMLElement> {
             initialEntries: ["/"],
         }),
     });
-    const { container } = render(createElement(RouterProvider, {
-        router,
+    const { container } = render(createElement(RepoProvider, {
+        initialRepoPath: repoPath,
+        children: createElement(RouterProvider, {
+            router,
+        }),
     }));
     await screen.findByText("About Graft");
     return container;
@@ -42,17 +46,17 @@ async function renderAboutPage(): Promise<HTMLElement> {
 
 describe("AboutPage", () => {
     test("shows the heading", async () => {
-        await renderAboutPage();
+        await renderAboutPage("/repos/graft");
         expect(screen.getByText("About Graft").getAttribute("data-id")).toBe("about-heading");
     });
 
     test("says what Graft is", async () => {
-        await renderAboutPage();
+        await renderAboutPage("/repos/graft");
         expect(screen.getByText(/Graft is a desktop Git client/).getAttribute("data-id")).toBe("about-description");
     });
 
     test("shows the Font Awesome icon in a MaterialUI Avatar styled with a Tailwind class", async () => {
-        const container = await renderAboutPage();
+        const container = await renderAboutPage("/repos/graft");
         const avatar = container.querySelector("[data-id=\"about-icon\"]");
         expect(avatar).not.toBeNull();
         expect(avatar?.classList.contains("MuiAvatar-root")).toBe(true);
@@ -60,8 +64,14 @@ describe("AboutPage", () => {
         expect(avatar?.querySelector("svg[data-icon=\"code-branch\"]")).not.toBeNull();
     });
 
-    test("links to the commits page", async () => {
-        await renderAboutPage();
+    test("has no link to the commits page while no repo is open", async () => {
+        const container = await renderAboutPage(undefined);
+        expect(container.querySelector("[data-id=\"about-commits-link\"]")).toBeNull();
+        expect(screen.queryByText("Commits")).toBeNull();
+    });
+
+    test("links to the commits page while a repo is open", async () => {
+        await renderAboutPage("/repos/graft");
         const link = screen.getByText("Commits");
         expect(link.getAttribute("data-id")).toBe("about-commits-link");
         expect(link.getAttribute("href")).toBe("/commits");

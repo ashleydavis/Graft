@@ -52,9 +52,10 @@ describe("repoPathFromSearch", () => {
         expect(repoPathFromSearch("?testMode=1&repo=%2Ftmp%2Fa%20repo")).toBe("/tmp/a repo");
     });
 
-    test("defaults to the test repo at /tmp/graft/test-repo", () => {
-        expect(repoPathFromSearch("")).toBe("/tmp/graft/test-repo");
-        expect(repoPathFromSearch("?testMode=1&repo=")).toBe("/tmp/graft/test-repo");
+    test("is undefined when the query names no repo, so Graft starts with no repo open", () => {
+        expect(repoPathFromSearch("")).toBeUndefined();
+        expect(repoPathFromSearch("?testMode=1")).toBeUndefined();
+        expect(repoPathFromSearch("?testMode=1&repo=")).toBeUndefined();
     });
 });
 

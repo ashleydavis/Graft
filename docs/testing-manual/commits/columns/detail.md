@@ -2,7 +2,7 @@
 
 ## Start Graft
 
-From the repo root, after the setup in `docs/setup.md`, create the test repo Graft reads at `/tmp/graft/test-repo`:
+From the repo root, after the setup in `docs/setup.md`, create the test repo at `/tmp/graft/test-repo` to open in Graft:
 
 ```bash
 ./scripts/test/create-test-repo.sh
@@ -24,7 +24,7 @@ bun run macos
 
 ## Steps
 
-1. Wait for Graft's window to open on the About page, then click its "Commits" link.
+1. Wait for Graft's window to open on the About page, then choose File, then "Open repo", and choose `/tmp/graft/test-repo`.
 2. Check the commits page shows the commit list as its only column.
 3. Click the commit "Change the note".
 4. Check a second column opens to the right of the commit list, with a "Close" button, the title "Change the note", the description "The note now says what the second note is.", the commit's full hash, one parent hash, the author "Ada Author (ada@example.com)", the committer "Cy Committer (cy@example.com)" and the changed file "M notes.txt".

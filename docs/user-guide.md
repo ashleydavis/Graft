@@ -28,17 +28,21 @@ Graft shows a splash screen with its icon while it starts.
 
 Every page shows in the main content area in the middle of the window.
 
-A top bar runs across the top, with Graft's name and the breadcrumb trail, which names the repo and the page you are on. On the Help and About pages, click the page's name in the trail to switch between them.
+A top bar runs across the top, with Graft's name and the breadcrumb trail, which names the open repo and the page you are on. On the Help and About pages, click the page's name in the trail to switch between them.
 
-The left sidebar has a link to each page: **Commits** at the top and **Help** and **About** at the bottom. The menu button at the left of the top bar minimises the left sidebar to a strip of icons and expands it again.
+The left sidebar has a link to each page: **Commits** at the top and **Help** and **About** at the bottom. The **Commits** link shows only while a repo is open. The menu button at the left of the top bar minimises the left sidebar to a strip of icons and expands it again.
 
 The button at the far right of the top bar slides the right sidebar in and out.
 
 The button next to it, which shows the current theme's icon, opens the theme menu, where you pick Graft's colours: **Light**, **Dark** or **System**, which follows your system's light or dark theme. Graft starts on **System** and remembers your choice the next time it opens. The setting is `theme` in Graft's config file, `~/.config/graft/config.toml` on Linux and macOS and `%APPDATA%\Graft\config.toml` on Windows.
 
+### Opening a repo
+
+Graft starts with no repo open. Choose **File**, then **Open repo**, and pick the repo's folder in the folder picker. The commits page opens on that repo's commits. Opening another repo the same way shows it in place of the one before. The repo stays open while you move between pages, until Graft closes.
+
 ### About page
 
-Graft opens on its About page, which shows Graft's name, its icon and what Graft is. Its **Commits** link opens the commits page.
+Graft opens on its About page, which shows Graft's name, its icon and what Graft is. While a repo is open, its **Commits** link opens the commits page.
 
 ### Help page
 
@@ -46,8 +50,6 @@ The Help page says how to move between Graft's pages.
 
 ### Commits page
 
-The commits page lists the first page of the repo's commits, newest first: each commit's title, its author and the first seven characters of its hash. While Graft reads them the page says the commits are loading, and when git cannot read them the page says why. Its **About** link goes back to the About page.
+The commits page lists the first page of the open repo's commits, newest first: each commit's title, its author and the first seven characters of its hash. While Graft reads them the page says the commits are loading, and when git cannot read them the page says why. Its **About** link goes back to the About page.
 
 The commit list is the first of the page's columns. Click a commit to open a column to its right with the commit's details and the files it changed. Click one of those files to open another column to the right with the file's diff in that commit. Each new column has a **Close** button and closing the commit's column closes the file's column with it. When the columns are wider than the window, scroll the page sideways.
-
-Graft reads the repo at `/tmp/graft/test-repo`. `scripts/test/create-test-repo.sh` creates a test repo there.
