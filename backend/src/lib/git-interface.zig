@@ -1,11 +1,14 @@
 //
 // The Git interface: the one function that starts `git`. Every Git operation in Graft goes through
-// it, so a test can give the code above it a mock in its place.
+// it, so a test can give the code above it a mock in its place, and it sends the frontend an
+// event naming the command it starts, so the help panel shows every Git command Graft runs.
 //
 
 const std = @import("std");
+const ziggy = @import("ziggy");
 
 const assert = std.debug.assert;
+const TaskServices = ziggy.task_runner.TaskServices;
 
 //
 // What `git` reported when it ended. The caller owns `stdout` and `stderr` and frees them with the
@@ -30,23 +33,202 @@ pub const GitResult = struct {
 };
 
 //
-// The type of the Git interface function: starts `git` with the arguments and reports how it
-// ended. A plain function pointer, so the code that runs Git takes `run_git` itself as an argument,
-// and a unit test passes a mock instead.
+// One Git command a wrapper runs: the repo it runs in, the arguments Graft starts git with and
+// the arguments the help panel shows. Each wrapper decides both lists beside each other, because
+// the arguments Graft needs to parse git's output (`-z`, a `--format` with separator characters)
+// are for Graft's parser, while a user in a terminal reads git's own output.
+//
+pub const GitCommand = struct {
+    //
+    // The path of the repo git runs in. Graft passes it with `-C` and the help panel shows it as
+    // `cd <repo>` above the command.
+    //
+    repo_path: []const u8,
+
+    //
+    // The arguments after `git -C <repo>` that Graft starts git with.
+    //
+    args: []const []const u8,
+
+    //
+    // The arguments after `git` that the help panel shows, which do the same work as `args` when
+    // they are pasted into a terminal in the repo.
+    //
+    shown_args: []const []const u8,
+};
+
+//
+// The event `run_git` sends the frontend for each command it starts. The field names are camelCase
+// because Ziggy turns the struct into the JSON the frontend reads.
+//
+pub const GitCommandEvent = struct {
+    //
+    // What the event is, so the frontend can pick it out from the other events a task sends.
+    //
+    type: []const u8,
+
+    //
+    // The `cd` command that moves a terminal into the repo, quoted for a shell.
+    //
+    directoryCommand: []const u8,
+
+    //
+    // The Git command as the help panel shows it, quoted for a shell.
+    //
+    command: []const u8,
+};
+
+//
+// The type of the Git interface function: sends the frontend the command, starts `git` and
+// reports how it ended. A plain function pointer, so the code that runs Git takes `run_git` itself
+// as an argument, and a unit test passes a mock instead.
 //
 pub const RunGit = *const fn (
     io: std.Io,
+    services: TaskServices,
     allocator: std.mem.Allocator,
-    args: []const []const u8,
+    command: GitCommand,
 ) anyerror!GitResult;
 
 //
-// The Git interface function. Starts `git` (found on PATH) with the arguments, waits for it to end
-// and reports its exit code, standard output and standard error. A `git` that exits with an error
-// still returns its result, and the caller reads the exit code, because what a failure means
-// depends on the command. The function returns an error when it fails to start `git`.
+// The Git interface function. Sends the task's event naming the command as the help panel shows
+// it, then starts `git -C <repo>` with the command's arguments through `start_git`. Everything it
+// allocates for the event is freed before it starts git.
 //
 pub fn run_git(
+    io: std.Io,
+    services: TaskServices,
+    allocator: std.mem.Allocator,
+    command: GitCommand,
+) anyerror!GitResult {
+    assert(command.repo_path.len > 0);
+    assert(command.args.len > 0);
+    assert(command.shown_args.len > 0);
+
+    try send_git_command_event(io, services, allocator, command);
+    const argv = try allocator.alloc([]const u8, command.args.len + 2);
+    defer allocator.free(argv);
+
+    argv[0] = "-C";
+    argv[1] = command.repo_path;
+    @memcpy(argv[2..], command.args);
+    assert(argv.len == command.args.len + 2);
+    return try start_git(io, allocator, argv);
+}
+
+//
+// Sends the event naming the command, so the help panel shows the `cd` into the repo and the
+// command a user can paste into a terminal there.
+//
+pub fn send_git_command_event(
+    io: std.Io,
+    services: TaskServices,
+    allocator: std.mem.Allocator,
+    command: GitCommand,
+) !void {
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+
+    const arena = arena_state.allocator();
+    const event = try git_command_event(arena, command);
+    assert(std.mem.startsWith(u8, event.command, "git "));
+    try services.sendEvent(io, arena, event);
+}
+
+//
+// Builds the event for the command: `cd <repo>` and `git <shown arguments>`, each quoted for a
+// shell, allocated with the allocator.
+//
+pub fn git_command_event(allocator: std.mem.Allocator, command: GitCommand) !GitCommandEvent {
+    assert(command.repo_path.len > 0);
+    assert(command.shown_args.len > 0);
+
+    const shown_words = try allocator.alloc([]const u8, command.shown_args.len + 1);
+    shown_words[0] = "git";
+    @memcpy(shown_words[1..], command.shown_args);
+    return .{
+        .type = "git-command",
+        .directoryCommand = try format_command_line(allocator, &.{
+            "cd",
+            command.repo_path,
+        }),
+        .command = try format_command_line(allocator, shown_words),
+    };
+}
+
+//
+// Joins the words into one command line, with spaces between them and each word quoted for a
+// POSIX shell where it needs to be, so the line runs the same words when pasted into a terminal.
+// The line is allocated with the allocator.
+//
+pub fn format_command_line(allocator: std.mem.Allocator, words: []const []const u8) ![]const u8 {
+    assert(words.len > 0);
+
+    var line: std.ArrayList(u8) = .empty;
+    errdefer line.deinit(allocator);
+
+    for (words, 0..) |word, index| {
+        if (index > 0) {
+            try line.append(allocator, ' ');
+        }
+        try append_shell_word(allocator, &line, word);
+    }
+    assert(line.items.len >= words.len);
+    return try line.toOwnedSlice(allocator);
+}
+
+//
+// Appends the word as a shell reads it: as it is when every character is one a shell leaves
+// alone, and otherwise inside single quotes, with each single quote in it written as `'\''`.
+//
+pub fn append_shell_word(
+    allocator: std.mem.Allocator,
+    line: *std.ArrayList(u8),
+    word: []const u8,
+) !void {
+    const length_before = line.items.len;
+    if (is_plain_shell_word(word)) {
+        try line.appendSlice(allocator, word);
+    } else {
+        try line.append(allocator, '\'');
+        for (word) |character| {
+            if (character == '\'') {
+                try line.appendSlice(allocator, "'\\''");
+            } else {
+                try line.append(allocator, character);
+            }
+        }
+        try line.append(allocator, '\'');
+    }
+    assert(line.items.len >= length_before + word.len);
+}
+
+//
+// Whether a shell reads the word as it is: it has at least one character and every character is
+// a letter, a digit or one of `-_./=:,+@%`, which a POSIX shell reads as plain text.
+//
+pub fn is_plain_shell_word(word: []const u8) bool {
+    if (word.len == 0) {
+        return false;
+    }
+    for (word) |character| {
+        if (!std.ascii.isAlphanumeric(character)) {
+            if (std.mem.indexOfScalar(u8, "-_./=:,+@%", character) == null) {
+                return false;
+            }
+        }
+    }
+    assert(word.len > 0);
+    return true;
+}
+
+//
+// Starts `git` (found on PATH) with the arguments, waits for it to end and reports its exit code,
+// standard output and standard error. A `git` that exits with an error still returns its result,
+// and the caller reads the exit code, because what a failure means depends on the command. The
+// function returns an error when it fails to start `git`.
+//
+pub fn start_git(
     io: std.Io,
     allocator: std.mem.Allocator,
     args: []const []const u8,

@@ -70,7 +70,7 @@ pub fn commits_task_handler(comptime run_git: git_interface.RunGit) CommitsTaskH
             _ = timers;
             assert(context.task_id.len > 0);
 
-            const page = try git_log.read_log_page(io, services.log, allocator, run_git, .{
+            const page = try git_log.read_log_page(io, services, allocator, run_git, .{
                 .repo_path = payload.repoPath,
                 .page_size = payload.pageSize,
                 .after_hash = payload.afterHash,

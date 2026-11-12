@@ -81,13 +81,13 @@ pub fn commit_details_task_handler(
             _ = timers;
             assert(context.task_id.len > 0);
 
-            const commit = try git_log.read_commit(io, services.log, allocator, run_git, .{
+            const commit = try git_log.read_commit(io, services, allocator, run_git, .{
                 .repo_path = payload.repoPath,
                 .hash = payload.hash,
             });
             const changed_files = try git_diff_tree.read_changed_files(
                 io,
-                services.log,
+                services,
                 allocator,
                 run_git,
                 .{
