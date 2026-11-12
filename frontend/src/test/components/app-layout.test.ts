@@ -3,16 +3,19 @@
 // lays out the top bar, the left sidebar, the main content area holding the page and the right
 // sidebar, that the left sidebar starts expanded and the right sidebar closed, that the top
 // bar's buttons minimise and expand the left sidebar and slide the right sidebar in and out and
-// that the top bar's breadcrumb trail follows the page shown and its drop-down opens another page.
+// that the top bar's breadcrumb trail follows the page shown and its drop-down opens another page,
+// and that the right sidebar shows the Git commands the page shown has run.
 //
 
-import { act, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { createElement } from "react";
+import type { ITaskEvent } from "ziggy";
 import { AppLayout, navigationFailureReporter } from "../../components/app-layout";
 import { AppTheme, systemDarkQuery } from "../../components/app-theme";
 import { makeFakeMediaQuery } from "../fake-media-query";
-import { installFakeThemeZiggy } from "../fake-theme-ziggy";
+import { makeFakeThemeZiggy } from "../fake-theme-ziggy";
+import { installFakeZiggy } from "../fake-ziggy";
 
 //
 // The router scrolls the window to the top when it shows a page. jsdom reports window.scrollTo as
@@ -22,10 +25,36 @@ jest.spyOn(window, "scrollTo").mockImplementation(() => {
 });
 
 //
-// Renders the layout for the repo at /repos/graft around a stand-in for the About page and the
-// Help page, because the layout shows the router's current page and its trail follows it. The
-// layout is inside the app's theme, as it is in the app, with no saved theme setting and a system
-// theme that is light.
+// The fake window.ziggy's calls that add and remove a task event listener, which a test reads to
+// send a task's event to the listeners the layout added, as the backend does.
+//
+const onTaskEvent = jest.fn();
+const removeTaskEventListener = jest.fn();
+
+//
+// The task event listeners the layout has added and not removed.
+//
+function taskEventListeners(): ((event: ITaskEvent<unknown>) => void)[] {
+    const removed = removeTaskEventListener.mock.calls.map(call => call[0]);
+    return onTaskEvent.mock.calls.map(call => call[0]).filter(listener => !removed.includes(listener));
+}
+
+//
+// Sends every task event listener the event, as Ziggy does when a task sends one.
+//
+function sendTaskEvent(event: ITaskEvent<unknown>): void {
+    act(() => {
+        for (const listener of taskEventListeners()) {
+            listener(event);
+        }
+    });
+}
+
+//
+// Renders the layout for the repo at /repos/graft around a stand-in for the About page, the
+// commits page and the Help page, because the layout shows the router's current page and its trail
+// follows it. The layout is inside the app's theme, as it is in the app, with no saved theme
+// setting and a system theme that is light, and listens for task events on the fake window.ziggy.
 //
 async function renderAppLayout(): Promise<HTMLElement> {
     const rootRoute = createRootRoute({
@@ -45,14 +74,25 @@ async function renderAppLayout(): Promise<HTMLElement> {
         path: "/help",
         component: () => createElement("p", null, "The Help page"),
     });
+    const commitsRoute = createRoute({
+        getParentRoute: () => rootRoute,
+        path: "/commits",
+        component: () => createElement("p", null, "The commits page"),
+    });
     const router = createRouter({
-        routeTree: rootRoute.addChildren([pageRoute, helpRoute]),
+        routeTree: rootRoute.addChildren([pageRoute, helpRoute, commitsRoute]),
         history: createMemoryHistory({
             initialEntries: ["/"],
         }),
     });
-    installFakeThemeZiggy({
-        systemTheme: "light",
+    onTaskEvent.mockClear();
+    removeTaskEventListener.mockClear();
+    installFakeZiggy({
+        ...makeFakeThemeZiggy({
+            systemTheme: "light",
+        }),
+        onTaskEvent,
+        removeTaskEventListener,
     });
     const { container } = render(createElement(AppTheme, {
         systemDark: makeFakeMediaQuery(systemDarkQuery, false),
@@ -170,6 +210,89 @@ describe("AppLayout", () => {
         });
         await screen.findByText("The Help page");
         expect(elementWithDataId(container, "breadcrumb-page")?.textContent).toBe("Help");
+    });
+});
+
+describe("AppLayout's Git commands", () => {
+    //
+    // Opens the right sidebar.
+    //
+    function openRightSidebar(container: HTMLElement): void {
+        act(() => {
+            elementWithDataId(container, "right-sidebar-toggle")?.click();
+        });
+    }
+
+    //
+    // Opens the page with its link in the left sidebar and waits for its text.
+    //
+    async function openPage(container: HTMLElement, page: string, text: string): Promise<void> {
+        act(() => {
+            elementWithDataId(container, `left-sidebar-${page}-link`)?.click();
+        });
+        await screen.findByText(text);
+    }
+
+    //
+    // Sends the event the Git interface function sends for the command, from a task of the
+    // commits page.
+    //
+    function sendCommitsPageCommand(command: string): void {
+        sendTaskEvent({
+            taskId: "t1",
+            source: "commits-page",
+            data: {
+                type: "git-command",
+                directoryCommand: "cd /repos/graft",
+                command,
+            },
+        });
+    }
+
+    test("the right sidebar says the About page has run no Git commands", async () => {
+        const container = await renderAppLayout();
+        openRightSidebar(container);
+        expect(elementWithDataId(container, "git-commands-empty")).not.toBeUndefined();
+    });
+
+    test("the right sidebar shows the commits page's commands, kept while the sidebar is closed and while another page is open", async () => {
+        const container = await renderAppLayout();
+        sendCommitsPageCommand("git log --max-count=50");
+        await openPage(container, "commits", "The commits page");
+        openRightSidebar(container);
+        expect(elementWithDataId(container, "git-commands-directory")?.textContent).toBe("cd /repos/graft");
+        expect(elementWithDataId(container, "git-command-0-text")?.textContent).toBe("git log --max-count=50");
+
+        openRightSidebar(container);
+        sendCommitsPageCommand("git diff-tree abc");
+        await openPage(container, "help", "The Help page");
+        openRightSidebar(container);
+        expect(elementWithDataId(container, "git-commands-empty")).not.toBeUndefined();
+
+        await openPage(container, "commits", "The commits page");
+        expect(elementWithDataId(container, "git-command-0-text")?.textContent).toBe("git diff-tree abc");
+        expect(elementWithDataId(container, "git-command-1-text")?.textContent).toBe("git log --max-count=50");
+    });
+
+    test("ignores a task event that is not a Git command", async () => {
+        const container = await renderAppLayout();
+        sendTaskEvent({
+            taskId: "t1",
+            source: "commits-page",
+            data: {
+                type: "output",
+            },
+        });
+        await openPage(container, "commits", "The commits page");
+        openRightSidebar(container);
+        expect(elementWithDataId(container, "git-commands-empty")).not.toBeUndefined();
+    });
+
+    test("stops listening for task events when it is removed", async () => {
+        await renderAppLayout();
+        expect(taskEventListeners().length).toBe(1);
+        cleanup();
+        expect(taskEventListeners().length).toBe(0);
     });
 });
 
