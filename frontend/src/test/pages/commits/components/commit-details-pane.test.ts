@@ -3,7 +3,10 @@
 // it queues the commit details task for the commit, shows that it is loading, then shows the
 // commit's full message, author, committer, dates, parents and changed files with their change type
 // and line counts, or shows why they could not be read, and that clicking a file or the close
-// button reports it. It also checks the text of the parents and the colour of each change type.
+// button reports it. It checks each changed file is a MaterialUI ListItemButton with the selected
+// file's set as selected, that the pane reports the paths it read and that its border is in the
+// theme's primary colour while it is active. It also checks the text of the parents and the colour
+// of each change type.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
@@ -111,18 +114,21 @@ function mergeResult(): ITaskCompletedEvent["result"] {
 }
 
 //
-// Renders the pane for the commit with the open file and the callbacks, in en-US and UTC.
+// Renders the pane for the commit with the selected file, active or not, with the callbacks, in
+// en-US and UTC.
 //
-function renderPane(selectedPath: string | undefined, onSelectFile: jest.Mock, onClose: jest.Mock): void {
+function renderPane(selectedPath: string | undefined, onSelectFile: jest.Mock, onClose: jest.Mock, isActive: boolean, onReadFiles: jest.Mock): void {
     render(createElement(CommitDetailsPane, {
         repoPath: "/repo",
         hash: commitHash,
         selectedPath,
+        isActive,
         dateFormat: {
             locale: "en-US",
             timeZone: "UTC",
         },
         onSelectFile,
+        onReadFiles,
         onClose,
     }));
 }
@@ -153,7 +159,7 @@ function plainSpaces(text: string | null | undefined): string {
 describe("CommitDetailsPane", () => {
     test("queues the commit details task for the commit and shows that it is loading under its heading", () => {
         const ziggy = installFakeTaskZiggy();
-        renderPane(undefined, jest.fn(), jest.fn());
+        renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
         expect(screen.getByText("Loading the commit.").getAttribute("data-id")).toBe("commit-details-loading");
         expect(screen.getByText("Commit").getAttribute("data-id")).toBe("commit-details-heading");
         const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[0][0];
@@ -166,7 +172,7 @@ describe("CommitDetailsPane", () => {
 
     test("shows the commit's full message, author, committer, dates, hash and parent once the task has read them", () => {
         const ziggy = installFakeTaskZiggy();
-        renderPane(undefined, jest.fn(), jest.fn());
+        renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
         completeTask(ziggy, succeededResult(["2222222222222222222222222222222222222222"], "The note now says\nwhat the second note is."));
         expect(elementWithDataId("commit-details-title").textContent).toBe("Change the note");
         expect(elementWithDataId("commit-details-description").textContent).toBe("The note now says\nwhat the second note is.");
@@ -178,7 +184,7 @@ describe("CommitDetailsPane", () => {
 
     test("shows no description when the message is only a title", () => {
         const ziggy = installFakeTaskZiggy();
-        renderPane(undefined, jest.fn(), jest.fn());
+        renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
         completeTask(ziggy, succeededResult([], ""));
         expect(document.querySelector("[data-id=\"commit-details-description\"]")).toBeNull();
         expect(elementWithDataId("commit-details-parents").textContent).toBe("Parents: none");
@@ -186,7 +192,7 @@ describe("CommitDetailsPane", () => {
 
     test("lists the changed files with their change type and line counts, or binary", () => {
         const ziggy = installFakeTaskZiggy();
-        renderPane(undefined, jest.fn(), jest.fn());
+        renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
         completeTask(ziggy, succeededResult([], ""));
         expect(screen.getByText("Files changed (3)").getAttribute("data-id")).toBe("changed-files-heading");
         expect(elementWithDataId("changed-file-notes.txt").textContent).toBe("Mnotes.txt+1 -2");
@@ -197,25 +203,55 @@ describe("CommitDetailsPane", () => {
 
     test("shows that no files changed for a merge commit, for which git lists none", () => {
         const ziggy = installFakeTaskZiggy();
-        renderPane(undefined, jest.fn(), jest.fn());
+        renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
         completeTask(ziggy, mergeResult());
         expect(screen.getByText("Files changed (0)")).toBeTruthy();
         expect(elementWithDataId("changed-files-none").textContent).toBe("No files changed in this commit.");
         expect(elementWithDataId("commit-details-parents").textContent).toBe("Parents: 2222222, 3333333");
     });
 
-    test("highlights the changed file whose diff is open", () => {
+    test("shows the selected changed file with MaterialUI's selection styling", () => {
         const ziggy = installFakeTaskZiggy();
-        renderPane("notes.txt", jest.fn(), jest.fn());
+        renderPane("notes.txt", jest.fn(), jest.fn(), false, jest.fn());
         completeTask(ziggy, succeededResult([], ""));
-        expect(elementWithDataId("changed-file-notes.txt").className).toContain("bg-blue-500/15");
-        expect(elementWithDataId("changed-file-logo.png").className).not.toContain("bg-blue-500/15");
+        expect(elementWithDataId("changed-file-notes.txt").className).toContain("Mui-selected");
+        expect(elementWithDataId("changed-file-logo.png").className).not.toContain("Mui-selected");
+    });
+
+    test("draws each changed file as a MaterialUI ListItemButton in a list item", () => {
+        const ziggy = installFakeTaskZiggy();
+        renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
+        completeTask(ziggy, succeededResult([], ""));
+        expect(elementWithDataId("changed-file-notes.txt").tagName).toBe("LI");
+        expect(elementWithDataId("changed-file-notes.txt").className).toContain("MuiListItemButton-root");
+        expect(elementWithDataId("changed-files").className).toContain("MuiList-root");
+    });
+
+    test("reports the paths of the changed files once the task has read them", () => {
+        const ziggy = installFakeTaskZiggy();
+        const onReadFiles = jest.fn();
+        renderPane(undefined, jest.fn(), jest.fn(), false, onReadFiles);
+        expect(onReadFiles).not.toHaveBeenCalled();
+        completeTask(ziggy, succeededResult([], ""));
+        expect(onReadFiles).toHaveBeenCalledWith(["notes.txt", "docs/new.md", "logo.png"]);
+    });
+
+    test("draws its border in the theme's primary colour while it is active", () => {
+        installFakeTaskZiggy();
+        renderPane(undefined, jest.fn(), jest.fn(), true, jest.fn());
+        expect(document.querySelector<HTMLElement>("[data-id=\"commit-details-pane\"]")?.style.borderColor).toBe("#1976d2");
+    });
+
+    test("keeps its grey border while it is not active", () => {
+        installFakeTaskZiggy();
+        renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
+        expect(document.querySelector<HTMLElement>("[data-id=\"commit-details-pane\"]")?.style.borderColor).toBe("");
     });
 
     test("reports the path of the changed file the user clicks", () => {
         const ziggy = installFakeTaskZiggy();
         const onSelectFile = jest.fn();
-        renderPane(undefined, onSelectFile, jest.fn());
+        renderPane(undefined, onSelectFile, jest.fn(), false, jest.fn());
         completeTask(ziggy, succeededResult([], ""));
         fireEvent.click(screen.getByText("notes.txt"));
         expect(onSelectFile).toHaveBeenCalledWith("notes.txt");
@@ -224,14 +260,14 @@ describe("CommitDetailsPane", () => {
     test("reports that the user closed it", () => {
         const onClose = jest.fn();
         installFakeTaskZiggy();
-        renderPane(undefined, jest.fn(), onClose);
+        renderPane(undefined, jest.fn(), onClose, false, jest.fn());
         fireEvent.click(elementWithDataId("commit-details-close"));
         expect(onClose).toHaveBeenCalledTimes(1);
     });
 
     test("says why the commit could not be read when the task failed", () => {
         const ziggy = installFakeTaskZiggy();
-        renderPane(undefined, jest.fn(), jest.fn());
+        renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
         completeTask(ziggy, {
             taskId: "",
             status: "failed",

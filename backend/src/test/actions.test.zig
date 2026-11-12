@@ -1,8 +1,9 @@
 //
-// Tests Graft's actions. It checks Open repo is declared with the shortcut CmdOrCtrl+O and the
-// Keyboard Shortcuts action with the shortcut `?`. It checks every action's shortcut is clear of
-// the web view's own keys. It checks running Keyboard Shortcuts, as its shortcut and the frontend
-// do, sends the frontend the action event naming it. Each running test starts the backend with Ziggy's fake
+// Tests Graft's actions. It checks Open repo is declared with the shortcut CmdOrCtrl+O, the
+// Keyboard Shortcuts action with the shortcut `?` and the Commit Explorer action with the shortcut
+// `CmdOrCtrl+1`. It checks every action's shortcut is clear of the web view's own keys. It checks
+// running Keyboard Shortcuts and Commit Explorer, as their shortcuts and the frontend do, sends the
+// frontend the action event naming each. Each running test starts the backend with Ziggy's fake
 // native app and sends the system message the native app or the frontend would.
 //
 
@@ -15,10 +16,22 @@ const io = std.testing.io;
 const test_environment = @import("test-environment.zig");
 
 //
-// Starts Graft's backend with a fake native app, sends it the system message and checks the
-// frontend is sent the action event naming the Keyboard Shortcuts action.
+// What expect_action_event sends and expects. Both are JSON strings, so they are named fields to
+// keep a call from swapping them.
 //
-fn expect_shortcuts_overlay_event(message: []const u8) !void {
+const ActionEventOptions = struct {
+    // The system message the backend is sent, as the native app or the frontend sends it.
+    message: []const u8,
+
+    // The action event the frontend is expected to be sent, naming the action the message ran.
+    event: []const u8,
+};
+
+//
+// Starts Graft's backend with a fake native app, sends it the system message and checks the
+// frontend is sent the event, the action event naming the action the message ran.
+//
+fn expect_action_event(options: ActionEventOptions) !void {
     var native_app: ziggy.fake_native_app.FakeNativeApp = undefined;
     native_app.init();
     const directories = try test_environment.useTestEnvironment(
@@ -31,17 +44,26 @@ fn expect_shortcuts_overlay_event(message: []const u8) !void {
     try native_app.start(io, std.testing.allocator, native_app.config(2, 2), app.app);
     defer native_app.stop(io, std.testing.allocator);
 
-    try native_app.send(io, std.testing.allocator, message);
-    try native_app.expectMessageContaining(
-        io,
-        std.testing.allocator,
-        "{\"kind\":\"system\",\"name\":\"action\"," ++
-            "\"data\":{\"action\":\"toggle-shortcuts-overlay\"}}",
-    );
+    try native_app.send(io, std.testing.allocator, options.message);
+    try native_app.expectMessageContaining(io, std.testing.allocator, options.event);
 }
 
-test "Graft's actions are Open repo, with CmdOrCtrl+O, and Keyboard Shortcuts, with ?" {
-    try std.testing.expectEqual(@as(usize, 2), actions.actions.len);
+//
+// The action event that names the Keyboard Shortcuts action, which the frontend is sent when the
+// action runs.
+//
+const shortcuts_overlay_event = "{\"kind\":\"system\",\"name\":\"action\"," ++
+    "\"data\":{\"action\":\"toggle-shortcuts-overlay\"}}";
+
+//
+// The action event that names the Commit Explorer action, which the frontend is sent when the
+// action runs.
+//
+const commit_explorer_event = "{\"kind\":\"system\",\"name\":\"action\"," ++
+    "\"data\":{\"action\":\"open-commit-explorer\"}}";
+
+test "Graft's actions are Open repo, with CmdOrCtrl+O, Keyboard Shortcuts, with ?, and Commit Explorer" {
+    try std.testing.expectEqual(@as(usize, 3), actions.actions.len);
     try std.testing.expectEqualStrings("open-repo", actions.actions[0].name);
     try std.testing.expectEqualStrings("Open repo", actions.actions[0].label);
     try std.testing.expectEqualStrings("CmdOrCtrl+O", actions.actions[0].shortcut.?);
@@ -73,20 +95,44 @@ test "no action's shortcut is one of the web view's own keys" {
     }
 }
 
+test "Commit Explorer is an action with the shortcut CmdOrCtrl+1" {
+    try std.testing.expectEqualStrings("open-commit-explorer", actions.actions[2].name);
+    try std.testing.expectEqualStrings("Commit Explorer", actions.actions[2].label);
+    try std.testing.expectEqualStrings("CmdOrCtrl+1", actions.actions[2].shortcut.?);
+}
+
 test "Graft's app declares the actions" {
     try std.testing.expectEqual(actions.actions.ptr, app.app.actions.ptr);
 }
 
 test "the shortcut of Keyboard Shortcuts sends the frontend the action event naming it" {
-    try expect_shortcuts_overlay_event(
-        "{\"kind\":\"system\",\"id\":1,\"name\":\"menu-action\"," ++
+    try expect_action_event(.{
+        .message = "{\"kind\":\"system\",\"id\":1,\"name\":\"menu-action\"," ++
             "\"data\":{\"action\":\"toggle-shortcuts-overlay\"}}",
-    );
+        .event = shortcuts_overlay_event,
+    });
 }
 
 test "the frontend running Keyboard Shortcuts sends it the action event naming it" {
-    try expect_shortcuts_overlay_event(
-        "{\"kind\":\"system\",\"id\":1,\"name\":\"run-action\"," ++
+    try expect_action_event(.{
+        .message = "{\"kind\":\"system\",\"id\":1,\"name\":\"run-action\"," ++
             "\"data\":{\"action\":\"toggle-shortcuts-overlay\"}}",
-    );
+        .event = shortcuts_overlay_event,
+    });
+}
+
+test "the shortcut of Commit Explorer sends the frontend the action event naming it" {
+    try expect_action_event(.{
+        .message = "{\"kind\":\"system\",\"id\":1,\"name\":\"menu-action\"," ++
+            "\"data\":{\"action\":\"open-commit-explorer\"}}",
+        .event = commit_explorer_event,
+    });
+}
+
+test "the frontend running Commit Explorer sends it the action event naming it" {
+    try expect_action_event(.{
+        .message = "{\"kind\":\"system\",\"id\":1,\"name\":\"run-action\"," ++
+            "\"data\":{\"action\":\"open-commit-explorer\"}}",
+        .event = commit_explorer_event,
+    });
 }
