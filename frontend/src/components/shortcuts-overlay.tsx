@@ -81,6 +81,15 @@ export function ShortcutsOverlay(): JSX.Element {
                     data-id="shortcuts-overlay-search"
                     autoFocus={true}
                     placeholder="Search"
+                    //
+                    // The search box takes action names and keys, not prose, so spelling correction
+                    // is off. On macOS it offered to correct "quit" to "Quit" in a bubble, and
+                    // Escape went to that bubble instead of the overlay: the shortcuts-overlay smoke
+                    // test failed in the Release macOS arm64 workflow with "the page still showed
+                    // shortcuts-overlay" after Escape.
+                    //
+                    spellCheck={false}
+                    autoCorrect="off"
                     value={searchText}
                     onChange={event => setSearchText(event.target.value)}
                     className="w-full rounded border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-600 dark:border-gray-600 dark:text-gray-100 dark:focus:border-blue-400"
