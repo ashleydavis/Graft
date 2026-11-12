@@ -6,6 +6,7 @@
 import { JSX } from "react";
 import { ICommit } from "../../../lib/commits";
 import { IDateFormatOptions } from "../../../lib/date-format";
+import { useActivePaneStyle } from "./active-pane-style";
 import { CommitList } from "./commit-list";
 
 //
@@ -18,8 +19,15 @@ export interface ICommitPaneProps {
     // Why the commits could not be read, or undefined.
     error: string | undefined;
 
-    // The hash of the commit whose details are open, which the list highlights, or undefined.
+    // The hash of the selected commit, which the list shows as selected, or undefined.
     selectedHash: string | undefined;
+
+    // The hash of the commit whose details are open, whose title the list makes bold, or
+    // undefined.
+    openHash: string | undefined;
+
+    // Whether the pane is the commit explorer's active pane, which its border shows.
+    isActive: boolean;
 
     // The locale and time zone each commit's date is shown in.
     dateFormat: IDateFormatOptions;
@@ -30,12 +38,14 @@ export interface ICommitPaneProps {
 
 //
 // Shows the commit list in a rounded card of fixed width, as the Graft UI mockup shows it. The list
-// scrolls inside the card when it is taller than the window.
+// scrolls inside the card when it is taller than the window. The card's border is in the theme's
+// primary colour while the pane is active.
 //
-export function CommitPane({ commits, error, selectedHash, dateFormat, onSelectCommit }: ICommitPaneProps): JSX.Element {
+export function CommitPane({ commits, error, selectedHash, openHash, isActive, dateFormat, onSelectCommit }: ICommitPaneProps): JSX.Element {
+    const activeStyle = useActivePaneStyle(isActive);
     return (
-        <section data-id="commit-pane" className="max-h-[75vh] w-[640px] flex-none overflow-y-auto rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-white/5">
-            <CommitList commits={commits} error={error} selectedHash={selectedHash} dateFormat={dateFormat} onSelectCommit={onSelectCommit} />
+        <section data-id="commit-pane" style={activeStyle} className="max-h-[75vh] w-[640px] flex-none overflow-y-auto rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-white/5">
+            <CommitList commits={commits} error={error} selectedHash={selectedHash} openHash={openHash} dateFormat={dateFormat} onSelectCommit={onSelectCommit} />
         </section>
     );
 }

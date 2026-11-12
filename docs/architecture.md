@@ -60,7 +60,7 @@ flowchart LR
 - The native app passes each message to the backend through Ziggy's C interface. The backend's main thread finds the handler registered for its name and sends back what it returns.
 - A message handler can have a task give its response, so a slow answer still reaches the frontend as one message response.
 - The backend sends the frontend events of its own with `sendEvent`. The native app sends a menu item the frontend runs as a menu event.
-- The backend declares Graft's actions in `backend/src/lib/actions.zig` and the frontend registers each one's handler with `window.ziggy.registerAction`. Ziggy runs an action's keyboard shortcut in the frontend, so the Keyboard Shortcuts action's `?` shows and closes the keyboard shortcuts overlay.
+- The backend declares Graft's actions in `backend/src/lib/actions.zig` and the frontend registers each one's handler with `window.ziggy.registerAction`. Ziggy runs an action's keyboard shortcut in the frontend, so the Keyboard Shortcuts action's `?` shows and closes the keyboard shortcuts overlay and the Commit Explorer action's `CmdOrCtrl+1` opens the commits page. The commits page handles its own keys (the arrow keys, Enter and Escape) itself while it is shown, because they mean something only there.
 - Every message, response and event is the JSON text of one object.
 
 ## Where work runs
