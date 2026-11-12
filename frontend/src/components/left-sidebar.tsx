@@ -44,7 +44,7 @@ export interface ISidebarLinkProps {
 //
 // Links to one page with its icon and, while the sidebar is expanded, its name. The link to the
 // page being shown is highlighted. Only an exact match counts, because every path starts with the
-// About page's "/".
+// welcome page's "/".
 //
 export function SidebarLink({ to, icon, label, dataId, isMinimised }: ISidebarLinkProps): JSX.Element {
     return (
@@ -87,7 +87,7 @@ export function LeftSidebar({ isMinimised, isRepoOpen }: ILeftSidebarProps): JSX
             </nav>
             <nav>
                 <SidebarLink to="/help" icon={faCircleQuestion} label="Help" dataId="left-sidebar-help-link" isMinimised={isMinimised} />
-                <SidebarLink to="/" icon={faCircleInfo} label="About" dataId="left-sidebar-about-link" isMinimised={isMinimised} />
+                <SidebarLink to="/about" icon={faCircleInfo} label="About" dataId="left-sidebar-about-link" isMinimised={isMinimised} />
             </nav>
         </aside>
     );

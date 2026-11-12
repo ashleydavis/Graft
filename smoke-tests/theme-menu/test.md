@@ -1,6 +1,6 @@
 # theme-menu/test.sh
 
-Smoke test of the theme menu in the top bar. It starts the real app with remote control on and the light theme, and checks the menu's button starts on Light. It then opens the menu and chooses Dark, then System, then Light. After each choice it checks the menu has closed, the button shows that theme's icon and no other, and Graft's config file holds the new setting. The About page stays in the main content area throughout.
+Smoke test of the theme menu in the top bar. It starts the real app with remote control on and the light theme, opens the About page with the left sidebar's About link and checks the menu's button starts on Light. It then opens the menu and chooses Dark, then System, then Light. After each choice it checks the menu has closed, the button shows only that theme's icon and Graft's config file holds the new setting. The About page stays in the main content area throughout.
 
 ## How it is invoked
 

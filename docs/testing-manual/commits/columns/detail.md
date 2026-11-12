@@ -24,7 +24,7 @@ bun run macos
 
 ## Steps
 
-1. Wait for Graft's window to open on the About page, then choose File, then "Open repo", and choose `/tmp/graft/test-repo`.
+1. Wait for Graft's window to open on the welcome page, then choose File, then "Open repo". Choose `/tmp/graft/test-repo`.
 2. Check the commits page shows the commit list as its only column, in a rounded card. Check each row shows the commit's title, author "Ada Author", date and the first seven characters of its hash. Check "Change the note" has a filled "HEAD -> main" chip and "Add the notes" has an orange outlined "v1.0" chip.
 3. Click the commit "Change the note". Check its row is highlighted and its title is bold.
 4. Check a second column opens to the right of the commit list, headed "Commit" with an X close button. Check it shows the title "Change the note" in bold, the description "The note now says what the second note is.", "Authored by Ada Author <ada@example.com> on" with the date and time, "Committed by Cy Committer <cy@example.com> on" with the date and time, the commit's full hash and "Parent: " with the first seven characters of the parent's hash.
