@@ -1,11 +1,12 @@
 //
 // Tests the app's layout: renders it as the root of a router with a stand-in page and checks it
 // lays out the top bar, the left sidebar, the main content area holding the page and the right
-// sidebar, that the left sidebar starts expanded and the right sidebar closed, that the top
-// bar's buttons minimise and expand the left sidebar and slide the right sidebar in and out, that
-// both sidebars are saved in Graft's state file and restored from it, that the top bar's
-// breadcrumb trail follows the page shown and its drop-down opens another page and that the right
-// sidebar shows the Git commands the page shown has run.
+// sidebar, that the Keyboard Shortcuts action shows the keyboard shortcuts overlay over it, that
+// the left sidebar starts expanded and the right sidebar closed, that the top bar's buttons
+// minimise and expand the left sidebar and slide the right sidebar in and out, that both sidebars
+// are saved in Graft's state file and restored from it, that the top bar's breadcrumb trail
+// follows the page shown and its drop-down opens another page and that the right sidebar shows the
+// Git commands the page shown has run.
 //
 
 import { act, cleanup, render, RenderResult, screen, waitFor } from "@testing-library/react";
@@ -14,6 +15,8 @@ import { createElement } from "react";
 import type { ITaskEvent } from "ziggy";
 import { AppLayout, leftSidebarMinimisedStateKey, navigationFailureReporter, rightSidebarOpenStateKey } from "../../components/app-layout";
 import { AppTheme, systemDarkQuery } from "../../components/app-theme";
+import { shortcutsOverlayAction } from "../../components/shortcuts-overlay";
+import { IFakeActionZiggy, makeFakeActionZiggy } from "../fake-action-ziggy";
 import { makeFakeMediaQuery } from "../fake-media-query";
 import { IFakeThemeZiggy, makeFakeThemeZiggy } from "../fake-theme-ziggy";
 import { installFakeZiggy } from "../fake-ziggy";
@@ -56,21 +59,35 @@ function sendTaskEvent(event: ITaskEvent<unknown>): void {
 // commits page and the Help page, because the layout shows the router's current page and its trail
 // follows it. The layout is inside the app's theme, as it is in the app, with no saved theme
 // setting, a system theme that is light and an empty state file, and listens for task events on
-// the fake window.ziggy.
+// the fake window.ziggy. window.ziggy also keeps the action handlers the layout registers, which
+// the test reaches through the fake it returns with the container.
 //
-async function renderAppLayout(): Promise<HTMLElement> {
-    const rendered = await renderFakedAppLayout(makeFakeThemeZiggy({
-        systemTheme: "light",
-    }));
-    return rendered.container;
+async function renderAppLayoutWithZiggy(): Promise<[HTMLElement, IFakeActionZiggy]> {
+    const ziggy = makeFakeActionZiggy();
+    const rendered = await renderFakedAppLayout({
+        ...makeFakeThemeZiggy({
+            systemTheme: "light",
+        }),
+        ...ziggy,
+    });
+    return [rendered.container, ziggy];
 }
 
 //
-// Renders the layout as renderAppLayout does, with the fake put on window.ziggy beside the task
-// event calls, so a test chooses what Graft's config and state files hold and which calls fail. It
-// returns the render, so a test can unmount the layout as Graft closing does.
+// Renders the layout as renderAppLayoutWithZiggy does and returns its container only.
 //
-async function renderFakedAppLayout(fake: Partial<IFakeThemeZiggy>): Promise<RenderResult> {
+async function renderAppLayout(): Promise<HTMLElement> {
+    const [container] = await renderAppLayoutWithZiggy();
+    return container;
+}
+
+//
+// Renders the layout as renderAppLayoutWithZiggy does, with the fake put on window.ziggy beside a
+// fake of the action calls and the task event calls, so a test chooses what Graft's config and
+// state files hold and which calls fail. A fake that has its own action calls replaces the default
+// one. It returns the render, so a test can unmount the layout as Graft closing does.
+//
+async function renderFakedAppLayout(fake: Partial<IFakeThemeZiggy & IFakeActionZiggy>): Promise<RenderResult> {
     const rootRoute = createRootRoute({
         component: () => createElement(AppLayout, {
             repoPath: "/repos/graft",
@@ -102,6 +119,7 @@ async function renderFakedAppLayout(fake: Partial<IFakeThemeZiggy>): Promise<Ren
     onTaskEvent.mockClear();
     removeTaskEventListener.mockClear();
     installFakeZiggy({
+        ...makeFakeActionZiggy(),
         ...fake,
         onTaskEvent,
         removeTaskEventListener,
@@ -132,6 +150,16 @@ describe("AppLayout", () => {
         expect(row?.children[0]).toBe(elementWithDataId(container, "left-sidebar"));
         expect(row?.children[1]).toBe(elementWithDataId(container, "main-content"));
         expect(row?.children[2]).toBe(elementWithDataId(container, "right-sidebar"));
+    });
+
+    test("the Keyboard Shortcuts action shows the keyboard shortcuts overlay over the layout", async () => {
+        const [container, ziggy] = await renderAppLayoutWithZiggy();
+        expect(elementWithDataId(document.body, "shortcuts-overlay")).toBeUndefined();
+        await act(async () => {
+            await ziggy.runRegisteredAction(shortcutsOverlayAction);
+        });
+        expect(elementWithDataId(document.body, "shortcuts-overlay-placeholder")).not.toBeUndefined();
+        expect(elementWithDataId(container, "main-content")).not.toBeUndefined();
     });
 
     test("shows the page in the main content area", async () => {

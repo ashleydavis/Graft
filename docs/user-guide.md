@@ -38,6 +38,10 @@ The button next to it, which shows the current theme's icon, opens the theme men
 
 Graft remembers whether the left sidebar is minimised and whether the right sidebar is open, and starts with them as you left them.
 
+### Keyboard shortcuts overlay
+
+Press `?` to show the keyboard shortcuts overlay over the page. Press `?` again or Escape to close it. While you type in a text box, such as the search box of the breadcrumb trail's drop-down, `?` types the character instead. The overlay shows placeholder text in place of the shortcuts.
+
 ### About page
 
 Graft opens on its About page, which shows Graft's name, its icon, its version and what Graft is. It links to Graft, Playbook and Ziggy on GitHub and to the Graft video series on YouTube, which open in your web browser. It names Graft's licence, the MIT licence.
