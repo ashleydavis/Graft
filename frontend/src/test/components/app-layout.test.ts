@@ -2,22 +2,23 @@
 // Tests the app's layout: renders it as the root of a router with a stand-in page and checks it
 // lays out the top bar, the left sidebar, the main content area holding the page and the right
 // sidebar, that the Keyboard Shortcuts action shows the keyboard shortcuts overlay over it, that
-// the left sidebar starts expanded and the right sidebar closed, that the top
-// bar's buttons minimise and expand the left sidebar and slide the right sidebar in and out and
-// that the top bar's breadcrumb trail follows the page shown and its drop-down opens another page,
-// and that the right sidebar shows the Git commands the page shown has run.
+// the left sidebar starts expanded and the right sidebar closed, that the top bar's buttons
+// minimise and expand the left sidebar and slide the right sidebar in and out, that both sidebars
+// are saved in Graft's state file and restored from it, that the top bar's breadcrumb trail
+// follows the page shown and its drop-down opens another page and that the right sidebar shows the
+// Git commands the page shown has run.
 //
 
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, RenderResult, screen, waitFor } from "@testing-library/react";
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { createElement } from "react";
 import type { ITaskEvent } from "ziggy";
-import { AppLayout, navigationFailureReporter } from "../../components/app-layout";
+import { AppLayout, leftSidebarMinimisedStateKey, navigationFailureReporter, rightSidebarOpenStateKey } from "../../components/app-layout";
 import { AppTheme, systemDarkQuery } from "../../components/app-theme";
 import { shortcutsOverlayAction } from "../../components/shortcuts-overlay";
 import { IFakeActionZiggy, makeFakeActionZiggy } from "../fake-action-ziggy";
 import { makeFakeMediaQuery } from "../fake-media-query";
-import { makeFakeThemeZiggy } from "../fake-theme-ziggy";
+import { IFakeThemeZiggy, makeFakeThemeZiggy } from "../fake-theme-ziggy";
 import { installFakeZiggy } from "../fake-ziggy";
 
 //
@@ -57,11 +58,36 @@ function sendTaskEvent(event: ITaskEvent<unknown>): void {
 // Renders the layout for the repo at /repos/graft around a stand-in for the About page, the
 // commits page and the Help page, because the layout shows the router's current page and its trail
 // follows it. The layout is inside the app's theme, as it is in the app, with no saved theme
-// setting and a system theme that is light, and listens for task events on the fake window.ziggy.
-// window.ziggy also keeps the action handlers the layout registers, which the test reaches through
-// the fake it returns with the container.
+// setting, a system theme that is light and an empty state file, and listens for task events on
+// the fake window.ziggy. window.ziggy also keeps the action handlers the layout registers, which
+// the test reaches through the fake it returns with the container.
 //
 async function renderAppLayoutWithZiggy(): Promise<[HTMLElement, IFakeActionZiggy]> {
+    const ziggy = makeFakeActionZiggy();
+    const rendered = await renderFakedAppLayout({
+        ...makeFakeThemeZiggy({
+            systemTheme: "light",
+        }),
+        ...ziggy,
+    });
+    return [rendered.container, ziggy];
+}
+
+//
+// Renders the layout as renderAppLayoutWithZiggy does and returns its container only.
+//
+async function renderAppLayout(): Promise<HTMLElement> {
+    const [container] = await renderAppLayoutWithZiggy();
+    return container;
+}
+
+//
+// Renders the layout as renderAppLayoutWithZiggy does, with the fake put on window.ziggy beside a
+// fake of the action calls and the task event calls, so a test chooses what Graft's config and
+// state files hold and which calls fail. A fake that has its own action calls replaces the default
+// one. It returns the render, so a test can unmount the layout as Graft closing does.
+//
+async function renderFakedAppLayout(fake: Partial<IFakeThemeZiggy & IFakeActionZiggy>): Promise<RenderResult> {
     const rootRoute = createRootRoute({
         component: () => createElement(AppLayout, {
             repoPath: "/repos/graft",
@@ -92,30 +118,20 @@ async function renderAppLayoutWithZiggy(): Promise<[HTMLElement, IFakeActionZigg
     });
     onTaskEvent.mockClear();
     removeTaskEventListener.mockClear();
-    const ziggy = installFakeZiggy({
-        ...makeFakeThemeZiggy({
-            systemTheme: "light",
-        }),
+    installFakeZiggy({
         ...makeFakeActionZiggy(),
+        ...fake,
         onTaskEvent,
         removeTaskEventListener,
     });
-    const { container } = render(createElement(AppTheme, {
+    const rendered = render(createElement(AppTheme, {
         systemDark: makeFakeMediaQuery(systemDarkQuery, false),
         children: createElement(RouterProvider, {
             router,
         }),
     }));
     await screen.findByText("The page");
-    return [container, ziggy];
-}
-
-//
-// Renders the layout as renderAppLayoutWithZiggy does and returns its container only.
-//
-async function renderAppLayout(): Promise<HTMLElement> {
-    const [container] = await renderAppLayoutWithZiggy();
-    return container;
+    return rendered;
 }
 
 //
@@ -185,6 +201,116 @@ describe("AppLayout", () => {
         });
         expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
         expect(elementWithDataId(container, "left-sidebar-commits-link-label")).not.toBeUndefined();
+    });
+
+    test("saves each click of the sidebar buttons in Graft's state file", async () => {
+        const fake = makeFakeThemeZiggy({
+            systemTheme: "light",
+        });
+        const { container } = await renderFakedAppLayout(fake);
+        act(() => {
+            elementWithDataId(container, "left-sidebar-toggle")?.click();
+        });
+        act(() => {
+            elementWithDataId(container, "right-sidebar-toggle")?.click();
+        });
+        act(() => {
+            elementWithDataId(container, "left-sidebar-toggle")?.click();
+        });
+        expect(fake.stateWrites).toEqual([
+            [leftSidebarMinimisedStateKey, true],
+            [rightSidebarOpenStateKey, true],
+            [leftSidebarMinimisedStateKey, false],
+        ]);
+    });
+
+    test("starts with the sidebars as they were left when Graft last closed", async () => {
+        const firstRun = makeFakeThemeZiggy({
+            systemTheme: "light",
+        });
+        const first = await renderFakedAppLayout(firstRun);
+        act(() => {
+            elementWithDataId(first.container, "left-sidebar-toggle")?.click();
+        });
+        act(() => {
+            elementWithDataId(first.container, "right-sidebar-toggle")?.click();
+        });
+        first.unmount();
+
+        const { container } = await renderFakedAppLayout(makeFakeThemeZiggy({
+            systemTheme: "light",
+            savedState: Object.fromEntries(firstRun.stateWrites),
+        }));
+        await waitFor(() => {
+            expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-16")).toBe(true);
+        });
+        expect(elementWithDataId(container, "left-sidebar-commits-link-label")).toBeUndefined();
+        expect(elementWithDataId(container, "right-sidebar-content")).not.toBeUndefined();
+        expect(elementWithDataId(container, "left-sidebar-toggle")?.getAttribute("aria-label")).toBe("Expand the left sidebar");
+        expect(elementWithDataId(container, "right-sidebar-toggle")?.getAttribute("aria-label")).toBe("Close the right sidebar");
+    });
+
+    test("starts with the left sidebar expanded and the right sidebar closed when the state file holds false", async () => {
+        const { container } = await renderFakedAppLayout(makeFakeThemeZiggy({
+            systemTheme: "light",
+            savedState: {
+                [leftSidebarMinimisedStateKey]: false,
+                [rightSidebarOpenStateKey]: false,
+            },
+        }));
+        await act(async () => {
+            await Promise.resolve();
+        });
+        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-60")).toBe(true);
+        expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
+    });
+
+    test("treats a value in the state file other than true as off", async () => {
+        const { container } = await renderFakedAppLayout(makeFakeThemeZiggy({
+            systemTheme: "light",
+            savedState: {
+                [leftSidebarMinimisedStateKey]: "yes",
+                [rightSidebarOpenStateKey]: 1,
+            },
+        }));
+        await act(async () => {
+            await Promise.resolve();
+        });
+        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-60")).toBe(true);
+        expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
+    });
+
+    test("reports a state file it cannot read and starts with the left sidebar expanded and the right sidebar closed", async () => {
+        const consoleError = jest.spyOn(console, "error").mockImplementation(() => {
+        });
+        const { container } = await renderFakedAppLayout(makeFakeThemeZiggy({
+            systemTheme: "light",
+            getStateError: new Error("the disk is gone"),
+        }));
+        await waitFor(() => {
+            expect(consoleError).toHaveBeenCalledWith(`Graft could not read whether the left sidebar is minimised from its state file at ${leftSidebarMinimisedStateKey}: Error: the disk is gone. Graft starts with the default until it is changed.`);
+        });
+        expect(consoleError).toHaveBeenCalledWith(`Graft could not read whether the right sidebar is open from its state file at ${rightSidebarOpenStateKey}: Error: the disk is gone. Graft starts with the default until it is changed.`);
+        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-60")).toBe(true);
+        expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
+        consoleError.mockRestore();
+    });
+
+    test("reports a sidebar it cannot save and still changes the sidebar", async () => {
+        const consoleError = jest.spyOn(console, "error").mockImplementation(() => {
+        });
+        const { container } = await renderFakedAppLayout(makeFakeThemeZiggy({
+            systemTheme: "light",
+            setStateError: new Error("the disk is full"),
+        }));
+        act(() => {
+            elementWithDataId(container, "right-sidebar-toggle")?.click();
+        });
+        expect(elementWithDataId(container, "right-sidebar-content")).not.toBeUndefined();
+        await waitFor(() => {
+            expect(consoleError).toHaveBeenCalledWith(`Graft could not save whether the right sidebar is open in its state file at ${rightSidebarOpenStateKey}: Error: the disk is full. The sidebar stays as it is until Graft closes, and the next run starts as the file holds.`);
+        });
+        consoleError.mockRestore();
     });
 
     test("the top bar's theme menu changes the theme to the one chosen", async () => {
