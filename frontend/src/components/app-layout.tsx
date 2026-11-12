@@ -11,6 +11,7 @@ import { addGitCommand, IPageGitCommands, isGitCommandEvent, pageGitCommands } f
 import { openPickedRepo, openRepoActionName } from "../lib/open-repo";
 import { GitCommandsPanel } from "./git-commands-panel";
 import { LeftSidebar } from "./left-sidebar";
+import { usePageZoom } from "./page-zoom";
 import { useRepo } from "./repo-context";
 import { RightSidebar } from "./right-sidebar";
 import { ShortcutsOverlay } from "./shortcuts-overlay";
@@ -83,7 +84,9 @@ export function useSavedSwitch(stateKey: string, description: string): [boolean,
 // handler of the open-repo action, which opens the folder the user picks and shows it in the
 // commit explorer, because the layout is inside both the router and the open repo's context for as
 // long as the window is open. It registers the handler of the Commit Explorer action, which opens
-// the commits page, so Ctrl+1 (Cmd+1 on macOS) returns to the commit explorer from every page.
+// the commits page, so Ctrl+1 (Cmd+1 on macOS) returns to the commit explorer from every page. For
+// the same reason it holds the handlers of the zoom actions, which zoom the window and keep its
+// zoom level in Graft's state file.
 //
 export function AppLayout(): JSX.Element {
     const [isLeftSidebarMinimised, toggleLeftSidebar] = useSavedSwitch(leftSidebarMinimisedStateKey, "whether the left sidebar is minimised");
@@ -93,6 +96,7 @@ export function AppLayout(): JSX.Element {
     const theme = useThemeSetting();
     const { repoPath, openRepo } = useRepo();
     const [gitCommandHistory, setGitCommandHistory] = useState<ReadonlyMap<string, IPageGitCommands>>(new Map());
+    usePageZoom();
 
     useEffect(() => {
         function onTaskEvent(event: ITaskEvent<unknown>): void {
