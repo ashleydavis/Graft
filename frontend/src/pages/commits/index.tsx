@@ -7,6 +7,7 @@
 
 import { Link } from "@tanstack/react-router";
 import { JSX, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useRepo } from "../../components/repo-context";
 import { closeCommitDetailsPane, closeFilePane, explorerStateAfterKey, initialCommitExplorerState, isExplorerKey, isExplorerKeyTarget, selectCommit, selectFile } from "../../lib/commit-explorer";
 import { ICommit, readCommitPage } from "../../lib/commits";
 import { CommitDetailsPane } from "./components/commit-details-pane";
@@ -20,11 +21,29 @@ import { FilePane } from "./components/file-pane";
 const COMMIT_PAGE_SIZE = 50;
 
 //
-// What the commits page is given: the repo to read, so a test can give it any path.
+// What the commit columns are given: the repo to read.
 //
-export interface ICommitsPageProps {
+export interface ICommitColumnsProps {
     // The repo to read.
     repoPath: string;
+}
+
+//
+// Shows the commit columns of the open repo. Opening another repo shows its columns afresh, with no
+// commit or file open, because the columns are keyed by the repo's path. While no repo is open it
+// shows that no repo is open, because the commit explorer has no repo to read.
+//
+export function CommitsPage(): JSX.Element {
+    const { repoPath } = useRepo();
+    if (!repoPath) {
+        return (
+            <main data-id="commits-page">
+                <h1 data-id="commits-heading">Commits</h1>
+                <p data-id="commits-no-repo">No repo is open. Choose File, then Open repo, to open one.</p>
+            </main>
+        );
+    }
+    return <CommitColumns key={repoPath} repoPath={repoPath} />;
 }
 
 //
@@ -44,7 +63,7 @@ export interface ICommitsPageProps {
 // listener with the items just drawn as React draws them (in layout effects), before the browser
 // paints, so a key pressed as soon as the page or its items show acts on them.
 //
-export function CommitsPage({ repoPath }: ICommitsPageProps): JSX.Element {
+export function CommitColumns({ repoPath }: ICommitColumnsProps): JSX.Element {
     const [commits, setCommits] = useState<ICommit[] | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
     const [explorer, setExplorer] = useState(initialCommitExplorerState);

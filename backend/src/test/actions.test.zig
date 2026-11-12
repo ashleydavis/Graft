@@ -1,9 +1,10 @@
 //
-// Tests Graft's actions: that the Keyboard Shortcuts action is declared with the shortcut `?` and
-// the Commit Explorer action with the shortcut `CmdOrCtrl+1`, and that running each, as its
-// shortcut and the frontend do, sends the frontend the action event naming it. Each running test
-// starts the backend with Ziggy's fake native app and sends the system message the native app or
-// the frontend would.
+// Tests Graft's actions. It checks Open repo is declared with the shortcut CmdOrCtrl+O, the
+// Keyboard Shortcuts action with the shortcut `?` and the Commit Explorer action with the shortcut
+// `CmdOrCtrl+1`. It checks every action's shortcut is clear of the web view's own keys. It checks
+// running Keyboard Shortcuts and Commit Explorer, as their shortcuts and the frontend do, sends the
+// frontend the action event naming each. Each running test starts the backend with Ziggy's fake
+// native app and sends the system message the native app or the frontend would.
 //
 
 const std = @import("std");
@@ -61,17 +62,43 @@ const shortcuts_overlay_event = "{\"kind\":\"system\",\"name\":\"action\"," ++
 const commit_explorer_event = "{\"kind\":\"system\",\"name\":\"action\"," ++
     "\"data\":{\"action\":\"open-commit-explorer\"}}";
 
-test "Graft's actions are Keyboard Shortcuts, with ?, and Commit Explorer" {
-    try std.testing.expectEqual(@as(usize, 2), actions.actions.len);
-    try std.testing.expectEqualStrings("toggle-shortcuts-overlay", actions.actions[0].name);
-    try std.testing.expectEqualStrings("Keyboard Shortcuts", actions.actions[0].label);
-    try std.testing.expectEqualStrings("?", actions.actions[0].shortcut.?);
+test "Graft's actions are Open repo, with CmdOrCtrl+O, Keyboard Shortcuts, with ?, and Commit Explorer" {
+    try std.testing.expectEqual(@as(usize, 3), actions.actions.len);
+    try std.testing.expectEqualStrings("open-repo", actions.actions[0].name);
+    try std.testing.expectEqualStrings("Open repo", actions.actions[0].label);
+    try std.testing.expectEqualStrings("CmdOrCtrl+O", actions.actions[0].shortcut.?);
+    try std.testing.expectEqualStrings("toggle-shortcuts-overlay", actions.actions[1].name);
+    try std.testing.expectEqualStrings("Keyboard Shortcuts", actions.actions[1].label);
+    try std.testing.expectEqualStrings("?", actions.actions[1].shortcut.?);
+}
+
+test "no action's shortcut is one of the web view's own keys" {
+    //
+    // The keys the web view uses itself: reload, zoom and the developer tools, written in the
+    // shortcut syntax of Ziggy's menus.
+    //
+    const web_view_keys = [_][]const u8{
+        "CmdOrCtrl+R",
+        "CmdOrCtrl+Shift+R",
+        "F5",
+        "CmdOrCtrl+Plus",
+        "CmdOrCtrl+Minus",
+        "CmdOrCtrl+0",
+        "CmdOrCtrl+Shift+I",
+        "F12",
+    };
+    for (actions.actions) |action| {
+        const shortcut = action.shortcut orelse continue;
+        for (web_view_keys) |web_view_key| {
+            try std.testing.expect(!std.ascii.eqlIgnoreCase(shortcut, web_view_key));
+        }
+    }
 }
 
 test "Commit Explorer is an action with the shortcut CmdOrCtrl+1" {
-    try std.testing.expectEqualStrings("open-commit-explorer", actions.actions[1].name);
-    try std.testing.expectEqualStrings("Commit Explorer", actions.actions[1].label);
-    try std.testing.expectEqualStrings("CmdOrCtrl+1", actions.actions[1].shortcut.?);
+    try std.testing.expectEqualStrings("open-commit-explorer", actions.actions[2].name);
+    try std.testing.expectEqualStrings("Commit Explorer", actions.actions[2].label);
+    try std.testing.expectEqualStrings("CmdOrCtrl+1", actions.actions[2].shortcut.?);
 }
 
 test "Graft's app declares the actions" {

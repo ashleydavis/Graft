@@ -4,7 +4,7 @@
 **Spec:** Settled
 **Implementation:** Complete
 
-An overlay over every page that `?` shows and `?` or Escape closes. It shows placeholder text in place of the shortcuts.
+An overlay over every page that `?` shows and `?` or Escape closes. It lists every shortcut in Ziggy's action list in columns, with a search box that filters them.
 
 ## Sub-features
 
