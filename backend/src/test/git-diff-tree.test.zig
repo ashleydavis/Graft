@@ -10,7 +10,7 @@ const git_diff_tree = @import("../lib/git-diff-tree.zig");
 const git_mock = @import("git-mock.zig");
 
 const io = std.testing.io;
-const ConsoleLog = ziggy.task_queue.utils.log.ConsoleLog;
+const ConsoleLog = ziggy.log.ConsoleLog;
 
 //
 // The hash of the commit the tests read.

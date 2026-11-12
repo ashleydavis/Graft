@@ -6,7 +6,7 @@ Every page of Graft shows in the same layout, so a user always finds the same th
 
 ## Behaviour
 
-- The top bar runs across the top of the window. At its left is a menu button and next to it the name "Graft". At its right is the button for the right sidebar. Between them, set off by a divider, is the breadcrumb trail. It holds only these.
+- The top bar runs across the top of the window. At its left is a menu button and next to it the name "Graft". At its right is the theme menu's button and then the button for the right sidebar. Between them, set off by a divider, is the breadcrumb trail. It holds only these.
 - The breadcrumb trail says where the user is. Every page has one. It starts with the repo Graft reads, shown by its folder's name with the repo's full path in its tooltip. It ends with the page being shown, in bold. A chevron separates the steps.
 - A step with sibling pages to switch to is a drop-down: a click opens a list of its siblings with a search box that narrows them by name and says "No page matches" when none does. The list ticks the page being shown. Picking another page opens it. Picking the page being shown only closes the list. A step with no page to switch to is plain text.
 - Graft reads one repo, so the repo step is plain text. The commits page is the only page about the repo, so its trail is the repo, then "Commits", both plain text. The Help and About pages are the pages about the app, so the trail of each is the repo, then a drop-down of Help and About.
@@ -16,7 +16,8 @@ Every page of Graft shows in the same layout, so a user always finds the same th
 - The top bar's menu button minimises the left sidebar to a thin strip that shows each link's icon only, and expands it again. The links work in both states. Each link's name shows as its tooltip.
 - The main content area fills the space between the sidebars and shows the current page: the About page, the commits page or the Help page.
 - The right sidebar is at the right of the window, under the top bar. It is closed when Graft starts. The top bar's button for it slides it in from the right edge and slides it back out. It is empty.
-- Each button's tooltip says what a click does next: "Minimise the left sidebar" or "Expand the left sidebar", "Open the right sidebar" or "Close the right sidebar".
+- The theme menu picks the colours Graft is drawn in: Light, Dark or System, which follows the system's theme and changes with it. Its button shows the theme in use as an icon, a sun for Light, a moon for Dark and a half filled circle for System, with a small chevron that marks it as a drop-down. A click opens the menu under the button, aligned to its right edge. The menu is headed "Theme" and has a row for each setting, in the order Light, Dark, System. Each row shows the setting's icon in a rounded tile, its name and a line saying what it does: "Light colours all the time", "Dark colours all the time" and "Follows your system's theme". The setting in use is highlighted, with its tile in blue and a tick at the right. Choosing a row closes the menu and changes the theme. Clicking outside the menu or pressing Escape closes it and changes nothing. Graft starts on System. The choice is saved as `theme` in Graft's config file, so the next run starts on it, and a change to that setting while Graft runs changes the theme at once.
+- Each button's tooltip says what a click does next: "Minimise the left sidebar" or "Expand the left sidebar", "Open the right sidebar" or "Close the right sidebar", and for the theme menu's button the theme in use, such as "Theme: System. Choose a theme".
 
 ## Acceptance criteria
 
@@ -28,6 +29,9 @@ Every page of Graft shows in the same layout, so a user always finds the same th
 - [x] The top bar and sidebars hold no menu items or buttons for features Graft does not have.
 - [x] The top bar shows the breadcrumb trail of every page, starting with the repo and ending with the page shown.
 - [x] The About and Help pages' trails end with a drop-down of Help and About that opens the page picked. The commits page's trail is plain text.
+- [x] The top bar's theme menu starts on System and offers Light, Dark and System, each with its icon and what it does, ticks the one in use and draws Graft in light or dark colours to match the choice, and on System follows the system's theme.
+- [x] The theme setting is saved in Graft's config file, and Graft starts on the saved setting.
+- [x] The window and page are white in the light theme and the dark grey of Graft's dark art (`#14171A`) in the dark theme, from the first paint.
 
 ## Open questions
 

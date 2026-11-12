@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Creates a test repo of the smoke test's own, starts the real app, built with the test hooks, on
+# Creates a test repo of the smoke test's own, starts the real app with remote control on, on
 # that repo and checks the commits page's columns open: clicking a commit opens the commit details
 # pane and clicking a changed file opens the file pane. See test.md.
 #

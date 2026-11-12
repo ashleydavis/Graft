@@ -7,7 +7,7 @@ The commits page lists the newest commits of the repo Graft reads. It is the fir
 ## Behaviour
 
 - The About page links to the commits page, and the commits page links back to the About page.
-- Graft reads the repo at `/tmp/graft/test-repo`. A smoke test gives the app the path of its own test repo instead, through `GRAFT_TEST_REPO`, which only a build with the test hooks running in test mode reads.
+- Graft reads the repo at `/tmp/graft/test-repo`. A smoke test gives the app the path of its own test repo instead, through `GRAFT_TEST_REPO`, which the app reads only when it was started with `--remote-control`.
 - `scripts/test/create-test-repo.sh` creates the test repo in a known state with a few commits, at `/tmp/graft/test-repo` or at the path given as its argument.
 - When the page opens it queues the commits task, a background task that runs the `log` wrapper.
 - The `log` wrapper reads one page of commits at a time. It runs `git log -z --max-count=<page size>` with a `--format` string whose fields are split by the unit separator (0x1f). Given the hash of the last commit of the previous page, it starts from that commit and skips it with `--skip=1`, so a new commit on top does not shift the pages.

@@ -4,7 +4,7 @@
 //
 
 import type { IAddTask, ITaskCompletedEvent, ITaskResult } from "ziggy";
-import { CommitsBridge, IReadCommitsError } from "./commits";
+import { IReadCommitsError } from "./commits";
 import { err, ok, Result } from "./result";
 
 //
@@ -29,16 +29,16 @@ export interface IFileDiffRequest {
 // is waiting on it and calls onRead with the diff or with why it could not be read once the task
 // ends.
 //
-export function readFileDiff(bridge: CommitsBridge, request: IFileDiffRequest, onRead: (result: Result<string, IReadCommitsError>) => void): void {
+export function readFileDiff(request: IFileDiffRequest, onRead: (result: Result<string, IReadCommitsError>) => void): void {
     function onTaskCompleted(event: ITaskCompletedEvent): void {
         if (event.taskId !== request.taskId) {
             return;
         }
-        bridge.removeTaskCompletedListener(onTaskCompleted);
+        window.ziggy.removeTaskCompletedListener(onTaskCompleted);
         onRead(fileDiffFromTaskResult(event.result));
     }
 
-    bridge.onTaskCompleted(onTaskCompleted);
+    window.ziggy.onTaskCompleted(onTaskCompleted);
     const task: IAddTask = {
         taskId: request.taskId,
         taskType: "file-diff",
@@ -50,7 +50,7 @@ export function readFileDiff(bridge: CommitsBridge, request: IFileDiffRequest, o
         },
         priority: "interactive",
     };
-    bridge.addTask(task);
+    window.ziggy.addTask(task);
 }
 
 //

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Packages the template's Linux app as a zip and a deb, without the test hooks. See package-linux.md.
+# Packages the template's Linux app as a zip and a deb. See package-linux.md.
 
 set -eu
 
@@ -8,6 +8,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXAMPLE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 SHELL_DIR="$EXAMPLE_DIR/native/linux"
 OUTPUT_DIR="$EXAMPLE_DIR/out/linux"
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --output-dir)
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown argument $1. See package-linux.md." >&2
+            exit 2
+            ;;
+    esac
+done
 
 VERSION="$(jq -r '.version' "$EXAMPLE_DIR/package.json")"
 ARCHITECTURE="$(uname -m)"
@@ -37,8 +49,10 @@ rm -f "$OUTPUT_DIR/$BASE_NAME.zip"
 (cd "$STAGE_DIR/zip" && zip -q -r "$OUTPUT_DIR/$BASE_NAME.zip" graft)
 
 # The deb installs under /opt, puts a link in /usr/bin and adds a menu entry so the app shows in the applications menu.
-mkdir -p "$STAGE_DIR/deb/DEBIAN" "$STAGE_DIR/deb/opt/graft" "$STAGE_DIR/deb/usr/bin" "$STAGE_DIR/deb/usr/share/applications"
+mkdir -p "$STAGE_DIR/deb/DEBIAN" "$STAGE_DIR/deb/opt/graft" "$STAGE_DIR/deb/usr/bin" "$STAGE_DIR/deb/usr/share/applications" "$STAGE_DIR/deb/usr/share/icons/hicolor/512x512/apps"
 cp "$STAGE_DIR/prefix/bin/graft" "$STAGE_DIR/deb/opt/graft/"
+# The menu entry's icon, which the applications menu and the dock show.
+cp "$EXAMPLE_DIR/assets/graft-512.png" "$STAGE_DIR/deb/usr/share/icons/hicolor/512x512/apps/au.com.codecapers.graft.png"
 ln -s /opt/graft/graft "$STAGE_DIR/deb/usr/bin/graft"
 cat > "$STAGE_DIR/deb/usr/share/applications/au.com.codecapers.graft.desktop" <<DESKTOP
 [Desktop Entry]
@@ -46,6 +60,7 @@ Type=Application
 Name=Graft
 Comment=A small complete app built on Ziggy
 Exec=/usr/bin/graft
+Icon=au.com.codecapers.graft
 Terminal=false
 Categories=Utility;
 StartupWMClass=au.com.codecapers.graft

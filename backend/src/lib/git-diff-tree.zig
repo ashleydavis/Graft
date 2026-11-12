@@ -9,7 +9,7 @@ const git_interface = @import("git-interface.zig");
 const git_log = @import("git-log.zig");
 
 const assert = std.debug.assert;
-const ILog = ziggy.task_queue.utils.log.ILog;
+const ILog = ziggy.log.ILog;
 
 //
 // One file a commit changed. The field names are camelCase because the struct is turned into the

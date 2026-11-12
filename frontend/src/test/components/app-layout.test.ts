@@ -10,6 +10,9 @@ import { act, render, screen } from "@testing-library/react";
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { createElement } from "react";
 import { AppLayout, navigationFailureReporter } from "../../components/app-layout";
+import { AppTheme, systemDarkQuery } from "../../components/app-theme";
+import { makeFakeMediaQuery } from "../fake-media-query";
+import { installFakeThemeZiggy } from "../fake-theme-ziggy";
 
 //
 // The router scrolls the window to the top when it shows a page. jsdom reports window.scrollTo as
@@ -20,7 +23,9 @@ jest.spyOn(window, "scrollTo").mockImplementation(() => {
 
 //
 // Renders the layout for the repo at /repos/graft around a stand-in for the About page and the
-// Help page, because the layout shows the router's current page and its trail follows it.
+// Help page, because the layout shows the router's current page and its trail follows it. The
+// layout is inside the app's theme, as it is in the app, with no saved theme setting and a system
+// theme that is light.
 //
 async function renderAppLayout(): Promise<HTMLElement> {
     const rootRoute = createRootRoute({
@@ -46,8 +51,14 @@ async function renderAppLayout(): Promise<HTMLElement> {
             initialEntries: ["/"],
         }),
     });
-    const { container } = render(createElement(RouterProvider, {
-        router,
+    installFakeThemeZiggy({
+        systemTheme: "light",
+    });
+    const { container } = render(createElement(AppTheme, {
+        systemDark: makeFakeMediaQuery(systemDarkQuery, false),
+        children: createElement(RouterProvider, {
+            router,
+        }),
     }));
     await screen.findByText("The page");
     return container;
@@ -110,6 +121,34 @@ describe("AppLayout", () => {
         });
         expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
         expect(elementWithDataId(container, "left-sidebar-commits-link-label")).not.toBeUndefined();
+    });
+
+    test("the top bar's theme menu changes the theme to the one chosen", async () => {
+        const container = await renderAppLayout();
+        const themeButton = (): HTMLElement | undefined => elementWithDataId(container, "theme-button");
+
+        //
+        // Opens the theme menu, which draws outside the layout, and chooses the setting.
+        //
+        function chooseTheme(setting: string): void {
+            act(() => {
+                themeButton()?.click();
+            });
+            act(() => {
+                document.querySelector<HTMLElement>(`[data-id="theme-option-${setting}"]`)?.click();
+            });
+        }
+
+        expect(themeButton()?.getAttribute("aria-label")).toBe("Theme: System. Choose a theme");
+        chooseTheme("dark");
+        expect(themeButton()?.getAttribute("aria-label")).toBe("Theme: Dark. Choose a theme");
+        expect(document.documentElement.classList.contains("dark")).toBe(true);
+        chooseTheme("light");
+        expect(themeButton()?.getAttribute("aria-label")).toBe("Theme: Light. Choose a theme");
+        expect(document.documentElement.classList.contains("dark")).toBe(false);
+        chooseTheme("system");
+        expect(themeButton()?.getAttribute("aria-label")).toBe("Theme: System. Choose a theme");
+        expect(document.documentElement.classList.contains("dark")).toBe(false);
     });
 
     test("the top bar's trail starts with the repo and names the page shown", async () => {

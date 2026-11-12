@@ -25,7 +25,7 @@ bun run macos
 ## Steps
 
 1. Wait for Graft's window to open.
-2. Check a top bar runs across the top of the window, holding only a menu button and the name "Graft" at its left, one button at its right and the breadcrumb trail between them: "test-repo", a chevron, then "About" in bold with a drop-down arrow.
+2. Check a top bar runs across the top of the window, holding only a menu button and the name "Graft" at its left, two buttons at its right and the breadcrumb trail between them: "test-repo", a chevron, then "About" in bold with a drop-down arrow.
 3. Check the left sidebar runs down the left under the top bar, with a "Commits" link at its top and "Help" and "About" links at its bottom, each with an icon. Check the About link is highlighted.
 4. Check the About page shows in the main content area, to the right of the left sidebar.
 5. Check the right sidebar is closed: the main content area reaches the right edge of the window.
@@ -34,7 +34,7 @@ bun run macos
 8. Hover over each icon in the strip. Check its tooltip names it.
 9. Click the About icon. Check the About page shows in the main content area.
 10. Click the menu button again. Check the left sidebar slides wider and shows the names again.
-11. Click the button at the right of the top bar. Check a right sidebar slides in from the right edge and the main content area narrows to make room.
+11. Click the button at the far right of the top bar. Check a right sidebar slides in from the right edge and the main content area narrows to make room.
 12. Click the same button again. Check the right sidebar slides back out.
 13. Hover over "test-repo" in the trail. Check its tooltip is "/tmp/graft/test-repo".
 14. Click "Help" in the left sidebar. Check the Help page shows and the trail ends with "Help".
@@ -43,8 +43,22 @@ bun run macos
 17. Press Escape. Check the drop-down closes. Click "Help" in the trail again and check both pages are listed.
 18. Click "Help" in the drop-down. Check the drop-down closes and the Help page still shows.
 19. Click "Help" in the trail, then "About". Check the About page shows and the trail ends with "About".
-20. Close the window.
+20. Hover over the button to the left of the right sidebar's button. Check it shows a half filled circle with a small chevron and its tooltip is "Theme: System. Choose a theme".
+21. Click it. Check a menu opens under it, headed "Theme", with rows for Light, Dark and System, each with its icon and a line saying what it does, and System highlighted and ticked.
+22. Press Escape. Check the menu closes and the theme does not change.
+23. Open the menu and choose Light. Check the menu closes, the button shows a sun and Graft is drawn in light colours.
+24. Open the menu and choose Dark. Check the button shows a moon and Graft is drawn in dark colours: a dark background with light text, in the top bar, both sidebars, the main content area and the menu itself.
+25. Open the menu and choose System. Check the button shows the half filled circle and Graft is drawn in the system's theme. Change the system's theme between light and dark and check Graft follows it.
+26. Choose Dark from the menu, then close the window.
+27. Start Graft again. Check the window is dark grey from the start, apart from the white splash screen, and the theme menu's button shows the moon.
+28. Choose System from the menu, and close the window.
 
 ## Expected result
 
-Every page shows in the main content area, between the left sidebar and the right sidebar, under the top bar. The top bar's breadcrumb trail names the repo and the page shown. On the Help and About pages its drop-down switches between them. The menu button minimises and expands the left sidebar, its links work in both states and the button at the right of the top bar slides the right sidebar in and out.
+Every page shows in the main content area, between the left sidebar and the right sidebar, under the top bar.
+
+The top bar's breadcrumb trail names the repo and the page shown. On the Help and About pages its drop-down switches between them.
+
+The menu button minimises and expands the left sidebar, and its links work in both states. The button at the far right of the top bar slides the right sidebar in and out.
+
+The theme menu moves Graft between light, dark and the system's theme, ticks the one in use, and Graft starts on the theme last picked.

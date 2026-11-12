@@ -106,7 +106,7 @@ jobs:
         run: bun run test
 
   zig-build:
-    # Cross-builds the app's backend for every platform, with and without the test hooks, and compiles the Windows native app. Zig
+    # Cross-builds the app's backend for every platform and compiles the Windows native app. Zig
     # cross-builds from any machine, so this runs once, on Linux.
     timeout-minutes: 40
     runs-on: ubuntu-latest

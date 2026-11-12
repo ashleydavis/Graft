@@ -64,7 +64,7 @@ export function TrailStep({ step, isLast, onNavigate }: ITrailStepProps): JSX.El
         return <TrailStepMenu step={step} isLast={isLast} onNavigate={onNavigate} />;
     }
     return (
-        <span data-id={step.dataId} title={step.tooltip} className={isLast ? "text-sm font-bold text-gray-900" : "text-sm text-gray-600"}>
+        <span data-id={step.dataId} title={step.tooltip} className={isLast ? "text-sm font-bold text-gray-900 dark:text-gray-100" : "text-sm text-gray-600 dark:text-gray-400"}>
             {clipStepLabel(step.label)}
         </span>
     );
@@ -101,7 +101,7 @@ export function TrailStepMenu({ step, isLast, onNavigate }: ITrailStepProps): JS
                 data-id={step.dataId}
                 title={step.tooltip}
                 onClick={event => setAnchor(event.currentTarget)}
-                className={`inline-flex items-center gap-1 text-sm hover:underline ${isLast ? "font-bold text-gray-900" : "text-gray-600"}`}
+                className={`inline-flex items-center gap-1 text-sm hover:underline ${isLast ? "font-bold text-gray-900 dark:text-gray-100" : "text-gray-600 dark:text-gray-400"}`}
             >
                 {clipStepLabel(step.label)}
                 <FontAwesomeIcon icon={faCaretDown} />
@@ -126,7 +126,7 @@ export function TrailStepMenu({ step, isLast, onNavigate }: ITrailStepProps): JS
                         onChange={event => setSearchText(event.target.value)}
                     />
                     {shownOptions.length === 0 && (
-                        <p data-id={`${step.dataId}-no-match`} className="p-3 text-center text-sm text-gray-600">
+                        <p data-id={`${step.dataId}-no-match`} className="p-3 text-center text-sm text-gray-600 dark:text-gray-400">
                             No page matches "{searchText}".
                         </p>
                     )}

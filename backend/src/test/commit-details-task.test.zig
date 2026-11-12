@@ -13,6 +13,7 @@ const git_mock = @import("git-mock.zig");
 
 const io = std.testing.io;
 const FakeNativeApp = ziggy.fake_native_app.FakeNativeApp;
+const test_environment = @import("test-environment.zig");
 
 //
 // The hash of the commit the tests read.
@@ -80,6 +81,8 @@ fn expect_task_message(
 ) !void {
     var native_app: FakeNativeApp = undefined;
     native_app.init();
+    const directories = try test_environment.useTestEnvironment(std.testing.allocator, native_app.data_tmp);
+    defer test_environment.freeTestEnvironment(std.testing.allocator, directories);
     defer native_app.deinit(io, std.testing.allocator);
 
     try native_app.start(io, std.testing.allocator, native_app.config(2, 2), declare_app(run_git));

@@ -11,7 +11,7 @@ const git_log = @import("../lib/git-log.zig");
 const git_mock = @import("git-mock.zig");
 
 const io = std.testing.io;
-const ConsoleLog = ziggy.task_queue.utils.log.ConsoleLog;
+const ConsoleLog = ziggy.log.ConsoleLog;
 
 //
 // The format argument the wrapper must pass, spelled out here so a change to it fails the tests.

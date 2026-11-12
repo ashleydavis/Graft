@@ -26,6 +26,12 @@ pub const app = ziggy.core.App(.{
         .@"file-diff" = file_diff_task.file_diff_task_handler(git_interface.run_git),
     },
     .menu = menu.menu,
+    // The window's colour before the page draws: white in the light theme, and in the dark theme the dark grey of Graft's dark
+    // icon and splash art. main.css and index.html draw the page in the same colours.
+    .backgrounds = .{
+        .light = 0xFFFFFF,
+        .dark = 0x14171A,
+    },
     .ui_files = &ui.files,
     .ui_query = ui_query.ui_query,
     .describe_error = error_text.describe_error,

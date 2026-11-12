@@ -43,7 +43,7 @@ frontend/            The frontend: index.html and the TypeScript and React code 
   src/main.css       Tailwind's styles, with MaterialUI's styles in a CSS layer before Tailwind's classes.
   src/pages/         One directory per page, each with its index.tsx.
   src/components/    The components more than one page uses, such as the layout every page shows in.
-  src/lib/           Plain, unit tested code the frontend shares, such as the commands the test hooks perform.
+  src/lib/           Plain, unit tested code the frontend shares, such as the commands remote control performs.
   src/test/          The frontend's Jest unit tests, mirroring the paths of the files they test.
 backend/             The Zig backend.
   src/app.zig        Graft's declaration to Ziggy: its messages, tasks, menu and built frontend.
@@ -84,7 +84,7 @@ bun run test:smoke                                # Every smoke test, on this ma
 bash smoke-tests/run-desktop.sh about-page        # One smoke test, by its directory name.
 ```
 
-The runner builds the app with the test hooks, then runs each `test.sh` in a hidden window, with its own temporary directory and a timeout.
+The runner builds the app, then runs each `test.sh` in a hidden window, with its own temporary directory and a timeout.
 
 A smoke test that reads a repo creates its own with `scripts/test/create-test-repo.sh "$ZIGGY_TEST_DIR/repo"` and gives the app its path through `GRAFT_TEST_REPO`, so each smoke test running in parallel reads a repo of its own. A run of the app outside the smoke tests reads `/tmp/graft/test-repo`, which `./scripts/test/create-test-repo.sh` creates.
 

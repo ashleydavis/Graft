@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Starts the real app, built with the test hooks, on a test repo of its own. It checks the left
+# Starts the real app with remote control on, on a test repo of its own. It checks the left
 # sidebar starts expanded, minimises it and expands it again with the top bar's menu button,
 # checking the names of its links show only while it is expanded, and follows its links to the
 # commits page, the Help page and the About page in each state. See test.md.

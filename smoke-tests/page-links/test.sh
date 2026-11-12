@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Starts the real app, built with the test hooks, on a test repo of its own and changes from the
+# Starts the real app with remote control on, on a test repo of its own and changes from the
 # About page to the commits page and back through their links. See test.md.
 #
 

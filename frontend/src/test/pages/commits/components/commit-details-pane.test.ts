@@ -1,5 +1,5 @@
 //
-// Tests the commit details pane: renders it with a fake bridge made of Jest mocks and checks that
+// Tests the commit details pane: renders it with a fake window.ziggy made of Jest mocks and checks that
 // it queues the commit details task for the commit, shows that it is loading, then shows the
 // commit's details and changed files or says why they could not be read and that clicking a file
 // or the close button reports it.
@@ -8,8 +8,8 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import type { IAddTask, ITaskCompletedEvent } from "ziggy";
-import { CommitsBridge } from "../../../../lib/commits";
 import { CommitDetailsPane } from "../../../../pages/commits/components/commit-details-pane";
+import { FakeTaskZiggy, installFakeTaskZiggy } from "../../../fake-ziggy";
 
 //
 // The hash of the commit the pane shows.
@@ -17,22 +17,11 @@ import { CommitDetailsPane } from "../../../../pages/commits/components/commit-d
 const commitHash = "1111111111111111111111111111111111111111";
 
 //
-// Makes a fake bridge whose functions are Jest mocks.
-//
-function makeBridge(): CommitsBridge {
-    return {
-        addTask: jest.fn(),
-        onTaskCompleted: jest.fn(),
-        removeTaskCompletedListener: jest.fn(),
-    };
-}
-
-//
 // Ends the task the pane queued, as the backend does, with the result.
 //
-function completeTask(bridge: CommitsBridge, result: ITaskCompletedEvent["result"]): void {
-    const task: IAddTask = (bridge.addTask as jest.Mock).mock.calls[0][0];
-    const onTaskCompleted = (bridge.onTaskCompleted as jest.Mock).mock.calls[0][0];
+function completeTask(ziggy: FakeTaskZiggy, result: ITaskCompletedEvent["result"]): void {
+    const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[0][0];
+    const onTaskCompleted = (ziggy.onTaskCompleted as jest.Mock).mock.calls[0][0];
     act(() => {
         onTaskCompleted({
             taskId: task.taskId,
@@ -78,9 +67,8 @@ function succeededResult(parentHashes: string[]): ITaskCompletedEvent["result"] 
 //
 // Renders the pane for the commit with the callbacks.
 //
-function renderPane(bridge: CommitsBridge, onSelectFile: jest.Mock, onClose: jest.Mock): void {
+function renderPane(onSelectFile: jest.Mock, onClose: jest.Mock): void {
     render(createElement(CommitDetailsPane, {
-        bridge,
         repoPath: "/repo",
         hash: commitHash,
         onSelectFile,
@@ -90,10 +78,10 @@ function renderPane(bridge: CommitsBridge, onSelectFile: jest.Mock, onClose: jes
 
 describe("CommitDetailsPane", () => {
     test("queues the commit details task for the commit and shows that it is loading", () => {
-        const bridge = makeBridge();
-        renderPane(bridge, jest.fn(), jest.fn());
+        const ziggy = installFakeTaskZiggy();
+        renderPane(jest.fn(), jest.fn());
         expect(screen.getByText("Loading the commit.").getAttribute("data-id")).toBe("commit-details-loading");
-        const task: IAddTask = (bridge.addTask as jest.Mock).mock.calls[0][0];
+        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[0][0];
         expect(task.taskType).toBe("commit-details");
         expect(task.data).toEqual({
             repoPath: "/repo",
@@ -102,9 +90,9 @@ describe("CommitDetailsPane", () => {
     });
 
     test("shows the commit's details and changed files once the task has read them", () => {
-        const bridge = makeBridge();
-        renderPane(bridge, jest.fn(), jest.fn());
-        completeTask(bridge, succeededResult(["2222222222222222222222222222222222222222"]));
+        const ziggy = installFakeTaskZiggy();
+        renderPane(jest.fn(), jest.fn());
+        completeTask(ziggy, succeededResult(["2222222222222222222222222222222222222222"]));
         expect(screen.getByText("Change the note").getAttribute("data-id")).toBe("commit-details-title");
         expect(screen.getByText("The note now says what the second note is.").getAttribute("data-id")).toBe("commit-details-description");
         expect(screen.getByText(`Hash: ${commitHash}`).getAttribute("data-id")).toBe("commit-details-hash");
@@ -115,33 +103,34 @@ describe("CommitDetailsPane", () => {
     });
 
     test("says a commit with no parents has none", () => {
-        const bridge = makeBridge();
-        renderPane(bridge, jest.fn(), jest.fn());
-        completeTask(bridge, succeededResult([]));
+        const ziggy = installFakeTaskZiggy();
+        renderPane(jest.fn(), jest.fn());
+        completeTask(ziggy, succeededResult([]));
         expect(screen.getByText("Parents: none").getAttribute("data-id")).toBe("commit-details-parents");
     });
 
     test("reports the path of the changed file the user clicks", () => {
-        const bridge = makeBridge();
+        const ziggy = installFakeTaskZiggy();
         const onSelectFile = jest.fn();
-        renderPane(bridge, onSelectFile, jest.fn());
-        completeTask(bridge, succeededResult(["2222222222222222222222222222222222222222"]));
+        renderPane(onSelectFile, jest.fn());
+        completeTask(ziggy, succeededResult(["2222222222222222222222222222222222222222"]));
         fireEvent.click(screen.getByText("M notes.txt"));
         expect(onSelectFile).toHaveBeenCalledWith("notes.txt");
     });
 
     test("reports that the user closed it", () => {
         const onClose = jest.fn();
-        renderPane(makeBridge(), jest.fn(), onClose);
+        installFakeTaskZiggy();
+        renderPane(jest.fn(), onClose);
         fireEvent.click(screen.getByText("Close"));
         expect(onClose).toHaveBeenCalledTimes(1);
         expect(screen.getByText("Close").getAttribute("data-id")).toBe("commit-details-close");
     });
 
     test("says why the commit could not be read when the task failed", () => {
-        const bridge = makeBridge();
-        renderPane(bridge, jest.fn(), jest.fn());
-        completeTask(bridge, {
+        const ziggy = installFakeTaskZiggy();
+        renderPane(jest.fn(), jest.fn());
+        completeTask(ziggy, {
             taskId: "",
             status: "failed",
             errorMessage: "Running git log failed.",

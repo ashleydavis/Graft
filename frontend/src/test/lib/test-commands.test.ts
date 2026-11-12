@@ -1,5 +1,5 @@
 //
-// Tests the commands the smoke tests send through the test control connection: each command is
+// Tests the commands the smoke tests send through the remote control connection: each command is
 // performed on a fake element finder, and each result is checked, including every failure and how
 // a result is turned into JSON.
 //

@@ -4,15 +4,18 @@ Runs the app's smoke tests for one platform: each directory here that holds a `t
 
 ## Arguments
 
-- `<platform>`: `linux`, `windows` or `macos`. Each has a library in `lib/<platform>.sh` that builds the app, starts it and stops it.
+- `<platform>`: `linux`, `windows` or `macos`. Each has a library in `lib/<platform>.sh` that puts the app in place, starts it and stops it.
 - `[scenario]`: optional directory name, to run one smoke test.
 
 ## Behaviour
 
-Builds the app for the platform with the test hooks, then runs each `test.sh`, one after another, giving each its own temporary directory and a timeout. A smoke test drives the running app through the test control connection, with the helpers in `lib/common.sh`: `start_test_app`, `click`, `text_of` and `wait_for_text` find the page's elements by their `data-id`.
+Puts the built app in place once for the platform, then runs each `test.sh`, one after another, giving each its own temporary directory and a timeout. `ZIGGY_SMOKE_BUILD` names a directory the platform's build script already built the app into, as CI's `app-build` job does: `bin/graft` (Linux, `--prefix`), `graft/graft.exe` (Windows, `--prefix`), `xcode/Build/Products/Release/Graft.app` (macOS, `--build-dir <dir>/xcode`), `xcode/Build/Products/Release-iphonesimulator/Graft.app` (iOS simulator) or `graft.apk` (Android, `--output-dir`). When it is not set, the build script builds into the run directory. A connected iPhone or iPad always gets a device build of its own.
+
+`start_test_app` starts the [remote control server](https://github.com/ashleydavis/ziggy/blob/main/tools/remote-control-server/README.md) on ports the system chooses, reads the ports from the line it prints when it listens and starts the app with `--remote-control` and the server's app port (the `ziggy.remoteControl` extra on Android). The app connects out to the server. The smoke test talks to the server's script port. Every smoke test runs in the light theme, passed as `--theme`, unless `ZIGGY_THEME` says otherwise, so none depends on the system's theme. Each keeps the app's config and state files in its own directory, through `GRAFT_CONFIG_DIR` and `GRAFT_STATE_DIR`, so none reads or writes the developer's own. On Android, `adb reverse` carries the app port from the device to the host. A smoke test drives the running app with the helpers in `lib/common.sh`: `start_test_app`, `click`, `text_of` and `wait_for_text` find the page's elements by their `data-id`.
 
 ## Smoke tests
 
 - `about-page`: the app opens on the About page, which shows its heading, what Graft is and its icon.
+- `theme-menu`: the top bar's theme menu changes the theme to Dark, System and Light, showing each theme's icon and saving each choice in the config file.
 
 To add one, make a directory here with a `test.sh` that sources `../lib/common.sh`. A smoke test that runs only on the desktop platforms goes in `desktop-only/<name>/` and sources `../../lib/common.sh`.

@@ -1,5 +1,11 @@
-// The app's details, which Ziggy's build reads: its name, which names its log files, and its title, which heads them.
+// The app's details, which Ziggy's build reads: its name, which names its log files, its title, which heads them, and its splash
+// screen, shown while the frontend loads.
 .{
     .name = "graft",
     .title = "Graft",
+    .splash = .{
+        .background = "#14171A",
+        .portrait = "assets/splash-portrait.png",
+        .landscape = "assets/splash-landscape.png",
+    },
 }

@@ -7,18 +7,19 @@ import { StyledEngineProvider } from "@mui/material/styles";
 import { AnyRouter, createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import type { IZiggyBridge } from "ziggy";
 import { AppLayout } from "./components/app-layout";
+import { AppTheme, systemDarkQuery } from "./components/app-theme";
 import { repoPathFromSearch } from "./lib/commits";
+import { IDocumentLike, installSplashScreen } from "./lib/splash";
 import { ITestCommand, performTestCommand, testResultToJson } from "./lib/test-commands";
 import { AboutPage } from "./pages/about";
 import { CommitsPage } from "./pages/commits";
 import { HelpPage } from "./pages/help";
 
 //
-// What listenForTestCommands needs of window.ziggy, so a test can give it a fake with only these.
+// The colour behind the splash art, the same as .splash's background in app.zon.
 //
-export type TestCommandBridge = Pick<IZiggyBridge, "onTestCommand" | "sendTestResult" | "testUiReady">;
+const splashBackground = "#FFFFFF";
 
 //
 // Makes the router that picks the page to show. Every page shows in the main content area of the
@@ -40,7 +41,7 @@ export function createAppRouter(): AnyRouter {
     const commitsRoute = createRoute({
         getParentRoute: () => rootRoute,
         path: "/commits",
-        component: () => <CommitsPage bridge={window.ziggy} repoPath={repoPathFromSearch(window.location.search)} />,
+        component: () => <CommitsPage repoPath={repoPathFromSearch(window.location.search)} />,
     });
     const helpRoute = createRoute({
         getParentRoute: () => rootRoute,
@@ -56,37 +57,59 @@ export function createAppRouter(): AnyRouter {
 }
 
 //
-// Shows the app's pages in the element. MaterialUI's styles go in a CSS layer of their own, so
-// Tailwind's classes can style MaterialUI components (see main.css).
+// Shows the app's pages in the element, in the theme the user picks. MaterialUI's styles go in a
+// CSS layer of their own, so Tailwind's classes can style MaterialUI components (see main.css).
 //
 export function startApp(rootElement: HTMLElement): void {
     createRoot(rootElement).render(
         <StrictMode>
             <StyledEngineProvider enableCssLayer={true}>
-                <RouterProvider router={createAppRouter()} />
+                <AppTheme systemDark={window.matchMedia(systemDarkQuery)}>
+                    <RouterProvider router={createAppRouter()} />
+                </AppTheme>
             </StyledEngineProvider>
         </StrictMode>
     );
 }
 
 //
-// Handles the commands the test control connection forwards, which the smoke tests send. It acts
-// only when the native app started the frontend in test mode, which it does only in a build with
-// the test hooks, and it tells the backend when it is listening so that every command is sent
+// Covers the page with Graft's splash screen, the same art the native app shows while the frontend
+// loads, and tells the native app the frontend is ready, so it shows the page. When the native app
+// says the page is in sight, the splash fades out.
+//
+export function showSplashScreen(page: IDocumentLike | Document): void {
+    const splash = installSplashScreen(page, {
+        background: splashBackground,
+        minimumDisplayMilliseconds: 500,
+        fadeDurationMilliseconds: 500,
+    });
+    window.ziggy.onEvent((event: { type?: string } | null) => {
+        if (event !== null && event.type === "frontend-visible") {
+            // remove never rejects: it resolves once the overlay has faded out and gone.
+            void splash.remove();
+        }
+    });
+    window.ziggy.frontendReady();
+}
+
+//
+// Handles the commands the remote control connection forwards, which the smoke tests send. It acts
+// only when the native app started the frontend in test mode, which it does only when the app was
+// started with --remote-control, and it tells the backend when it is listening so that every command is sent
 // after it can be heard.
 //
-export function listenForTestCommands(ziggy: TestCommandBridge, search: string, page: Document): void {
+export function listenForTestCommands(search: string, page: Document): void {
     if (new URLSearchParams(search).get("testMode") === "1") {
-        ziggy.onTestCommand<ITestCommand>(event => {
+        window.ziggy.onTestCommand<ITestCommand>(event => {
             const finder = {
                 find: (dataId: string) => page.querySelector<HTMLElement>(`[data-id="${dataId}"]`),
             };
-            ziggy.sendTestResult(event.requestId, testResultToJson(performTestCommand(finder, event.command)))
+            window.ziggy.sendTestResult(event.requestId, testResultToJson(performTestCommand(finder, event.command)))
                 .catch(error => {
-                    console.error(`Graft could not send the smoke tests the result of the ${event.command.command} command: ${String(error)}. The smoke test that sent it gets no answer and fails, so look for why the test control connection failed.`);
+                    console.error(`Graft could not send the smoke tests the result of the ${event.command.command} command: ${String(error)}. The smoke test that sent it gets no answer and fails, so look for why the remote control connection failed.`);
                 });
         });
-        ziggy.testUiReady();
+        window.ziggy.testUiReady();
     }
 }
 
@@ -97,4 +120,5 @@ export function listenForTestCommands(ziggy: TestCommandBridge, search: string, 
 const appElement = document.createElement("div");
 document.body.appendChild(appElement);
 startApp(appElement);
-listenForTestCommands(window.ziggy, window.location.search, document);
+showSplashScreen(document);
+listenForTestCommands(window.location.search, document);

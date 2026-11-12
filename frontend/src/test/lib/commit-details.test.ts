@@ -1,12 +1,13 @@
 //
 // Tests reading a commit's details in the frontend: the commit details task queued through a fake
-// bridge made of Jest mocks and how the task's result is checked and turned into the commit and
+// window.ziggy made of Jest mocks and how the task's result is checked and turned into the commit and
 // its changed files, including every way it can fail.
 //
 
 import type { ITaskCompletedEvent, ITaskResult } from "ziggy";
 import { commitDetailsFromTaskResult, isChangedFile, readCommitDetails } from "../../lib/commit-details";
-import { CommitsBridge, ICommitJson } from "../../lib/commits";
+import { ICommitJson } from "../../lib/commits";
+import { FakeTaskZiggy, installFakeTaskZiggy } from "../fake-ziggy";
 
 //
 // A commit as the commit details task gives it.
@@ -39,35 +40,24 @@ function succeededResult(outputs: ITaskResult["outputs"]): ITaskResult {
 }
 
 //
-// Makes a fake bridge whose functions are Jest mocks.
+// The callback readCommitDetails registered with window.ziggy.
 //
-function makeBridge(): CommitsBridge {
-    return {
-        addTask: jest.fn(),
-        onTaskCompleted: jest.fn(),
-        removeTaskCompletedListener: jest.fn(),
-    };
-}
-
-//
-// The callback readCommitDetails registered with the bridge.
-//
-function registeredCallback(bridge: CommitsBridge): (event: ITaskCompletedEvent) => void {
-    const onTaskCompleted = bridge.onTaskCompleted as jest.Mock;
+function registeredCallback(ziggy: FakeTaskZiggy): (event: ITaskCompletedEvent) => void {
+    const onTaskCompleted = ziggy.onTaskCompleted as jest.Mock;
     expect(onTaskCompleted).toHaveBeenCalledTimes(1);
     return onTaskCompleted.mock.calls[0][0];
 }
 
 describe("readCommitDetails", () => {
     test("queues the commit details task as interactive and gives the details when it ends", () => {
-        const bridge = makeBridge();
+        const ziggy = installFakeTaskZiggy();
         const onRead = jest.fn();
-        readCommitDetails(bridge, {
+        readCommitDetails({
             taskId: "t1",
             repoPath: "/repo",
             hash: commitJson.hash,
         }, onRead);
-        expect(bridge.addTask).toHaveBeenCalledWith({
+        expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t1",
             taskType: "commit-details",
             source: "commits-page",
@@ -78,7 +68,7 @@ describe("readCommitDetails", () => {
             priority: "interactive",
         });
 
-        const callback = registeredCallback(bridge);
+        const callback = registeredCallback(ziggy);
         callback({
             taskId: "other",
             result: succeededResult(null),
@@ -95,7 +85,7 @@ describe("readCommitDetails", () => {
                 }],
             }),
         });
-        expect(bridge.removeTaskCompletedListener).toHaveBeenCalledWith(callback);
+        expect(ziggy.removeTaskCompletedListener).toHaveBeenCalledWith(callback);
         expect(onRead).toHaveBeenCalledTimes(1);
         const result = onRead.mock.calls[0][0];
         expect(result.ok).toBe(true);

@@ -50,7 +50,7 @@ flowchart LR
 
 ### Ziggy
 
-- A dependency, locked to a release tag in `package.json` and `build.zig.zon`. It provides the core library (message bridge, task runner, test hooks), the native apps and Ziggy's frontend types.
+- A dependency, locked to a release tag in `package.json` and `build.zig.zon`. It provides the core library (message bridge, task runner, remote control), the native apps and Ziggy's frontend types.
 - Graft owns the code that came from the Ziggy template and changes it freely. It does not change Ziggy itself.
 
 ## How the components talk to each other
@@ -104,7 +104,7 @@ Graft's UI grows one small piece at a time, one ticket at a time. Each page, but
 - Standard services such as IO and the allocator, as well as Graft's own services, are passed to functions as parameters and are not stored in structs.
 - Several instances run at once, each a separate process with one window. Anything Graft keeps on disk must allow for that.
 - Graft runs on Linux, Windows and macOS (Intel and Apple silicon).
-- Release builds never contain the test hooks.
+- The smoke tests drive the release build itself, started with `--remote-control`. Without that option the app opens no remote control connection.
 
 ## Similar products
 
@@ -116,4 +116,4 @@ Graft's UI grows one small piece at a time, one ticket at a time. Each page, but
 - [development.md](development.md): how to develop, test and contribute.
 - [setup.md](setup.md): how to set up the project and a worktree.
 - [spec/README.md](spec/README.md): what the system does, feature by feature.
-- Ziggy's [architecture](https://github.com/ashleydavis/ziggy/blob/v0.0.19/docs/development/architecture.md): the message bridge, tasks, menus and test hooks in detail.
+- Ziggy's [architecture](https://github.com/ashleydavis/ziggy/blob/v0.0.24/docs/development/architecture.md): the message bridge, tasks, menus and remote control in detail.

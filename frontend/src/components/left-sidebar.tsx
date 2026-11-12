@@ -54,9 +54,9 @@ export function SidebarLink({ to, icon, label, dataId, isMinimised }: ISidebarLi
                 exact: true,
             }}
             activeProps={{
-                className: "bg-gray-200",
+                className: "bg-gray-200 dark:bg-gray-700",
             }}
-            className={`mx-2 flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium hover:bg-gray-100 ${isMinimised ? "justify-center" : "justify-start"}`}
+            className={`mx-2 flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 ${isMinimised ? "justify-center" : "justify-start"}`}
         >
             <FontAwesomeIcon icon={icon} fixedWidth={true} />
             {!isMinimised && <span data-id={`${dataId}-label`}>{label}</span>}
@@ -74,7 +74,7 @@ export function LeftSidebar({ isMinimised }: ILeftSidebarProps): JSX.Element {
     return (
         <aside
             data-id="left-sidebar"
-            className={`flex shrink-0 flex-col justify-between overflow-hidden border-r border-gray-200 py-2 transition-[width] duration-200 ${isMinimised ? "w-16" : "w-60"}`}
+            className={`flex shrink-0 flex-col justify-between overflow-hidden border-r border-gray-200 dark:border-gray-700 py-2 transition-[width] duration-200 ${isMinimised ? "w-16" : "w-60"}`}
         >
             <nav>
                 <SidebarLink to="/commits" icon={faCodeCommit} label="Commits" dataId="left-sidebar-commits-link" isMinimised={isMinimised} />
