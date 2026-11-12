@@ -4,17 +4,38 @@
 //
 
 const std = @import("std");
+const ziggy = @import("ziggy");
 const git_interface = @import("../lib/git-interface.zig");
+
+const TaskServices = ziggy.task_runner.TaskServices;
+
+//
+// The task services a unit test of a wrapper passes, for the wrappers that run a mock in place of
+// the Git interface function. The mocks send no event, so nothing reads the task, which is left
+// undefined because a running task exists only inside a worker. The wrappers write to the log when
+// git fails, so it is a real one that writes to the console.
+//
+pub const mock_services: TaskServices = .{
+    .task = undefined,
+    .log = ziggy.log.ConsoleLog.init(),
+};
 
 //
 // What a mock of the Git interface function expects and answers.
 //
 pub const MockGitOptions = struct {
     //
-    // The arguments the code under test must start git with. Any other arguments fail the call
-    // with error.UnexpectedGitArguments, so a test fails when the code builds the wrong command.
+    // The arguments the code under test must start git with, starting with `-C <repo>`. Any other
+    // arguments fail the call with error.UnexpectedGitArguments, so a test fails when the code
+    // builds the wrong command.
     //
     expected_args: []const []const u8,
+
+    //
+    // The arguments the code under test must give the help panel to show. Any others fail the call
+    // with error.UnexpectedGitArguments, so a test fails when the code shows the wrong command.
+    //
+    expected_shown_args: []const []const u8,
 
     //
     // The exit code the mock reports, or null for a git that ended without exiting.
@@ -51,28 +72,22 @@ pub fn mock_git(comptime options: MockGitOptions) git_interface.RunGit {
         //
         fn mock_git_run(
             io: std.Io,
+            services: TaskServices,
             allocator: std.mem.Allocator,
-            args: []const []const u8,
+            command: git_interface.GitCommand,
         ) anyerror!git_interface.GitResult {
             _ = io;
+            _ = services;
             if (options.start_error) |err| {
                 return err;
             }
-            if (args.len != options.expected_args.len) {
-                std.debug.print("git was started with {d} arguments, not {d}\n", .{
-                    args.len,
-                    options.expected_args.len,
-                });
+            if (!is_same_command(command, options.expected_args)) {
+                std.debug.print("git was started with arguments the test does not expect\n", .{});
                 return error.UnexpectedGitArguments;
             }
-            for (args, options.expected_args) |arg, expected_arg| {
-                if (!std.mem.eql(u8, arg, expected_arg)) {
-                    std.debug.print("git was given the argument {s}, not {s}\n", .{
-                        arg,
-                        expected_arg,
-                    });
-                    return error.UnexpectedGitArguments;
-                }
+            if (!is_same_args(command.shown_args, options.expected_shown_args)) {
+                std.debug.print("the help panel was given a command no test expects\n", .{});
+                return error.UnexpectedGitArguments;
             }
 
             const stdout = try allocator.dupe(u8, options.stdout);
@@ -99,16 +114,17 @@ pub fn mock_git_calls(comptime calls: []const MockGitOptions) git_interface.RunG
         //
         fn mock_git_calls_run(
             io: std.Io,
+            services: TaskServices,
             allocator: std.mem.Allocator,
-            args: []const []const u8,
+            command: git_interface.GitCommand,
         ) anyerror!git_interface.GitResult {
             inline for (calls) |call| {
-                if (is_same_args(args, call.expected_args)) {
-                    return mock_git(call)(io, allocator, args);
+                if (is_same_command(command, call.expected_args)) {
+                    return mock_git(call)(io, services, allocator, command);
                 }
             }
             std.debug.print("git was started with {d} arguments that no call expects\n", .{
-                args.len,
+                command.args.len,
             });
             return error.UnexpectedGitArguments;
         }
@@ -116,7 +132,24 @@ pub fn mock_git_calls(comptime calls: []const MockGitOptions) git_interface.RunG
 }
 
 //
-// Whether the arguments git was started with are the expected ones, in the same order.
+// Whether the command starts git with the expected arguments: `-C`, the command's repo, then its
+// arguments, in the same order.
+//
+fn is_same_command(command: git_interface.GitCommand, expected_args: []const []const u8) bool {
+    if (expected_args.len != command.args.len + 2) {
+        return false;
+    }
+    if (!std.mem.eql(u8, expected_args[0], "-C")) {
+        return false;
+    }
+    if (!std.mem.eql(u8, expected_args[1], command.repo_path)) {
+        return false;
+    }
+    return is_same_args(command.args, expected_args[2..]);
+}
+
+//
+// Whether the arguments are the expected ones, in the same order.
 //
 fn is_same_args(args: []const []const u8, expected_args: []const []const u8) bool {
     if (args.len != expected_args.len) {

@@ -90,7 +90,7 @@ A smoke test that reads a repo creates its own with `scripts/test/create-test-re
 
 ### Git in the unit tests
 
-The unit tests of the Git interface function (`backend/src/test/git-interface.test.zig`) are the only ones that run `git`, in a repo of their own under the project's `tmp/`. Code that runs Git takes the Git interface function as an argument. Its unit tests pass `git_mock.mock_git` from `backend/src/test/git-mock.zig`, which checks the arguments it is given and answers as the test says. Code that starts `git` more than once, such as the commit details task, gets `git_mock.mock_git_calls`, which answers each call by the arguments it was given.
+The unit tests of the Git interface function (`backend/src/test/git-interface.test.zig`) are the only ones that run `git`, in a repo of their own under the project's `tmp/`. Code that runs Git takes the Git interface function as an argument. Its unit tests pass `git_mock.mock_git` from `backend/src/test/git-mock.zig`, which checks the arguments it is given to run and to show and returns the result the test sets, and `git_mock.mock_services` as the task's services. Code that starts `git` more than once, such as the commit details task, gets `git_mock.mock_git_calls`, which picks each call's result by the arguments it was given.
 
 Run one smoke test with `smoke-tests/run-desktop.sh`, not `bun run test:smoke`: `bun run` adds extra arguments to the end of the script, after the baseline capture.
 
