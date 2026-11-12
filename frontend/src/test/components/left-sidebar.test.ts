@@ -35,7 +35,7 @@ async function renderLeftSidebar(isMinimised: boolean, isRepoOpen: boolean): Pro
     });
     const aboutRoute = createRoute({
         getParentRoute: () => rootRoute,
-        path: "/",
+        path: "/about",
         component: () => createElement("p", null, "The About page"),
     });
     const commitsRoute = createRoute({
@@ -51,7 +51,7 @@ async function renderLeftSidebar(isMinimised: boolean, isRepoOpen: boolean): Pro
     const router = createRouter({
         routeTree: rootRoute.addChildren([aboutRoute, commitsRoute, helpRoute]),
         history: createMemoryHistory({
-            initialEntries: ["/"],
+            initialEntries: ["/about"],
         }),
     });
     const { container } = render(createElement(RouterProvider, {
@@ -107,7 +107,7 @@ describe("LeftSidebar", () => {
         const container = await renderLeftSidebar(false, true);
         expect(elementWithDataId(container, "left-sidebar-commits-link")?.getAttribute("href")).toBe("/commits");
         expect(elementWithDataId(container, "left-sidebar-help-link")?.getAttribute("href")).toBe("/help");
-        expect(elementWithDataId(container, "left-sidebar-about-link")?.getAttribute("href")).toBe("/");
+        expect(elementWithDataId(container, "left-sidebar-about-link")?.getAttribute("href")).toBe("/about");
     });
 
     test("holds only the links to the pages Graft has", async () => {

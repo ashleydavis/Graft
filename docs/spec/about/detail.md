@@ -2,11 +2,11 @@
 
 ## Overview
 
-The About page shows a user which app they are in, which version it is, what it is for, where to find out more and its licence. It is the page Graft opens on.
+The About page shows a user which app they are in, which version it is, what it is for, where to find out more and its licence. The left sidebar's About link opens it.
 
 ## Behaviour
 
-- Graft opens on the About page when it starts.
+- The left sidebar's About link and the breadcrumb trail's About option open the About page.
 - The page shows the heading "About Graft".
 - Above the heading it shows Graft's icon: a code branch in a green circle.
 - Under the heading it shows Graft's version: "Version dev". The version comes from `frontend/src/lib/version.ts`, the one file that gives it.
@@ -22,7 +22,7 @@ The About page shows a user which app they are in, which version it is, what it 
 
 ## Acceptance criteria
 
-- [x] Graft opens on the About page when it starts.
+- [x] The left sidebar's About link opens the About page.
 - [x] The page shows the heading "About Graft".
 - [x] The page says what Graft is.
 - [x] The page shows Graft's icon, a code branch in a green circle.

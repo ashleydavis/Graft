@@ -105,7 +105,7 @@ async function renderFakedAppLayout(fake: Partial<LayoutZiggy>, repoPath: string
     });
     const pageRoute = createRoute({
         getParentRoute: () => rootRoute,
-        path: "/",
+        path: "/about",
         component: () => createElement("p", {
             "data-id": "mock-page",
         }, "The page"),
@@ -123,7 +123,7 @@ async function renderFakedAppLayout(fake: Partial<LayoutZiggy>, repoPath: string
     const router = createRouter({
         routeTree: rootRoute.addChildren([pageRoute, helpRoute, commitsRoute]),
         history: createMemoryHistory({
-            initialEntries: ["/"],
+            initialEntries: ["/about"],
         }),
     });
     onTaskEvent.mockClear();

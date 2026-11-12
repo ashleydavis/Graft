@@ -13,7 +13,7 @@ repo="$ZIGGY_TEST_DIR/repo"
 
 export GRAFT_TEST_REPO="$repo"
 start_test_app
-wait_for_element about-page 30
+wait_for_element welcome-page 30
 click left-sidebar-commits-link
 wait_for_element commits-page 30
 wait_for_text commits-heading "Commits" 30

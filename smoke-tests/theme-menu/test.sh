@@ -39,6 +39,8 @@ choose_theme() {
 
 ZIGGY_THEME=light
 start_test_app
+wait_for_element welcome-page 30
+click left-sidebar-about-link
 wait_for_element about-page 30
 wait_for_element theme-icon-light 30
 
