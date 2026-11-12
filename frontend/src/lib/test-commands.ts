@@ -10,7 +10,8 @@ import type { IJsonObject } from "ziggy";
 // A command from the remote control connection.
 //
 export interface ITestCommand {
-    // What to do: ready, click, type, get-value, get-text, exists, insert, viewport or drop-file.
+    // What to do: ready, click, type, get-value, get-text, exists, in-view, insert, viewport or
+    // drop-file.
     command: string;
 
     // The data-id of the element to act on.
@@ -46,6 +47,22 @@ export interface ITestResult {
 export interface IElementFinder {
     // Finds the element with the data-id, or null.
     find(dataId: string): IFoundElement | null;
+
+    // The width in pixels of the window the page is drawn in, which the in-view command checks an
+    // element's edges against.
+    windowWidth: number;
+}
+
+//
+// Where an element's left and right edges are, in pixels from the left edge of the window, which
+// the in-view command reads to check the element is inside the window.
+//
+export interface IHorizontalBounds {
+    // The distance of the element's left edge from the window's left edge.
+    left: number;
+
+    // The distance of the element's right edge from the window's left edge.
+    right: number;
 }
 
 //
@@ -66,6 +83,9 @@ export interface IFoundElement {
 
     // Dispatches an event on the element.
     dispatchEvent(event: Event): boolean;
+
+    // Reads where the element's edges are in the window.
+    getBoundingClientRect(): IHorizontalBounds;
 }
 
 //
@@ -104,6 +124,9 @@ export function performTestCommand(finder: IElementFinder, command: ITestCommand
     if (command.command === "get-text") {
         return { ok: true, value: element.textContent ?? "" };
     }
+    if (command.command === "in-view") {
+        return elementInViewResult(element.getBoundingClientRect(), finder.windowWidth, command.dataId);
+    }
     return { ok: false, error: `Unknown test command ${command.command}.` };
 }
 
@@ -121,3 +144,24 @@ export function testResultToJson(result: ITestResult): IJsonObject {
     return json;
 }
 
+//
+// Works out the result of the in-view command: success when the element's left and right edges
+// are both inside the window's width, so a smoke test can check the user can see a pane, and
+// otherwise a failure with where the edges are. Rounding to whole pixels allows for the fractions
+// a scroll can leave.
+//
+export function elementInViewResult(bounds: IHorizontalBounds, windowWidth: number, dataId: string): ITestResult {
+    const left = Math.round(bounds.left);
+    const right = Math.round(bounds.right);
+    if (0 <= left) {
+        if (right <= windowWidth) {
+            return {
+                ok: true,
+            };
+        }
+    }
+    return {
+        ok: false,
+        error: `The element with the data-id ${dataId} is outside the window: its left edge is at ${left}, its right edge is at ${right} and the window is ${windowWidth} wide.`,
+    };
+}
