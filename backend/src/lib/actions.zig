@@ -13,10 +13,11 @@ const ziggy = @import("ziggy");
 // own keys (reload, zoom and the developer tools), as actions.test.zig checks. Keyboard Shortcuts
 // shows the keyboard shortcuts overlay, or closes it when it is open. Its shortcut is `?`, which
 // Ziggy runs in the frontend and leaves to a focused text box, so typing a `?` in a text box types
-// it. New window is on the File menu. Its frontend handler has Ziggy start another window of Graft
-// as a process of its own, with its own backend and task queue. Its shortcut is CmdOrCtrl+N, the
-// usual key for a new window in desktop apps. It comes last, so the keyboard shortcuts overlay
-// still lists Open repo first.
+// it. Commit Explorer opens the commit explorer, the commits page, from any page. Its shortcut
+// holds Ctrl (Cmd on macOS), so it runs even while a text box has the focus. New window is on the
+// File menu. Its frontend handler has Ziggy start another window of Graft as a process of its own,
+// with its own backend and task queue. Its shortcut is CmdOrCtrl+N, the usual key for a new window
+// in desktop apps. It comes last, so the keyboard shortcuts overlay still lists Open repo first.
 //
 pub const actions: []const ziggy.action.Action = &.{
     .{
@@ -28,6 +29,11 @@ pub const actions: []const ziggy.action.Action = &.{
         .name = "toggle-shortcuts-overlay",
         .label = "Keyboard Shortcuts",
         .shortcut = "?",
+    },
+    .{
+        .name = "open-commit-explorer",
+        .label = "Commit Explorer",
+        .shortcut = "CmdOrCtrl+1",
     },
     .{
         .name = "new-window",

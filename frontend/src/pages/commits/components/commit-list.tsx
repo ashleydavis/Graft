@@ -3,7 +3,7 @@
 // place while they load or when they could not be read.
 //
 
-import { Chip } from "@mui/material";
+import { Chip, List, ListItemButton } from "@mui/material";
 import { JSX } from "react";
 import { ICommit } from "../../../lib/commits";
 import { formatDate, IDateFormatOptions } from "../../../lib/date-format";
@@ -19,8 +19,12 @@ export interface ICommitListProps {
     // Why the commits could not be read, or undefined.
     error: string | undefined;
 
-    // The hash of the commit whose details are open, which the list highlights, or undefined.
+    // The hash of the selected commit, which the list shows as selected, or undefined.
     selectedHash: string | undefined;
+
+    // The hash of the commit whose details are open, whose title the list makes bold, or
+    // undefined.
+    openHash: string | undefined;
 
     // The locale and time zone each commit's date is shown in.
     dateFormat: IDateFormatOptions;
@@ -31,10 +35,11 @@ export interface ICommitListProps {
 
 //
 // Lists the commits, one row each with its title, refs, author, date and short hash, or shows that
-// the commits are loading or why they could not be read. The open commit's row is highlighted with
-// its title in bold, as in the Graft UI mockup. Clicking a commit reports its hash.
+// the commits are loading or why they could not be read. Each row is a MaterialUI ListItemButton,
+// so the selected commit shows MaterialUI's own selection styling, and the open commit's title is
+// bold, as in the Graft UI mockup. Clicking a commit reports its hash.
 //
-export function CommitList({ commits, error, selectedHash, dateFormat, onSelectCommit }: ICommitListProps): JSX.Element {
+export function CommitList({ commits, error, selectedHash, openHash, dateFormat, onSelectCommit }: ICommitListProps): JSX.Element {
     if (error !== undefined) {
         return <p data-id="commits-error" className="p-4 text-red-700 dark:text-red-400">{error}</p>;
     }
@@ -42,25 +47,27 @@ export function CommitList({ commits, error, selectedHash, dateFormat, onSelectC
         return <p data-id="commits-loading" className="p-4 text-gray-500 dark:text-gray-400">Loading the commits.</p>;
     }
     return (
-        <ul data-id="commit-list">
+        <List data-id="commit-list" disablePadding={true}>
             {commits.map(commit => {
-                const isSelected = commit.hash === selectedHash;
+                const isOpen = commit.hash === openHash;
                 return (
-                    <li
+                    <ListItemButton
                         key={commit.hash}
+                        component="li"
                         data-id={`commit-${commit.hash}`}
+                        selected={commit.hash === selectedHash}
                         onClick={() => onSelectCommit(commit.hash)}
-                        className={`flex h-[38px] cursor-pointer items-center gap-2 px-4 ${isSelected ? "bg-blue-500/15 font-bold" : "hover:bg-gray-100 dark:hover:bg-white/10"}`}
+                        className={`flex h-[38px] items-center gap-2 px-4 ${isOpen ? "font-bold" : ""}`}
                     >
                         <span title={commit.title} className="min-w-0 flex-1 truncate text-sm">{commit.title}</span>
                         {commit.refs.map(ref => <RefChip key={ref} gitRef={ref} />)}
                         <span className="w-28 flex-none truncate text-right text-xs font-normal text-gray-500 dark:text-gray-400">{commit.authorName}</span>
                         <span className="w-20 flex-none text-right text-xs font-normal text-gray-500 dark:text-gray-400">{formatDate(commit.authorDate, dateFormat)}</span>
                         <code className="w-14 flex-none font-mono text-xs font-normal text-gray-500 dark:text-gray-400">{commit.hash.slice(0, 7)}</code>
-                    </li>
+                    </ListItemButton>
                 );
             })}
-        </ul>
+        </List>
     );
 }
 

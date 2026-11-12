@@ -2,7 +2,8 @@
 // Tests the app's layout: renders it as the root of a router with a mock page and checks it
 // lays out the top bar, the left sidebar, the main content area holding the page and the right
 // sidebar, that the Keyboard Shortcuts action shows the keyboard shortcuts overlay over it, that
-// the left sidebar starts expanded and the right sidebar closed, that the top bar's buttons
+// the Commit Explorer action opens the commits page from any page and is removed with the layout,
+// that the left sidebar starts expanded and the right sidebar closed, that the top bar's buttons
 // minimise and expand the left sidebar and slide the right sidebar in and out, that both sidebars
 // are saved in Graft's state file and restored from it, that the top bar's breadcrumb trail
 // follows the page shown and its drop-down opens another page and that the right sidebar shows the
@@ -16,7 +17,7 @@ import { act, cleanup, render, RenderResult, screen, waitFor } from "@testing-li
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { createElement } from "react";
 import type { ITaskEvent, IZiggyBridge } from "ziggy";
-import { AppLayout, leftSidebarMinimisedStateKey, navigationFailureReporter, rightSidebarOpenStateKey } from "../../components/app-layout";
+import { AppLayout, commitExplorerAction, leftSidebarMinimisedStateKey, navigationFailureReporter, rightSidebarOpenStateKey } from "../../components/app-layout";
 import { AppTheme, systemDarkQuery } from "../../components/app-theme";
 import { RepoProvider } from "../../components/repo-context";
 import { shortcutsOverlayAction } from "../../components/shortcuts-overlay";
@@ -174,6 +175,43 @@ describe("AppLayout", () => {
         });
         expect(elementWithDataId(document.body, "shortcuts-overlay-search")).not.toBeUndefined();
         expect(elementWithDataId(container, "main-content")).not.toBeUndefined();
+    });
+
+    test("names the backend's Commit Explorer action", () => {
+        expect(commitExplorerAction).toBe("open-commit-explorer");
+    });
+
+    test("the Commit Explorer action opens the commits page", async () => {
+        const [, ziggy] = await renderAppLayoutWithZiggy("/repos/graft");
+        expect(ziggy.hasRegisteredAction(commitExplorerAction)).toBe(true);
+        await act(async () => {
+            await ziggy.runRegisteredAction(commitExplorerAction);
+        });
+        expect(await screen.findByText("The commits page")).toBeTruthy();
+    });
+
+    test("the Commit Explorer action opens the commits page from another page", async () => {
+        const [container, ziggy] = await renderAppLayoutWithZiggy("/repos/graft");
+        act(() => {
+            elementWithDataId(container, "left-sidebar-help-link")?.click();
+        });
+        await screen.findByText("The Help page");
+        await act(async () => {
+            await ziggy.runRegisteredAction(commitExplorerAction);
+        });
+        expect(await screen.findByText("The commits page")).toBeTruthy();
+    });
+
+    test("removes the Commit Explorer action's handler when the layout goes", async () => {
+        const ziggy = makeFakeActionZiggy([]);
+        const rendered = await renderFakedAppLayout({
+            ...makeFakeThemeZiggy({
+                systemTheme: "light",
+            }),
+            ...ziggy,
+        }, "/repos/graft");
+        rendered.unmount();
+        expect(ziggy.hasRegisteredAction(commitExplorerAction)).toBe(false);
     });
 
     test("shows the page in the main content area", async () => {
