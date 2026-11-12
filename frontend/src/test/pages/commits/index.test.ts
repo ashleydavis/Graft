@@ -3,8 +3,8 @@
 // that it queues the commits task for the repo, shows that it is loading, then lists the commits
 // or says why they could not be read. It also checks the columns: clicking a commit opens the
 // commit details pane and highlights the commit, clicking a changed file opens the file pane and
-// highlights the file and each pane closes. Dates are checked against the browser's own locale and
-// time zone, which the page passes on.
+// highlights the file and each pane closes, and that the page scrolls each pane that opens into view.
+// Dates are checked against the browser's own locale and time zone, which the page passes on.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
@@ -13,7 +13,7 @@ import { createElement, JSX } from "react";
 import type { IAddTask, ITaskCompletedEvent } from "ziggy";
 import { ICommit } from "../../../lib/commits";
 import { formatDate, formatDateTime } from "../../../lib/date-format";
-import { CommitsPage } from "../../../pages/commits";
+import { CommitsPage, scrollLastPaneIntoView } from "../../../pages/commits";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../../fake-ziggy";
 
 //
@@ -22,6 +22,31 @@ import { FakeTaskZiggy, installFakeTaskZiggy } from "../../fake-ziggy";
 //
 jest.spyOn(window, "scrollTo").mockImplementation(() => {
 });
+
+//
+// The page scrolls each pane that opens into view. jsdom leaves scrollIntoView undefined, because
+// it lays out no page, so the tests put a Jest mock on every element that records which element it
+// was called on.
+//
+const scrollIntoView = jest.fn();
+Element.prototype.scrollIntoView = scrollIntoView;
+
+beforeEach(() => {
+    scrollIntoView.mockClear();
+});
+
+//
+// Reads the data-ids of the elements the page scrolled into view, in the order it scrolled them.
+//
+function scrolledDataIds(): (string | null)[] {
+    return scrollIntoView.mock.contexts.map(element => {
+        //
+        // The cast is safe because the mock is only ever called as a method of an element, and a
+        // type guard cannot narrow it because Jest types each context as unknown.
+        //
+        return (element as Element).getAttribute("data-id");
+    });
+}
 
 //
 // Shows the commits page for the repo at "/repo" as the only page of a router, as the app does.
@@ -244,6 +269,30 @@ describe("CommitsPage", () => {
         expect(elementWithDataId("changed-file-README.md").className).toContain("bg-blue-500/15");
     });
 
+    test("scrolls the commit details pane into view when it opens, then the file pane", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        expect(scrolledDataIds()).toEqual(["commit-details-pane"]);
+        expect(scrollIntoView).toHaveBeenCalledWith({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "nearest",
+        });
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        expect(scrolledDataIds()).toEqual(["commit-details-pane", "file-pane"]);
+    });
+
+    test("scrolls nothing while no commit is open", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderCommitsPage();
+        await screen.findByText("Loading the commits.");
+        completeTaskAt(ziggy, 0, {
+            commits: [commitJson],
+        });
+        await screen.findByText("The first commit");
+        expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+
     test("closes the file pane, then the commit details pane", async () => {
         const ziggy = installFakeTaskZiggy();
         await openCommitDetails(ziggy);
@@ -273,5 +322,22 @@ describe("CommitsPage", () => {
         fireEvent.click(elementWithDataId(`commit-${commitJson.hash}`));
         expect(screen.queryByText("Loading the diff.")).toBeNull();
         expect(elementWithDataId("changed-file-README.md").className).not.toContain("bg-blue-500/15");
+    });
+});
+
+describe("scrollLastPaneIntoView", () => {
+    test("scrolls the last pane in the columns into view", () => {
+        const columns = document.createElement("div");
+        const firstPane = document.createElement("section");
+        const lastPane = document.createElement("section");
+        columns.append(firstPane, lastPane);
+        scrollLastPaneIntoView(columns);
+        expect(scrollIntoView.mock.contexts).toEqual([lastPane]);
+    });
+
+    test("scrolls nothing when the columns are not drawn or hold no pane", () => {
+        scrollLastPaneIntoView(null);
+        scrollLastPaneIntoView(document.createElement("div"));
+        expect(scrollIntoView).not.toHaveBeenCalled();
     });
 });

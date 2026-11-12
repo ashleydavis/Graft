@@ -2,7 +2,7 @@
 // Tests the commit details pane: renders it with a fake window.ziggy made of Jest mocks and checks that
 // it queues the commit details task for the commit, shows that it is loading, then shows the
 // commit's full message, author, committer, dates, parents and changed files with their change type
-// and line counts, or says why they could not be read, and that clicking a file or the close
+// and line counts, or shows why they could not be read, and that clicking a file or the close
 // button reports it. It also checks the text of the parents and the colour of each change type.
 //
 

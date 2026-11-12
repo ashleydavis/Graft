@@ -13,6 +13,7 @@ The commits page shows its panes side by side in columns. The first is the commi
 - The commit details pane is headed "Commit". It shows the commit's full message (the title in bold, then the description when there is one), "Authored by" the author with their email and the date and time, "Committed by" the committer with their email and the date and time, the full hash and the parents as short hashes ("Parent: <hash>" for one, "Parents: <hash>, <hash>" for a merge and "Parents: none" for the first commit).
 - Under a "Files changed (<count>)" heading it lists the files the commit changed, each with git's one letter change type (A green, D red, M or T orange), its path and the lines the commit added and deleted ("+1 -1"), or "binary" for a binary file. A commit with no changed files, such as a merge, shows "No files changed in this commit.". The file whose diff is open is highlighted.
 - Clicking a changed file opens the file pane to the right of the commit details pane. It is headed by the file's path and shows the file's diff in the commit as plain text, as git writes it.
+- When a pane opens beyond the right edge of the window, the page scrolls sideways, smoothly and by the least amount needed, until the pane is in view. A pane that opens already in view leaves the page where it is.
 - Each of the commit details pane and the file pane has a close button (an X icon) in its header. Closing the file pane leaves the commit details pane open. Closing the commit details pane closes the file pane with it.
 - While a pane's task runs it says "Loading the commit." or "Loading the diff.". When the task fails the pane shows why.
 - The commit details pane queues the commit details task, a background task that runs the `log` wrapper for the commit's details and the `diff-tree` wrapper for its changed files.
@@ -33,6 +34,7 @@ The commits page shows its panes side by side in columns. The first is the commi
 - [x] The commit pane shows each commit's title, short hash, author, date and refs.
 - [x] The commit details pane shows the full message, author, committer, dates, parents and the changed files with their change type and line counts.
 - [x] The file pane shows the file's diff as plain text from Git.
+- [x] When a pane opens off screen to the right, the page scrolls right so the new pane is in view.
 
 ## Open questions
 

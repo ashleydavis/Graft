@@ -4,7 +4,7 @@
 # Creates a test repo of the smoke test's own, starts the real app with remote control on, on
 # that repo and checks what each of the commits page's columns shows: the commit pane's rows,
 # the commit details pane a click on a commit opens and the file pane a click on a changed file
-# opens. See test.md.
+# opens, and that each pane that opens is scrolled into view. See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -33,6 +33,7 @@ wait_for_text "commit-$parent_hash" "Add the notes" 30
 wait_for_text "commit-$parent_hash" "v1.0" 30
 click "commit-$head_hash"
 wait_for_element commit-details-pane 30
+wait_for_in_view commit-details-pane 30
 wait_for_element commit-details 30
 wait_for_text commit-details-heading "Commit" 30
 wait_for_text commit-details-title "Change the note" 30
@@ -49,6 +50,7 @@ wait_for_text changed-file-notes.txt "notes.txt" 30
 wait_for_text changed-file-notes.txt "+1 -1" 30
 click changed-file-notes.txt
 wait_for_element file-pane 30
+wait_for_in_view file-pane 30
 wait_for_text file-pane-path "notes.txt" 30
 wait_for_element file-diff 30
 wait_for_text file-diff "-The first note." 30
