@@ -7,7 +7,7 @@
         // Ziggy, at a version tag of its repository. Every other place that takes Ziggy (package.json and the Xcode project)
         // names the same version.
         .ziggy = .{
-            .path = "../../../../../../photosphere/ziggy/.claude/worktrees/log-err",
+            .path = "../../../photosphere/ziggy",
         },
     },
     .paths = .{
