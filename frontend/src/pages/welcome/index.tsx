@@ -26,13 +26,14 @@ export function reportOpenRepoFailure(error: unknown): void {
 //
 export function WelcomePage(): JSX.Element {
     return (
-        <main data-id="welcome-page" className="flex flex-col items-center gap-6 p-12">
-            <h1 data-id="welcome-heading" className="text-4xl font-bold">
+        <main data-id="welcome-page" className="graft-page-in flex flex-col items-center gap-6 p-12">
+            <h1 data-id="welcome-heading" className="text-[length:var(--text-2xl)] font-[var(--weight-bold)] text-[var(--color-text)]">
                 Graft
             </h1>
             <Button
                 data-id="welcome-open-repo-button"
                 variant="contained"
+                size="large"
                 startIcon={<FontAwesomeIcon icon={faFolderOpen} />}
                 onClick={() => {
                     window.ziggy.runAction(openRepoActionName).catch(reportOpenRepoFailure);

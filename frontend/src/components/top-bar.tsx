@@ -56,14 +56,14 @@ export function TopBar({ isLeftSidebarMinimised, onToggleLeftSidebar, isRightSid
     const rightSidebarLabel = isRightSidebarOpen ? "Close the right sidebar" : "Open the right sidebar";
 
     return (
-        <header data-id="top-bar" className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-200 dark:border-gray-700 px-2">
+        <header data-id="top-bar" className="flex h-12 shrink-0 items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-panel)] px-2 shadow-[var(--shadow-raised)] relative z-10">
             <IconButton data-id="left-sidebar-toggle" aria-label={leftSidebarLabel} title={leftSidebarLabel} onClick={onToggleLeftSidebar}>
                 <FontAwesomeIcon icon={faBars} />
             </IconButton>
-            <span data-id="top-bar-name" className="font-extrabold tracking-wide select-none">
+            <span data-id="top-bar-name" className="select-none text-[length:var(--text-lg)] font-[var(--weight-bold)] text-[var(--color-text)]">
                 Graft
             </span>
-            <div data-id="top-bar-trail" className="mx-4 flex min-w-0 flex-1 items-center border-l border-gray-200 dark:border-gray-700 pl-4">
+            <div data-id="top-bar-trail" className="mx-2 flex min-w-0 flex-1 items-center border-l border-[var(--color-border)] pl-4">
                 <BreadcrumbTrail steps={trail} onNavigate={onNavigate} />
             </div>
             <ThemeMenu setting={themeSetting} onChooseSetting={onChooseThemeSetting} />

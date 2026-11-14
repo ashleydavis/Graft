@@ -80,8 +80,8 @@ describe("CommitList", () => {
 
     test("makes the open commit's title bold", () => {
         const container = renderList(secondCommit.hash, commit.hash, jest.fn());
-        expect(container.querySelector(`[data-id="commit-${commit.hash}"]`)?.className).toContain("font-bold");
-        expect(container.querySelector(`[data-id="commit-${secondCommit.hash}"]`)?.className).not.toContain("font-bold");
+        expect(container.querySelector(`[data-id="commit-${commit.hash}"]`)?.className).toContain("font-[var(--weight-bold)]");
+        expect(container.querySelector(`[data-id="commit-${secondCommit.hash}"]`)?.className).not.toContain("font-[var(--weight-bold)]");
     });
 
     test("shows that the commits are loading until they are read", () => {
@@ -123,30 +123,39 @@ describe("CommitList", () => {
 });
 
 describe("RefChip", () => {
-    test("fills HEAD in the primary colour", () => {
+    test("fills HEAD in the accent colour", () => {
         const { container } = render(createElement(RefChip, {
             gitRef: "HEAD -> main",
         }));
         const chip = container.firstElementChild;
         expect(chip?.textContent).toBe("HEAD -> main");
-        expect(chip?.className).toContain("MuiChip-filled MuiChip-sizeSmall MuiChip-colorPrimary");
+        expect(chip?.className).toContain("MuiChip-current");
     });
 
-    test("outlines a tag in orange, without its tag prefix", () => {
+    test("outlines a tag in the warning colour, without its tag prefix", () => {
         const { container } = render(createElement(RefChip, {
             gitRef: "tag: v1.0",
         }));
         const chip = container.firstElementChild;
         expect(chip?.textContent).toBe("v1.0");
-        expect(chip?.className).toContain("MuiChip-outlined MuiChip-sizeSmall MuiChip-colorWarning");
+        expect(chip?.className).toContain("MuiChip-tag");
     });
 
-    test("outlines any other branch in grey", () => {
+    test("outlines a remote branch in the info colour", () => {
         const { container } = render(createElement(RefChip, {
             gitRef: "origin/main",
         }));
         const chip = container.firstElementChild;
         expect(chip?.textContent).toBe("origin/main");
-        expect(chip?.className).toContain("MuiChip-outlined MuiChip-sizeSmall MuiChip-colorDefault");
+        expect(chip?.className).toContain("MuiChip-remote");
+    });
+
+    test("outlines any other branch in the accent colour", () => {
+        const { container } = render(createElement(RefChip, {
+            gitRef: "feature",
+        }));
+        const chip = container.firstElementChild;
+        expect(chip?.textContent).toBe("feature");
+        expect(chip?.className).toContain("MuiChip-branch");
     });
 });

@@ -1,12 +1,14 @@
 //
 // Graft's theme: reads the theme setting from Graft's config file and saves it there, follows the
-// system's theme, and draws MaterialUI and Tailwind in light or dark colours to match.
+// system's theme, and draws MaterialUI and Tailwind in the style guide's light or dark colours to
+// match.
 //
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { createContext, JSX, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import type { IConfigChangedEvent } from "ziggy";
 import { defaultThemeSetting, parseThemeSetting, themeConfigKey, ThemeMode, themeMode, ThemeSetting } from "../lib/theme";
+import { graftComponents, graftTypography } from "./graft-theme";
 
 //
 // The media query that matches while the page is drawn dark. The native app sets the web view's
@@ -16,10 +18,11 @@ import { defaultThemeSetting, parseThemeSetting, themeConfigKey, ThemeMode, them
 export const systemDarkQuery = "(prefers-color-scheme: dark)";
 
 //
-// The page's background in the dark theme: the dark grey of Graft's dark icon and splash art, the
-// same as the window's (.backgrounds in app.zig) and main.css's.
+// The page's background in the dark theme: graft.css's --color-bg in the dark theme (--gray-950),
+// the same as the window's (.backgrounds in app.zig). MaterialUI parses its palette's colours, so it
+// is given the literal colour instead of the CSS variable.
 //
-export const darkBackground = "#14171a";
+export const darkBackground = "#09090b";
 
 //
 // What AppTheme draws and what tells it the system's theme changed. It reads and saves the
@@ -112,7 +115,8 @@ function useSavedTheme(systemDark: MediaQueryList): [ThemeSetting, (setting: The
 
 //
 // Marks the page's root element with the mode, so Tailwind's dark: classes apply in dark mode
-// (see main.css) and the browser draws its own controls and scrollbars to match.
+// (see main.css), graft.css's role tokens take their dark values from the dark class and the
+// browser draws its own controls and scrollbars to match.
 //
 function applyModeToPage(mode: ThemeMode): void {
     const root = document.documentElement;
@@ -131,6 +135,8 @@ export function AppTheme({ systemDark, children }: IAppThemeProps): JSX.Element 
     useEffect(() => applyModeToPage(mode), [mode]);
 
     const muiTheme = useMemo(() => createTheme({
+        typography: graftTypography,
+        components: graftComponents,
         palette: mode === "dark"
             ? {
                 mode,

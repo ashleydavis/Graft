@@ -33,7 +33,7 @@ Every page of Graft shows in the same layout, so a user always finds the same th
 - [x] The top bar's theme menu starts on System and offers Light, Dark and System, each with its icon and what it does, ticks the one in use and draws Graft in light or dark colours to match the choice, and on System follows the system's theme.
 - [x] The theme setting is saved in Graft's config file, and Graft starts on the saved setting.
 - [x] Whether the left sidebar is minimised and whether the right sidebar is open are saved in Graft's state file, and Graft starts with both as they were left.
-- [x] The window and page are white in the light theme and the dark grey of Graft's dark art (`#14171A`) in the dark theme, from the first paint.
+- [x] The window and page are the style guide's background colour, `--color-bg` in `graft.css` (`#FAFAFA` in the light theme and `#09090B` in the dark theme), from the first paint.
 
 ## Open questions
 

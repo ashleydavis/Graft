@@ -57,12 +57,12 @@ export function SidebarLink({ to, icon, label, dataId, isMinimised }: ISidebarLi
                 exact: true,
             }}
             activeProps={{
-                className: "bg-gray-200 dark:bg-gray-700",
+                className: "bg-[var(--color-selected)] text-[var(--color-text)] shadow-[inset_2px_0_0_var(--color-select-item)] hover:bg-[var(--color-selected)]",
             }}
-            className={`mx-2 flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-800 ${isMinimised ? "justify-center" : "justify-start"}`}
+            className={`mx-2 flex h-9 items-center gap-3 rounded-[var(--radius-sm)] px-3 text-[length:var(--text-md)] font-[var(--weight-medium)] text-[var(--color-text-muted)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-[var(--color-hover)] hover:text-[var(--color-text)] ${isMinimised ? "justify-center" : "justify-start"}`}
         >
-            <FontAwesomeIcon icon={icon} fixedWidth={true} />
-            {!isMinimised && <span data-id={`${dataId}-label`}>{label}</span>}
+            <FontAwesomeIcon icon={icon} fixedWidth={true} className="text-[length:var(--icon-md)]" />
+            {!isMinimised && <span data-id={`${dataId}-label`} className="truncate">{label}</span>}
         </Link>
     );
 }
@@ -78,7 +78,7 @@ export function LeftSidebar({ isMinimised, isRepoOpen }: ILeftSidebarProps): JSX
     return (
         <aside
             data-id="left-sidebar"
-            className={`flex shrink-0 flex-col justify-between overflow-hidden border-r border-gray-200 dark:border-gray-700 py-2 transition-[width] duration-200 ${isMinimised ? "w-16" : "w-60"}`}
+            className={`flex shrink-0 flex-col justify-between gap-1 overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-panel)] py-2 transition-[width] duration-[var(--duration-normal)] ease-[var(--ease-standard)] ${isMinimised ? "w-16" : "w-60"}`}
         >
             <nav>
                 {isRepoOpen && (

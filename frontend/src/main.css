@@ -1,10 +1,17 @@
 /*
- * Graft's stylesheet: Tailwind's styles and classes.
+ * Graft's stylesheet: the style guide's design tokens, the fonts they name and Tailwind's styles
+ * and classes.
  *
  * MaterialUI puts its styles in the mui layer, which comes before Tailwind's utilities layer,
  * so a Tailwind class on a MaterialUI component wins over the component's own style.
  */
 @layer theme, base, mui, components, utilities;
+@import "@fontsource/mona-sans/400.css";
+@import "@fontsource/mona-sans/500.css";
+@import "@fontsource/mona-sans/600.css";
+@import "@fontsource/monaspace-neon/400.css";
+@import "@fontsource/monaspace-neon/600.css";
+@import "./graft.css";
 @import "tailwindcss";
 
 /*
@@ -14,20 +21,76 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * The page's own colours. The backgrounds match the window's (.backgrounds in app.zig) and
- * MaterialUI's palette (app-theme.tsx): white in the light theme, and in the dark theme the dark
- * grey of Graft's dark icon and splash art.
+ * The page's own colours and type, from the style guide's role tokens. AppTheme sets the dark class
+ * on the root element, which switches graft.css's role tokens to their dark values.
  */
 @layer base {
     html,
     body {
-        background-color: #ffffff;
-        color: rgba(0, 0, 0, 0.87);
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        font-family: var(--font-sans);
+        font-size: var(--text-md);
+        line-height: var(--leading-normal);
     }
 
-    .dark,
-    .dark body {
-        background-color: #14171a;
-        color: #ffffff;
+    code,
+    kbd,
+    pre {
+        font-family: var(--font-mono);
+    }
+
+    /*
+     * Scrollbars keep the browser's own size and take a grey thumb on a see-through track, so they
+     * sit quietly on whatever surface scrolls.
+     */
+    * {
+        scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+    }
+
+    :focus-visible {
+        outline: var(--focus-ring-width) solid var(--color-focus);
+        outline-offset: var(--focus-ring-offset);
+    }
+}
+
+/*
+ * A pane that opens to the right of the commits page fades in over the normal duration. It fades
+ * without moving, because the commits page scrolls the new pane into view as it opens and a moving
+ * pane would be scrolled to where it starts instead of where it ends.
+ */
+@keyframes graft-pane-in {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.graft-pane-in {
+    animation: graft-pane-in var(--duration-normal) var(--ease-standard);
+}
+
+/*
+ * A page's content fades in over the normal duration as the page opens.
+ */
+@keyframes graft-page-in {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.graft-page-in {
+    animation: graft-page-in var(--duration-normal) var(--ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .graft-pane-in,
+    .graft-page-in {
+        animation: none;
     }
 }

@@ -22,33 +22,33 @@ export interface IGitCommandsPanelProps {
 //
 export function GitCommandsPanel({ pageCommands }: IGitCommandsPanelProps): JSX.Element {
     return (
-        <section data-id="git-commands-panel" className="flex flex-col gap-2 p-4">
-            <h2 data-id="git-commands-heading" className="text-lg font-bold">
+        <section data-id="git-commands-panel" className="flex flex-col gap-3 p-4">
+            <h2 data-id="git-commands-heading" className="text-[length:var(--text-lg)] font-[var(--weight-bold)] text-[var(--color-text)]">
                 Git commands
             </h2>
             {pageCommands === undefined && (
-                <p data-id="git-commands-empty">
+                <p data-id="git-commands-empty" className="text-[length:var(--text-md)] text-[var(--color-text-muted)]">
                     This page has run no Git commands.
                 </p>
             )}
             {pageCommands !== undefined && (
                 <>
-                    <div className="flex items-center gap-1">
-                        <code data-id="git-commands-directory" className="min-w-0 flex-1 break-all text-sm">
+                    <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-raised)] py-1 pl-3 pr-1">
+                        <code data-id="git-commands-directory" className="min-w-0 flex-1 break-all text-[length:var(--text-sm)]">
                             {pageCommands.directoryCommand}
                         </code>
                         <CopyButton dataId="git-commands-directory-copy" text={pageCommands.directoryCommand} />
                     </div>
-                    <ol data-id="git-commands-list" className="flex flex-col gap-1">
+                    <ol data-id="git-commands-list" className="flex flex-col gap-2">
                         {pageCommands.commands.map((command, index) => (
                             <li key={command} data-id={`git-command-${index}`} className="flex flex-col">
                                 {index === 0 && (
-                                    <span data-id="git-command-most-recent" className="text-xs text-gray-500 dark:text-gray-400">
+                                    <span data-id="git-command-most-recent" className="pb-1 text-[length:var(--text-xs)] font-[var(--weight-medium)] text-[var(--color-text-muted)]">
                                         Most recent
                                     </span>
                                 )}
-                                <div className="flex items-center gap-1">
-                                    <code data-id={`git-command-${index}-text`} className="min-w-0 flex-1 break-all text-sm">
+                                <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-raised)] py-1 pl-3 pr-1 transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:border-[var(--color-border-control)]">
+                                    <code data-id={`git-command-${index}-text`} className="min-w-0 flex-1 break-all text-[length:var(--text-sm)]">
                                         {command}
                                     </code>
                                     <CopyButton dataId={`git-command-${index}-copy`} text={command} />

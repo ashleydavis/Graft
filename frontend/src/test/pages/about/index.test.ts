@@ -38,12 +38,11 @@ describe("AboutPage", () => {
         expect(screen.getByText(/Graft is a desktop Git client/).getAttribute("data-id")).toBe("about-description");
     });
 
-    test("shows the Font Awesome icon in a MaterialUI Avatar styled with a Tailwind class", () => {
+    test("shows the Font Awesome icon in a MaterialUI Avatar, which the style guide theme colours", () => {
         const { container } = render(createElement(AboutPage));
         const avatar = container.querySelector("[data-id=\"about-icon\"]");
         expect(avatar).not.toBeNull();
         expect(avatar?.classList.contains("MuiAvatar-root")).toBe(true);
-        expect(avatar?.classList.contains("bg-emerald-700")).toBe(true);
         expect(avatar?.querySelector("svg[data-icon=\"code-branch\"]")).not.toBeNull();
     });
 

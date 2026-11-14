@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Graft</title>
     <style>
-        /* The page's colour from the first paint, before main.css loads: the same as the window's (.backgrounds in app.zig). */
+        /* The page's colour from the first paint, before main.css loads: the same as the window's (.backgrounds in app.zig) and graft.css's --color-bg. */
         :root { color-scheme: light dark; }
-        html { background: #ffffff; }
-        @media (prefers-color-scheme: dark) { html { background: #14171a; } }
+        html { background: #fafafa; }
+        @media (prefers-color-scheme: dark) { html { background: #09090b; } }
         /* The splash overlay does not cover the scrollbar gutter, so the page's scrollbar is hidden while it is present. */
         html:has([data-id="ziggy-splash"]), html:has([data-id="ziggy-splash"]) * { overflow: hidden !important; }
     </style>

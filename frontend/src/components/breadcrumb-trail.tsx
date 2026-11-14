@@ -44,7 +44,7 @@ export function BreadcrumbTrail({ steps, onNavigate }: IBreadcrumbTrailProps): J
         <Breadcrumbs
             data-id="breadcrumb-trail"
             aria-label="Breadcrumb trail"
-            separator={<FontAwesomeIcon icon={faChevronRight} className="text-xs" />}
+            separator={<FontAwesomeIcon icon={faChevronRight} />}
             className="min-w-0"
         >
             {steps.map((step, index) => (
@@ -64,7 +64,7 @@ export function TrailStep({ step, isLast, onNavigate }: ITrailStepProps): JSX.El
         return <TrailStepMenu step={step} isLast={isLast} onNavigate={onNavigate} />;
     }
     return (
-        <span data-id={step.dataId} title={step.tooltip} className={isLast ? "text-sm font-bold text-gray-900 dark:text-gray-100" : "text-sm text-gray-600 dark:text-gray-400"}>
+        <span data-id={step.dataId} title={step.tooltip} className={isLast ? "text-[length:var(--text-md)] font-[var(--weight-bold)] text-[var(--color-text)]" : "text-[length:var(--text-md)] text-[var(--color-text-muted)]"}>
             {clipStepLabel(step.label)}
         </span>
     );
@@ -101,10 +101,10 @@ export function TrailStepMenu({ step, isLast, onNavigate }: ITrailStepProps): JS
                 data-id={step.dataId}
                 title={step.tooltip}
                 onClick={event => setAnchor(event.currentTarget)}
-                className={`inline-flex items-center gap-1 text-sm hover:underline ${isLast ? "font-bold text-gray-900 dark:text-gray-100" : "text-gray-600 dark:text-gray-400"}`}
+                className={`inline-flex items-center gap-1.5 rounded-[var(--radius-md)] px-2 py-0.5 text-[length:var(--text-md)] shadow-[inset_0_0_0_1px_var(--color-border)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-[var(--color-hover)] hover:text-[var(--color-text)] ${isLast ? "font-[var(--weight-bold)] text-[var(--color-text)]" : "text-[var(--color-text-muted)]"}`}
             >
                 {clipStepLabel(step.label)}
-                <FontAwesomeIcon icon={faCaretDown} />
+                <FontAwesomeIcon icon={faCaretDown} className={`text-[length:var(--icon-sm)] transition-transform duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${anchor !== undefined ? "rotate-180" : ""}`} />
             </button>
             <Popover
                 data-id={`${step.dataId}-menu`}
@@ -116,7 +116,7 @@ export function TrailStepMenu({ step, isLast, onNavigate }: ITrailStepProps): JS
                     horizontal: "left",
                 }}
             >
-                <div className="w-64 p-2">
+                <div className="flex w-64 flex-col gap-2 p-2">
                     <TextField
                         size="small"
                         fullWidth={true}
@@ -126,14 +126,14 @@ export function TrailStepMenu({ step, isLast, onNavigate }: ITrailStepProps): JS
                         onChange={event => setSearchText(event.target.value)}
                     />
                     {shownOptions.length === 0 && (
-                        <p data-id={`${step.dataId}-no-match`} className="p-3 text-center text-sm text-gray-600 dark:text-gray-400">
+                        <p data-id={`${step.dataId}-no-match`} className="p-3 text-center text-[length:var(--text-sm)] text-[var(--color-text-muted)]">
                             No page matches "{searchText}".
                         </p>
                     )}
-                    <MenuList>
+                    <MenuList className="flex flex-col gap-0.5 p-0">
                         {shownOptions.map(option => (
-                            <MenuItem key={option.dataId} data-id={option.dataId} selected={option.isSelected} onClick={() => choose(option)} className="gap-2 text-sm">
-                                <span className="flex w-5 justify-center">
+                            <MenuItem key={option.dataId} data-id={option.dataId} selected={option.isSelected} onClick={() => choose(option)} className="gap-2">
+                                <span className="flex w-5 justify-center text-[length:var(--icon-sm)] text-[var(--color-accent)]">
                                     {option.isSelected && <FontAwesomeIcon icon={faCheck} />}
                                 </span>
                                 {option.label}

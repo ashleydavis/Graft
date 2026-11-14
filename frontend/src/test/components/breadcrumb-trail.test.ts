@@ -85,12 +85,12 @@ describe("BreadcrumbTrail", () => {
         expect(repoStep?.tagName).toBe("SPAN");
         expect(repoStep?.textContent).toBe("a-repo-with-a-lon\u2026");
         expect(repoStep?.getAttribute("title")).toBe("/repos/a-repo-with-a-long-name");
-        expect(repoStep?.classList.contains("text-gray-600")).toBe(true);
+        expect(repoStep?.classList.contains("text-[var(--color-text-muted)]")).toBe(true);
     });
 
     test("shows the last step in bold, whether plain text or a drop-down", () => {
         renderTrail([trail[0]]);
-        expect(elementWithDataId("breadcrumb-repo")?.classList.contains("font-bold")).toBe(true);
+        expect(elementWithDataId("breadcrumb-repo")?.classList.contains("font-[var(--weight-bold)]")).toBe(true);
     });
 
     test("shows a step with options as a button with a drop-down arrow, in bold when it is last", () => {
@@ -100,13 +100,13 @@ describe("BreadcrumbTrail", () => {
         expect(pageStep?.textContent).toBe("About");
         expect(pageStep?.getAttribute("title")).toBe("About");
         expect(pageStep?.querySelector("svg[data-icon=\"caret-down\"]")).not.toBeNull();
-        expect(pageStep?.classList.contains("font-bold")).toBe(true);
+        expect(pageStep?.classList.contains("font-[var(--weight-bold)]")).toBe(true);
     });
 
-    test("shows a drop-down step before the last one in grey", () => {
+    test("shows a drop-down step before the last one in the muted text colour", () => {
         renderTrail([trail[1], trail[0]]);
-        expect(elementWithDataId("breadcrumb-page")?.classList.contains("font-bold")).toBe(false);
-        expect(elementWithDataId("breadcrumb-page")?.classList.contains("text-gray-600")).toBe(true);
+        expect(elementWithDataId("breadcrumb-page")?.classList.contains("font-[var(--weight-bold)]")).toBe(false);
+        expect(elementWithDataId("breadcrumb-page")?.classList.contains("text-[var(--color-text-muted)]")).toBe(true);
     });
 
     test("opens a drop-down that lists the step's pages and ticks the one shown", () => {
