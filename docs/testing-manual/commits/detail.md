@@ -34,4 +34,4 @@ bun run macos
 
 ## Expected result
 
-The commits page lists the test repo's commits, and the links change between the About page and the commits page.
+The commits page lists the test repo's commits. The left sidebar opens the commits page and the commits page's link goes back to the About page.

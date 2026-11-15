@@ -80,9 +80,8 @@ describe("main", () => {
         expect(elementWithDataId("app-layout")?.contains(elementWithDataId("main-content") ?? null)).toBe(true);
     });
 
-    test("the app starts with no repo open: the trail starts with the page and no link reaches the commits page", async () => {
+    test("the app starts with no repo open: the trail starts with the page and the left sidebar has no Commits link", async () => {
         await screen.findByText("About Graft");
-        expect(document.querySelector("[data-id=\"about-commits-link\"]")).toBeNull();
         expect(document.querySelector("[data-id=\"left-sidebar-commits-link\"]")).toBeNull();
         expect(document.querySelector("[data-id=\"breadcrumb-repo\"]")).toBeNull();
         expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("About");
@@ -90,9 +89,7 @@ describe("main", () => {
 
     test("the open-repo action opens the folder picked on the commits page, and the links change back to the About page and on again", async () => {
         await screen.findByText("About Graft");
-        const registerAction = installedZiggy.registerAction;
-        expect(registerAction).toHaveBeenCalledWith("open-repo", expect.any(Function));
-        const openRepoHandler = registerAction.mock.calls[registerAction.mock.calls.length - 1][1];
+        expect(installedZiggy.hasRegisteredAction("open-repo")).toBe(true);
         const ziggy = {
             invoke: jest.fn().mockResolvedValue("/repos/graft"),
             addTask: jest.fn(),
@@ -104,7 +101,7 @@ describe("main", () => {
             configurable: true,
         });
         await act(async () => {
-            await openRepoHandler();
+            await installedZiggy.runRegisteredAction("open-repo");
         });
         expect(ziggy.invoke).toHaveBeenCalledWith("pick-repo-folder", null);
         expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
@@ -124,7 +121,7 @@ describe("main", () => {
         expect((await screen.findByText("About Graft")).getAttribute("data-id")).toBe("about-heading");
         expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("graft");
         act(() => {
-            elementWithDataId("about-commits-link")?.click();
+            elementWithDataId("left-sidebar-commits-link")?.click();
         });
         expect((await screen.findByText("Commits", {
             selector: "h1",

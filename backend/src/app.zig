@@ -1,6 +1,6 @@
 //
 // Graft's declaration to Ziggy: the messages its frontend sends and the tasks it queues, each with
-// the Zig function that handles it, its actions, its menu and its built frontend. Ziggy's build
+// the Zig function that handles it, its menu, its actions and its built frontend. Ziggy's build
 // serves the app declared here.
 //
 
@@ -30,8 +30,8 @@ pub const app = ziggy.core.App(.{
         .@"file-diff" = file_diff_task.file_diff_task_handler(git_interface.run_git),
         .@"pick-repo-folder" = pick_repo_folder.pick_repo_folder_task_handler,
     },
-    .actions = actions.actions,
     .menu = menu.menu,
+    .actions = actions.actions,
     // The window's colour before the page draws: white in the light theme, and in the dark theme the dark grey of Graft's dark
     // icon and splash art. main.css and index.html draw the page in the same colours.
     .backgrounds = .{

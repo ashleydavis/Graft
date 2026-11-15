@@ -5,13 +5,11 @@
 //
 
 const std = @import("std");
-const ziggy = @import("ziggy");
 const git_interface = @import("../lib/git-interface.zig");
 const git_log = @import("../lib/git-log.zig");
 const git_mock = @import("git-mock.zig");
 
 const io = std.testing.io;
-const ConsoleLog = ziggy.log.ConsoleLog;
 
 //
 // The format argument the wrapper must pass, spelled out here so a change to it fails the tests.
@@ -52,11 +50,20 @@ const first_page_args: []const []const u8 = &.{
 };
 
 //
+// The arguments the help panel is given to show for the same command.
+//
+const first_page_shown_args: []const []const u8 = &.{
+    "log",
+    "--max-count=50",
+};
+
+//
 // A mock that answers the first page's arguments as git does when it succeeds with the output.
 //
 fn mock_first_page(comptime output: []const u8) git_interface.RunGit {
     return git_mock.mock_git(.{
         .expected_args = first_page_args,
+        .expected_shown_args = first_page_shown_args,
         .exit_code = 0,
         .stdout = output,
         .stderr = "",
@@ -79,7 +86,7 @@ test "read_log_page reads the first page from HEAD and parses every field of eac
 
     const page = try git_log.read_log_page(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock_first_page(two_commits_output),
         first_page_request,
@@ -125,6 +132,12 @@ test "read_log_page starts a later page from the previous page's last commit and
             "--skip=1",
             second_hash,
         },
+        .expected_shown_args = &.{
+            "log",
+            "--max-count=1",
+            "--skip=1",
+            second_hash,
+        },
         .exit_code = 0,
         .stdout = first_hash ++ "\x1f\x1f\x1f" ++
             "A\x1fa@example.com\x1fd\x1fA\x1fa@example.com\x1fd\x1f" ++
@@ -132,7 +145,7 @@ test "read_log_page starts a later page from the previous page's last commit and
         .stderr = "",
         .start_error = null,
     });
-    const page = try git_log.read_log_page(io, ConsoleLog.init(), arena.allocator(), mock, .{
+    const page = try git_log.read_log_page(io, git_mock.mock_services, arena.allocator(), mock, .{
         .repo_path = "repo",
         .page_size = 1,
         .after_hash = second_hash,
@@ -147,7 +160,7 @@ test "read_log_page reads an empty page when git lists no commits" {
 
     const page = try git_log.read_log_page(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock_first_page(""),
         first_page_request,
@@ -158,6 +171,7 @@ test "read_log_page reads an empty page when git lists no commits" {
 test "read_log_page refuses a page size of 0 without starting git" {
     const mock = comptime git_mock.mock_git(.{
         .expected_args = &.{},
+        .expected_shown_args = &.{},
         .exit_code = 0,
         .stdout = "",
         .stderr = "",
@@ -165,7 +179,7 @@ test "read_log_page refuses a page size of 0 without starting git" {
     });
     try std.testing.expectError(error.InvalidPageSize, git_log.read_log_page(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         std.testing.allocator,
         mock,
         .{
@@ -179,6 +193,7 @@ test "read_log_page refuses a page size of 0 without starting git" {
 test "read_log_page refuses an after hash that git could read as an option" {
     const mock = comptime git_mock.mock_git(.{
         .expected_args = &.{},
+        .expected_shown_args = &.{},
         .exit_code = 0,
         .stdout = "",
         .stderr = "",
@@ -186,7 +201,7 @@ test "read_log_page refuses an after hash that git could read as an option" {
     });
     try std.testing.expectError(error.InvalidCommitHash, git_log.read_log_page(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         std.testing.allocator,
         mock,
         .{
@@ -203,6 +218,7 @@ test "read_log_page fails with GitLogFailed when git exits with an error" {
 
     const mock = comptime git_mock.mock_git(.{
         .expected_args = first_page_args,
+        .expected_shown_args = first_page_shown_args,
         .exit_code = 128,
         .stdout = "",
         .stderr = "fatal: your current branch 'main' does not have any commits yet\n",
@@ -210,7 +226,7 @@ test "read_log_page fails with GitLogFailed when git exits with an error" {
     });
     try std.testing.expectError(error.GitLogFailed, git_log.read_log_page(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         first_page_request,
@@ -223,6 +239,7 @@ test "read_log_page fails with GitLogFailed when git ends without exiting" {
 
     const mock = comptime git_mock.mock_git(.{
         .expected_args = first_page_args,
+        .expected_shown_args = first_page_shown_args,
         .exit_code = null,
         .stdout = "",
         .stderr = "",
@@ -230,7 +247,7 @@ test "read_log_page fails with GitLogFailed when git ends without exiting" {
     });
     try std.testing.expectError(error.GitLogFailed, git_log.read_log_page(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         first_page_request,
@@ -243,6 +260,7 @@ test "read_log_page passes up the error when git cannot be started" {
 
     const mock = comptime git_mock.mock_git(.{
         .expected_args = first_page_args,
+        .expected_shown_args = first_page_shown_args,
         .exit_code = 0,
         .stdout = "",
         .stderr = "",
@@ -250,7 +268,7 @@ test "read_log_page passes up the error when git cannot be started" {
     });
     try std.testing.expectError(error.FileNotFound, git_log.read_log_page(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         first_page_request,
@@ -267,7 +285,7 @@ fn read_two_commits(allocator: std.mem.Allocator) !void {
 
     _ = try git_log.read_log_page(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock_first_page(two_commits_output),
         first_page_request,
@@ -394,6 +412,15 @@ const commit_args: []const []const u8 = &.{
 };
 
 //
+// The arguments the help panel is given to show for the same command.
+//
+const commit_shown_args: []const []const u8 = &.{
+    "log",
+    "--max-count=1",
+    second_hash,
+};
+
+//
 // The request for the second commit of the repo at "repo".
 //
 const commit_request: git_log.CommitRequest = .{
@@ -416,6 +443,7 @@ test "read_commit reads the one commit the hash names and parses its fields" {
 
     const mock = comptime git_mock.mock_git(.{
         .expected_args = commit_args,
+        .expected_shown_args = commit_shown_args,
         .exit_code = 0,
         .stdout = second_commit_output,
         .stderr = "",
@@ -423,7 +451,7 @@ test "read_commit reads the one commit the hash names and parses its fields" {
     });
     const commit = try git_log.read_commit(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         commit_request,
@@ -439,6 +467,7 @@ test "read_commit reads the one commit the hash names and parses its fields" {
 test "read_commit refuses a hash that git could read as an option without starting git" {
     const mock = comptime git_mock.mock_git(.{
         .expected_args = &.{},
+        .expected_shown_args = &.{},
         .exit_code = 0,
         .stdout = "",
         .stderr = "",
@@ -446,7 +475,7 @@ test "read_commit refuses a hash that git could read as an option without starti
     });
     try std.testing.expectError(error.InvalidCommitHash, git_log.read_commit(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         std.testing.allocator,
         mock,
         .{
@@ -462,6 +491,7 @@ test "read_commit fails with CommitReadFailed when git exits with an error" {
 
     const mock = comptime git_mock.mock_git(.{
         .expected_args = commit_args,
+        .expected_shown_args = commit_shown_args,
         .exit_code = 128,
         .stdout = "",
         .stderr = "fatal: bad object\n",
@@ -469,7 +499,7 @@ test "read_commit fails with CommitReadFailed when git exits with an error" {
     });
     try std.testing.expectError(error.CommitReadFailed, git_log.read_commit(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         commit_request,
@@ -482,6 +512,7 @@ test "read_commit refuses output that holds no commit" {
 
     const mock = comptime git_mock.mock_git(.{
         .expected_args = commit_args,
+        .expected_shown_args = commit_shown_args,
         .exit_code = 0,
         .stdout = "",
         .stderr = "",
@@ -489,7 +520,7 @@ test "read_commit refuses output that holds no commit" {
     });
     try std.testing.expectError(error.UnexpectedGitLogOutput, git_log.read_commit(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         commit_request,
@@ -502,6 +533,7 @@ test "read_commit refuses output that holds more than one commit" {
 
     const mock = comptime git_mock.mock_git(.{
         .expected_args = commit_args,
+        .expected_shown_args = commit_shown_args,
         .exit_code = 0,
         .stdout = two_commits_output,
         .stderr = "",
@@ -509,7 +541,7 @@ test "read_commit refuses output that holds more than one commit" {
     });
     try std.testing.expectError(error.UnexpectedGitLogOutput, git_log.read_commit(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         commit_request,
@@ -526,12 +558,19 @@ fn read_second_commit(allocator: std.mem.Allocator) !void {
 
     const mock = comptime git_mock.mock_git(.{
         .expected_args = commit_args,
+        .expected_shown_args = commit_shown_args,
         .exit_code = 0,
         .stdout = second_commit_output,
         .stderr = "",
         .start_error = null,
     });
-    _ = try git_log.read_commit(io, ConsoleLog.init(), arena.allocator(), mock, commit_request);
+    _ = try git_log.read_commit(
+        io,
+        git_mock.mock_services,
+        arena.allocator(),
+        mock,
+        commit_request,
+    );
 }
 
 test "read_commit frees everything when an allocation fails" {
