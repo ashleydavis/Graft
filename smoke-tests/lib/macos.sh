@@ -9,6 +9,12 @@
 # The file the app's process group is recorded in, per scenario.
 MACOS_PGID_FILE_NAME="app.pgid"
 
+# The size of the app's content area in every scenario, passed as -geometry so the window fits the macOS runner's 1024x768
+# screen. The app's own 900x800 does not fit there, and macOS shrank the window to a height that changed from one start to
+# the next (900x642, 900x643 and 900x645 with no zoom), so zoom-saved failed in the Release macOS arm64 workflow with "the area
+# the frontend is drawn in never became 900x642. It is 900x643" after a restart. A window that fits keeps its size.
+MACOS_WINDOW_SIZE="900x600"
+
 ziggy_platform_prepare() {
     local run_dir="$1"
     local build="${ZIGGY_SMOKE_BUILD:-}"
@@ -36,7 +42,7 @@ ziggy_platform_start() {
         CFFIXED_USER_HOME="$test_dir/home" \
         GRAFT_CONFIG_DIR="$test_dir/config" \
         GRAFT_STATE_DIR="$test_dir/state" \
-        "$app" ${ZIGGY_REMOTE_CONTROL:+--remote-control "$ZIGGY_REMOTE_CONTROL"} ${ZIGGY_THEME:+--theme "$ZIGGY_THEME"}) || return 1
+        "$app" ${ZIGGY_REMOTE_CONTROL:+--remote-control "$ZIGGY_REMOTE_CONTROL"} ${ZIGGY_THEME:+--theme "$ZIGGY_THEME"} "-geometry=$MACOS_WINDOW_SIZE") || return 1
     echo "$pgid" > "$test_dir/$MACOS_PGID_FILE_NAME"
 }
 
