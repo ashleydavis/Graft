@@ -54,7 +54,7 @@ Never run `scripts/test-everything.sh` with `--force`. Always run it without the
 - `mise.toml`: the exact versions of Zig, Bun, Node, jq and what-changed.
 - `what-changed.yaml`: which files each check watches, for `scripts/test-everything.sh`.
 - `--remote-control <host:port>`: starts the app connected to a Ziggy remote control server, which puts it in test mode. The smoke tests pass it. A normal run does not.
-- `GRAFT_TEST_REPO`: the path of the repo the app reads, in place of `/tmp/graft/test-repo`. Read only in test mode. The smoke tests set it to a test repo of their own.
+- `GRAFT_TEST_REPO`: the path of the repo the app opens as it starts. Read only in test mode, so a normal run starts with no repo open. The smoke tests set it to a test repo of their own.
 - Graft's config file and state file are Ziggy's (`~/.config/graft/config.toml` on Linux). The config file holds the `theme` setting. The state file holds whether the left sidebar is minimised and whether the right sidebar is open. `GRAFT_CONFIG_DIR` and `GRAFT_STATE_DIR` move them, which the smoke tests and the Zig tests do.
 
 ## Docs

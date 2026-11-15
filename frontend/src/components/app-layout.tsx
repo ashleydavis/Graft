@@ -8,20 +8,14 @@ import { JSX, useEffect, useState } from "react";
 import type { ITaskEvent } from "ziggy";
 import { pageTrail } from "../lib/breadcrumb-trail";
 import { addGitCommand, IPageGitCommands, isGitCommandEvent, pageGitCommands } from "../lib/git-commands";
+import { openPickedRepo, openRepoActionName } from "../lib/open-repo";
 import { GitCommandsPanel } from "./git-commands-panel";
 import { LeftSidebar } from "./left-sidebar";
+import { useRepo } from "./repo-context";
 import { RightSidebar } from "./right-sidebar";
 import { ShortcutsOverlay } from "./shortcuts-overlay";
 import { useThemeSetting } from "./app-theme";
 import { TopBar } from "./top-bar";
-
-//
-// What the layout is given: the repo Graft reads, which the breadcrumb trail starts with.
-//
-export interface IAppLayoutProps {
-    // The path of the repo Graft reads.
-    repoPath: string;
-}
 
 //
 // The key path in Graft's state file of whether the left sidebar is minimised. The layout reads it
@@ -81,20 +75,23 @@ export function useSavedSwitch(stateKey: string, description: string): [boolean,
 // sidebar is open, because the top bar's buttons change them and the sidebars show them. Both are
 // kept in Graft's state file, so Graft starts with the sidebars as they were left. With nothing
 // saved, the left sidebar starts expanded and the right sidebar starts closed. It works out the
-// breadcrumb trail from the page the router shows, so every page gets its trail without drawing it
-// itself. It keeps the Git commands every page has run for as long as the app runs, listening
-// whether the right sidebar is open or not, so closing a pane or the sidebar or moving to another
-// page loses none, and the right sidebar shows the commands of the page that is open. It holds the
-// keyboard shortcuts overlay, so `?` shows it over every page. It registers the handler of the
-// Commit Explorer action, which opens the commits page, so Ctrl+1 (Cmd+1 on macOS) returns to the
-// commit explorer from every page.
+// breadcrumb trail from the page the router shows and the open repo, so every page gets its trail
+// without drawing it itself. It keeps the Git commands every page has run for as long as the app
+// runs, listening whether the right sidebar is open or not, so closing a pane or the sidebar or
+// moving to another page loses none, and the right sidebar shows the commands of the page that is
+// open. It holds the keyboard shortcuts overlay, so `?` shows it over every page. It registers the
+// handler of the open-repo action, which opens the folder the user picks and shows it in the
+// commit explorer, because the layout is inside both the router and the open repo's context for as
+// long as the window is open. It registers the handler of the Commit Explorer action, which opens
+// the commits page, so Ctrl+1 (Cmd+1 on macOS) returns to the commit explorer from every page.
 //
-export function AppLayout({ repoPath }: IAppLayoutProps): JSX.Element {
+export function AppLayout(): JSX.Element {
     const [isLeftSidebarMinimised, toggleLeftSidebar] = useSavedSwitch(leftSidebarMinimisedStateKey, "whether the left sidebar is minimised");
     const [isRightSidebarOpen, toggleRightSidebar] = useSavedSwitch(rightSidebarOpenStateKey, "whether the right sidebar is open");
     const location = useLocation();
     const navigate = useNavigate();
     const theme = useThemeSetting();
+    const { repoPath, openRepo } = useRepo();
     const [gitCommandHistory, setGitCommandHistory] = useState<ReadonlyMap<string, IPageGitCommands>>(new Map());
 
     useEffect(() => {
@@ -126,6 +123,21 @@ export function AppLayout({ repoPath }: IAppLayoutProps): JSX.Element {
         };
     }, [navigate]);
 
+    //
+    // The handler is registered once. openRepo and openPage only call the provider's state setter
+    // and the router's navigate, which stay the same for as long as the layout is shown, so the
+    // first render's handler stays current.
+    //
+    useEffect(() => {
+        window.ziggy.registerAction(openRepoActionName, () => openPickedRepo(pickedRepoPath => {
+            openRepo(pickedRepoPath);
+            openPage("/commits");
+        }));
+        return () => {
+            window.ziggy.removeAction(openRepoActionName);
+        };
+    }, []);
+
     return (
         <div data-id="app-layout" className="flex h-screen flex-col overflow-hidden">
             <TopBar
@@ -139,7 +151,7 @@ export function AppLayout({ repoPath }: IAppLayoutProps): JSX.Element {
                 onChooseThemeSetting={theme.onChooseSetting}
             />
             <div className="flex min-h-0 flex-1">
-                <LeftSidebar isMinimised={isLeftSidebarMinimised} />
+                <LeftSidebar isMinimised={isLeftSidebarMinimised} isRepoOpen={Boolean(repoPath)} />
                 <div data-id="main-content" className="min-w-0 flex-1 overflow-auto">
                     <Outlet />
                 </div>

@@ -77,23 +77,27 @@ const APP_GROUP_PAGES: IGroupPage[] = [
 const STEP_LABEL_LENGTH_MAX = 18;
 
 //
-// Works out the trail for the page at the path. Every trail starts with the repo, by its folder's
-// name with its full path in the tooltip. Graft reads one repo, so the repo step has no sibling to
-// switch to and is plain text. The commits page is the only page of the repo's group, so its step
-// is plain text too. The Help and About pages share the app's group, so their step is a drop-down
-// of both. Any other path gets the repo step only.
+// Works out the trail for the page at the path. While a repo is open every trail starts with it,
+// by its folder's name with its full path in the tooltip. Graft has one repo open at a time, so the
+// repo step has no sibling to switch to and is plain text. While no repo is open the trail starts
+// with the page. The commits page is the only page of the repo's group, so its step is plain text
+// too. The Help and About pages share the app's group, so their step is a drop-down of both. Any
+// other path gets the repo step only.
 //
-export function pageTrail(pathname: string, repoPath: string): ITrailStep[] {
-    const repoStep: ITrailStep = {
-        label: repoName(repoPath),
-        tooltip: repoPath,
-        dataId: "breadcrumb-repo",
-        options: [],
-    };
+export function pageTrail(pathname: string, repoPath: string | undefined): ITrailStep[] {
+    const repoSteps: ITrailStep[] = [];
+    if (repoPath) {
+        repoSteps.push({
+            label: repoName(repoPath),
+            tooltip: repoPath,
+            dataId: "breadcrumb-repo",
+            options: [],
+        });
+    }
     const appPage = APP_GROUP_PAGES.find(page => page.path === pathname);
     if (appPage) {
         return [
-            repoStep,
+            ...repoSteps,
             {
                 label: appPage.label,
                 tooltip: appPage.label,
@@ -109,7 +113,7 @@ export function pageTrail(pathname: string, repoPath: string): ITrailStep[] {
     }
     if (pathname === "/commits") {
         return [
-            repoStep,
+            ...repoSteps,
             {
                 label: "Commits",
                 tooltip: "Commits",
@@ -118,7 +122,7 @@ export function pageTrail(pathname: string, repoPath: string): ITrailStep[] {
             },
         ];
     }
-    return [repoStep];
+    return repoSteps;
 }
 
 //

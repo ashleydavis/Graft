@@ -26,7 +26,7 @@ flowchart LR
 ### Frontend
 
 - Lives in `frontend/`. TypeScript, React, TanStack, MaterialUI, Tailwind and Font Awesome icons, bundled by Vite and embedded in the app.
-- Owns everything the user sees: the pages, the layout and the state of the window.
+- Owns everything the user sees: the pages, the layout and the state of the window. The open repo's path is part of that state, kept in `RepoContext` above the router so it stays loaded while the user moves between pages.
 - Keeps its logic in plain functions under `src/lib/`, so the UI is a thin layer over unit tested code.
 - The layout listens for every task's `git-command` event and keeps each page's commands by the source its tasks are queued under, for as long as the app runs, so the right sidebar's Git commands panel shows the commands of the page that is open.
 - Must not reach Git, the file system or the computer. It asks the backend through `window.ziggy`.
@@ -40,6 +40,7 @@ flowchart LR
 - Wraps each Git command in a function that builds its arguments and parses its output, such as the `log` wrapper in `backend/src/lib/git-log.zig`. Beside the arguments it runs, each wrapper decides the arguments the help panel shows, which leave out what only Graft's parsing needs (`-z` and a `--format` with separator characters), so the command shown works pasted into a terminal in the repo. A wrapper takes the Git interface function as an argument, so its unit tests pass a mock.
 - The `log` wrapper reads one page of commits at a time with `git log -z`, its fields split by the unit separator (0x1f). A later page starts from the last commit of the previous page and skips it, so a new commit on top does not shift the pages.
 - The `log` wrapper also reads one commit by its hash, for the commit details pane. The `diff-tree` wrapper in `backend/src/lib/git-diff-tree.zig` reads what one commit changed with `git diff-tree`: its changed files with their line counts and the diff of one of them. Both refuse a hash that is not hexadecimal, so git reads text from the frontend only as a commit.
+- File, Open repo runs the `open-repo` action, whose handler is in the frontend. It sends the `pick-repo-folder` message, whose response comes from a task of that name, because the system folder picker it shows waits for the user.
 - The commits page queues one task per pane: the commits task for the commit pane, the commit details task (the commit and its changed files) for the commit details pane and the file diff task for the file pane.
 - Must not share state between threads or use locks.
 
@@ -60,7 +61,7 @@ flowchart LR
 - The native app passes each message to the backend through Ziggy's C interface. The backend's main thread finds the handler registered for its name and sends back what it returns.
 - A message handler can have a task give its response, so a slow answer still reaches the frontend as one message response.
 - The backend sends the frontend events of its own with `sendEvent`. The native app sends a menu item the frontend runs as a menu event.
-- The backend declares Graft's actions in `backend/src/lib/actions.zig` and the frontend registers each one's handler with `window.ziggy.registerAction`. Ziggy runs an action's keyboard shortcut in the frontend, so the Keyboard Shortcuts action's `?` shows and closes the keyboard shortcuts overlay and the Commit Explorer action's `CmdOrCtrl+1` opens the commits page. The commits page handles its own keys (the arrow keys, Enter and Escape) itself while it is shown, because they mean something only there.
+- The backend declares Graft's actions in `backend/src/lib/actions.zig` and the frontend registers each one's handler with `window.ziggy.registerAction`. Ziggy runs an action's keyboard shortcut in the frontend, so the Keyboard Shortcuts action's `?` shows and closes the keyboard shortcuts overlay, Open repo's `CmdOrCtrl+O` opens a repo and the Commit Explorer action's `CmdOrCtrl+1` opens the commits page. Ziggy's action list, which `window.ziggy.listActions()` gives, is the one list of shortcuts: the overlay is built from it, so a shortcut is written only where its action is declared. The commits page handles its own keys (the arrow keys, Enter and Escape) itself while it is shown, because they mean something only there.
 - Every message, response and event is the JSON text of one object.
 
 ## Where work runs
