@@ -5,6 +5,7 @@
 
 import { JSX, useEffect, useState } from "react";
 import { readFileDiff } from "../../../lib/file-diff";
+import { useActivePaneStyle } from "./active-pane-style";
 import { PaneHeader } from "./pane-header";
 
 //
@@ -20,6 +21,9 @@ export interface IFilePaneProps {
     // The path of the file from the root of the repo.
     path: string;
 
+    // Whether the pane is the commit explorer's active pane, which its border shows.
+    isActive: boolean;
+
     // Called when the user closes the pane.
     onClose(): void;
 }
@@ -27,9 +31,11 @@ export interface IFilePaneProps {
 //
 // Reads the file's diff with the file diff task and shows it in a rounded card headed by the
 // file's path, with a button that closes the pane. It shows that it is loading until the task ends
-// and what went wrong when the diff could not be read.
+// and what went wrong when the diff could not be read. The card's border is in the theme's primary
+// colour while the pane is active.
 //
-export function FilePane({ repoPath, hash, path, onClose }: IFilePaneProps): JSX.Element {
+export function FilePane({ repoPath, hash, path, isActive, onClose }: IFilePaneProps): JSX.Element {
+    const activeStyle = useActivePaneStyle(isActive);
     const [diff, setDiff] = useState<string | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
 
@@ -50,7 +56,7 @@ export function FilePane({ repoPath, hash, path, onClose }: IFilePaneProps): JSX
     }, [repoPath, hash, path]);
 
     return (
-        <section data-id="file-pane" className="w-[640px] flex-none overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-white/5">
+        <section data-id="file-pane" style={activeStyle} className="w-[640px] flex-none overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-white/5">
             <PaneHeader title={path} titleDataId="file-pane-path" closeDataId="file-pane-close" onClose={onClose} />
             <div className="max-h-[70vh] overflow-auto">
                 <FileDiffContent diff={diff} error={error} />

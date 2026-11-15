@@ -38,6 +38,13 @@ export const leftSidebarMinimisedStateKey = "sidebar.left.minimised";
 export const rightSidebarOpenStateKey = "sidebar.right.open";
 
 //
+// The name of the backend's Commit Explorer action (backend/src/lib/actions.zig), whose shortcut
+// is `CmdOrCtrl+1`. The layout registers its handler under this name and removes it under the same
+// name.
+//
+export const commitExplorerAction = "open-commit-explorer";
+
+//
 // Keeps a switch that is off until Graft's state file holds true for it, with the function that
 // flips it. It reads the switch from the state key through window.ziggy when the layout first
 // draws, and each flip writes the new value there, so the next run of Graft starts with it. Only
@@ -78,7 +85,9 @@ export function useSavedSwitch(stateKey: string, description: string): [boolean,
 // itself. It keeps the Git commands every page has run for as long as the app runs, listening
 // whether the right sidebar is open or not, so closing a pane or the sidebar or moving to another
 // page loses none, and the right sidebar shows the commands of the page that is open. It holds the
-// keyboard shortcuts overlay, so `?` shows it over every page.
+// keyboard shortcuts overlay, so `?` shows it over every page. It registers the handler of the
+// Commit Explorer action, which opens the commits page, so Ctrl+1 (Cmd+1 on macOS) returns to the
+// commit explorer from every page.
 //
 export function AppLayout({ repoPath }: IAppLayoutProps): JSX.Element {
     const [isLeftSidebarMinimised, toggleLeftSidebar] = useSavedSwitch(leftSidebarMinimisedStateKey, "whether the left sidebar is minimised");
@@ -105,6 +114,17 @@ export function AppLayout({ repoPath }: IAppLayoutProps): JSX.Element {
             to: path,
         }).catch(navigationFailureReporter(path));
     }
+
+    //
+    // The handler is registered again whenever the router's navigate changes, because openPage
+    // calls the navigate of the render that registered it.
+    //
+    useEffect(() => {
+        window.ziggy.registerAction(commitExplorerAction, () => openPage("/commits"));
+        return () => {
+            window.ziggy.removeAction(commitExplorerAction);
+        };
+    }, [navigate]);
 
     return (
         <div data-id="app-layout" className="flex h-screen flex-col overflow-hidden">
