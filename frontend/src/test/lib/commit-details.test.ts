@@ -82,6 +82,9 @@ describe("readCommitDetails", () => {
                 changedFiles: [{
                     status: "M",
                     path: "notes.txt",
+                    linesAdded: 1,
+                    linesDeleted: 2,
+                    isBinary: false,
                 }],
             }),
         });
@@ -94,6 +97,9 @@ describe("readCommitDetails", () => {
         expect(result.value.changedFiles).toEqual([{
             status: "M",
             path: "notes.txt",
+            linesAdded: 1,
+            linesDeleted: 2,
+            isBinary: false,
         }]);
     });
 });
@@ -159,20 +165,48 @@ describe("commitDetailsFromTaskResult", () => {
     });
 });
 
+//
+// A changed file as the commit details task gives it, for the isChangedFile tests to break one
+// field of at a time.
+//
+const changedFileJson = {
+    status: "A",
+    path: "README.md",
+    linesAdded: 1,
+    linesDeleted: 0,
+    isBinary: false,
+};
+
 describe("isChangedFile", () => {
-    test("accepts a status and a path and refuses anything else", () => {
-        expect(isChangedFile({
-            status: "A",
-            path: "README.md",
-        })).toBe(true);
+    test("accepts a status, a path and line counts", () => {
+        expect(isChangedFile({ ...changedFileJson })).toBe(true);
+    });
+
+    test("refuses a value that is not an object", () => {
         expect(isChangedFile(null)).toBe(false);
         expect(isChangedFile("README.md")).toBe(false);
+    });
+
+    test("refuses a changed file with a field missing or of the wrong type", () => {
         expect(isChangedFile({
-            path: "README.md",
+            ...changedFileJson,
+            status: undefined,
         })).toBe(false);
         expect(isChangedFile({
-            status: "A",
+            ...changedFileJson,
             path: 1,
+        })).toBe(false);
+        expect(isChangedFile({
+            ...changedFileJson,
+            linesAdded: "1",
+        })).toBe(false);
+        expect(isChangedFile({
+            ...changedFileJson,
+            linesDeleted: undefined,
+        })).toBe(false);
+        expect(isChangedFile({
+            ...changedFileJson,
+            isBinary: "no",
         })).toBe(false);
     });
 });
