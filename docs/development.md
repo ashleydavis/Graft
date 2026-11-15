@@ -86,7 +86,7 @@ bash smoke-tests/run-desktop.sh about-page        # One smoke test, by its direc
 
 The runner builds the app, then runs each `test.sh` in a hidden window, with its own temporary directory and a timeout.
 
-A smoke test that reads a repo creates its own with `scripts/test/create-test-repo.sh "$ZIGGY_TEST_DIR/repo"` and gives the app its path through `GRAFT_TEST_REPO`, so each smoke test running in parallel reads a repo of its own. A run of the app outside the smoke tests reads `/tmp/graft/test-repo`, which `./scripts/test/create-test-repo.sh` creates.
+A smoke test that reads a repo creates its own with `scripts/test/create-test-repo.sh "$ZIGGY_TEST_DIR/repo"` and gives the app its path through `GRAFT_TEST_REPO`, so each smoke test running in parallel reads a repo of its own. A smoke test of opening a repo leaves `GRAFT_TEST_REPO` out and opens its repo from the File menu, answering the folder picker with remote control's `pick-answer` command. A run of the app outside the smoke tests starts with no repo open. `./scripts/test/create-test-repo.sh` creates a test repo at `/tmp/graft/test-repo` to open with File, Open repo.
 
 ### Git in the unit tests
 

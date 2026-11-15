@@ -73,6 +73,24 @@ describe("pageTrail", () => {
             },
         ]);
     });
+
+    test("starts with the page while no repo is open", () => {
+        const trail = pageTrail("/", undefined);
+        expect(trail.map(step => step.dataId)).toEqual(["breadcrumb-page"]);
+        expect(trail[0].label).toBe("About");
+        expect(pageTrail("/commits", undefined)).toEqual([
+            {
+                label: "Commits",
+                tooltip: "Commits",
+                dataId: "breadcrumb-page",
+                options: [],
+            },
+        ]);
+    });
+
+    test("any other path has no steps while no repo is open", () => {
+        expect(pageTrail("/missing", undefined)).toEqual([]);
+    });
 });
 
 describe("repoName", () => {

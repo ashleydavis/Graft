@@ -7,6 +7,7 @@
 
 import { Link } from "@tanstack/react-router";
 import { JSX, useEffect, useState } from "react";
+import { useRepo } from "../../components/repo-context";
 import { ICommit, readCommitPage } from "../../lib/commits";
 import { CommitDetailsPane } from "./components/commit-details-pane";
 import { CommitPane } from "./components/commit-pane";
@@ -19,11 +20,29 @@ import { FilePane } from "./components/file-pane";
 const COMMIT_PAGE_SIZE = 50;
 
 //
-// What the commits page is given: the repo to read, so a test can give it any path.
+// What the commit columns are given: the repo to read.
 //
-export interface ICommitsPageProps {
+export interface ICommitColumnsProps {
     // The repo to read.
     repoPath: string;
+}
+
+//
+// Shows the commit columns of the open repo. Opening another repo shows its columns afresh, with no
+// commit or file open, because the columns are keyed by the repo's path. While no repo is open it
+// shows that no repo is open, because the commit explorer has no repo to read.
+//
+export function CommitsPage(): JSX.Element {
+    const { repoPath } = useRepo();
+    if (!repoPath) {
+        return (
+            <main data-id="commits-page">
+                <h1 data-id="commits-heading">Commits</h1>
+                <p data-id="commits-no-repo">No repo is open. Choose File, then Open repo, to open one.</p>
+            </main>
+        );
+    }
+    return <CommitColumns key={repoPath} repoPath={repoPath} />;
 }
 
 //
@@ -33,7 +52,7 @@ export interface ICommitsPageProps {
 // each pane opens the next: a newly clicked commit closes the file pane and closing the commit
 // details pane closes the file pane with it.
 //
-export function CommitsPage({ repoPath }: ICommitsPageProps): JSX.Element {
+export function CommitColumns({ repoPath }: ICommitColumnsProps): JSX.Element {
     const [commits, setCommits] = useState<ICommit[] | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
     const [openHash, setOpenHash] = useState<string | undefined>(undefined);
