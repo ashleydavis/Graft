@@ -1,6 +1,6 @@
 //
 // The app's layout: the top bar across the window, the left sidebar, the main content area that
-// shows the current page and the right sidebar.
+// shows the current page, the right sidebar and the keyboard shortcuts overlay over them.
 //
 
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
@@ -11,6 +11,7 @@ import { addGitCommand, IPageGitCommands, isGitCommandEvent, pageGitCommands } f
 import { GitCommandsPanel } from "./git-commands-panel";
 import { LeftSidebar } from "./left-sidebar";
 import { RightSidebar } from "./right-sidebar";
+import { ShortcutsOverlay } from "./shortcuts-overlay";
 import { useThemeSetting } from "./app-theme";
 import { TopBar } from "./top-bar";
 
@@ -30,7 +31,8 @@ export interface IAppLayoutProps {
 // from the page the router shows, so every page gets its trail without drawing it itself. It keeps
 // the Git commands every page has run for as long as the app runs, listening whether the right
 // sidebar is open or not, so closing a pane or the sidebar or moving to another page loses none,
-// and the right sidebar shows the commands of the page that is open.
+// and the right sidebar shows the commands of the page that is open. It holds the keyboard
+// shortcuts overlay, so `?` shows it over every page.
 //
 export function AppLayout({ repoPath }: IAppLayoutProps): JSX.Element {
     const [isLeftSidebarMinimised, setLeftSidebarMinimised] = useState(false);
@@ -79,6 +81,7 @@ export function AppLayout({ repoPath }: IAppLayoutProps): JSX.Element {
                     <GitCommandsPanel pageCommands={pageGitCommands(gitCommandHistory, location.pathname)} />
                 </RightSidebar>
             </div>
+            <ShortcutsOverlay />
         </div>
     );
 }
