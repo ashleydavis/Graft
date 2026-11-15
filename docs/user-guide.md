@@ -40,7 +40,7 @@ Graft remembers whether the left sidebar is minimised and whether the right side
 
 ### About page
 
-Graft opens on its About page, which shows Graft's name, its icon and what Graft is. Its **Commits** link opens the commits page.
+Graft opens on its About page, which shows Graft's name, its icon, its version and what Graft is. It links to Graft, Playbook and Ziggy on GitHub and to the Graft video series on YouTube, which open in your web browser. It names Graft's licence, the MIT licence.
 
 ### Help page
 
