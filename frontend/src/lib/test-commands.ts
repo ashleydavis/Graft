@@ -51,6 +51,10 @@ export interface IElementFinder {
     // The width in pixels of the window the page is drawn in, which the in-view command checks an
     // element's edges against.
     windowWidth: number;
+
+    // The height in pixels of the window the page is drawn in, which the viewport command reports
+    // with the width.
+    windowHeight: number;
 }
 
 //
@@ -95,6 +99,12 @@ export interface IFoundElement {
 export function performTestCommand(finder: IElementFinder, command: ITestCommand): ITestResult {
     if (command.command === "ready") {
         return { ok: true };
+    }
+    if (command.command === "viewport") {
+        return {
+            ok: true,
+            value: `${finder.windowWidth}x${finder.windowHeight}`,
+        };
     }
     if (command.dataId === undefined) {
         return { ok: false, error: `The ${command.command} command needs a dataId.` };
