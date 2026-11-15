@@ -13,10 +13,11 @@ const ziggy = @import("ziggy");
 // own keys (reload and the developer tools), as actions.test.zig checks. Keyboard Shortcuts
 // shows the keyboard shortcuts overlay, or closes it when it is open. Its shortcut is `?`, which
 // Ziggy runs in the frontend and leaves to a focused text box, so typing a `?` in a text box types
-// it. Zoom In, Zoom Out and Actual Size are on the View menu with the usual zoom keys. They are
-// Graft's own actions, so their frontend handlers see every zoom and save the zoom level in
-// Graft's state file. Ziggy also runs a Plus shortcut on `=`, so Ctrl+= zooms in as well, without
-// Shift.
+// it. Commit Explorer opens the commit explorer, the commits page, from any page. Its shortcut
+// holds Ctrl (Cmd on macOS), so it runs even while a text box has the focus. Zoom In, Zoom Out
+// and Actual Size are on the View menu with the usual zoom keys. They are Graft's own actions, so
+// their frontend handlers see every zoom and save the zoom level in Graft's state file. Ziggy
+// also runs a Plus shortcut on `=`, so Ctrl+= zooms in as well, without Shift.
 //
 pub const actions: []const ziggy.action.Action = &.{
     .{
@@ -28,6 +29,11 @@ pub const actions: []const ziggy.action.Action = &.{
         .name = "toggle-shortcuts-overlay",
         .label = "Keyboard Shortcuts",
         .shortcut = "?",
+    },
+    .{
+        .name = "open-commit-explorer",
+        .label = "Commit Explorer",
+        .shortcut = "CmdOrCtrl+1",
     },
     .{
         .name = "zoom-in-step",

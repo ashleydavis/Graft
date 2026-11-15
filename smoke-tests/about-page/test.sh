@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 
 #
-# Starts the real app with remote control on, and checks that it opens on the About page: the
-# page's heading, Graft's version, what Graft is, its icon, its links and its licence all show.
+# Starts the real app with remote control on, opens the About page from the left sidebar and
+# checks the page's heading, Graft's version, what Graft is, its icon, its links and its licence
+# all show.
 # See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
 
 start_test_app
+wait_for_element welcome-page 30
+click left-sidebar-about-link
 wait_for_element about-page 30
 wait_for_text about-heading "About Graft" 30
 wait_for_text about-version "Version dev" 30

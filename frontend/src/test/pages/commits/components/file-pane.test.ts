@@ -1,7 +1,8 @@
 //
 // Tests the file pane: renders it with a fake window.ziggy made of Jest mocks and checks that it queues
 // the file diff task for the file, shows that it is loading, then shows the diff or says why it
-// could not be read and that the close button reports it.
+// could not be read, that the close button reports it and that the pane's border is in the theme's
+// primary colour while it is active.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
@@ -33,21 +34,29 @@ function completeTask(ziggy: FakeTaskZiggy, result: ITaskCompletedEvent["result"
 }
 
 //
-// Renders the pane for notes.txt in the commit with the close callback.
+// Renders the pane for notes.txt in the commit, active or not, with the close callback.
 //
-function renderPane(onClose: jest.Mock): void {
+function renderPane(onClose: jest.Mock, isActive: boolean): void {
     render(createElement(FilePane, {
         repoPath: "/repo",
         hash: commitHash,
         path: "notes.txt",
+        isActive,
         onClose,
     }));
+}
+
+//
+// Reads the colour of the pane's border that the pane sets itself, or "" when it sets none.
+//
+function paneBorderColor(): string | undefined {
+    return document.querySelector<HTMLElement>("[data-id=\"file-pane\"]")?.style.borderColor;
 }
 
 describe("FilePane", () => {
     test("queues the file diff task for the file and shows its path and that it is loading", () => {
         const ziggy = installFakeTaskZiggy();
-        renderPane(jest.fn());
+        renderPane(jest.fn(), false);
         expect(screen.getByText("notes.txt").getAttribute("data-id")).toBe("file-pane-path");
         expect(screen.getByText("Loading the diff.").getAttribute("data-id")).toBe("file-diff-loading");
         const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[0][0];
@@ -61,7 +70,7 @@ describe("FilePane", () => {
 
     test("shows the diff as git wrote it once the task has read it", () => {
         const ziggy = installFakeTaskZiggy();
-        renderPane(jest.fn());
+        renderPane(jest.fn(), false);
         completeTask(ziggy, {
             taskId: "",
             status: "succeeded",
@@ -77,7 +86,7 @@ describe("FilePane", () => {
 
     test("says why the diff could not be read when the task failed", () => {
         const ziggy = installFakeTaskZiggy();
-        renderPane(jest.fn());
+        renderPane(jest.fn(), false);
         completeTask(ziggy, {
             taskId: "",
             status: "failed",
@@ -91,10 +100,22 @@ describe("FilePane", () => {
     test("reports that the user closed it", () => {
         const onClose = jest.fn();
         installFakeTaskZiggy();
-        renderPane(onClose);
+        renderPane(onClose, false);
         const close = screen.getByLabelText("Close");
         expect(close.getAttribute("data-id")).toBe("file-pane-close");
         fireEvent.click(close);
         expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    test("draws its border in the theme's primary colour while it is active", () => {
+        installFakeTaskZiggy();
+        renderPane(jest.fn(), true);
+        expect(paneBorderColor()).toBe("#1976d2");
+    });
+
+    test("keeps its grey border while it is not active", () => {
+        installFakeTaskZiggy();
+        renderPane(jest.fn(), false);
+        expect(paneBorderColor()).toBe("");
     });
 });

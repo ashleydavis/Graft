@@ -35,16 +35,16 @@ answer_picker() {
 }
 
 start_test_app
-wait_for_element about-page 30
+wait_for_element welcome-page 30
 wait_for_element left-sidebar-about-link 30
 wait_for_missing_element left-sidebar-commits-link 30
 wait_for_missing_element breadcrumb-repo 30
-wait_for_text breadcrumb-page "About" 30
+wait_for_missing_element breadcrumb-page 30
 
 answer_picker
 choose_menu_item open-repo
 sleep 3
-wait_for_element about-page 30
+wait_for_element welcome-page 30
 wait_for_missing_element left-sidebar-commits-link 30
 wait_for_missing_element breadcrumb-repo 30
 

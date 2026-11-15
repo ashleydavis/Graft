@@ -4,9 +4,11 @@
 // changed with their line counts.
 //
 
+import { List, ListItemButton } from "@mui/material";
 import { JSX, useEffect, useState } from "react";
 import { IChangedFile, ICommitDetails, readCommitDetails } from "../../../lib/commit-details";
 import { formatDateTime, IDateFormatOptions } from "../../../lib/date-format";
+import { useActivePaneStyle } from "./active-pane-style";
 import { PaneHeader } from "./pane-header";
 
 //
@@ -19,14 +21,21 @@ export interface ICommitDetailsPaneProps {
     // The hash of the commit to show.
     hash: string;
 
-    // The path of the changed file whose diff is open, which the pane highlights, or undefined.
+    // The path of the selected changed file, which the pane shows as selected, or undefined.
     selectedPath: string | undefined;
+
+    // Whether the pane is the commit explorer's active pane, which its border shows.
+    isActive: boolean;
 
     // The locale and time zone the commit's dates are shown in.
     dateFormat: IDateFormatOptions;
 
     // Called with the path of the changed file the user clicks.
     onSelectFile(path: string): void;
+
+    // Called with the paths of the commit's changed files, in the order the pane lists them, once
+    // the task has read them, so the commits page can move the selection through them.
+    onReadFiles(paths: string[]): void;
 
     // Called when the user closes the pane.
     onClose(): void;
@@ -35,9 +44,11 @@ export interface ICommitDetailsPaneProps {
 //
 // Reads the commit's details and changed files with the commit details task and shows them in a
 // rounded card headed "Commit", with a button that closes the pane. It shows that it is loading
-// until the task ends and what went wrong when the commit could not be read.
+// until the task ends and what went wrong when the commit could not be read. The card's border is in
+// the theme's primary colour while the pane is active.
 //
-export function CommitDetailsPane({ repoPath, hash, selectedPath, dateFormat, onSelectFile, onClose }: ICommitDetailsPaneProps): JSX.Element {
+export function CommitDetailsPane({ repoPath, hash, selectedPath, isActive, dateFormat, onSelectFile, onReadFiles, onClose }: ICommitDetailsPaneProps): JSX.Element {
+    const activeStyle = useActivePaneStyle(isActive);
     const [details, setDetails] = useState<ICommitDetails | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
 
@@ -49,6 +60,7 @@ export function CommitDetailsPane({ repoPath, hash, selectedPath, dateFormat, on
         }, result => {
             if (result.ok) {
                 setDetails(result.value);
+                onReadFiles(result.value.changedFiles.map(file => file.path));
             }
             else {
                 setError(result.error.message);
@@ -57,7 +69,7 @@ export function CommitDetailsPane({ repoPath, hash, selectedPath, dateFormat, on
     }, [repoPath, hash]);
 
     return (
-        <section data-id="commit-details-pane" className="w-[380px] flex-none overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-white/5">
+        <section data-id="commit-details-pane" style={activeStyle} className="w-[380px] flex-none overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-white/5">
             <PaneHeader title="Commit" titleDataId="commit-details-heading" closeDataId="commit-details-close" onClose={onClose} />
             <div className="max-h-[70vh] overflow-y-auto">
                 <CommitDetailsContent details={details} error={error} selectedPath={selectedPath} dateFormat={dateFormat} onSelectFile={onSelectFile} />
@@ -76,7 +88,7 @@ export interface ICommitDetailsContentProps {
     // Why the commit could not be read, or undefined.
     error: string | undefined;
 
-    // The path of the changed file whose diff is open, which the content highlights, or undefined.
+    // The path of the selected changed file, which the content shows as selected, or undefined.
     selectedPath: string | undefined;
 
     // The locale and time zone the commit's dates are shown in.
@@ -121,11 +133,11 @@ export function CommitDetailsContent({ details, error, selectedPath, dateFormat,
             {details.changedFiles.length === 0 && (
                 <p data-id="changed-files-none" className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">No files changed in this commit.</p>
             )}
-            <ul data-id="changed-files" className="pb-2">
+            <List data-id="changed-files" disablePadding={true} className="pb-2">
                 {details.changedFiles.map(file => (
                     <ChangedFileRow key={file.path} file={file} isSelected={file.path === selectedPath} onSelectFile={onSelectFile} />
                 ))}
-            </ul>
+            </List>
         </div>
     );
 }
@@ -166,7 +178,7 @@ export interface IChangedFileRowProps {
     // The changed file.
     file: IChangedFile;
 
-    // Whether the file's diff is open, which highlights the row.
+    // Whether the file is selected, which the row shows with MaterialUI's selection styling.
     isSelected: boolean;
 
     // Called with the file's path when the user clicks the row.
@@ -175,14 +187,17 @@ export interface IChangedFileRowProps {
 
 //
 // Shows one changed file: its change type as a coloured letter, its path and the lines the commit
-// added and deleted, or "binary" for a file git counts no lines of.
+// added and deleted, or "binary" for a file git counts no lines of. The row is a MaterialUI
+// ListItemButton, so a selected file shows MaterialUI's own selection styling.
 //
 export function ChangedFileRow({ file, isSelected, onSelectFile }: IChangedFileRowProps): JSX.Element {
     return (
-        <li
+        <ListItemButton
+            component="li"
             data-id={`changed-file-${file.path}`}
+            selected={isSelected}
             onClick={() => onSelectFile(file.path)}
-            className={`flex cursor-pointer items-center gap-2 px-4 py-1.5 text-sm ${isSelected ? "bg-blue-500/15" : "hover:bg-gray-100 dark:hover:bg-white/10"}`}
+            className="flex items-center gap-2 px-4 py-1.5 text-sm"
         >
             <span className={`w-4 flex-none font-mono text-xs font-bold ${statusColorClass(file.status)}`}>{file.status}</span>
             <span title={file.path} className="min-w-0 flex-1 truncate">{file.path}</span>
@@ -196,6 +211,6 @@ export function ChangedFileRow({ file, isSelected, onSelectFile }: IChangedFileR
                     <span className="text-red-600 dark:text-red-400">-{file.linesDeleted}</span>
                 </span>
             )}
-        </li>
+        </ListItemButton>
     );
 }

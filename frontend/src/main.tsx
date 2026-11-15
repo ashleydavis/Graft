@@ -16,6 +16,7 @@ import { ITestCommand, performTestCommand, testResultToJson } from "./lib/test-c
 import { AboutPage } from "./pages/about";
 import { CommitsPage } from "./pages/commits";
 import { HelpPage } from "./pages/help";
+import { WelcomePage } from "./pages/welcome";
 
 //
 // The colour behind the splash art, the same as .splash's background in app.zon.
@@ -24,18 +25,24 @@ const splashBackground = "#FFFFFF";
 
 //
 // Makes the router that picks the page to show. Every page shows in the main content area of the
-// app's layout. The app opens on the About page. The commits page and the Help page sit beside it.
-// The history is kept in memory, because the web view loads the frontend from the app's own
-// address, whose path is the file index.html and not a page of Graft's. The layout and the pages
-// read the open repo from RepoProvider, which startApp puts around the router.
+// app's layout. The app opens on the welcome page, which is shown while no repo is open and opens
+// one. The About page, the commits page and the Help page sit beside it. The history is kept in
+// memory, because the web view loads the frontend from the app's own address, whose path is the
+// file index.html and not a page of Graft's. The layout and the pages read the open repo from
+// RepoProvider, which startApp puts around the router.
 //
 export function createAppRouter(): AnyRouter {
     const rootRoute = createRootRoute({
         component: AppLayout,
     });
-    const aboutRoute = createRoute({
+    const welcomeRoute = createRoute({
         getParentRoute: () => rootRoute,
         path: "/",
+        component: WelcomePage,
+    });
+    const aboutRoute = createRoute({
+        getParentRoute: () => rootRoute,
+        path: "/about",
         component: AboutPage,
     });
     const commitsRoute = createRoute({
@@ -49,7 +56,7 @@ export function createAppRouter(): AnyRouter {
         component: HelpPage,
     });
     return createRouter({
-        routeTree: rootRoute.addChildren([aboutRoute, commitsRoute, helpRoute]),
+        routeTree: rootRoute.addChildren([welcomeRoute, aboutRoute, commitsRoute, helpRoute]),
         history: createMemoryHistory({
             initialEntries: ["/"],
         }),
