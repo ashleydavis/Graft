@@ -8,6 +8,7 @@ import { JSX, useEffect, useState } from "react";
 import type { ITaskEvent } from "ziggy";
 import { pageTrail } from "../lib/breadcrumb-trail";
 import { addGitCommand, IPageGitCommands, isGitCommandEvent, pageGitCommands } from "../lib/git-commands";
+import { newWindowActionName, openNewWindow } from "../lib/new-window";
 import { openPickedRepo, openRepoActionName } from "../lib/open-repo";
 import { GitCommandsPanel } from "./git-commands-panel";
 import { LeftSidebar } from "./left-sidebar";
@@ -128,17 +129,20 @@ export function AppLayout(): JSX.Element {
     }, [navigate]);
 
     //
-    // The handler is registered once. openRepo and openPage only call the provider's state setter
+    // The handlers are registered once. openRepo and openPage only call the provider's state setter
     // and the router's navigate, which stay the same for as long as the layout is shown, so the
-    // first render's handler stays current.
+    // first render's open-repo handler stays current. The new-window handler calls only
+    // window.ziggy.
     //
     useEffect(() => {
         window.ziggy.registerAction(openRepoActionName, () => openPickedRepo(pickedRepoPath => {
             openRepo(pickedRepoPath);
             openPage("/commits");
         }));
+        window.ziggy.registerAction(newWindowActionName, openNewWindow);
         return () => {
             window.ziggy.removeAction(openRepoActionName);
+            window.ziggy.removeAction(newWindowActionName);
         };
     }, []);
 

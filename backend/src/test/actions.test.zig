@@ -1,11 +1,12 @@
 //
 // Tests Graft's actions. It checks Open repo is declared with the shortcut CmdOrCtrl+O, the
 // Keyboard Shortcuts action with the shortcut `?`, the Commit Explorer action with the shortcut
-// `CmdOrCtrl+1` and Zoom In, Zoom Out and Actual Size with the usual zoom keys. It checks every
-// action's shortcut is clear of the web view's own keys. It checks running Keyboard Shortcuts and
-// Commit Explorer, as their shortcuts and the frontend do, sends the frontend the action event
-// naming each. Each running test starts the backend with Ziggy's fake native app and sends the
-// system message the native app or the frontend would.
+// `CmdOrCtrl+1`, Zoom In, Zoom Out and Actual Size with the usual zoom keys and New window with the
+// shortcut CmdOrCtrl+N. It checks every action's shortcut is clear of the web view's own keys. It
+// checks running Keyboard Shortcuts and Commit Explorer, as their shortcuts and the frontend do,
+// sends the frontend the action event naming each, and that the File menu's New window item and
+// its shortcut send the frontend New window's action event. Each running test starts the backend
+// with Ziggy's fake native app and sends the system message the native app or the frontend would.
 //
 
 const std = @import("std");
@@ -63,8 +64,15 @@ const shortcuts_overlay_event = "{\"kind\":\"system\",\"name\":\"action\"," ++
 const commit_explorer_event = "{\"kind\":\"system\",\"name\":\"action\"," ++
     "\"data\":{\"action\":\"open-commit-explorer\"}}";
 
-test "Graft's actions are Open repo, Keyboard Shortcuts, Commit Explorer and the zoom actions" {
-    try std.testing.expectEqual(@as(usize, 6), actions.actions.len);
+//
+// The action event that names the New window action, which the frontend is sent when the action
+// runs.
+//
+const new_window_event = "{\"kind\":\"system\",\"name\":\"action\"," ++
+    "\"data\":{\"action\":\"new-window\"}}";
+
+test "Graft's actions are Open repo, Keyboard Shortcuts, Commit Explorer, zoom and New window" {
+    try std.testing.expectEqual(@as(usize, 7), actions.actions.len);
     try std.testing.expectEqualStrings("open-repo", actions.actions[0].name);
     try std.testing.expectEqualStrings("Open repo", actions.actions[0].label);
     try std.testing.expectEqualStrings("CmdOrCtrl+O", actions.actions[0].shortcut.?);
@@ -80,6 +88,9 @@ test "Graft's actions are Open repo, Keyboard Shortcuts, Commit Explorer and the
     try std.testing.expectEqualStrings("zoom-actual-size", actions.actions[5].name);
     try std.testing.expectEqualStrings("Actual Size", actions.actions[5].label);
     try std.testing.expectEqualStrings("CmdOrCtrl+0", actions.actions[5].shortcut.?);
+    try std.testing.expectEqualStrings("new-window", actions.actions[6].name);
+    try std.testing.expectEqualStrings("New window", actions.actions[6].label);
+    try std.testing.expectEqualStrings("CmdOrCtrl+N", actions.actions[6].shortcut.?);
 }
 
 test "no action's shortcut is one of the web view's own keys" {
@@ -141,5 +152,18 @@ test "the frontend running Commit Explorer sends it the action event naming it" 
         .message = "{\"kind\":\"system\",\"id\":1,\"name\":\"run-action\"," ++
             "\"data\":{\"action\":\"open-commit-explorer\"}}",
         .event = commit_explorer_event,
+    });
+}
+
+test "the File menu's New window item runs the New window action" {
+    const new_window = app.app.menu_targets.get("new-window") orelse return error.MenuItemMissing;
+    try std.testing.expect(new_window == .action);
+}
+
+test "the File menu's New window item and its shortcut send the frontend New window's event" {
+    try expect_action_event(.{
+        .message = "{\"kind\":\"system\",\"id\":1,\"name\":\"menu-action\"," ++
+            "\"data\":{\"action\":\"new-window\"}}",
+        .event = new_window_event,
     });
 }

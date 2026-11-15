@@ -17,7 +17,11 @@ const ziggy = @import("ziggy");
 // holds Ctrl (Cmd on macOS), so it runs even while a text box has the focus. Zoom In, Zoom Out
 // and Actual Size are on the View menu with the usual zoom keys. They are Graft's own actions, so
 // their frontend handlers see every zoom and save the zoom level in Graft's state file. Ziggy
-// also runs a Plus shortcut on `=`, so Ctrl+= zooms in as well, without Shift.
+// also runs a Plus shortcut on `=`, so Ctrl+= zooms in as well, without Shift. New window is on
+// the File menu. Its frontend handler has Ziggy start another window of Graft as a process of its
+// own, with its own backend and task queue. Its shortcut is CmdOrCtrl+N, the usual key for a new
+// window in desktop apps. It comes last, so the keyboard shortcuts overlay still lists Open repo
+// first.
 //
 pub const actions: []const ziggy.action.Action = &.{
     .{
@@ -49,5 +53,10 @@ pub const actions: []const ziggy.action.Action = &.{
         .name = "zoom-actual-size",
         .label = "Actual Size",
         .shortcut = "CmdOrCtrl+0",
+    },
+    .{
+        .name = "new-window",
+        .label = "New window",
+        .shortcut = "CmdOrCtrl+N",
     },
 };

@@ -8,8 +8,9 @@
 // are saved in Graft's state file and restored from it, that the top bar's breadcrumb trail
 // follows the page shown and its drop-down opens another page and that the right sidebar shows the
 // Git commands the page shown has run. It also checks the layout reads the open repo: with none
-// open the trail has no repo step and the Commits link is hidden, and the open-repo action it
-// registers opens the folder picked on the commits page.
+// open the trail has no repo step and the Commits link is hidden, the open-repo action it
+// registers opens the folder picked on the commits page and the new-window action it registers
+// calls Ziggy's newWindow.
 //
 
 import { act, cleanup, render, RenderResult, screen, waitFor } from "@testing-library/react";
@@ -62,7 +63,7 @@ function sendTaskEvent(event: ITaskEvent<unknown>): void {
 // The calls of window.ziggy a test may give the layout: AppTheme's, the action calls and the
 // folder picker's invoke.
 //
-type LayoutZiggy = IFakeThemeZiggy & IFakeActionZiggy & Pick<IZiggyBridge, "invoke">;
+type LayoutZiggy = IFakeThemeZiggy & IFakeActionZiggy & Pick<IZiggyBridge, "invoke" | "newWindow">;
 
 //
 // Renders the layout with the repo open, or none for undefined, around mocks of the About page,
@@ -463,6 +464,31 @@ describe("AppLayout's open-repo action", () => {
         expect(ziggy.hasRegisteredAction("open-repo")).toBe(true);
         cleanup();
         expect(ziggy.hasRegisteredAction("open-repo")).toBe(false);
+    });
+});
+
+describe("AppLayout's new-window action", () => {
+    test("calls Ziggy's newWindow with no arguments", async () => {
+        const ziggy = makeFakeActionZiggy([]);
+        const newWindow = jest.fn().mockResolvedValue(undefined);
+        await renderFakedAppLayout({
+            ...makeFakeThemeZiggy({
+                systemTheme: "light",
+            }),
+            ...ziggy,
+            newWindow,
+        }, undefined);
+        await act(async () => {
+            await ziggy.runRegisteredAction("new-window");
+        });
+        expect(newWindow).toHaveBeenCalledWith([]);
+    });
+
+    test("removes the action's handler when the layout goes", async () => {
+        const [, ziggy] = await renderAppLayoutWithZiggy(undefined);
+        expect(ziggy.hasRegisteredAction("new-window")).toBe(true);
+        cleanup();
+        expect(ziggy.hasRegisteredAction("new-window")).toBe(false);
     });
 });
 
