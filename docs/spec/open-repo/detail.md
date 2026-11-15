@@ -7,7 +7,7 @@ A user opens a local repo by choosing its folder. Graft starts with no repo open
 ## Behaviour
 
 - Graft starts with no repo open, on the welcome page.
-- The File menu has an "Open repo" item, above "Close Window". It runs the `open-repo` action, declared in `backend/src/lib/actions.zig`, so a shortcut or a button can run the same action. The welcome page's "Open repo" button runs it.
+- The File menu has an "Open repo" item, below "New window" and above "Close Window". It runs the `open-repo` action, declared in `backend/src/lib/actions.zig`, so a shortcut or a button can run the same action. The welcome page's "Open repo" button runs it.
 - The `open-repo` action has the shortcut `CmdOrCtrl+O`: Command+O on macOS and Ctrl+O on Linux and Windows. Ziggy shows it beside the "Open repo" menu item in each platform's own form, and pressing it opens a repo the same way the menu item does. Every action's shortcut is kept clear of the web view's own keys (reload, zoom and the developer tools).
 - The action shows the system folder picker, titled "Open repo", through Ziggy's folder dialog native call. The picker runs in the backend's `pick-repo-folder` task, because it waits for the user.
 - Choosing a folder opens it in the commit explorer: the commits page shows, listing the folder's commits. The folder is opened in place of any repo open before. Graft opens any folder chosen. When the folder is outside a Git repo, the commits page shows why git could not read it.

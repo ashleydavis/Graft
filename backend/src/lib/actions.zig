@@ -13,7 +13,10 @@ const ziggy = @import("ziggy");
 // own keys (reload, zoom and the developer tools), as actions.test.zig checks. Keyboard Shortcuts
 // shows the keyboard shortcuts overlay, or closes it when it is open. Its shortcut is `?`, which
 // Ziggy runs in the frontend and leaves to a focused text box, so typing a `?` in a text box types
-// it.
+// it. New window is on the File menu. Its frontend handler has Ziggy start another window of Graft
+// as a process of its own, with its own backend and task queue. Its shortcut is CmdOrCtrl+N, the
+// usual key for a new window in desktop apps. It comes last, so the keyboard shortcuts overlay
+// still lists Open repo first.
 //
 pub const actions: []const ziggy.action.Action = &.{
     .{
@@ -25,5 +28,10 @@ pub const actions: []const ziggy.action.Action = &.{
         .name = "toggle-shortcuts-overlay",
         .label = "Keyboard Shortcuts",
         .shortcut = "?",
+    },
+    .{
+        .name = "new-window",
+        .label = "New window",
+        .shortcut = "CmdOrCtrl+N",
     },
 };

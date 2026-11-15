@@ -21,6 +21,11 @@ pub const menu: []const ziggy.menu.Menu = &.{
         .items = &.{
             .{
                 .run = .{
+                    .action = "new-window",
+                },
+            },
+            .{
+                .run = .{
                     .action = "open-repo",
                 },
             },
