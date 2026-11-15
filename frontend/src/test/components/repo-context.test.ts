@@ -42,7 +42,7 @@ function renderReaders(initialRepoPath: string | undefined): void {
 }
 
 //
-// The text every reader shows for the open repo.
+// Reads the text every reader shows for the open repo.
 //
 function shownRepoPaths(): string[] {
     return screen.getAllByText(/repos|No repo/, {
@@ -95,7 +95,7 @@ describe("RepoProvider", () => {
         const button = screen.getByText("Open no path");
         const consoleError = jest.spyOn(console, "error").mockImplementation(() => {
         });
-        const errors: unknown[] = [];
+        const errors: Error[] = [];
         const recordError = (event: ErrorEvent): void => {
             errors.push(event.error);
             event.preventDefault();

@@ -2,9 +2,9 @@
 // Tests how the frontend starts: loading main.tsx draws the app into the test's document, where the
 // router opens on the About page in the layout's main content area with no repo open. The open-repo
 // action opens a repo on the commits page and the links then change between the About page and the
-// commits page. The Help page is on the router, with the trail following each
-// page and its drop-down opening the About page again. The smoke tests' commands are answered only
-// in test mode. The splash screen covers the page until the native app says the page is in sight.
+// commits page. The Help page is on the router, with the trail following each page and its
+// drop-down opening the About page again. The smoke tests' commands are performed only in test
+// mode. The splash screen covers the page until the native app reports the page is in sight.
 // Each test puts a fake made of Jest mocks on window.ziggy, where the frontend reaches the backend.
 //
 

@@ -1,5 +1,5 @@
 //
-// The About page: says what Graft is, with a link to the commits page while a repo is open.
+// The About page: shows what Graft is, with a link to the commits page while a repo is open.
 //
 
 import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";

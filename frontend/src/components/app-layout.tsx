@@ -65,7 +65,7 @@ export function AppLayout(): JSX.Element {
                 onChooseThemeSetting={theme.onChooseSetting}
             />
             <div className="flex min-h-0 flex-1">
-                <LeftSidebar isMinimised={isLeftSidebarMinimised} isRepoOpen={repoPath !== undefined} />
+                <LeftSidebar isMinimised={isLeftSidebarMinimised} isRepoOpen={Boolean(repoPath)} />
                 <div data-id="main-content" className="min-w-0 flex-1 overflow-auto">
                     <Outlet />
                 </div>

@@ -1,5 +1,5 @@
 //
-// Gives jsdom what main.tsx reads from the window as it loads: a window.matchMedia that answers with
+// Gives jsdom what main.tsx reads from the window as it loads: a window.matchMedia that returns
 // a fake media query that does not match, so the app draws in light colours, and a window.ziggy
 // with the calls the theme, the splash screen and the layout's open-repo action make, whose config
 // file holds no theme setting and whose system's theme is light. A test imports this before

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The About page tells a user which app they are in and what it is for. It is the page Graft opens on.
+The About page shows a user which app they are in and what it is for. It is the page Graft opens on.
 
 ## Behaviour
 

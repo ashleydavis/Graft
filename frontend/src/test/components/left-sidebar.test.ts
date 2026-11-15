@@ -17,7 +17,7 @@ jest.spyOn(window, "scrollTo").mockImplementation(() => {
 });
 
 //
-// Renders the left sidebar beside a stand-in for each of the pages its links open, starting at the
+// Renders the left sidebar beside a mock of each of the pages its links open, starting at the
 // About page, because its links need a router as the app's have.
 //
 async function renderLeftSidebar(isMinimised: boolean, isRepoOpen: boolean): Promise<HTMLElement> {
