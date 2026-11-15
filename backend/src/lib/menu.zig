@@ -106,24 +106,18 @@ pub const menu: []const ziggy.menu.Menu = &.{
             },
             ziggy.menu.separator,
             .{
-                .label = "Zoom In",
-                .shortcut = "CmdOrCtrl+Plus",
                 .run = .{
-                    .standard = .@"zoom-in",
+                    .action = "zoom-in-step",
                 },
             },
             .{
-                .label = "Zoom Out",
-                .shortcut = "CmdOrCtrl+Minus",
                 .run = .{
-                    .standard = .@"zoom-out",
+                    .action = "zoom-out-step",
                 },
             },
             .{
-                .label = "Actual Size",
-                .shortcut = "CmdOrCtrl+0",
                 .run = .{
-                    .standard = .@"zoom-reset",
+                    .action = "zoom-actual-size",
                 },
             },
             ziggy.menu.separator,

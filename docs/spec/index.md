@@ -9,4 +9,5 @@ Every top-level feature of Graft. See [README.md](README.md) for how the spec is
 - [open-repo](open-repo/index.md): the File menu's Open repo item and its shortcut Ctrl+O, which open a local repo in the commit explorer.
 - [new-window](new-window/index.md): the File menu's New window item and its shortcut Ctrl+N, which open another window of Graft on the welcome page.
 - [shortcuts-overlay](shortcuts-overlay/index.md): the keyboard shortcuts overlay, which `?` shows and `?` or Escape closes.
+- [zoom](zoom/index.md): zooming the window with Ctrl+Plus, Ctrl+Minus, Ctrl+0 and the View menu, which Graft saves and starts at.
 - [layout](layout/index.md): the top bar with the breadcrumb trail and the theme menu, the left and right sidebars and the main content area every page shows in.
