@@ -231,6 +231,7 @@ describe("CommitsPage", () => {
         expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
         expect(screen.getByText("Commits").getAttribute("data-id")).toBe("commits-heading");
         expect(screen.getByText("About").getAttribute("data-id")).toBe("commits-about-link");
+        expect(screen.getByText("About").getAttribute("href")).toBe("/about");
         const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[0][0];
         expect(task.taskType).toBe("commits");
         expect(task.data).toEqual({

@@ -24,7 +24,7 @@ bun run macos
 
 ## Steps
 
-1. Wait for Graft's window to open on the About page.
+1. Wait for Graft's window to open on the welcome page.
 2. Press `?`. Check the overlay shows over the page with the heading "Keyboard shortcuts" and the text "Placeholder: Graft's keyboard shortcuts are listed here.", and the page behind it is dimmed.
 3. Click outside the overlay. Check it stays open.
 4. Press `?`. Check the overlay closes.

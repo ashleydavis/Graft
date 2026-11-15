@@ -62,7 +62,7 @@ run_shown_commands() {
 
 export GRAFT_TEST_REPO="$repo"
 start_test_app
-wait_for_element about-page 30
+wait_for_element welcome-page 30
 
 click right-sidebar-toggle
 wait_for_element git-commands-panel 30

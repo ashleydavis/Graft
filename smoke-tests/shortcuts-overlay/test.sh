@@ -14,6 +14,8 @@ repo="$ZIGGY_TEST_DIR/repo"
 
 export GRAFT_TEST_REPO="$repo"
 start_test_app
+wait_for_element welcome-page 30
+click left-sidebar-about-link
 wait_for_element about-page 30
 
 # `?` shows the overlay and `?` closes it.

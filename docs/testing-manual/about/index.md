@@ -2,7 +2,7 @@
 
 **ID:** about
 
-Manual test steps for the About page, the page Graft opens on.
+Manual test steps for the About page, which the left sidebar's About link opens.
 
 ## Sub-features
 
