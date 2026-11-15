@@ -2,13 +2,14 @@
 
 ## Overview
 
-The commits page lists the newest commits of the repo Graft reads. It is the first page that shows data from Git: it shows that Graft runs `git`, reads its output in the backend and delivers it to the frontend. The list is styled as the commit pane described in [columns](columns/detail.md).
+The commits page lists the newest commits of the open repo (see [open-repo](../open-repo/index.md)). It is the first page that shows data from Git: it shows that Graft runs `git`, reads its output in the backend and delivers it to the frontend. The list is styled as the commit pane described in [columns](columns/detail.md).
 
 ## Behaviour
 
-- The left sidebar's "Commits" link opens the commits page and the commits page links back to the About page.
-- Graft reads the repo at `/tmp/graft/test-repo`. A smoke test gives the app the path of its own test repo instead, through `GRAFT_TEST_REPO`, which the app reads only when it was started with `--remote-control`.
-- `scripts/test/create-test-repo.sh` creates the test repo in a known state with a few commits, at `/tmp/graft/test-repo` or at the path given as its argument.
+- While a repo is open, the left sidebar's "Commits" link opens the commits page, and the commits page links back to the About page.
+- The page reads the open repo. Opening another repo shows that repo's commits in its place, with no commit open. While no repo is open the page shows "No repo is open. Choose File, then Open repo, to open one."
+- A smoke test gives the app the path of its own test repo through `GRAFT_TEST_REPO`, which the app reads only when it was started with `--remote-control`.
+- `scripts/test/create-test-repo.sh` creates a test repo in a known state with a few commits, at `/tmp/graft/test-repo` or at the path given as its argument.
 - When the page opens it queues the commits task, a background task that runs the `log` wrapper.
 - The `log` wrapper reads one page of commits at a time. It runs `git log -z --max-count=<page size>` with a `--format` string whose fields are split by the unit separator (0x1f). Given the hash of the last commit of the previous page, it starts from that commit and skips it with `--skip=1`, so a new commit on top does not shift the pages.
 - For each commit the `log` wrapper reads the hash, the parent hashes, the refs, the author's name, email and date, the committer's name, email and date, the title and the description.
@@ -25,8 +26,8 @@ The commits page lists the newest commits of the repo Graft reads. It is the fir
 - [x] A mock of the Git interface function exists for unit testing the `log` wrapper and future Git abstractions.
 - [x] A Ziggy background task runs the `log` wrapper and delivers the parsed first page to the UI.
 - [x] A commits page on the TanStack router shows the first page of commits as a list.
-- [x] The left sidebar links to the commits page and the commits page links to the About page.
-- [x] The app reads the repo at `/tmp/graft/test-repo` unless a smoke test gives it the path of its own test repo.
+- [x] While a repo is open, the left sidebar links to the commits page and the commits page links to the About page.
+- [x] The page reads the open repo, and a smoke test gives the app the path of its own test repo.
 - [x] A script under `scripts/test/` creates the test repo in a known state with a few commits, at `/tmp/graft/test-repo` or at the path given as its argument.
 
 ## Open questions

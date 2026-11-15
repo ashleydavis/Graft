@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 #
-# Creates the test repo Graft reads, in a known state: a few commits with fixed authors, dates and
-# messages, so every run makes the same commits with the same hashes. See create-test-repo.md.
+# Creates a test repo for Graft to open, in a known state: a few commits with fixed authors, dates
+# and messages, so every run makes the same commits with the same hashes. See create-test-repo.md.
 #
 
 set -eu

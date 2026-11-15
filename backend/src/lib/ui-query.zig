@@ -9,8 +9,9 @@ const assert = std.debug.assert;
 
 //
 // Gives the frontend whether the test mode switch is on and, in test mode, the path of the test
-// repo a smoke test set in GRAFT_TEST_REPO. The environment is read here, where the app starts,
-// and only in test mode, so a release build always reads the repo the frontend defaults to.
+// repo a smoke test set in GRAFT_TEST_REPO, which the frontend opens as it starts. The environment
+// is read here, where the app starts, and only in test mode, so a release build always starts with
+// no repo open.
 //
 pub fn ui_query(
     services: ziggy.core.HandlerServices,

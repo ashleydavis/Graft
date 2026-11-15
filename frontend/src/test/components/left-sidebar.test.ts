@@ -1,7 +1,7 @@
 //
-// Tests the left sidebar: renders it expanded and minimised in a router with an About page, a
-// commits page and a Help page and checks its width, which links it shows with which labels, where
-// they go and which one is highlighted.
+// Tests the left sidebar: renders it expanded and minimised, with a repo open or none, in a router
+// with an About page, a commits page and a Help page and checks its width, which links it shows
+// with which labels, where they go and which one is highlighted.
 //
 
 import { act, render, screen } from "@testing-library/react";
@@ -17,14 +17,15 @@ jest.spyOn(window, "scrollTo").mockImplementation(() => {
 });
 
 //
-// Renders the left sidebar beside a stand-in for each of the pages its links open, starting at the
+// Renders the left sidebar beside a mock of each of the pages its links open, starting at the
 // About page, because its links need a router as the app's have.
 //
-async function renderLeftSidebar(isMinimised: boolean): Promise<HTMLElement> {
+async function renderLeftSidebar(isMinimised: boolean, isRepoOpen: boolean): Promise<HTMLElement> {
     function Root(): JSX.Element {
         return createElement(Fragment, null,
             createElement(LeftSidebar, {
                 isMinimised,
+                isRepoOpen,
             }),
             createElement(Outlet),
         );
@@ -69,7 +70,7 @@ function elementWithDataId(container: HTMLElement, dataId: string): HTMLElement 
 
 describe("LeftSidebar", () => {
     test("is wide and shows each link's name while expanded", async () => {
-        const container = await renderLeftSidebar(false);
+        const container = await renderLeftSidebar(false, true);
         const sidebar = elementWithDataId(container, "left-sidebar");
         expect(sidebar?.classList.contains("w-60")).toBe(true);
         expect(sidebar?.classList.contains("w-16")).toBe(false);
@@ -79,7 +80,7 @@ describe("LeftSidebar", () => {
     });
 
     test("narrows to a strip of icons with no names while minimised", async () => {
-        const container = await renderLeftSidebar(true);
+        const container = await renderLeftSidebar(true, true);
         const sidebar = elementWithDataId(container, "left-sidebar");
         expect(sidebar?.classList.contains("w-16")).toBe(true);
         expect(sidebar?.classList.contains("w-60")).toBe(false);
@@ -93,7 +94,7 @@ describe("LeftSidebar", () => {
     });
 
     test("names each link in its label and tooltip, whether expanded or minimised", async () => {
-        const container = await renderLeftSidebar(true);
+        const container = await renderLeftSidebar(true, true);
         expect(elementWithDataId(container, "left-sidebar-commits-link")?.getAttribute("aria-label")).toBe("Commits");
         expect(elementWithDataId(container, "left-sidebar-commits-link")?.getAttribute("title")).toBe("Commits");
         expect(elementWithDataId(container, "left-sidebar-about-link")?.getAttribute("aria-label")).toBe("About");
@@ -103,21 +104,33 @@ describe("LeftSidebar", () => {
     });
 
     test("links to the commits page, the Help page and the About page", async () => {
-        const container = await renderLeftSidebar(false);
+        const container = await renderLeftSidebar(false, true);
         expect(elementWithDataId(container, "left-sidebar-commits-link")?.getAttribute("href")).toBe("/commits");
         expect(elementWithDataId(container, "left-sidebar-help-link")?.getAttribute("href")).toBe("/help");
         expect(elementWithDataId(container, "left-sidebar-about-link")?.getAttribute("href")).toBe("/");
     });
 
     test("holds only the links to the pages Graft has", async () => {
-        const container = await renderLeftSidebar(false);
+        const container = await renderLeftSidebar(false, true);
         const sidebar = elementWithDataId(container, "left-sidebar");
         expect(sidebar?.querySelectorAll("a").length).toBe(3);
         expect(sidebar?.querySelectorAll("button").length).toBe(0);
     });
 
+    test("hides the link to the commits page while no repo is open, expanded or minimised", async () => {
+        const expanded = await renderLeftSidebar(false, false);
+        expect(elementWithDataId(expanded, "left-sidebar-commits-link")).toBeUndefined();
+        expect(elementWithDataId(expanded, "left-sidebar-help-link")).not.toBeUndefined();
+        expect(elementWithDataId(expanded, "left-sidebar-about-link")).not.toBeUndefined();
+        expect(elementWithDataId(expanded, "left-sidebar")?.querySelectorAll("a").length).toBe(2);
+        expanded.remove();
+        const minimised = await renderLeftSidebar(true, false);
+        expect(elementWithDataId(minimised, "left-sidebar-commits-link")).toBeUndefined();
+        expect(elementWithDataId(minimised, "left-sidebar")?.querySelectorAll("a").length).toBe(2);
+    });
+
     test("puts the Help link above the About link, apart from the commits link", async () => {
-        const container = await renderLeftSidebar(false);
+        const container = await renderLeftSidebar(false, true);
         const helpLink = elementWithDataId(container, "left-sidebar-help-link");
         expect(helpLink?.parentElement).toBe(elementWithDataId(container, "left-sidebar-about-link")?.parentElement);
         expect(helpLink?.nextElementSibling).toBe(elementWithDataId(container, "left-sidebar-about-link"));
@@ -125,7 +138,7 @@ describe("LeftSidebar", () => {
     });
 
     test("highlights the link to the page being shown, and only that one", async () => {
-        const container = await renderLeftSidebar(false);
+        const container = await renderLeftSidebar(false, true);
         expect(elementWithDataId(container, "left-sidebar-about-link")?.classList.contains("bg-gray-200")).toBe(true);
         expect(elementWithDataId(container, "left-sidebar-commits-link")?.classList.contains("bg-gray-200")).toBe(false);
         act(() => {

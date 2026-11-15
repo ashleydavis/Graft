@@ -2,7 +2,8 @@
 // Graft's desktop menu. The native app draws it with the platform's own menu API on every desktop
 // platform.
 //
-// Each item names what it runs. A `.standard` item is an action the native app does itself (quit,
+// Each item names what it runs. An `.action` item runs one of the actions in actions.zig, whose
+// handler is in the frontend. A `.standard` item is an action the native app does itself (quit,
 // close-window, reload, the zoom and editing actions, full screen and the developer tools). A
 // `.zig` item calls a Zig function of the app's on the thread that handles messages. A `.ui` item
 // reaches the frontend as the app event {"type": "menu", "item": "<name>"}; each of those has a
@@ -18,6 +19,12 @@ pub const menu: []const ziggy.menu.Menu = &.{
     .{
         .label = "File",
         .items = &.{
+            .{
+                .run = .{
+                    .action = "open-repo",
+                },
+            },
+            ziggy.menu.separator,
             .{
                 .label = "Close Window",
                 .shortcut = "CmdOrCtrl+W",

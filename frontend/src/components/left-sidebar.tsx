@@ -10,12 +10,15 @@ import { Link } from "@tanstack/react-router";
 import { JSX } from "react";
 
 //
-// Whether the left sidebar is minimised. The layout owns it, because the top bar's button changes
-// it.
+// Whether the left sidebar is minimised and whether a repo is open. The layout owns both: the top
+// bar's button changes the first and the open repo's context holds the second.
 //
 export interface ILeftSidebarProps {
     // Whether the sidebar shows only its icons.
     isMinimised: boolean;
+
+    // Whether a repo is open, which shows the link to the commits page.
+    isRepoOpen: boolean;
 }
 
 //
@@ -66,18 +69,21 @@ export function SidebarLink({ to, icon, label, dataId, isMinimised }: ISidebarLi
 
 //
 // Shows the links to Graft's pages: Commits at the top with the pages about the repo. Help and
-// About sit at the bottom, apart from them, because they are about the app itself. Expanded, each
-// link shows its icon and name. Minimised, the sidebar narrows to a strip of icons, which leaves
-// more of the window to the page while every link stays one click away.
+// About sit at the bottom, apart from them, because they are about the app itself. The Commits link
+// shows only while a repo is open, so the commit explorer is reached by opening a repo. Expanded,
+// each link shows its icon and name. Minimised, the sidebar narrows to a strip of icons, which
+// leaves more of the window to the page while every link stays one click away.
 //
-export function LeftSidebar({ isMinimised }: ILeftSidebarProps): JSX.Element {
+export function LeftSidebar({ isMinimised, isRepoOpen }: ILeftSidebarProps): JSX.Element {
     return (
         <aside
             data-id="left-sidebar"
             className={`flex shrink-0 flex-col justify-between overflow-hidden border-r border-gray-200 dark:border-gray-700 py-2 transition-[width] duration-200 ${isMinimised ? "w-16" : "w-60"}`}
         >
             <nav>
-                <SidebarLink to="/commits" icon={faCodeCommit} label="Commits" dataId="left-sidebar-commits-link" isMinimised={isMinimised} />
+                {isRepoOpen && (
+                    <SidebarLink to="/commits" icon={faCodeCommit} label="Commits" dataId="left-sidebar-commits-link" isMinimised={isMinimised} />
+                )}
             </nav>
             <nav>
                 <SidebarLink to="/help" icon={faCircleQuestion} label="Help" dataId="left-sidebar-help-link" isMinimised={isMinimised} />

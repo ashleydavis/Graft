@@ -1,8 +1,8 @@
 //
-// Tests Graft's actions: that the Keyboard Shortcuts action is declared with the shortcut `?`, and
-// that running it, as its shortcut and the frontend do, sends the frontend the action event naming
-// it. Each running test starts the backend with Ziggy's fake native app and sends the system
-// message the native app or the frontend would.
+// Tests Graft's actions: that Open repo and the Keyboard Shortcuts action, with the shortcut `?`,
+// are declared, and that running Keyboard Shortcuts, as its shortcut and the frontend do, sends
+// the frontend the action event naming it. Each running test starts the backend with Ziggy's fake
+// native app and sends the system message the native app or the frontend would.
 //
 
 const std = @import("std");
@@ -39,11 +39,14 @@ fn expect_shortcuts_overlay_event(message: []const u8) !void {
     );
 }
 
-test "Keyboard Shortcuts is Graft's one action, with the shortcut ?" {
-    try std.testing.expectEqual(@as(usize, 1), actions.actions.len);
-    try std.testing.expectEqualStrings("toggle-shortcuts-overlay", actions.actions[0].name);
-    try std.testing.expectEqualStrings("Keyboard Shortcuts", actions.actions[0].label);
-    try std.testing.expectEqualStrings("?", actions.actions[0].shortcut.?);
+test "Graft's actions are Open repo, with no shortcut, and Keyboard Shortcuts, with ?" {
+    try std.testing.expectEqual(@as(usize, 2), actions.actions.len);
+    try std.testing.expectEqualStrings("open-repo", actions.actions[0].name);
+    try std.testing.expectEqualStrings("Open repo", actions.actions[0].label);
+    try std.testing.expect(actions.actions[0].shortcut == null);
+    try std.testing.expectEqualStrings("toggle-shortcuts-overlay", actions.actions[1].name);
+    try std.testing.expectEqualStrings("Keyboard Shortcuts", actions.actions[1].label);
+    try std.testing.expectEqualStrings("?", actions.actions[1].shortcut.?);
 }
 
 test "Graft's app declares the actions" {
