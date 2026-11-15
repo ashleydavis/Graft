@@ -46,6 +46,10 @@ Graft starts with no repo open, on its welcome page, which shows Graft's name an
 
 Press `?` to show the keyboard shortcuts overlay over the page. It lists every keyboard shortcut of Graft's, with its keys as your platform shows them, in columns. Type in the search box at its top to show only the shortcuts whose name or keys match. The search box has the focus, so `?` typed there types the character. Press Escape to close the overlay. While you type in any other text box, such as the search box of the breadcrumb trail's drop-down, `?` types the character instead of showing the overlay.
 
+### Zoom
+
+Press Ctrl+Plus or Ctrl+= to make everything in the window bigger, Ctrl+Minus to make it smaller and Ctrl+0 to put it back to its normal size (Command in place of Ctrl on macOS). The **View** menu's **Zoom In**, **Zoom Out** and **Actual Size** items do the same. Graft remembers the zoom and starts at it the next time it opens.
+
 ### About page
 
 Click **About** in the left sidebar to open the About page, which shows Graft's name, its icon, its version and what Graft is. It links to Graft, Playbook and Ziggy on GitHub and to the Graft video series on YouTube, which open in your web browser. It names Graft's licence, the MIT licence.

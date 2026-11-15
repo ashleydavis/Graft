@@ -14,6 +14,7 @@ const git_interface = @import("lib/git-interface.zig");
 const menu = @import("lib/menu.zig");
 const pick_repo_folder = @import("lib/pick-repo-folder.zig");
 const ui_query = @import("lib/ui-query.zig");
+const zoom = @import("lib/zoom.zig");
 const ui = @import("ui-files");
 
 //
@@ -23,6 +24,7 @@ const ui = @import("ui-files");
 pub const app = ziggy.core.App(.{
     .messages = .{
         .@"pick-repo-folder" = pick_repo_folder.pick_repo_folder_message_handler,
+        .zoom = zoom.zoom_message_handler,
     },
     .tasks = .{
         .commits = commits_task.commits_task_handler(git_interface.run_git),
