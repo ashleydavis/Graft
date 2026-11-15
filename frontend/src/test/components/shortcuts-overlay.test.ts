@@ -165,6 +165,14 @@ describe("ShortcutsOverlay", () => {
         expect(document.activeElement).toBe(overlayElement("shortcuts-overlay-search"));
     });
 
+    test("the search box has spelling correction off", async () => {
+        const ziggy = await renderShortcutsOverlay();
+        await pressQuestionMark(ziggy);
+        const search = overlayElement("shortcuts-overlay-search");
+        expect(search?.getAttribute("spellcheck")).toBe("false");
+        expect(search?.getAttribute("autocorrect")).toBe("off");
+    });
+
     test("typing in the search box filters the shortcuts by label", async () => {
         const ziggy = await renderShortcutsOverlay();
         await pressQuestionMark(ziggy);
