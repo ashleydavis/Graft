@@ -119,6 +119,24 @@ start_test_app() {
 }
 
 #
+# Stops the app and starts it again on the config and state files it kept, then opens the control connection to the new run. A
+# scenario uses it to check what Graft remembers from one run to the next.
+#
+# It starts a new remote control server for the new run, because the old server frees window 1 only once it has seen the old
+# app's connection end, and no event orders that before the new app connects. A new server holds no app, so the new app is
+# window 1.
+#
+restart_test_app() {
+    exec 3>&-
+    ziggy_platform_stop "$ZIGGY_TEST_DIR" keep-device || fail "the app did not stop cleanly before it was started again"
+    stop_remote_control_server
+    start_remote_control_server
+    ziggy_platform_start "$ZIGGY_TEST_DIR" keep-data || fail "the app did not start again"
+    open_control_connection
+    wait_for_ready
+}
+
+#
 # Opens the control connection to the remote control server on file descriptor 3. A signal that reaches this script while bash connects, such as the
 # exit of a child it started, makes connect fail with "Interrupted system call", which bash reports and does not retry, so that
 # failure is tried again. Any other failure ends the scenario.

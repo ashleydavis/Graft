@@ -36,6 +36,8 @@ The button at the far right of the top bar slides the right sidebar in and out. 
 
 The button next to it, which shows the current theme's icon, opens the theme menu, where you pick Graft's colours: **Light**, **Dark** or **System**, which follows your system's light or dark theme. Graft starts on **System** and remembers your choice the next time it opens. The setting is `theme` in Graft's config file, `~/.config/graft/config.toml` on Linux and macOS and `%APPDATA%\Graft\config.toml` on Windows.
 
+Graft remembers whether the left sidebar is minimised and whether the right sidebar is open, and starts with them as you left them.
+
 ### Keyboard shortcuts overlay
 
 Press `?` to show the keyboard shortcuts overlay over the page. Press `?` again or Escape to close it. While you type in a text box, such as the search box of the breadcrumb trail's drop-down, `?` types the character instead. The overlay shows placeholder text in place of the shortcuts.
