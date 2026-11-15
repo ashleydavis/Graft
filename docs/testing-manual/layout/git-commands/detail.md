@@ -24,7 +24,7 @@ bun run macos
 
 ## Steps
 
-1. Wait for Graft's window to open on the About page. Choose File, then "Open repo", choose `/tmp/graft/test-repo`, then click "About" in the left sidebar.
+1. Wait for Graft's window to open on the welcome page. Choose File, then "Open repo", choose `/tmp/graft/test-repo`, then click "About" in the left sidebar.
 2. Click the button at the far right of the top bar. Check the right sidebar slides in with the heading "Git commands" and shows "This page has run no Git commands."
 3. Click "Commits" in the left sidebar. Check the sidebar shows `cd /tmp/graft/test-repo` and under it `git log --max-count=50`, marked "Most recent".
 4. Click the newest commit, "Change the note". Check `git diff-tree -r --root --no-commit-id --numstat <hash>` is now at the top, marked "Most recent", with `git diff-tree -r --root --no-commit-id --name-status <hash>` under it, then `git log --max-count=1 <hash>` and `git log --max-count=50` last.

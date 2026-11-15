@@ -1,10 +1,11 @@
 //
 // Tests how the frontend starts: loading main.tsx draws the app into the test's document, where the
-// router opens on the About page in the layout's main content area with no repo open. The open-repo
-// action opens a repo on the commits page and the links then change between the About page and the
-// commits page. The Help page is on the router, with the trail following each page and its
-// drop-down opening the About page again. The smoke tests' commands are performed only in test
-// mode. The splash screen covers the page until the native app reports the page is in sight.
+// router opens on the welcome page in the layout's main content area with no repo open. The welcome
+// page's Open repo button runs the open-repo action, which opens a repo on the commits page. The
+// open-repo action opens another repo in its place and the links then change between the About
+// page and the commits page. The Help page is on the router, with the trail following each page
+// and its drop-down opening the About page again. The smoke tests' commands are performed only in
+// test mode. The splash screen covers the page until the native app reports the page is in sight.
 // Each test puts a fake made of Jest mocks on window.ziggy, where the frontend reaches the backend.
 //
 
@@ -73,22 +74,58 @@ function registeredCallback(ziggy: TestCommandZiggy): (event: ITestCommandEvent<
 }
 
 describe("main", () => {
-    test("the app opens on the About page, in the layout's main content area", async () => {
-        const heading = await screen.findByText("About Graft");
-        expect(heading.getAttribute("data-id")).toBe("about-heading");
+    test("the app opens on the welcome page, in the layout's main content area", async () => {
+        const heading = await screen.findByText("Graft", {
+            selector: "h1",
+        });
+        expect(heading.getAttribute("data-id")).toBe("welcome-heading");
+        expect(elementWithDataId("main-content")?.contains(elementWithDataId("welcome-page") ?? null)).toBe(true);
         expect(elementWithDataId("main-content")?.contains(heading)).toBe(true);
         expect(elementWithDataId("app-layout")?.contains(elementWithDataId("main-content") ?? null)).toBe(true);
     });
 
-    test("the app starts with no repo open: the trail starts with the page and the left sidebar has no Commits link", async () => {
-        await screen.findByText("About Graft");
+    test("the app starts with no repo open: the trail is empty and the left sidebar has no Commits link", async () => {
+        await screen.findByText("Graft", {
+            selector: "h1",
+        });
         expect(document.querySelector("[data-id=\"left-sidebar-commits-link\"]")).toBeNull();
         expect(document.querySelector("[data-id=\"breadcrumb-repo\"]")).toBeNull();
-        expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("About");
+        expect(document.querySelector("[data-id=\"breadcrumb-page\"]")).toBeNull();
+    });
+
+    test("the welcome page's Open repo button runs the open-repo action, which opens the folder picked on the commits page", async () => {
+        await screen.findByText("Graft", {
+            selector: "h1",
+        });
+        const ziggy = {
+            runAction: jest.fn((name: string) => installedZiggy.runRegisteredAction(name)),
+            invoke: jest.fn().mockResolvedValue("/repos/welcome"),
+            addTask: jest.fn(),
+            onTaskCompleted: jest.fn(),
+            removeTaskCompletedListener: jest.fn(),
+        };
+        Object.defineProperty(window, "ziggy", {
+            value: ziggy,
+            configurable: true,
+        });
+        await act(async () => {
+            elementWithDataId("welcome-open-repo-button")?.click();
+        });
+        expect(ziggy.runAction).toHaveBeenCalledWith("open-repo");
+        expect(ziggy.invoke).toHaveBeenCalledWith("pick-repo-folder", null);
+        expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
+        expect(document.querySelector("[data-id=\"welcome-page\"]")).toBeNull();
+        expect(ziggy.addTask).toHaveBeenCalledWith(expect.objectContaining({
+            taskType: "commits",
+            data: {
+                repoPath: "/repos/welcome",
+                pageSize: 50,
+            },
+        }));
+        expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("welcome");
     });
 
     test("the open-repo action opens the folder picked on the commits page, and the links change back to the About page and on again", async () => {
-        await screen.findByText("About Graft");
         expect(installedZiggy.hasRegisteredAction("open-repo")).toBe(true);
         const ziggy = {
             invoke: jest.fn().mockResolvedValue("/repos/graft"),
@@ -155,7 +192,7 @@ describe("main", () => {
 });
 
 describe("createAppRouter", () => {
-    test("starts at the About page's path", () => {
+    test("starts at the welcome page's path", () => {
         expect(createAppRouter().state.location.pathname).toBe("/");
     });
 });
