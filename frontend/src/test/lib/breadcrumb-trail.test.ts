@@ -8,7 +8,7 @@ import { clipStepLabel, ITrailOption, pageTrail, repoName, searchMatches } from 
 
 describe("pageTrail", () => {
     test("the About page's trail is the repo, then About as a drop-down of the app's pages with About ticked", () => {
-        expect(pageTrail("/", "/repos/graft")).toEqual([
+        expect(pageTrail("/about", "/repos/graft")).toEqual([
             {
                 label: "graft",
                 tooltip: "/repos/graft",
@@ -28,7 +28,7 @@ describe("pageTrail", () => {
                     },
                     {
                         label: "About",
-                        path: "/",
+                        path: "/about",
                         dataId: "breadcrumb-option-about",
                         isSelected: true,
                     },
@@ -75,7 +75,7 @@ describe("pageTrail", () => {
     });
 
     test("starts with the page while no repo is open", () => {
-        const trail = pageTrail("/", undefined);
+        const trail = pageTrail("/about", undefined);
         expect(trail.map(step => step.dataId)).toEqual(["breadcrumb-page"]);
         expect(trail[0].label).toBe("About");
         expect(pageTrail("/commits", undefined)).toEqual([
@@ -86,6 +86,18 @@ describe("pageTrail", () => {
                 options: [],
             },
         ]);
+    });
+
+    test("the welcome page's trail is the repo step only, and has no steps while no repo is open", () => {
+        expect(pageTrail("/", "/repos/graft")).toEqual([
+            {
+                label: "graft",
+                tooltip: "/repos/graft",
+                dataId: "breadcrumb-repo",
+                options: [],
+            },
+        ]);
+        expect(pageTrail("/", undefined)).toEqual([]);
     });
 
     test("any other path has no steps while no repo is open", () => {
@@ -131,7 +143,7 @@ describe("searchMatches", () => {
         },
         {
             label: "About",
-            path: "/",
+            path: "/about",
             dataId: "breadcrumb-option-about",
             isSelected: true,
         },

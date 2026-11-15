@@ -45,6 +45,8 @@ search_value() {
 
 export GRAFT_TEST_REPO="$repo"
 start_test_app
+wait_for_element welcome-page 30
+click left-sidebar-about-link
 wait_for_element about-page 30
 
 # `?` shows the overlay, which lists the shortcuts from Ziggy's action list.

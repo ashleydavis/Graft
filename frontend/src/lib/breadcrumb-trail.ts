@@ -65,7 +65,7 @@ const APP_GROUP_PAGES: IGroupPage[] = [
     },
     {
         label: "About",
-        path: "/",
+        path: "/about",
         id: "about",
     },
 ];
@@ -82,7 +82,7 @@ const STEP_LABEL_LENGTH_MAX = 18;
 // repo step has no sibling to switch to and is plain text. While no repo is open the trail starts
 // with the page. The commits page is the only page of the repo's group, so its step is plain text
 // too. The Help and About pages share the app's group, so their step is a drop-down of both. Any
-// other path gets the repo step only.
+// other path, the welcome page's among them, gets the repo step only.
 //
 export function pageTrail(pathname: string, repoPath: string | undefined): ITrailStep[] {
     const repoSteps: ITrailStep[] = [];

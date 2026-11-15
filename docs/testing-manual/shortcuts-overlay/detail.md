@@ -24,7 +24,7 @@ bun run macos
 
 ## Steps
 
-1. Wait for Graft's window to open on the About page.
+1. Wait for Graft's window to open on the welcome page.
 2. Press `?`. Check the overlay shows over the page with the heading "Keyboard shortcuts", a search box with the focus and the shortcuts in columns, and the page behind it is dimmed. Check the first shortcut is "Open repo" with Ctrl+O (Command+O on macOS), and that the menu items with shortcuts, such as Quit, Reload and Zoom In, are listed with the keys the menus show.
 3. Click outside the overlay. Check it stays open.
 4. Type `open`. Check only "Open repo" is listed. Clear the search and type `ctrl+q` (on macOS, `⌘Q`). Check only "Quit" is listed. Type `branch` in place of it and check the overlay says no shortcut matches "branch".

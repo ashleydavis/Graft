@@ -24,7 +24,7 @@ bun run macos
 
 ## Steps
 
-1. Wait for Graft's window to open on the About page.
+1. Wait for Graft's window to open on the welcome page.
 2. Choose File, then "Open repo", and choose `/tmp/graft/test-repo`.
 3. Check the page shows the heading "Commits", a link "About" and a list of the test repo's commits, newest first: "Change the note", "Add the notes" and "Add the readme", each with the author "Ada Author", its date and the first seven characters of its hash.
 4. Check the hashes match the ones `create-test-repo.sh` printed.
