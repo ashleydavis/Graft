@@ -9,6 +9,7 @@ What every smoke test uses: it starts the app, talks to it through the remote co
 - `wait_for_text <data-id> <text> [seconds]`: waits until the element's text contains the text.
 - `wait_for_element <data-id> <seconds>`: waits until the element with the data-id is on the page.
 - `wait_for_missing_element <data-id> <seconds>`: waits until the element with the data-id has gone from the page.
+- `wait_for_in_view <data-id> <seconds>`: waits until the element's left and right edges are inside the window, so the user can see it.
 - `choose_menu_item <action>`: chooses a menu item through the native app, as a user would.
 - `press_key <key>`: presses a key through the native app, as a user would. The key is written as a shortcut, such as `CmdOrCtrl+Shift+H`.
 - `viewport_size`: prints the size of the area the frontend is drawn in.

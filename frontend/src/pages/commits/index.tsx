@@ -5,7 +5,7 @@
 //
 
 import { Link } from "@tanstack/react-router";
-import { JSX, useEffect, useState } from "react";
+import { JSX, useEffect, useRef, useState } from "react";
 import { ICommit, readCommitPage } from "../../lib/commits";
 import { CommitDetailsPane } from "./components/commit-details-pane";
 import { CommitPane } from "./components/commit-pane";
@@ -31,13 +31,15 @@ export interface ICommitsPageProps {
 // could not be read. It owns which commit and which changed file are open, because
 // each pane opens the next: a newly clicked commit closes the file pane and closing the commit
 // details pane closes the file pane with it. Dates are shown in the browser's own locale and time
-// zone.
+// zone. When a pane opens, the page scrolls sideways to bring it into view, because the newest pane
+// is the one the user wants to read and it can open beyond the right edge of the window.
 //
 export function CommitsPage({ repoPath }: ICommitsPageProps): JSX.Element {
     const [commits, setCommits] = useState<ICommit[] | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
     const [openHash, setOpenHash] = useState<string | undefined>(undefined);
     const [openPath, setOpenPath] = useState<string | undefined>(undefined);
+    const columnsRef = useRef<HTMLDivElement>(null);
     const dateFormat = Intl.DateTimeFormat().resolvedOptions();
 
     function openCommit(hash: string): void {
@@ -65,13 +67,19 @@ export function CommitsPage({ repoPath }: ICommitsPageProps): JSX.Element {
         });
     }, [repoPath]);
 
+    useEffect(() => {
+        if (openHash) {
+            scrollLastPaneIntoView(columnsRef.current);
+        }
+    }, [openHash, openPath]);
+
     return (
         <main data-id="commits-page" className="flex min-h-full w-max min-w-full flex-col gap-4 bg-gray-50 p-6 dark:bg-transparent">
             <div className="flex items-baseline gap-4">
                 <h1 data-id="commits-heading" className="text-2xl font-bold">Commits</h1>
                 <Link to="/" data-id="commits-about-link" className="text-sm text-blue-700 hover:underline dark:text-blue-400">About</Link>
             </div>
-            <div data-id="commit-columns" className="flex items-start gap-3">
+            <div ref={columnsRef} data-id="commit-columns" className="flex items-start gap-3">
                 <CommitPane commits={commits} error={error} selectedHash={openHash} dateFormat={dateFormat} onSelectCommit={openCommit} />
                 {openHash !== undefined && (
                     <CommitDetailsPane key={openHash} repoPath={repoPath} hash={openHash} selectedPath={openPath} dateFormat={dateFormat} onSelectFile={setOpenPath} onClose={closeCommit} />
@@ -82,4 +90,26 @@ export function CommitsPage({ repoPath }: ICommitsPageProps): JSX.Element {
             </div>
         </main>
     );
+}
+
+//
+// Scrolls the page by the least amount that shows the last pane in the columns, the one just
+// opened, so a pane that opens beyond the right edge of the window comes into view. It scrolls
+// smoothly so the user sees where the pane came from, and leaves the page where it is when the pane
+// is already in view. The columns are null only before React has drawn them, when there is no pane
+// to show.
+//
+export function scrollLastPaneIntoView(columns: HTMLElement | null): void {
+    if (!columns) {
+        return;
+    }
+    const lastPane = columns.lastElementChild;
+    if (!lastPane) {
+        return;
+    }
+    lastPane.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "nearest",
+    });
 }
