@@ -94,6 +94,8 @@ export function showSplashScreen(page: IDocumentLike | Document): void {
         background: splashBackground,
         minimumDisplayMilliseconds: 500,
         fadeDurationMilliseconds: 500,
+        // The native app fades the splash colour over its menu bar with the overlay.
+        onFadeStart: durationMilliseconds => window.ziggy.splashFading(durationMilliseconds),
     });
     window.ziggy.onEvent((event: { type?: string } | null) => {
         if (event !== null && event.type === "frontend-visible") {

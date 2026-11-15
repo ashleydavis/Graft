@@ -24,6 +24,7 @@ export const installedZiggy = {
     ...makeFakeActionZiggy([]),
     onEvent: jest.fn(),
     frontendReady: jest.fn(),
+    splashFading: jest.fn(),
     onTaskEvent: jest.fn(),
     removeTaskEventListener: jest.fn(),
 };
