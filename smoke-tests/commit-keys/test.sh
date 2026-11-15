@@ -2,10 +2,10 @@
 
 #
 # Creates a test repo of the smoke test's own, starts the real app with remote control on, on that
-# repo and presses keys as a user does: Left in the breadcrumb trail drop-down's search box moves
-# its cursor, Ctrl+1 opens the commit explorer, the arrow keys and Enter open a commit and one of
-# its files, Escape closes the panes one at a time and Ctrl+1 returns to the commit explorer from
-# the Help page. See test.md.
+# repo, opens the About page from the left sidebar and presses keys as a user does: Left in the
+# breadcrumb trail drop-down's search box moves its cursor, Ctrl+1 opens the commit explorer, the
+# arrow keys and Enter open a commit and one of its files, Escape closes the panes one at a time
+# and Ctrl+1 returns to the commit explorer from the Help page. See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -38,6 +38,8 @@ repo="$ZIGGY_TEST_DIR/repo"
 
 export GRAFT_TEST_REPO="$repo"
 start_test_app
+wait_for_element welcome-page 30
+click left-sidebar-about-link
 wait_for_element about-page 30
 
 # In the drop-down's search box, which has the focus when the drop-down opens, Left moves the

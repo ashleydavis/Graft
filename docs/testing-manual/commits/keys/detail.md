@@ -26,7 +26,7 @@ On macOS press Cmd+1 wherever these steps say Ctrl+1.
 
 ## Steps
 
-1. Wait for Graft's window to open on the About page, then choose File, then "Open repo", and choose `/tmp/graft/test-repo`. Click "About" in the left sidebar, then press Ctrl+1. Check the commits page opens with the commit list's border in the theme's blue primary colour and no commit selected.
+1. Wait for Graft's window to open on the welcome page, then choose File, then "Open repo", and choose `/tmp/graft/test-repo`. Click "About" in the left sidebar, then press Ctrl+1. Check the commits page opens with the commit list's border in the theme's blue primary colour and no commit selected.
 2. Press Down. Check "Change the note" is shown as selected. Press Down again and check "Add the notes" is selected instead. Press Up and check "Change the note" is selected again. Check the page stays where it was.
 3. Press Enter. Check the commit details pane opens to the right with "Change the note", its title in the commit list turns bold and the blue border moves to the commit details pane.
 4. Press Down. Check notes.txt is selected. Press Enter. Check the file pane opens with the diff of notes.txt and the blue border moves to it.
