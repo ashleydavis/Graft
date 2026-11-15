@@ -73,7 +73,7 @@ type LayoutZiggy = IFakeThemeZiggy & IFakeActionZiggy & Pick<IZiggyBridge, "invo
 // answers the folder picker with the invoke given.
 //
 async function renderAppLayoutWithZiggy(repoPath: string | undefined, invoke: jest.Mock = jest.fn()): Promise<[HTMLElement, IFakeActionZiggy]> {
-    const ziggy = makeFakeActionZiggy();
+    const ziggy = makeFakeActionZiggy([]);
     const rendered = await renderFakedAppLayout({
         ...makeFakeThemeZiggy({
             systemTheme: "light",
@@ -129,7 +129,7 @@ async function renderFakedAppLayout(fake: Partial<LayoutZiggy>, repoPath: string
     onTaskEvent.mockClear();
     removeTaskEventListener.mockClear();
     installFakeZiggy({
-        ...makeFakeActionZiggy(),
+        ...makeFakeActionZiggy([]),
         ...fake,
         onTaskEvent,
         removeTaskEventListener,
@@ -171,7 +171,7 @@ describe("AppLayout", () => {
         await act(async () => {
             await ziggy.runRegisteredAction(shortcutsOverlayAction);
         });
-        expect(elementWithDataId(document.body, "shortcuts-overlay-placeholder")).not.toBeUndefined();
+        expect(elementWithDataId(document.body, "shortcuts-overlay-search")).not.toBeUndefined();
         expect(elementWithDataId(container, "main-content")).not.toBeUndefined();
     });
 

@@ -1,7 +1,8 @@
 //
-// Tests Graft's actions: that Open repo and the Keyboard Shortcuts action, with the shortcut `?`,
-// are declared, and that running Keyboard Shortcuts, as its shortcut and the frontend do, sends
-// the frontend the action event naming it. Each running test starts the backend with Ziggy's fake
+// Tests Graft's actions. It checks Open repo is declared with the shortcut CmdOrCtrl+O and the
+// Keyboard Shortcuts action with the shortcut `?`. It checks every action's shortcut is clear of
+// the web view's own keys. It checks running Keyboard Shortcuts, as its shortcut and the frontend
+// do, sends the frontend the action event naming it. Each running test starts the backend with Ziggy's fake
 // native app and sends the system message the native app or the frontend would.
 //
 
@@ -39,14 +40,37 @@ fn expect_shortcuts_overlay_event(message: []const u8) !void {
     );
 }
 
-test "Graft's actions are Open repo, with no shortcut, and Keyboard Shortcuts, with ?" {
+test "Graft's actions are Open repo, with CmdOrCtrl+O, and Keyboard Shortcuts, with ?" {
     try std.testing.expectEqual(@as(usize, 2), actions.actions.len);
     try std.testing.expectEqualStrings("open-repo", actions.actions[0].name);
     try std.testing.expectEqualStrings("Open repo", actions.actions[0].label);
-    try std.testing.expect(actions.actions[0].shortcut == null);
+    try std.testing.expectEqualStrings("CmdOrCtrl+O", actions.actions[0].shortcut.?);
     try std.testing.expectEqualStrings("toggle-shortcuts-overlay", actions.actions[1].name);
     try std.testing.expectEqualStrings("Keyboard Shortcuts", actions.actions[1].label);
     try std.testing.expectEqualStrings("?", actions.actions[1].shortcut.?);
+}
+
+test "no action's shortcut is one of the web view's own keys" {
+    //
+    // The keys the web view uses itself: reload, zoom and the developer tools, written in the
+    // shortcut syntax of Ziggy's menus.
+    //
+    const web_view_keys = [_][]const u8{
+        "CmdOrCtrl+R",
+        "CmdOrCtrl+Shift+R",
+        "F5",
+        "CmdOrCtrl+Plus",
+        "CmdOrCtrl+Minus",
+        "CmdOrCtrl+0",
+        "CmdOrCtrl+Shift+I",
+        "F12",
+    };
+    for (actions.actions) |action| {
+        const shortcut = action.shortcut orelse continue;
+        for (web_view_keys) |web_view_key| {
+            try std.testing.expect(!std.ascii.eqlIgnoreCase(shortcut, web_view_key));
+        }
+    }
 }
 
 test "Graft's app declares the actions" {
