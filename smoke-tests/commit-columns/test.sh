@@ -19,7 +19,7 @@ head_hash="$(git -C "$repo" rev-parse HEAD)" || fail "could not read the test re
 export GRAFT_TEST_REPO="$repo"
 start_test_app
 wait_for_element about-page 30
-click about-commits-link
+click left-sidebar-commits-link
 wait_for_element commit-pane 30
 wait_for_element "commit-$head_hash" 30
 click "commit-$head_hash"
