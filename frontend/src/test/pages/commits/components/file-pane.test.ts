@@ -92,8 +92,9 @@ describe("FilePane", () => {
         const onClose = jest.fn();
         installFakeTaskZiggy();
         renderPane(onClose);
-        fireEvent.click(screen.getByText("Close"));
+        const close = screen.getByLabelText("Close");
+        expect(close.getAttribute("data-id")).toBe("file-pane-close");
+        fireEvent.click(close);
         expect(onClose).toHaveBeenCalledTimes(1);
-        expect(screen.getByText("Close").getAttribute("data-id")).toBe("file-pane-close");
     });
 });

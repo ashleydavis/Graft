@@ -1,10 +1,13 @@
 //
 // The commit details pane: the column that opens to the right of the commit pane when a commit is
-// clicked, with the commit's details and the files it changed. Its content is unstyled.
+// clicked, with the commit's full message, author, committer, dates, parents and the files it
+// changed with their line counts.
 //
 
 import { JSX, useEffect, useState } from "react";
-import { ICommitDetails, readCommitDetails } from "../../../lib/commit-details";
+import { IChangedFile, ICommitDetails, readCommitDetails } from "../../../lib/commit-details";
+import { formatDateTime, IDateFormatOptions } from "../../../lib/date-format";
+import { PaneHeader } from "./pane-header";
 
 //
 // What the commit details pane is given and what it reports.
@@ -16,6 +19,12 @@ export interface ICommitDetailsPaneProps {
     // The hash of the commit to show.
     hash: string;
 
+    // The path of the changed file whose diff is open, which the pane highlights, or undefined.
+    selectedPath: string | undefined;
+
+    // The locale and time zone the commit's dates are shown in.
+    dateFormat: IDateFormatOptions;
+
     // Called with the path of the changed file the user clicks.
     onSelectFile(path: string): void;
 
@@ -24,11 +33,11 @@ export interface ICommitDetailsPaneProps {
 }
 
 //
-// Reads the commit's details and changed files with the commit details task and shows them, with
-// a button that closes the pane. It shows that it is loading until the task ends and what went
-// wrong when the commit could not be read.
+// Reads the commit's details and changed files with the commit details task and shows them in a
+// rounded card headed "Commit", with a button that closes the pane. It shows that it is loading
+// until the task ends and what went wrong when the commit could not be read.
 //
-export function CommitDetailsPane({ repoPath, hash, onSelectFile, onClose }: ICommitDetailsPaneProps): JSX.Element {
+export function CommitDetailsPane({ repoPath, hash, selectedPath, dateFormat, onSelectFile, onClose }: ICommitDetailsPaneProps): JSX.Element {
     const [details, setDetails] = useState<ICommitDetails | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
 
@@ -48,9 +57,11 @@ export function CommitDetailsPane({ repoPath, hash, onSelectFile, onClose }: ICo
     }, [repoPath, hash]);
 
     return (
-        <section data-id="commit-details-pane" className="flex-none border-l pl-4">
-            <button type="button" data-id="commit-details-close" onClick={onClose}>Close</button>
-            <CommitDetailsContent details={details} error={error} onSelectFile={onSelectFile} />
+        <section data-id="commit-details-pane" className="w-[380px] flex-none overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-white/5">
+            <PaneHeader title="Commit" titleDataId="commit-details-heading" closeDataId="commit-details-close" onClose={onClose} />
+            <div className="max-h-[70vh] overflow-y-auto">
+                <CommitDetailsContent details={details} error={error} selectedPath={selectedPath} dateFormat={dateFormat} onSelectFile={onSelectFile} />
+            </div>
         </section>
     );
 }
@@ -65,38 +76,126 @@ export interface ICommitDetailsContentProps {
     // Why the commit could not be read, or undefined.
     error: string | undefined;
 
+    // The path of the changed file whose diff is open, which the content highlights, or undefined.
+    selectedPath: string | undefined;
+
+    // The locale and time zone the commit's dates are shown in.
+    dateFormat: IDateFormatOptions;
+
     // Called with the path of the changed file the user clicks.
     onSelectFile(path: string): void;
 }
 
 //
-// Shows the commit's details and its changed files, or says the commit is loading or why it could
-// not be read.
+// Shows the commit's message, who wrote and made it and when, its hash and parents, then the files
+// it changed under a "Files changed" heading, or shows that the commit is loading or why it could
+// not be read. The description shows only when the message has more than a title.
 //
-export function CommitDetailsContent({ details, error, onSelectFile }: ICommitDetailsContentProps): JSX.Element {
+export function CommitDetailsContent({ details, error, selectedPath, dateFormat, onSelectFile }: ICommitDetailsContentProps): JSX.Element {
     if (error !== undefined) {
-        return <p data-id="commit-details-error">{error}</p>;
+        return <p data-id="commit-details-error" className="p-4 text-red-700 dark:text-red-400">{error}</p>;
     }
     if (details === undefined) {
-        return <p data-id="commit-details-loading">Loading the commit.</p>;
+        return <p data-id="commit-details-loading" className="p-4 text-gray-500 dark:text-gray-400">Loading the commit.</p>;
     }
     const commit = details.commit;
     return (
         <div data-id="commit-details">
-            <p data-id="commit-details-title">{commit.title}</p>
-            <p data-id="commit-details-description">{commit.description}</p>
-            <p data-id="commit-details-hash">Hash: {commit.hash}</p>
-            <p data-id="commit-details-parents">Parents: {commit.parentHashes.length > 0 ? commit.parentHashes.join(", ") : "none"}</p>
-            <p data-id="commit-details-author">Author: {commit.authorName} ({commit.authorEmail}) on {commit.authorDate.toISOString()}</p>
-            <p data-id="commit-details-committer">Committer: {commit.committerName} ({commit.committerEmail}) on {commit.committerDate.toISOString()}</p>
-            <p>Changed files:</p>
-            <ul data-id="changed-files">
+            <div className="flex flex-col gap-1 border-b border-gray-200 p-4 dark:border-gray-700">
+                <p data-id="commit-details-title" className="font-bold">{commit.title}</p>
+                {commit.description !== "" && (
+                    <p data-id="commit-details-description" className="whitespace-pre-wrap text-sm">{commit.description}</p>
+                )}
+                <p data-id="commit-details-author" className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    Authored by {commit.authorName} &lt;{commit.authorEmail}&gt; on {formatDateTime(commit.authorDate, dateFormat)}
+                </p>
+                <p data-id="commit-details-committer" className="text-sm text-gray-600 dark:text-gray-400">
+                    Committed by {commit.committerName} &lt;{commit.committerEmail}&gt; on {formatDateTime(commit.committerDate, dateFormat)}
+                </p>
+                <p data-id="commit-details-hash" className="break-all font-mono text-xs text-gray-600 dark:text-gray-400">{commit.hash}</p>
+                <p data-id="commit-details-parents" className="font-mono text-xs text-gray-600 dark:text-gray-400">{parentsText(commit.parentHashes)}</p>
+            </div>
+            <p data-id="changed-files-heading" className="px-4 pt-3 pb-1 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Files changed ({details.changedFiles.length})
+            </p>
+            {details.changedFiles.length === 0 && (
+                <p data-id="changed-files-none" className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">No files changed in this commit.</p>
+            )}
+            <ul data-id="changed-files" className="pb-2">
                 {details.changedFiles.map(file => (
-                    <li key={file.path} data-id={`changed-file-${file.path}`} onClick={() => onSelectFile(file.path)}>
-                        {file.status} {file.path}
-                    </li>
+                    <ChangedFileRow key={file.path} file={file} isSelected={file.path === selectedPath} onSelectFile={onSelectFile} />
                 ))}
             </ul>
         </div>
+    );
+}
+
+//
+// Writes the commit's parents as their short hashes: "Parent: 1234567" for one, "Parents: " and a
+// list for a merge and "Parents: none" for the first commit.
+//
+export function parentsText(parentHashes: string[]): string {
+    if (parentHashes.length === 0) {
+        return "Parents: none";
+    }
+    const shortHashes = parentHashes.map(parentHash => parentHash.slice(0, 7)).join(", ");
+    if (parentHashes.length === 1) {
+        return `Parent: ${shortHashes}`;
+    }
+    return `Parents: ${shortHashes}`;
+}
+
+//
+// Picks the Tailwind classes that colour a change type's letter as the Graft UI mockup does: green
+// for added, red for deleted and orange for modified or any other change.
+//
+export function statusColorClass(status: string): string {
+    if (status === "A") {
+        return "text-green-600 dark:text-green-400";
+    }
+    if (status === "D") {
+        return "text-red-600 dark:text-red-400";
+    }
+    return "text-orange-600 dark:text-orange-400";
+}
+
+//
+// What one row of the changed files shows and what it reports.
+//
+export interface IChangedFileRowProps {
+    // The changed file.
+    file: IChangedFile;
+
+    // Whether the file's diff is open, which highlights the row.
+    isSelected: boolean;
+
+    // Called with the file's path when the user clicks the row.
+    onSelectFile(path: string): void;
+}
+
+//
+// Shows one changed file: its change type as a coloured letter, its path and the lines the commit
+// added and deleted, or "binary" for a file git counts no lines of.
+//
+export function ChangedFileRow({ file, isSelected, onSelectFile }: IChangedFileRowProps): JSX.Element {
+    return (
+        <li
+            data-id={`changed-file-${file.path}`}
+            onClick={() => onSelectFile(file.path)}
+            className={`flex cursor-pointer items-center gap-2 px-4 py-1.5 text-sm ${isSelected ? "bg-blue-500/15" : "hover:bg-gray-100 dark:hover:bg-white/10"}`}
+        >
+            <span className={`w-4 flex-none font-mono text-xs font-bold ${statusColorClass(file.status)}`}>{file.status}</span>
+            <span title={file.path} className="min-w-0 flex-1 truncate">{file.path}</span>
+            {file.isBinary && (
+                <span className="flex-none text-xs text-gray-500 dark:text-gray-400">binary</span>
+            )}
+            {!file.isBinary && (
+                <span className="flex-none font-mono text-xs">
+                    <span className="text-green-600 dark:text-green-400">+{file.linesAdded}</span>
+                    {" "}
+                    <span className="text-red-600 dark:text-red-400">-{file.linesDeleted}</span>
+                </span>
+            )}
+        </li>
     );
 }

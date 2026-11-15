@@ -68,6 +68,36 @@ const diff_tree_shown_args: []const []const u8 = &.{
 };
 
 //
+// The `git diff-tree` call the task makes for the line counts of the commit's changed files,
+// returning README.md's one added line.
+//
+const numstat_call: git_mock.MockGitOptions = .{
+    .expected_args = &.{
+        "-C",
+        "/repo",
+        "diff-tree",
+        "-r",
+        "-z",
+        "--root",
+        "--no-commit-id",
+        "--numstat",
+        commit_hash,
+    },
+    .expected_shown_args = &.{
+        "diff-tree",
+        "-r",
+        "--root",
+        "--no-commit-id",
+        "--numstat",
+        commit_hash,
+    },
+    .exit_code = 0,
+    .stdout = "1\t0\tREADME.md\x00",
+    .stderr = "",
+    .start_error = null,
+};
+
+//
 // Declares a backend whose only task is the commit details task, run with the Git interface
 // function.
 //
@@ -113,7 +143,7 @@ fn expect_task_message(
     try native_app.expectMessageContaining(io, std.testing.allocator, expected_text);
 }
 
-test "the commit details task gives the commit and the files it changed as its result" {
+test "the commit details task gives the commit and the files it changed with their line counts" {
     const mock = comptime git_mock.mock_git_calls(&.{
         log_call,
         .{
@@ -124,6 +154,7 @@ test "the commit details task gives the commit and the files it changed as its r
             .stderr = "",
             .start_error = null,
         },
+        numstat_call,
     });
     try expect_task_message(
         mock,
@@ -134,7 +165,8 @@ test "the commit details task gives the commit and the files it changed as its r
     try expect_task_message(
         mock,
         "{\"repoPath\":\"/repo\",\"hash\":\"" ++ commit_hash ++ "\"}",
-        "\"changedFiles\":[{\"status\":\"A\",\"path\":\"README.md\"}]",
+        "\"changedFiles\":[{\"status\":\"A\",\"path\":\"README.md\",\"linesAdded\":1," ++
+            "\"linesDeleted\":0,\"isBinary\":false}]",
     );
 }
 

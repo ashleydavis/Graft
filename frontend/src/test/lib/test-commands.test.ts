@@ -4,7 +4,7 @@
 // a result is turned into JSON.
 //
 
-import { IElementFinder, IFoundElement, performTestCommand, testResultToJson } from "../../lib/test-commands";
+import { elementInViewResult, IElementFinder, IFoundElement, IHorizontalBounds, performTestCommand, testResultToJson } from "../../lib/test-commands";
 
 //
 // A fake element that records what was done to it.
@@ -18,9 +18,25 @@ interface IFakeElement extends IFoundElement {
 }
 
 //
-// Makes a fake element with the text and value.
+// The width of the window the fake finder reports, which the in-view tests place elements against.
+//
+const WINDOW_WIDTH = 1000;
+
+//
+// Makes a fake element with the text and value, whose edges are at the left of the window.
 //
 function makeElement(text: string | null, value: string | undefined): IFakeElement {
+    return makePlacedElement(text, value, {
+        left: 0,
+        right: 100,
+    });
+}
+
+//
+// Makes a fake element with the text and value, whose edges are where the bounds put them, for the
+// in-view command.
+//
+function makePlacedElement(text: string | null, value: string | undefined, bounds: IHorizontalBounds): IFakeElement {
     const element: IFakeElement = {
         textContent: text,
         value,
@@ -35,6 +51,9 @@ function makeElement(text: string | null, value: string | undefined): IFakeEleme
             element.events.push(event);
             return true;
         },
+        getBoundingClientRect(): IHorizontalBounds {
+            return bounds;
+        },
     };
     return element;
 }
@@ -47,6 +66,7 @@ function makeFinder(element: IFoundElement): IElementFinder {
         find(dataId: string): IFoundElement | null {
             return dataId === "target" ? element : null;
         },
+        windowWidth: WINDOW_WIDTH,
     };
 }
 
@@ -166,6 +186,28 @@ describe("performTestCommand", () => {
         });
     });
 
+    test("in-view succeeds when the element is inside the window and fails when it is not", () => {
+        expect(performTestCommand(makeFinder(makePlacedElement("", undefined, {
+            left: 400,
+            right: 1000,
+        })), {
+            command: "in-view",
+            dataId: "target",
+        })).toEqual({
+            ok: true,
+        });
+        expect(performTestCommand(makeFinder(makePlacedElement("", undefined, {
+            left: 700,
+            right: 1300,
+        })), {
+            command: "in-view",
+            dataId: "target",
+        })).toEqual({
+            ok: false,
+            error: "The element with the data-id target is outside the window: its left edge is at 700, its right edge is at 1300 and the window is 1000 wide.",
+        });
+    });
+
     test("an unknown command fails", () => {
         expect(performTestCommand(makeFinder(makeElement("", undefined)), {
             command: "dance",
@@ -173,6 +215,46 @@ describe("performTestCommand", () => {
         })).toEqual({
             ok: false,
             error: "Unknown test command dance.",
+        });
+    });
+});
+
+describe("elementInViewResult", () => {
+    test("succeeds when both edges are inside the window, including on its edges", () => {
+        expect(elementInViewResult({
+            left: 0,
+            right: 1000,
+        }, 1000, "pane")).toEqual({
+            ok: true,
+        });
+    });
+
+    test("rounds the edges to whole pixels", () => {
+        expect(elementInViewResult({
+            left: -0.4,
+            right: 1000.4,
+        }, 1000, "pane")).toEqual({
+            ok: true,
+        });
+    });
+
+    test("fails when the element starts left of the window", () => {
+        expect(elementInViewResult({
+            left: -10,
+            right: 500,
+        }, 1000, "pane")).toEqual({
+            ok: false,
+            error: "The element with the data-id pane is outside the window: its left edge is at -10, its right edge is at 500 and the window is 1000 wide.",
+        });
+    });
+
+    test("fails when the element ends right of the window", () => {
+        expect(elementInViewResult({
+            left: 500,
+            right: 1001,
+        }, 1000, "pane")).toEqual({
+            ok: false,
+            error: "The element with the data-id pane is outside the window: its left edge is at 500, its right edge is at 1001 and the window is 1000 wide.",
         });
     });
 });
