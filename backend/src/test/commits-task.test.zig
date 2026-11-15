@@ -81,6 +81,7 @@ fn expect_task_message(
 test "the commits task reads the first page and gives it as its result" {
     const mock = comptime git_mock.mock_git(.{
         .expected_args = &.{ "-C", "/repo", "log", "-z", "--max-count=50", format_arg },
+        .expected_shown_args = &.{ "log", "--max-count=50" },
         .exit_code = 0,
         .stdout = one_commit_output,
         .stderr = "",
@@ -106,6 +107,12 @@ test "the commits task reads a later page after the hash it is given" {
             "--skip=1",
             "abc123",
         },
+        .expected_shown_args = &.{
+            "log",
+            "--max-count=5",
+            "--skip=1",
+            "abc123",
+        },
         .exit_code = 0,
         .stdout = one_commit_output,
         .stderr = "",
@@ -121,6 +128,7 @@ test "the commits task reads a later page after the hash it is given" {
 test "the commits task fails with a description of the error when git log fails" {
     const mock = comptime git_mock.mock_git(.{
         .expected_args = &.{ "-C", "/repo", "log", "-z", "--max-count=50", format_arg },
+        .expected_shown_args = &.{ "log", "--max-count=50" },
         .exit_code = 128,
         .stdout = "",
         .stderr = "fatal: not a git repository\n",
@@ -136,6 +144,7 @@ test "the commits task fails with a description of the error when git log fails"
 test "the commits task fails when its data has no page size" {
     const mock = comptime git_mock.mock_git(.{
         .expected_args = &.{},
+        .expected_shown_args = &.{},
         .exit_code = 0,
         .stdout = "",
         .stderr = "",

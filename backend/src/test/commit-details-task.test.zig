@@ -30,6 +30,7 @@ const format_arg = "--format=%H%x1f%P%x1f%D%x1f%an%x1f%ae%x1f%aI%x1f%cn%x1f%ce%x
 //
 const log_call: git_mock.MockGitOptions = .{
     .expected_args = &.{ "-C", "/repo", "log", "-z", "--max-count=1", format_arg, commit_hash },
+    .expected_shown_args = &.{ "log", "--max-count=1", commit_hash },
     .exit_code = 0,
     .stdout = commit_hash ++ "\x1f\x1fHEAD -> main\x1f" ++
         "Ada Author\x1fada@example.com\x1f2026-01-01T00:00:00+00:00\x1f" ++
@@ -48,6 +49,18 @@ const diff_tree_args: []const []const u8 = &.{
     "diff-tree",
     "-r",
     "-z",
+    "--root",
+    "--no-commit-id",
+    "--name-status",
+    commit_hash,
+};
+
+//
+// The arguments the help panel is given to show for the same command.
+//
+const diff_tree_shown_args: []const []const u8 = &.{
+    "diff-tree",
+    "-r",
     "--root",
     "--no-commit-id",
     "--name-status",
@@ -105,6 +118,7 @@ test "the commit details task gives the commit and the files it changed as its r
         log_call,
         .{
             .expected_args = diff_tree_args,
+            .expected_shown_args = diff_tree_shown_args,
             .exit_code = 0,
             .stdout = "A\x00README.md\x00",
             .stderr = "",
@@ -128,6 +142,7 @@ test "the commit details task fails with a description of the error when git log
     const mock = comptime git_mock.mock_git_calls(&.{
         .{
             .expected_args = log_call.expected_args,
+            .expected_shown_args = log_call.expected_shown_args,
             .exit_code = 128,
             .stdout = "",
             .stderr = "fatal: bad object\n",
@@ -146,6 +161,7 @@ test "the commit details task fails with a description of the error when git dif
         log_call,
         .{
             .expected_args = diff_tree_args,
+            .expected_shown_args = diff_tree_shown_args,
             .exit_code = 128,
             .stdout = "",
             .stderr = "fatal: bad object\n",
