@@ -8,15 +8,18 @@ const ziggy = @import("ziggy");
 
 //
 // The actions Graft passes to ziggy.core.App as `.actions`. Open repo is on the File menu. Its
-// frontend handler shows the folder picker and opens the folder chosen in the commit explorer.
-// Keyboard Shortcuts shows the keyboard shortcuts overlay, or closes it when it is open. Its
-// shortcut is `?`, which Ziggy runs in the frontend and leaves to a focused text box, so typing a
-// `?` in a text box types it.
+// frontend handler shows the folder picker and opens the folder chosen in the commit explorer. Its
+// shortcut is CmdOrCtrl+O, the usual key for opening in desktop apps, kept clear of the web view's
+// own keys (reload, zoom and the developer tools), as actions.test.zig checks. Keyboard Shortcuts
+// shows the keyboard shortcuts overlay, or closes it when it is open. Its shortcut is `?`, which
+// Ziggy runs in the frontend and leaves to a focused text box, so typing a `?` in a text box types
+// it.
 //
 pub const actions: []const ziggy.action.Action = &.{
     .{
         .name = "open-repo",
         .label = "Open repo",
+        .shortcut = "CmdOrCtrl+O",
     },
     .{
         .name = "toggle-shortcuts-overlay",
