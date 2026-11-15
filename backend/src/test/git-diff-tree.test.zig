@@ -6,12 +6,10 @@
 //
 
 const std = @import("std");
-const ziggy = @import("ziggy");
 const git_diff_tree = @import("../lib/git-diff-tree.zig");
 const git_mock = @import("git-mock.zig");
 
 const io = std.testing.io;
-const ConsoleLog = ziggy.log.ConsoleLog;
 
 //
 // The hash of the commit the tests read.
@@ -35,6 +33,18 @@ const changed_files_args: []const []const u8 = &.{
 };
 
 //
+// The arguments the help panel is given to show for the same command.
+//
+const changed_files_shown_args: []const []const u8 = &.{
+    "diff-tree",
+    "-r",
+    "--root",
+    "--no-commit-id",
+    "--name-status",
+    commit_hash,
+};
+
+//
 // The arguments `read_changed_files` starts git with for the line counts of each file the commit
 // in the repo at "repo" changed.
 //
@@ -51,11 +61,37 @@ const numstat_args: []const []const u8 = &.{
 };
 
 //
+// The arguments the help panel is given to show for the same command.
+//
+const numstat_shown_args: []const []const u8 = &.{
+    "diff-tree",
+    "-r",
+    "--root",
+    "--no-commit-id",
+    "--numstat",
+    commit_hash,
+};
+
+//
 // The arguments `read_file_diff` starts git with for notes.txt in the commit in the repo at "repo".
 //
 const file_diff_args: []const []const u8 = &.{
     "-C",
     "repo",
+    "diff-tree",
+    "-r",
+    "-p",
+    "--root",
+    "--no-commit-id",
+    commit_hash,
+    "--",
+    "notes.txt",
+};
+
+//
+// The arguments the help panel is given to show for the same command.
+//
+const file_diff_shown_args: []const []const u8 = &.{
     "diff-tree",
     "-r",
     "-p",
@@ -102,6 +138,7 @@ const three_files_numstat = "1\t1\tnotes.txt\x00" ++
 const three_files_calls: []const git_mock.MockGitOptions = &.{
     .{
         .expected_args = changed_files_args,
+        .expected_shown_args = changed_files_shown_args,
         .exit_code = 0,
         .stdout = three_files_output,
         .stderr = "",
@@ -109,6 +146,7 @@ const three_files_calls: []const git_mock.MockGitOptions = &.{
     },
     .{
         .expected_args = numstat_args,
+        .expected_shown_args = numstat_shown_args,
         .exit_code = 0,
         .stdout = three_files_numstat,
         .stderr = "",
@@ -132,6 +170,7 @@ const notes_diff = "diff --git a/notes.txt b/notes.txt\n" ++
 //
 const mock_never_called = git_mock.mock_git(.{
     .expected_args = &.{},
+    .expected_shown_args = &.{},
     .exit_code = 0,
     .stdout = "",
     .stderr = "",
@@ -145,7 +184,7 @@ test "read_changed_files lists each file the commit changed with its status and 
     const mock = comptime git_mock.mock_git_calls(three_files_calls);
     const files = try git_diff_tree.read_changed_files(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         changed_files_request,
@@ -175,6 +214,7 @@ test "read_changed_files lists no files when git lists none, as for a merge comm
     const mock = comptime git_mock.mock_git_calls(&.{
         .{
             .expected_args = changed_files_args,
+            .expected_shown_args = changed_files_shown_args,
             .exit_code = 0,
             .stdout = "",
             .stderr = "",
@@ -182,6 +222,7 @@ test "read_changed_files lists no files when git lists none, as for a merge comm
         },
         .{
             .expected_args = numstat_args,
+            .expected_shown_args = numstat_shown_args,
             .exit_code = 0,
             .stdout = "",
             .stderr = "",
@@ -190,7 +231,7 @@ test "read_changed_files lists no files when git lists none, as for a merge comm
     });
     const files = try git_diff_tree.read_changed_files(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         changed_files_request,
@@ -201,7 +242,7 @@ test "read_changed_files lists no files when git lists none, as for a merge comm
 test "read_changed_files refuses a hash that git could read as an option without starting git" {
     try std.testing.expectError(error.InvalidCommitHash, git_diff_tree.read_changed_files(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         std.testing.allocator,
         mock_never_called,
         .{
@@ -217,6 +258,7 @@ test "read_changed_files fails with GitDiffTreeFailed when git exits with an err
 
     const mock = comptime git_mock.mock_git(.{
         .expected_args = changed_files_args,
+        .expected_shown_args = changed_files_shown_args,
         .exit_code = 128,
         .stdout = "",
         .stderr = "fatal: bad object\n",
@@ -224,7 +266,7 @@ test "read_changed_files fails with GitDiffTreeFailed when git exits with an err
     });
     try std.testing.expectError(error.GitDiffTreeFailed, git_diff_tree.read_changed_files(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         changed_files_request,
@@ -239,6 +281,7 @@ test "read_changed_files fails with GitDiffTreeFailed when git exits with an err
         three_files_calls[0],
         .{
             .expected_args = numstat_args,
+            .expected_shown_args = numstat_shown_args,
             .exit_code = 128,
             .stdout = "",
             .stderr = "fatal: bad object\n",
@@ -247,7 +290,7 @@ test "read_changed_files fails with GitDiffTreeFailed when git exits with an err
     });
     try std.testing.expectError(error.GitDiffTreeFailed, git_diff_tree.read_changed_files(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         changed_files_request,
@@ -262,6 +305,7 @@ test "read_changed_files refuses line counts that are not for the files git list
         three_files_calls[0],
         .{
             .expected_args = numstat_args,
+            .expected_shown_args = numstat_shown_args,
             .exit_code = 0,
             .stdout = "1\t1\tnotes.txt\x00",
             .stderr = "",
@@ -270,7 +314,7 @@ test "read_changed_files refuses line counts that are not for the files git list
     });
     try std.testing.expectError(error.UnexpectedGitDiffTreeOutput, git_diff_tree.read_changed_files(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         changed_files_request,
@@ -283,6 +327,7 @@ test "read_changed_files passes up the error when git cannot be started" {
 
     const mock = comptime git_mock.mock_git(.{
         .expected_args = changed_files_args,
+        .expected_shown_args = changed_files_shown_args,
         .exit_code = 0,
         .stdout = "",
         .stderr = "",
@@ -290,7 +335,7 @@ test "read_changed_files passes up the error when git cannot be started" {
     });
     try std.testing.expectError(error.FileNotFound, git_diff_tree.read_changed_files(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         changed_files_request,
@@ -308,7 +353,7 @@ fn read_three_files(allocator: std.mem.Allocator) !void {
     const mock = comptime git_mock.mock_git_calls(three_files_calls);
     _ = try git_diff_tree.read_changed_files(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         changed_files_request,
@@ -463,6 +508,7 @@ test "read_file_diff reads the diff of the one file in the commit" {
 
     const mock = comptime git_mock.mock_git(.{
         .expected_args = file_diff_args,
+        .expected_shown_args = file_diff_shown_args,
         .exit_code = 0,
         .stdout = notes_diff,
         .stderr = "",
@@ -470,7 +516,7 @@ test "read_file_diff reads the diff of the one file in the commit" {
     });
     const diff = try git_diff_tree.read_file_diff(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         file_diff_request,
@@ -481,7 +527,7 @@ test "read_file_diff reads the diff of the one file in the commit" {
 test "read_file_diff refuses a hash that git could read as an option without starting git" {
     try std.testing.expectError(error.InvalidCommitHash, git_diff_tree.read_file_diff(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         std.testing.allocator,
         mock_never_called,
         .{
@@ -495,7 +541,7 @@ test "read_file_diff refuses a hash that git could read as an option without sta
 test "read_file_diff refuses an empty path without starting git" {
     try std.testing.expectError(error.InvalidFilePath, git_diff_tree.read_file_diff(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         std.testing.allocator,
         mock_never_called,
         .{
@@ -512,6 +558,7 @@ test "read_file_diff fails with GitDiffTreeFailed when git exits with an error" 
 
     const mock = comptime git_mock.mock_git(.{
         .expected_args = file_diff_args,
+        .expected_shown_args = file_diff_shown_args,
         .exit_code = 128,
         .stdout = "",
         .stderr = "fatal: bad object\n",
@@ -519,7 +566,7 @@ test "read_file_diff fails with GitDiffTreeFailed when git exits with an error" 
     });
     try std.testing.expectError(error.GitDiffTreeFailed, git_diff_tree.read_file_diff(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         file_diff_request,
@@ -536,6 +583,7 @@ fn read_notes_diff(allocator: std.mem.Allocator) !void {
 
     const mock = comptime git_mock.mock_git(.{
         .expected_args = file_diff_args,
+        .expected_shown_args = file_diff_shown_args,
         .exit_code = 0,
         .stdout = notes_diff,
         .stderr = "",
@@ -543,7 +591,7 @@ fn read_notes_diff(allocator: std.mem.Allocator) !void {
     });
     _ = try git_diff_tree.read_file_diff(
         io,
-        ConsoleLog.init(),
+        git_mock.mock_services,
         arena.allocator(),
         mock,
         file_diff_request,

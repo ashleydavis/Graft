@@ -6,7 +6,7 @@ The commits page lists the newest commits of the repo Graft reads. It is the fir
 
 ## Behaviour
 
-- The About page links to the commits page, and the commits page links back to the About page.
+- The left sidebar's "Commits" link opens the commits page and the commits page links back to the About page.
 - Graft reads the repo at `/tmp/graft/test-repo`. A smoke test gives the app the path of its own test repo instead, through `GRAFT_TEST_REPO`, which the app reads only when it was started with `--remote-control`.
 - `scripts/test/create-test-repo.sh` creates the test repo in a known state with a few commits, at `/tmp/graft/test-repo` or at the path given as its argument.
 - When the page opens it queues the commits task, a background task that runs the `log` wrapper.
@@ -25,7 +25,7 @@ The commits page lists the newest commits of the repo Graft reads. It is the fir
 - [x] A mock of the Git interface function exists for unit testing the `log` wrapper and future Git abstractions.
 - [x] A Ziggy background task runs the `log` wrapper and delivers the parsed first page to the UI.
 - [x] A commits page on the TanStack router shows the first page of commits as a list.
-- [x] The About page links to the commits page and the commits page links to the About page.
+- [x] The left sidebar links to the commits page and the commits page links to the About page.
 - [x] The app reads the repo at `/tmp/graft/test-repo` unless a smoke test gives it the path of its own test repo.
 - [x] A script under `scripts/test/` creates the test repo in a known state with a few commits, at `/tmp/graft/test-repo` or at the path given as its argument.
 
