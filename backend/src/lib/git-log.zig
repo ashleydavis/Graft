@@ -8,7 +8,7 @@ const ziggy = @import("ziggy");
 const git_interface = @import("git-interface.zig");
 
 const assert = std.debug.assert;
-const ILog = ziggy.task_queue.utils.log.ILog;
+const ILog = ziggy.log.ILog;
 
 //
 // The separator git writes between the fields of a commit, from `%x1f` in the format. The unit

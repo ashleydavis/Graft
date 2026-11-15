@@ -6,3 +6,28 @@
  */
 @layer theme, base, mui, components, utilities;
 @import "tailwindcss";
+
+/*
+ * Tailwind's dark: classes apply while the page's root element has the dark class, which AppTheme
+ * sets from the theme setting, instead of following the system's theme on their own.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * The page's own colours. The backgrounds match the window's (.backgrounds in app.zig) and
+ * MaterialUI's palette (app-theme.tsx): white in the light theme, and in the dark theme the dark
+ * grey of Graft's dark icon and splash art.
+ */
+@layer base {
+    html,
+    body {
+        background-color: #ffffff;
+        color: rgba(0, 0, 0, 0.87);
+    }
+
+    .dark,
+    .dark body {
+        background-color: #14171a;
+        color: #ffffff;
+    }
+}

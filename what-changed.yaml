@@ -42,7 +42,7 @@ targets:
       - scripts/bundle-ui.sh
       - scripts/zig-packages.sh
 
-  # bun run test:smoke: builds the whole app with the test hooks and drives it.
+  # bun run test:smoke: builds the whole app and drives it through remote control.
   - name: test-smoke
     paths:
       - backend

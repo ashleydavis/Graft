@@ -1,12 +1,12 @@
 //
-// Tests reading a file's diff in the frontend: the file diff task queued through a fake bridge
+// Tests reading a file's diff in the frontend: the file diff task queued through a fake window.ziggy
 // made of Jest mocks and how the task's result is checked and turned into the diff, including
 // every way it can fail.
 //
 
 import type { ITaskCompletedEvent, ITaskResult } from "ziggy";
-import { CommitsBridge } from "../../lib/commits";
 import { fileDiffFromTaskResult, readFileDiff } from "../../lib/file-diff";
+import { FakeTaskZiggy, installFakeTaskZiggy } from "../fake-ziggy";
 
 //
 // Makes the result of a file diff task that succeeded with the outputs.
@@ -21,28 +21,17 @@ function succeededResult(outputs: ITaskResult["outputs"]): ITaskResult {
     };
 }
 
-//
-// Makes a fake bridge whose functions are Jest mocks.
-//
-function makeBridge(): CommitsBridge {
-    return {
-        addTask: jest.fn(),
-        onTaskCompleted: jest.fn(),
-        removeTaskCompletedListener: jest.fn(),
-    };
-}
-
 describe("readFileDiff", () => {
     test("queues the file diff task as interactive and gives the diff when it ends", () => {
-        const bridge = makeBridge();
+        const ziggy = installFakeTaskZiggy();
         const onRead = jest.fn();
-        readFileDiff(bridge, {
+        readFileDiff({
             taskId: "t1",
             repoPath: "/repo",
             hash: "abc123",
             path: "notes.txt",
         }, onRead);
-        expect(bridge.addTask).toHaveBeenCalledWith({
+        expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t1",
             taskType: "file-diff",
             source: "commits-page",
@@ -54,7 +43,7 @@ describe("readFileDiff", () => {
             priority: "interactive",
         });
 
-        const onTaskCompleted = bridge.onTaskCompleted as jest.Mock;
+        const onTaskCompleted = ziggy.onTaskCompleted as jest.Mock;
         expect(onTaskCompleted).toHaveBeenCalledTimes(1);
         const callback: (event: ITaskCompletedEvent) => void = onTaskCompleted.mock.calls[0][0];
         callback({
@@ -69,7 +58,7 @@ describe("readFileDiff", () => {
                 diff: "+The second note.\n",
             }),
         });
-        expect(bridge.removeTaskCompletedListener).toHaveBeenCalledWith(callback);
+        expect(ziggy.removeTaskCompletedListener).toHaveBeenCalledWith(callback);
         expect(onRead).toHaveBeenCalledWith({
             ok: true,
             value: "+The second note.\n",

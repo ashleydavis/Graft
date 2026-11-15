@@ -10,6 +10,7 @@ const ui_query = @import("../lib/ui-query.zig");
 
 const io = std.testing.io;
 const FakeNativeApp = ziggy.fake_native_app.FakeNativeApp;
+const test_environment = @import("test-environment.zig");
 
 //
 // Starts Graft's backend with the test mode switch as given and returns the query its native app
@@ -18,6 +19,8 @@ const FakeNativeApp = ziggy.fake_native_app.FakeNativeApp;
 fn read_app_query(test_mode: bool) ![:0]u8 {
     var native_app: FakeNativeApp = undefined;
     native_app.init();
+    const directories = try test_environment.useTestEnvironment(std.testing.allocator, native_app.data_tmp);
+    defer test_environment.freeTestEnvironment(std.testing.allocator, directories);
     defer native_app.deinit(io, std.testing.allocator);
 
     var config = native_app.config(2, 2);

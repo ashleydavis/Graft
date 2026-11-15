@@ -1,11 +1,12 @@
 //
 // Tests reading a page of commits in the frontend: the repo path read from the address, the
-// commits task queued through a fake bridge made of Jest mocks, and how the task's result is
+// commits task queued through a fake window.ziggy made of Jest mocks, and how the task's result is
 // checked and turned into commits, including every way it can fail.
 //
 
 import type { ITaskCompletedEvent, ITaskResult } from "ziggy";
-import { CommitsBridge, commitFromJson, commitsFromTaskResult, ICommitJson, isCommitJson, isLogPageJson, isStringList, readCommitPage, repoPathFromSearch } from "../../lib/commits";
+import { commitFromJson, commitsFromTaskResult, ICommitJson, isCommitJson, isLogPageJson, isStringList, readCommitPage, repoPathFromSearch } from "../../lib/commits";
+import { FakeTaskZiggy, installFakeTaskZiggy } from "../fake-ziggy";
 
 //
 // A commit as the commits task gives it.
@@ -38,21 +39,10 @@ function succeededResult(outputs: ITaskResult["outputs"]): ITaskResult {
 }
 
 //
-// Makes a fake bridge whose functions are Jest mocks.
+// The callback readCommitPage registered with window.ziggy.
 //
-function makeBridge(): CommitsBridge {
-    return {
-        addTask: jest.fn(),
-        onTaskCompleted: jest.fn(),
-        removeTaskCompletedListener: jest.fn(),
-    };
-}
-
-//
-// The callback readCommitPage registered with the bridge.
-//
-function registeredCallback(bridge: CommitsBridge): (event: ITaskCompletedEvent) => void {
-    const onTaskCompleted = bridge.onTaskCompleted as jest.Mock;
+function registeredCallback(ziggy: FakeTaskZiggy): (event: ITaskCompletedEvent) => void {
+    const onTaskCompleted = ziggy.onTaskCompleted as jest.Mock;
     expect(onTaskCompleted).toHaveBeenCalledTimes(1);
     return onTaskCompleted.mock.calls[0][0];
 }
@@ -70,14 +60,14 @@ describe("repoPathFromSearch", () => {
 
 describe("readCommitPage", () => {
     test("queues the commits task as interactive and gives the commits when it ends", () => {
-        const bridge = makeBridge();
+        const ziggy = installFakeTaskZiggy();
         const onRead = jest.fn();
-        readCommitPage(bridge, {
+        readCommitPage({
             taskId: "t1",
             repoPath: "/repo",
             pageSize: 50,
         }, onRead);
-        expect(bridge.addTask).toHaveBeenCalledWith({
+        expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t1",
             taskType: "commits",
             source: "commits-page",
@@ -88,13 +78,13 @@ describe("readCommitPage", () => {
             priority: "interactive",
         });
 
-        const callback = registeredCallback(bridge);
+        const callback = registeredCallback(ziggy);
         callback({
             taskId: "another task",
             result: succeededResult(null),
         });
         expect(onRead).not.toHaveBeenCalled();
-        expect(bridge.removeTaskCompletedListener).not.toHaveBeenCalled();
+        expect(ziggy.removeTaskCompletedListener).not.toHaveBeenCalled();
 
         callback({
             taskId: "t1",
@@ -104,7 +94,7 @@ describe("readCommitPage", () => {
                 }],
             }),
         });
-        expect(bridge.removeTaskCompletedListener).toHaveBeenCalledWith(callback);
+        expect(ziggy.removeTaskCompletedListener).toHaveBeenCalledWith(callback);
         expect(onRead).toHaveBeenCalledWith({
             ok: true,
             value: [commitFromJson(commitJson)],

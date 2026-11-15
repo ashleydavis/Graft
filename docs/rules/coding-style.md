@@ -22,6 +22,7 @@ The Git and Zig rules of this project are in [git.md](git.md) and [zig.md](zig.m
 - Icons come from the free version of Font Awesome.
 - Styling uses MaterialUI components and Tailwind classes. Graft has no light/dark mode yet. Do not add one or choose a mode.
 - The frontend talks to the backend only through `window.ziggy`.
+- Code calls `window.ziggy` where it needs it. Never pass it, or a part of it, in as a parameter or prop. A test puts its fake on `window.ziggy` (`frontend/src/test/fake-ziggy.ts`).
 - The code that came from the Ziggy template is Graft's own: change it the same way as the rest. Ziggy's own code is never patched.
 
 ## Implementation rules

@@ -3,13 +3,8 @@
 // git log, and turns the task's result into commits.
 //
 
-import type { IAddTask, ITaskCompletedEvent, ITaskResult, IZiggyBridge } from "ziggy";
+import type { IAddTask, ITaskCompletedEvent, ITaskResult } from "ziggy";
 import { err, ok, Result } from "./result";
-
-//
-// What readCommitPage needs of window.ziggy, so a test can give it a fake with only these.
-//
-export type CommitsBridge = Pick<IZiggyBridge, "addTask" | "onTaskCompleted" | "removeTaskCompletedListener">;
 
 //
 // One commit.
@@ -138,16 +133,16 @@ export function repoPathFromSearch(search: string): string {
 // the user is waiting on it, and calls onRead with the commits or with why they could not be read
 // once the task ends.
 //
-export function readCommitPage(bridge: CommitsBridge, request: ICommitPageRequest, onRead: (result: Result<ICommit[], IReadCommitsError>) => void): void {
+export function readCommitPage(request: ICommitPageRequest, onRead: (result: Result<ICommit[], IReadCommitsError>) => void): void {
     function onTaskCompleted(event: ITaskCompletedEvent): void {
         if (event.taskId !== request.taskId) {
             return;
         }
-        bridge.removeTaskCompletedListener(onTaskCompleted);
+        window.ziggy.removeTaskCompletedListener(onTaskCompleted);
         onRead(commitsFromTaskResult(event.result));
     }
 
-    bridge.onTaskCompleted(onTaskCompleted);
+    window.ziggy.onTaskCompleted(onTaskCompleted);
     const task: IAddTask = {
         taskId: request.taskId,
         taskType: "commits",
@@ -158,7 +153,7 @@ export function readCommitPage(bridge: CommitsBridge, request: ICommitPageReques
         },
         priority: "interactive",
     };
-    bridge.addTask(task);
+    window.ziggy.addTask(task);
 }
 
 //

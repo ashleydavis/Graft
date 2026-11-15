@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Starts the real app, built with the test hooks, and checks the right sidebar starts closed, then
+# Starts the real app with remote control on, and checks the right sidebar starts closed, then
 # slides it in and out again with the top bar's button, checking its content shows only while it
 # is open and the page stays in the main content area. See test.md.
 #

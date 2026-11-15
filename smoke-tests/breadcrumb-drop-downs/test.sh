@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Starts the real app, built with the test hooks, on a test repo of its own and uses the breadcrumb
+# Starts the real app with remote control on, on a test repo of its own and uses the breadcrumb
 # trail's drop-down on the About and Help pages: picks the other page, checks it opens, then picks
 # the page shown and checks the drop-down closes on the same page. See test.md.
 #

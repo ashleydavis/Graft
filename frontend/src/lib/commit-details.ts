@@ -5,7 +5,7 @@
 //
 
 import type { IAddTask, ITaskCompletedEvent, ITaskResult } from "ziggy";
-import { CommitsBridge, commitFromJson, ICommit, IReadCommitsError, isCommitJson } from "./commits";
+import { commitFromJson, ICommit, IReadCommitsError, isCommitJson } from "./commits";
 import { err, ok, Result } from "./result";
 
 //
@@ -49,16 +49,16 @@ export interface ICommitDetailsRequest {
 // because the user is waiting on it and calls onRead with them or with why they could not be read
 // once the task ends.
 //
-export function readCommitDetails(bridge: CommitsBridge, request: ICommitDetailsRequest, onRead: (result: Result<ICommitDetails, IReadCommitsError>) => void): void {
+export function readCommitDetails(request: ICommitDetailsRequest, onRead: (result: Result<ICommitDetails, IReadCommitsError>) => void): void {
     function onTaskCompleted(event: ITaskCompletedEvent): void {
         if (event.taskId !== request.taskId) {
             return;
         }
-        bridge.removeTaskCompletedListener(onTaskCompleted);
+        window.ziggy.removeTaskCompletedListener(onTaskCompleted);
         onRead(commitDetailsFromTaskResult(event.result));
     }
 
-    bridge.onTaskCompleted(onTaskCompleted);
+    window.ziggy.onTaskCompleted(onTaskCompleted);
     const task: IAddTask = {
         taskId: request.taskId,
         taskType: "commit-details",
@@ -69,7 +69,7 @@ export function readCommitDetails(bridge: CommitsBridge, request: ICommitDetails
         },
         priority: "interactive",
     };
-    bridge.addTask(task);
+    window.ziggy.addTask(task);
 }
 
 //

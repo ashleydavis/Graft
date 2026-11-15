@@ -8,6 +8,7 @@ import { JSX, useState } from "react";
 import { pageTrail } from "../lib/breadcrumb-trail";
 import { LeftSidebar } from "./left-sidebar";
 import { RightSidebar } from "./right-sidebar";
+import { useThemeSetting } from "./app-theme";
 import { TopBar } from "./top-bar";
 
 //
@@ -30,6 +31,7 @@ export function AppLayout({ repoPath }: IAppLayoutProps): JSX.Element {
     const [isRightSidebarOpen, setRightSidebarOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
+    const theme = useThemeSetting();
 
     function openPage(path: string): void {
         navigate({
@@ -46,6 +48,8 @@ export function AppLayout({ repoPath }: IAppLayoutProps): JSX.Element {
                 onToggleRightSidebar={() => setRightSidebarOpen(!isRightSidebarOpen)}
                 trail={pageTrail(location.pathname, repoPath)}
                 onNavigate={openPage}
+                themeSetting={theme.setting}
+                onChooseThemeSetting={theme.onChooseSetting}
             />
             <div className="flex min-h-0 flex-1">
                 <LeftSidebar isMinimised={isLeftSidebarMinimised} />

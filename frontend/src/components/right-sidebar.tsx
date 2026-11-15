@@ -22,7 +22,7 @@ export function RightSidebar({ isOpen }: IRightSidebarProps): JSX.Element {
     return (
         <aside
             data-id="right-sidebar"
-            className={`shrink-0 overflow-hidden border-gray-200 transition-[width] duration-200 ${isOpen ? "w-[340px] border-l" : "w-0"}`}
+            className={`shrink-0 overflow-hidden border-gray-200 dark:border-gray-700 transition-[width] duration-200 ${isOpen ? "w-[340px] border-l" : "w-0"}`}
         >
             {isOpen && <div data-id="right-sidebar-content" className="h-full w-[340px]" />}
         </aside>

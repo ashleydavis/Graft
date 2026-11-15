@@ -7,7 +7,7 @@
 
 import { Link } from "@tanstack/react-router";
 import { JSX, useEffect, useState } from "react";
-import { CommitsBridge, ICommit, readCommitPage } from "../../lib/commits";
+import { ICommit, readCommitPage } from "../../lib/commits";
 import { CommitDetailsPane } from "./components/commit-details-pane";
 import { CommitPane } from "./components/commit-pane";
 import { FilePane } from "./components/file-pane";
@@ -19,13 +19,9 @@ import { FilePane } from "./components/file-pane";
 const COMMIT_PAGE_SIZE = 50;
 
 //
-// What the commits page is given: the bridge to the backend and the repo to read, so a test can
-// give it a fake bridge and any path.
+// What the commits page is given: the repo to read, so a test can give it any path.
 //
 export interface ICommitsPageProps {
-    // The bridge the commits task is queued through: window.ziggy in the app.
-    bridge: CommitsBridge;
-
     // The repo to read.
     repoPath: string;
 }
@@ -37,7 +33,7 @@ export interface ICommitsPageProps {
 // each pane opens the next: a newly clicked commit closes the file pane and closing the commit
 // details pane closes the file pane with it.
 //
-export function CommitsPage({ bridge, repoPath }: ICommitsPageProps): JSX.Element {
+export function CommitsPage({ repoPath }: ICommitsPageProps): JSX.Element {
     const [commits, setCommits] = useState<ICommit[] | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
     const [openHash, setOpenHash] = useState<string | undefined>(undefined);
@@ -54,7 +50,7 @@ export function CommitsPage({ bridge, repoPath }: ICommitsPageProps): JSX.Elemen
     }
 
     useEffect(() => {
-        readCommitPage(bridge, {
+        readCommitPage({
             taskId: `commits-${Date.now()}-${Math.random()}`,
             repoPath,
             pageSize: COMMIT_PAGE_SIZE,
@@ -66,7 +62,7 @@ export function CommitsPage({ bridge, repoPath }: ICommitsPageProps): JSX.Elemen
                 setError(result.error.message);
             }
         });
-    }, [bridge, repoPath]);
+    }, [repoPath]);
 
     return (
         <main data-id="commits-page">
@@ -75,10 +71,10 @@ export function CommitsPage({ bridge, repoPath }: ICommitsPageProps): JSX.Elemen
             <div data-id="commit-columns" className="flex items-start gap-4">
                 <CommitPane commits={commits} error={error} onSelectCommit={openCommit} />
                 {openHash !== undefined && (
-                    <CommitDetailsPane key={openHash} bridge={bridge} repoPath={repoPath} hash={openHash} onSelectFile={setOpenPath} onClose={closeCommit} />
+                    <CommitDetailsPane key={openHash} repoPath={repoPath} hash={openHash} onSelectFile={setOpenPath} onClose={closeCommit} />
                 )}
                 {openHash !== undefined && openPath !== undefined && (
-                    <FilePane key={`${openHash} ${openPath}`} bridge={bridge} repoPath={repoPath} hash={openHash} path={openPath} onClose={() => setOpenPath(undefined)} />
+                    <FilePane key={`${openHash} ${openPath}`} repoPath={repoPath} hash={openHash} path={openPath} onClose={() => setOpenPath(undefined)} />
                 )}
             </div>
         </main>

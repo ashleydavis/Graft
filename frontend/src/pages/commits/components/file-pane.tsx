@@ -4,16 +4,12 @@
 //
 
 import { JSX, useEffect, useState } from "react";
-import { CommitsBridge } from "../../../lib/commits";
 import { readFileDiff } from "../../../lib/file-diff";
 
 //
 // What the file pane is given and what it reports.
 //
 export interface IFilePaneProps {
-    // The bridge the file diff task is queued through: window.ziggy in the app.
-    bridge: CommitsBridge;
-
     // The repo to read.
     repoPath: string;
 
@@ -32,12 +28,12 @@ export interface IFilePaneProps {
 // that closes the pane. It shows that it is loading until the task ends and what went wrong when
 // the diff could not be read.
 //
-export function FilePane({ bridge, repoPath, hash, path, onClose }: IFilePaneProps): JSX.Element {
+export function FilePane({ repoPath, hash, path, onClose }: IFilePaneProps): JSX.Element {
     const [diff, setDiff] = useState<string | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
 
     useEffect(() => {
-        readFileDiff(bridge, {
+        readFileDiff({
             taskId: `file-diff-${Date.now()}-${Math.random()}`,
             repoPath,
             hash,
@@ -50,7 +46,7 @@ export function FilePane({ bridge, repoPath, hash, path, onClose }: IFilePanePro
                 setError(result.error.message);
             }
         });
-    }, [bridge, repoPath, hash, path]);
+    }, [repoPath, hash, path]);
 
     return (
         <section data-id="file-pane" className="flex-none border-l pl-4">

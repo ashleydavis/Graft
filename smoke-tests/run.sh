@@ -38,6 +38,9 @@ RUN_DIR="$(ziggy_test_temp_dir "graft-run")"
 export ZIGGY_SMOKE_RUN_DIR="$RUN_DIR"
 export ZIGGY_SMOKE_DIR="$SMOKE_DIR"
 export ZIGGY_SMOKE_PLATFORM="$PLATFORM"
+# Every scenario runs in the light theme unless ZIGGY_THEME says otherwise, so none depends on the system's theme and the Linux app
+# never waits on the session bus to read it.
+export ZIGGY_THEME="${ZIGGY_THEME:-light}"
 export ZIGGY_SMOKE_APP_DIR="$APP_DIR"
 
 cleanup_run() {

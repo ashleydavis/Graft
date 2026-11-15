@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Starts the real app, built with the test hooks, on a test repo of its own, goes to the About,
+# Starts the real app with remote control on, on a test repo of its own, goes to the About,
 # commits and Help pages and checks the breadcrumb trail in the top bar on each. See test.md.
 #
 

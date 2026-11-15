@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Starts the real app, built with the test hooks, and checks that it opens on the About page: the
+# Starts the real app with remote control on, and checks that it opens on the About page: the
 # page's heading, what Graft is and its icon all show. See test.md.
 #
 

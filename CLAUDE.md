@@ -12,6 +12,8 @@ Graft is a desktop Git client with a simple, intuitive UI that supports the deve
 
 - Built on Ziggy (https://github.com/ashleydavis/ziggy), locked to a release tag in `package.json` and `build.zig.zon`. Graft owns the code that came from the Ziggy template. Ziggy itself is a dependency.
 - A Bun mono repo with Zig components.
+- HIGH PRIORITY: NEVER CHANGE CI WORKFLOWS (`.github/`) TO SUPPORT A LOCAL ZIGGY. Switching this project to a local Ziggy checkout for testing is temporary, so the workflows always keep taking Ziggy from its release tag.
+- HIGH PRIORITY: Never update the documentation to describe a temporary switch to a local Ziggy. The docs always describe taking Ziggy from its release tag.
 - Frontend: TypeScript, React, TanStack, Vite, HTML, CSS, MaterialUI, Tailwind and the free version of Font Awesome for icons, hosted in the system web view. Most of the code is in the frontend.
 - Backend and native apps: Zig (Swift for the macOS native project).
 - Tests: Jest for the frontend, Zig unit tests for the backend and shell smoke tests that drive the real app.
@@ -45,15 +47,15 @@ Never run `scripts/test-everything.sh` with `--force`. Always run it without the
 - `bun run compile`: type-checks the frontend.
 - `bun run test`: the frontend's Jest unit tests.
 - `bun run test:zig`: builds the backend and runs its Zig unit tests.
-- `bun run test:smoke`: builds the app with the test hooks and runs the smoke tests in a hidden window.
+- `bun run test:smoke`: builds the app and runs the smoke tests in a hidden window, driving it through Ziggy's remote control server.
 
 ## Configuration
 
 - `mise.toml`: the exact versions of Zig, Bun, Node, jq and what-changed.
 - `what-changed.yaml`: which files each check watches, for `scripts/test-everything.sh`.
-- `ZIGGY_TEST_MODE` and `ZIGGY_TEST_PORT_FILE`: read only by a build with the test hooks (`-Dtest-hooks=true`). The first switches the test hooks on and the second names the file the control connection's port is written to. The smoke test scripts set both. Neither is set by default.
-- `GRAFT_TEST_REPO`: the path of the repo the app reads, in place of `/tmp/graft/test-repo`. Read only by a build with the test hooks running in test mode. The smoke tests set it to a test repo of their own.
-- Graft's own settings and state files are not decided yet.
+- `--remote-control <host:port>`: starts the app connected to a Ziggy remote control server, which puts it in test mode. The smoke tests pass it. A normal run does not.
+- `GRAFT_TEST_REPO`: the path of the repo the app reads, in place of `/tmp/graft/test-repo`. Read only in test mode. The smoke tests set it to a test repo of their own.
+- Graft's config file and state file are Ziggy's (`~/.config/graft/config.toml` on Linux). The config file holds the `theme` setting. `GRAFT_CONFIG_DIR` and `GRAFT_STATE_DIR` move them, which the smoke tests and the Zig tests do.
 
 ## Docs
 

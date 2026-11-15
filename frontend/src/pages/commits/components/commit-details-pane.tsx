@@ -5,15 +5,11 @@
 
 import { JSX, useEffect, useState } from "react";
 import { ICommitDetails, readCommitDetails } from "../../../lib/commit-details";
-import { CommitsBridge } from "../../../lib/commits";
 
 //
 // What the commit details pane is given and what it reports.
 //
 export interface ICommitDetailsPaneProps {
-    // The bridge the commit details task is queued through: window.ziggy in the app.
-    bridge: CommitsBridge;
-
     // The repo to read.
     repoPath: string;
 
@@ -32,12 +28,12 @@ export interface ICommitDetailsPaneProps {
 // a button that closes the pane. It shows that it is loading until the task ends and what went
 // wrong when the commit could not be read.
 //
-export function CommitDetailsPane({ bridge, repoPath, hash, onSelectFile, onClose }: ICommitDetailsPaneProps): JSX.Element {
+export function CommitDetailsPane({ repoPath, hash, onSelectFile, onClose }: ICommitDetailsPaneProps): JSX.Element {
     const [details, setDetails] = useState<ICommitDetails | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
 
     useEffect(() => {
-        readCommitDetails(bridge, {
+        readCommitDetails({
             taskId: `commit-details-${Date.now()}-${Math.random()}`,
             repoPath,
             hash,
@@ -49,7 +45,7 @@ export function CommitDetailsPane({ bridge, repoPath, hash, onSelectFile, onClos
                 setError(result.error.message);
             }
         });
-    }, [bridge, repoPath, hash]);
+    }, [repoPath, hash]);
 
     return (
         <section data-id="commit-details-pane" className="flex-none border-l pl-4">
