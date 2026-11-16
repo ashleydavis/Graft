@@ -320,7 +320,11 @@ choose_menu_item() {
 #
 press_key() {
     local line
-    line="$(jq -nc --arg key "$1" '{command: "press-key", key: $key}')"
+    # The key reaches jq through the environment, not jq's command line. On Windows jq.exe expands ? and * in its own arguments
+    # as wildcards against the file names in the working directory, and with nothing matching it drops the argument, so
+    # --arg key "?" made jq print null. The Release Windows workflow failed new-window, open-repo-shortcut, shortcuts-overlay
+    # and zoom-keys with "pressing the key ? failed: {"error":"InvalidCommand"}".
+    line="$(PRESS_KEY="$1" jq -nc '{command: "press-key", key: env.PRESS_KEY}')"
     local answer
     answer="$(control "$line")"
     if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
