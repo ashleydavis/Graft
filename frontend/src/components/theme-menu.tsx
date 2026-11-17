@@ -56,10 +56,10 @@ export function ThemeMenu({ setting, onChooseSetting }: IThemeMenuProps): JSX.El
                 aria-haspopup="menu"
                 aria-expanded={anchor !== undefined}
                 onClick={event => setAnchor(event.currentTarget)}
-                className="flex h-9 items-center gap-1.5 rounded-full px-3 text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+                className="flex h-[calc(var(--icon-lg)+var(--space-3))] items-center gap-1.5 rounded-[var(--radius-md)] px-2 text-[var(--color-text-muted)] shadow-[inset_0_0_0_1px_var(--color-border)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-[var(--color-hover)] hover:text-[var(--color-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
             >
-                <FontAwesomeIcon data-id={`theme-icon-${setting}`} icon={themeIcons[setting]} className="text-base" />
-                <FontAwesomeIcon icon={faChevronDown} className={`text-[0.6rem] opacity-60 transition-transform ${anchor !== undefined ? "rotate-180" : ""}`} />
+                <FontAwesomeIcon data-id={`theme-icon-${setting}`} icon={themeIcons[setting]} className="text-[length:var(--icon-md)]" />
+                <FontAwesomeIcon icon={faChevronDown} className={`text-[length:var(--icon-sm)] transition-transform duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${anchor !== undefined ? "rotate-180" : ""}`} />
             </ButtonBase>
             <Menu
                 data-id="theme-menu"
@@ -76,15 +76,15 @@ export function ThemeMenu({ setting, onChooseSetting }: IThemeMenuProps): JSX.El
                 }}
                 slotProps={{
                     paper: {
-                        className: "mt-2 w-72 rounded-xl border border-gray-200 shadow-xl dark:border-gray-700",
+                        className: "mt-2 w-72",
                         elevation: 0,
                     },
                     list: {
-                        className: "p-1.5",
+                        className: "flex flex-col gap-0.5",
                     },
                 }}
             >
-                <li data-id="theme-menu-heading" className="px-3 pb-1.5 pt-1 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400" role="presentation">
+                <li data-id="theme-menu-heading" className="px-3 pb-1 pt-1 text-[length:var(--text-sm)] font-[var(--weight-bold)] text-[var(--color-text-muted)]" role="presentation">
                     Theme
                 </li>
                 {themeOptions.map(option => {
@@ -95,16 +95,16 @@ export function ThemeMenu({ setting, onChooseSetting }: IThemeMenuProps): JSX.El
                             data-id={`theme-option-${option.setting}`}
                             selected={isChosen}
                             onClick={() => choose(option.setting)}
-                            className="gap-3 rounded-lg px-2.5 py-2"
+                            className="gap-3 py-2"
                         >
-                            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${isChosen ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}>
+                            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-md)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${isChosen ? "bg-[var(--color-accent)] text-[var(--color-on-accent)]" : "bg-[var(--color-raised)] text-[var(--color-text-muted)]"}`}>
                                 <FontAwesomeIcon icon={themeIcons[option.setting]} />
                             </span>
                             <span className="flex min-w-0 flex-1 flex-col">
-                                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{option.name}</span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">{option.description}</span>
+                                <span className="text-[length:var(--text-md)] font-[var(--weight-medium)] text-[var(--color-text)]">{option.name}</span>
+                                <span className="text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{option.description}</span>
                             </span>
-                            <span className="flex w-4 justify-center text-blue-600 dark:text-blue-400">
+                            <span className="flex w-4 justify-center text-[var(--color-accent)]">
                                 {isChosen && <FontAwesomeIcon data-id={`theme-option-${option.setting}-check`} icon={faCheck} />}
                             </span>
                         </MenuItem>

@@ -139,13 +139,13 @@ describe("LeftSidebar", () => {
 
     test("highlights the link to the page being shown, and only that one", async () => {
         const container = await renderLeftSidebar(false, true);
-        expect(elementWithDataId(container, "left-sidebar-about-link")?.classList.contains("bg-gray-200")).toBe(true);
-        expect(elementWithDataId(container, "left-sidebar-commits-link")?.classList.contains("bg-gray-200")).toBe(false);
+        expect(elementWithDataId(container, "left-sidebar-about-link")?.classList.contains("bg-[var(--color-selected)]")).toBe(true);
+        expect(elementWithDataId(container, "left-sidebar-commits-link")?.classList.contains("bg-[var(--color-selected)]")).toBe(false);
         act(() => {
             elementWithDataId(container, "left-sidebar-commits-link")?.click();
         });
         await screen.findByText("The commits page");
-        expect(elementWithDataId(container, "left-sidebar-commits-link")?.classList.contains("bg-gray-200")).toBe(true);
-        expect(elementWithDataId(container, "left-sidebar-about-link")?.classList.contains("bg-gray-200")).toBe(false);
+        expect(elementWithDataId(container, "left-sidebar-commits-link")?.classList.contains("bg-[var(--color-selected)]")).toBe(true);
+        expect(elementWithDataId(container, "left-sidebar-about-link")?.classList.contains("bg-[var(--color-selected)]")).toBe(false);
     });
 });

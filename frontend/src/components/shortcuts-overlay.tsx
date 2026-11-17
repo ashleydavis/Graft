@@ -92,27 +92,27 @@ export function ShortcutsOverlay(): JSX.Element {
                     autoCorrect="off"
                     value={searchText}
                     onChange={event => setSearchText(event.target.value)}
-                    className="w-full rounded border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-600 dark:border-gray-600 dark:text-gray-100 dark:focus:border-blue-400"
+                    className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-control)] bg-[var(--color-panel)] px-3 py-2 text-[length:var(--text-md)] text-[var(--color-text)] outline-none transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] placeholder:text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)] focus:border-[var(--color-focus)]"
                 />
                 {listError !== undefined && (
-                    <p data-id="shortcuts-overlay-error" className="pt-3 text-sm text-red-700 dark:text-red-400">
+                    <p data-id="shortcuts-overlay-error" className="mt-3 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[length:var(--text-md)] text-[var(--color-text)]">
                         Graft could not read its keyboard shortcuts from Ziggy: {listError}. Ziggy's log has the details.
                     </p>
                 )}
                 {listError === undefined && columns.length === 0 && (
-                    <p data-id="shortcuts-overlay-no-match" className="pt-3 text-sm text-gray-600 dark:text-gray-400">
+                    <p data-id="shortcuts-overlay-no-match" className="pt-3 text-[length:var(--text-sm)] text-[var(--color-text-muted)]">
                         No shortcut matches "{searchText}".
                     </p>
                 )}
-                <div data-id="shortcuts-overlay-columns" className="flex gap-8 pt-3">
+                <div data-id="shortcuts-overlay-columns" className="flex gap-8 pt-4">
                     {columns.map(column => (
                         <ul key={column[0].name} className="min-w-0 flex-1">
                             {column.map(shortcut => (
-                                <li key={shortcut.name} data-id={`shortcut-${shortcut.name}`} className="flex items-center justify-between gap-4 py-1 text-sm">
-                                    <span data-id={`shortcut-${shortcut.name}-label`} className="text-gray-900 dark:text-gray-100">
+                                <li key={shortcut.name} data-id={`shortcut-${shortcut.name}`} className="-mx-2 flex items-center justify-between gap-4 rounded-[var(--radius-sm)] px-2 py-1 text-[length:var(--text-md)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-[var(--color-hover)]">
+                                    <span data-id={`shortcut-${shortcut.name}-label`} className="text-[var(--color-text)]">
                                         {shortcut.label}
                                     </span>
-                                    <kbd data-id={`shortcut-${shortcut.name}-keys`} className="rounded border border-gray-300 px-1.5 font-mono text-xs text-gray-700 dark:border-gray-600 dark:text-gray-300">
+                                    <kbd data-id={`shortcut-${shortcut.name}-keys`} className="rounded-[var(--radius-md)] border border-[var(--color-border-control)] bg-[var(--color-raised)] px-1.5 font-[family-name:var(--font-mono)] text-[length:var(--text-xs)] text-[var(--color-text)] shadow-[inset_0_-1px_0_var(--color-border-control)]">
                                         {shortcut.keys}
                                     </kbd>
                                 </li>

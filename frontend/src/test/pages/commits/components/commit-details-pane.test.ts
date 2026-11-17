@@ -5,7 +5,7 @@
 // and line counts, or shows why they could not be read, and that clicking a file or the close
 // button reports it. It checks each changed file is a MaterialUI ListItemButton with the selected
 // file's set as selected, that the pane reports the paths it read and that its border is in the
-// theme's primary colour while it is active. It also checks the text of the parents and the colour
+// style guide's active pane colour while it is active. It also checks the text of the parents and the colour
 // of each change type.
 //
 
@@ -13,6 +13,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import type { IAddTask, ITaskCompletedEvent } from "ziggy";
 import { ICommitJson } from "../../../../lib/commits";
+import { activePaneClasses } from "../../../../pages/commits/components/active-pane-style";
 import { CommitDetailsPane, parentsText, statusColorClass } from "../../../../pages/commits/components/commit-details-pane";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../../../fake-ziggy";
 
@@ -236,16 +237,16 @@ describe("CommitDetailsPane", () => {
         expect(onReadFiles).toHaveBeenCalledWith(["notes.txt", "docs/new.md", "logo.png"]);
     });
 
-    test("draws its border in the theme's primary colour while it is active", () => {
+    test("draws its border in the style guide's active pane colour while it is active", () => {
         installFakeTaskZiggy();
         renderPane(undefined, jest.fn(), jest.fn(), true, jest.fn());
-        expect(document.querySelector<HTMLElement>("[data-id=\"commit-details-pane\"]")?.style.borderColor).toBe("#1976d2");
+        expect(document.querySelector<HTMLElement>("[data-id=\"commit-details-pane\"]")?.className).toContain(activePaneClasses);
     });
 
     test("keeps its grey border while it is not active", () => {
         installFakeTaskZiggy();
         renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
-        expect(document.querySelector<HTMLElement>("[data-id=\"commit-details-pane\"]")?.style.borderColor).toBe("");
+        expect(document.querySelector<HTMLElement>("[data-id=\"commit-details-pane\"]")?.className).not.toContain(activePaneClasses);
     });
 
     test("reports the path of the changed file the user clicks", () => {
@@ -288,10 +289,10 @@ describe("parentsText", () => {
 });
 
 describe("statusColorClass", () => {
-    test("colours added green, deleted red and every other change orange", () => {
-        expect(statusColorClass("A")).toContain("text-green-600");
-        expect(statusColorClass("D")).toContain("text-red-600");
-        expect(statusColorClass("M")).toContain("text-orange-600");
-        expect(statusColorClass("T")).toContain("text-orange-600");
+    test("colours added in the success colour, deleted in the danger colour and every other change in the warning colour", () => {
+        expect(statusColorClass("A")).toBe("text-[var(--color-success)]");
+        expect(statusColorClass("D")).toBe("text-[var(--color-danger)]");
+        expect(statusColorClass("M")).toBe("text-[var(--color-warning)]");
+        expect(statusColorClass("T")).toBe("text-[var(--color-warning)]");
     });
 });

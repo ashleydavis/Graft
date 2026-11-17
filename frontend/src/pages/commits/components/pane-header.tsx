@@ -31,8 +31,8 @@ export interface IPaneHeaderProps {
 //
 export function PaneHeader({ title, titleDataId, closeDataId, onClose }: IPaneHeaderProps): JSX.Element {
     return (
-        <div className="flex items-center gap-2 border-b border-gray-200 px-4 py-2 dark:border-gray-700">
-            <span data-id={titleDataId} title={title} className="min-w-0 flex-1 truncate font-bold">
+        <div className="flex min-h-10 items-center gap-2 border-b border-[var(--color-border)] py-1 pl-4 pr-2">
+            <span data-id={titleDataId} title={title} className="min-w-0 flex-1 truncate font-[var(--weight-bold)] text-[var(--color-text)]">
                 {title}
             </span>
             <IconButton data-id={closeDataId} aria-label="Close" title="Close" size="small" onClick={onClose}>

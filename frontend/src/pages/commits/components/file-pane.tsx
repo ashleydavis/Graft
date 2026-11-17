@@ -5,7 +5,7 @@
 
 import { JSX, useEffect, useState } from "react";
 import { readFileDiff } from "../../../lib/file-diff";
-import { useActivePaneStyle } from "./active-pane-style";
+import { activePaneClass } from "./active-pane-style";
 import { PaneHeader } from "./pane-header";
 
 //
@@ -31,11 +31,10 @@ export interface IFilePaneProps {
 //
 // Reads the file's diff with the file diff task and shows it in a rounded card headed by the
 // file's path, with a button that closes the pane. It shows that it is loading until the task ends
-// and what went wrong when the diff could not be read. The card's border is in the theme's primary
-// colour while the pane is active.
+// and what went wrong when the diff could not be read. The card's border is in the style guide's
+// active pane colour while the pane is active. The card fades in as it opens.
 //
 export function FilePane({ repoPath, hash, path, isActive, onClose }: IFilePaneProps): JSX.Element {
-    const activeStyle = useActivePaneStyle(isActive);
     const [diff, setDiff] = useState<string | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
 
@@ -56,7 +55,7 @@ export function FilePane({ repoPath, hash, path, isActive, onClose }: IFilePaneP
     }, [repoPath, hash, path]);
 
     return (
-        <section data-id="file-pane" style={activeStyle} className="w-[640px] flex-none overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-white/5">
+        <section data-id="file-pane" className={`graft-pane-in w-[640px] flex-none overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
             <PaneHeader title={path} titleDataId="file-pane-path" closeDataId="file-pane-close" onClose={onClose} />
             <div className="max-h-[70vh] overflow-auto">
                 <FileDiffContent diff={diff} error={error} />
@@ -81,10 +80,10 @@ export interface IFileDiffContentProps {
 //
 export function FileDiffContent({ diff, error }: IFileDiffContentProps): JSX.Element {
     if (error !== undefined) {
-        return <p data-id="file-diff-error" className="p-4 text-red-700 dark:text-red-400">{error}</p>;
+        return <p data-id="file-diff-error" className="m-3 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[var(--color-text)]">{error}</p>;
     }
     if (diff === undefined) {
-        return <p data-id="file-diff-loading" className="p-4 text-gray-500 dark:text-gray-400">Loading the diff.</p>;
+        return <p data-id="file-diff-loading" className="animate-pulse p-4 text-[var(--color-text-muted)]">Loading the diff.</p>;
     }
-    return <pre data-id="file-diff" className="p-4 font-mono text-xs">{diff}</pre>;
+    return <pre data-id="file-diff" className="p-4 font-[family-name:var(--font-mono)] text-[length:var(--text-sm)] leading-[var(--leading-normal)] text-[var(--color-text)]">{diff}</pre>;
 }

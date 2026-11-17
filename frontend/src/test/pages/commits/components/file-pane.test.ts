@@ -1,13 +1,14 @@
 //
 // Tests the file pane: renders it with a fake window.ziggy made of Jest mocks and checks that it queues
 // the file diff task for the file, shows that it is loading, then shows the diff or says why it
-// could not be read, that the close button reports it and that the pane's border is in the theme's
-// primary colour while it is active.
+// could not be read, that the close button reports it and that the pane's border is in the style
+// guide's active pane colour while it is active.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import type { IAddTask, ITaskCompletedEvent } from "ziggy";
+import { activePaneClasses } from "../../../../pages/commits/components/active-pane-style";
 import { FilePane } from "../../../../pages/commits/components/file-pane";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../../../fake-ziggy";
 
@@ -47,10 +48,10 @@ function renderPane(onClose: jest.Mock, isActive: boolean): void {
 }
 
 //
-// Reads the colour of the pane's border that the pane sets itself, or "" when it sets none.
+// Reports whether the pane's card carries the active pane's border classes.
 //
-function paneBorderColor(): string | undefined {
-    return document.querySelector<HTMLElement>("[data-id=\"file-pane\"]")?.style.borderColor;
+function isPaneMarkedActive(): boolean {
+    return document.querySelector<HTMLElement>("[data-id=\"file-pane\"]")?.className.includes(activePaneClasses) ?? false;
 }
 
 describe("FilePane", () => {
@@ -107,15 +108,15 @@ describe("FilePane", () => {
         expect(onClose).toHaveBeenCalledTimes(1);
     });
 
-    test("draws its border in the theme's primary colour while it is active", () => {
+    test("draws its border in the style guide's active pane colour while it is active", () => {
         installFakeTaskZiggy();
         renderPane(jest.fn(), true);
-        expect(paneBorderColor()).toBe("#1976d2");
+        expect(isPaneMarkedActive()).toBe(true);
     });
 
     test("keeps its grey border while it is not active", () => {
         installFakeTaskZiggy();
         renderPane(jest.fn(), false);
-        expect(paneBorderColor()).toBe("");
+        expect(isPaneMarkedActive()).toBe(false);
     });
 });

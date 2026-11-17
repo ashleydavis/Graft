@@ -34,11 +34,11 @@ pub const app = ziggy.core.App(.{
     },
     .menu = menu.menu,
     .actions = actions.actions,
-    // The window's colour before the page draws: white in the light theme, and in the dark theme the dark grey of Graft's dark
-    // icon and splash art. main.css and index.html draw the page in the same colours.
+    // The window's colour before the page draws: the style guide's --color-bg in each theme (--gray-50 in light and
+    // --gray-950 in dark, in frontend/src/graft.css). main.css and index.html draw the page in the same colours.
     .backgrounds = .{
-        .light = 0xFFFFFF,
-        .dark = 0x14171A,
+        .light = 0xFAFAFA,
+        .dark = 0x09090B,
     },
     .ui_files = &ui.files,
     .ui_query = ui_query.ui_query,
