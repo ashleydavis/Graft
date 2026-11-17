@@ -6,6 +6,7 @@
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faCircleInfo, faCircleQuestion, faCodeCommit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Tooltip } from "@mui/material";
 import { Link } from "@tanstack/react-router";
 import { JSX } from "react";
 
@@ -42,28 +43,34 @@ export interface ISidebarLinkProps {
 }
 
 //
-// Links to one page with its icon and, while the sidebar is expanded, its name. The link to the
-// page being shown is highlighted. Only an exact match counts, because every path starts with the
-// welcome page's "/".
+// Links to one page with its icon and, while the sidebar is expanded, its name, drawn as a row of
+// the style guide's sidebar: the muted icon in a fixed column, the name in the text colour, the
+// hover colour under the pointer and no border, because a row is picked, not pressed. The link to
+// the page being shown is the current row: the selected colour with a bar down its left edge in
+// the selection colour. Only an exact match counts, because every path starts with the welcome
+// page's "/". The tooltip names the page, which a minimised sidebar shows only as its icon.
 //
 export function SidebarLink({ to, icon, label, dataId, isMinimised }: ISidebarLinkProps): JSX.Element {
     return (
-        <Link
-            to={to}
-            data-id={dataId}
-            aria-label={label}
-            title={label}
-            activeOptions={{
-                exact: true,
-            }}
-            activeProps={{
-                className: "bg-[var(--color-selected)] text-[var(--color-text)] shadow-[inset_2px_0_0_var(--color-select-item)] hover:bg-[var(--color-selected)]",
-            }}
-            className={`mx-2 flex h-9 items-center gap-3 rounded-[var(--radius-sm)] px-3 text-[length:var(--text-md)] font-[var(--weight-medium)] text-[var(--color-text-muted)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-[var(--color-hover)] hover:text-[var(--color-text)] ${isMinimised ? "justify-center" : "justify-start"}`}
-        >
-            <FontAwesomeIcon icon={icon} fixedWidth={true} className="text-[length:var(--icon-md)]" />
-            {!isMinimised && <span data-id={`${dataId}-label`} className="truncate">{label}</span>}
-        </Link>
+        <Tooltip title={label} placement="right">
+            <Link
+                to={to}
+                data-id={dataId}
+                aria-label={label}
+                activeOptions={{
+                    exact: true,
+                }}
+                activeProps={{
+                    className: "bg-[var(--color-selected)] shadow-[inset_2px_0_0_var(--color-select-item)] hover:bg-[var(--color-selected)]",
+                }}
+                className={`flex items-center rounded-[var(--radius-sm)] px-[var(--space-3)] py-[var(--space-1)] text-[length:var(--text-md)] leading-[var(--leading-normal)] text-[var(--color-text)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-[var(--color-hover)] focus-visible:outline-solid focus-visible:outline-[length:var(--focus-ring-width)] focus-visible:outline-[var(--color-focus)] focus-visible:outline-offset-[calc(var(--focus-ring-width)*-1)] ${isMinimised ? "justify-center" : "justify-start"}`}
+            >
+                <span className={`flex shrink-0 items-center text-[length:var(--icon-md)] text-[var(--color-text-muted)] ${isMinimised ? "justify-center" : "w-[var(--space-6)]"}`}>
+                    <FontAwesomeIcon icon={icon} fixedWidth={true} />
+                </span>
+                {!isMinimised && <span data-id={`${dataId}-label`} className="truncate">{label}</span>}
+            </Link>
+        </Tooltip>
     );
 }
 
@@ -78,14 +85,14 @@ export function LeftSidebar({ isMinimised, isRepoOpen }: ILeftSidebarProps): JSX
     return (
         <aside
             data-id="left-sidebar"
-            className={`flex shrink-0 flex-col justify-between gap-1 overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-panel)] py-2 transition-[width] duration-[var(--duration-normal)] ease-[var(--ease-standard)] ${isMinimised ? "w-16" : "w-60"}`}
+            className={`flex shrink-0 flex-col justify-between overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-panel)] p-[var(--space-2)] transition-[width] duration-[var(--duration-normal)] ease-[var(--ease-standard)] ${isMinimised ? "w-16" : "w-64"}`}
         >
-            <nav>
+            <nav className="flex flex-col gap-[var(--space-1)]">
                 {isRepoOpen && (
                     <SidebarLink to="/commits" icon={faCodeCommit} label="Commits" dataId="left-sidebar-commits-link" isMinimised={isMinimised} />
                 )}
             </nav>
-            <nav>
+            <nav className="flex flex-col gap-[var(--space-1)]">
                 <SidebarLink to="/help" icon={faCircleQuestion} label="Help" dataId="left-sidebar-help-link" isMinimised={isMinimised} />
                 <SidebarLink to="/about" icon={faCircleInfo} label="About" dataId="left-sidebar-about-link" isMinimised={isMinimised} />
             </nav>

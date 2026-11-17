@@ -6,7 +6,7 @@
 
 import { act, render } from "@testing-library/react";
 import { createElement } from "react";
-import { GitCommandsPanel } from "../../components/git-commands-panel";
+import { COMMAND_WORD_LENGTH_UNBROKEN_MAX, GitCommandsPanel } from "../../components/git-commands-panel";
 
 //
 // The element with the data-id in the container.
@@ -69,5 +69,33 @@ describe("GitCommandsPanel", () => {
             elementWithDataId(container, "git-command-0-copy")?.click();
         });
         expect(writeText.mock.calls).toEqual([["cd /repo"], ["git log --max-count=50"], ["git diff-tree abc"]]);
+    });
+
+    test("keeps short words of a command whole and lets long ones break anywhere", () => {
+        const longWord = "a".repeat(COMMAND_WORD_LENGTH_UNBROKEN_MAX + 1);
+        const shortWord = "b".repeat(COMMAND_WORD_LENGTH_UNBROKEN_MAX);
+        const { container } = render(createElement(GitCommandsPanel, {
+            pageCommands: {
+                directoryCommand: "cd /repo",
+                commands: [`git ${shortWord} ${longWord}`],
+            },
+        }));
+        const words = Array.from(elementWithDataId(container, "git-command-0-text")?.querySelectorAll(":scope > span > span") ?? []);
+        expect(words.map(word => word.textContent)).toEqual(["git", shortWord, longWord]);
+        expect(words[1].classList.contains("whitespace-nowrap")).toBe(true);
+        expect(words[2].classList.contains("[overflow-wrap:anywhere]")).toBe(true);
+    });
+
+    test("shows the commands beside a muted prompt that the command's text leaves out", () => {
+        const { container } = render(createElement(GitCommandsPanel, {
+            pageCommands: {
+                directoryCommand: "cd /repo",
+                commands: ["git log"],
+            },
+        }));
+        const prompt = elementWithDataId(container, "git-command-0-text")?.previousElementSibling;
+        expect(prompt?.textContent?.trim()).toBe("$");
+        expect(prompt?.getAttribute("aria-hidden")).toBe("true");
+        expect(elementWithDataId(container, "git-command-0-copy")?.getAttribute("aria-label")).toBe("Copy command");
     });
 });

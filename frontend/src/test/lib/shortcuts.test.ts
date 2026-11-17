@@ -4,7 +4,7 @@
 //
 
 import type { IActionInfo } from "ziggy";
-import { actionShortcuts, IShortcut, matchingShortcuts, SHORTCUT_COLUMN_ROW_COUNT_MAX, shortcutColumns } from "../../lib/shortcuts";
+import { actionShortcuts, IShortcut, matchingShortcuts, SHORTCUT_COLUMN_ROW_COUNT_MAX, shortcutColumns, shortcutKeyNames } from "../../lib/shortcuts";
 
 //
 // Makes a shortcut with the name, label and keys, so a test writes each on one line.
@@ -126,5 +126,24 @@ describe("shortcutColumns", () => {
         expect(columnNames(columns).flat()).toEqual(columnNames([makeShortcuts(SHORTCUT_COLUMN_ROW_COUNT_MAX * 2 + 1)]).flat());
         expect(columnNames(columns)[1][0]).toBe(`shortcut-${SHORTCUT_COLUMN_ROW_COUNT_MAX}`);
         expect(columnNames(columns)[2]).toEqual([`shortcut-${SHORTCUT_COLUMN_ROW_COUNT_MAX * 2}`]);
+    });
+});
+
+describe("shortcutKeyNames", () => {
+    test("splits keys joined with + into one key each", () => {
+        expect(shortcutKeyNames("Ctrl+Shift+P")).toEqual(["Ctrl", "Shift", "P"]);
+    });
+
+    test("keeps a key with no + as one key", () => {
+        expect(shortcutKeyNames("?")).toEqual(["?"]);
+        expect(shortcutKeyNames("⌘O")).toEqual(["⌘O"]);
+    });
+
+    test("keeps the plus key at the end as a key of its own", () => {
+        expect(shortcutKeyNames("Ctrl++")).toEqual(["Ctrl", "+"]);
+    });
+
+    test("keeps the plus key alone as one key", () => {
+        expect(shortcutKeyNames("+")).toEqual(["+"]);
     });
 });

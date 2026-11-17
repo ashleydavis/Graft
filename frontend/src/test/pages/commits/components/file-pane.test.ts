@@ -1,8 +1,8 @@
 //
 // Tests the file pane: renders it with a fake window.ziggy made of Jest mocks and checks that it queues
-// the file diff task for the file, shows that it is loading, then shows the diff or says why it
-// could not be read, that the close button reports it and that the pane's border is in the style
-// guide's active pane colour while it is active.
+// the file diff task for the file, shows that it is loading, then shows the diff's lines numbered
+// and coloured by kind or says why it could not be read, that the close button reports it and that
+// the pane's border is in the style guide's active pane colour while it is active.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
@@ -58,7 +58,7 @@ describe("FilePane", () => {
     test("queues the file diff task for the file and shows its path and that it is loading", () => {
         const ziggy = installFakeTaskZiggy();
         renderPane(jest.fn(), false);
-        expect(screen.getByText("notes.txt").getAttribute("data-id")).toBe("file-pane-path");
+        expect(document.querySelector("[data-id=\"file-pane-path\"]")?.textContent).toBe("notes.txt");
         expect(screen.getByText("Loading the diff.").getAttribute("data-id")).toBe("file-diff-loading");
         const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[0][0];
         expect(task.taskType).toBe("file-diff");
@@ -69,20 +69,31 @@ describe("FilePane", () => {
         });
     });
 
-    test("shows the diff as git wrote it once the task has read it", () => {
+    test("shows each line of the diff as a row numbered and coloured by its kind once the task has read it", () => {
         const ziggy = installFakeTaskZiggy();
         renderPane(jest.fn(), false);
         completeTask(ziggy, {
             taskId: "",
             status: "succeeded",
             outputs: {
-                diff: "-The first note.\n+The second note.\n",
+                diff: "--- a/notes.txt\n+++ b/notes.txt\n@@ -1,2 +1,2 @@\n-The first note.\n+The second note.\n Kept.\n",
             },
             type: "file-diff",
             inputs: null,
         });
-        expect(screen.getByText(/The second note/).textContent).toBe("-The first note.\n+The second note.\n");
-        expect(screen.getByText(/The second note/).getAttribute("data-id")).toBe("file-diff");
+        const rows = Array.from(document.querySelectorAll("[data-id=\"file-diff\"] [role=\"row\"]"));
+        expect(rows.map(row => row.getAttribute("data-line"))).toEqual(["meta", "meta", "hunk", "deleted", "added", "context"]);
+        expect(rows.map(row => row.textContent)).toEqual([
+            "--- a/notes.txt",
+            "+++ b/notes.txt",
+            "@@ -1,2 +1,2 @@",
+            "1−The first note.",
+            "1+The second note.",
+            "22Kept.",
+        ]);
+        expect(rows[3].className).toContain("bg-[var(--color-diff-removed)]");
+        expect(rows[4].className).toContain("bg-[var(--color-diff-added)]");
+        expect(rows[2].className).toContain("bg-[var(--color-raised)]");
     });
 
     test("says why the diff could not be read when the task failed", () => {
@@ -102,7 +113,7 @@ describe("FilePane", () => {
         const onClose = jest.fn();
         installFakeTaskZiggy();
         renderPane(onClose, false);
-        const close = screen.getByLabelText("Close");
+        const close = screen.getByLabelText("Close file diff");
         expect(close.getAttribute("data-id")).toBe("file-pane-close");
         fireEvent.click(close);
         expect(onClose).toHaveBeenCalledTimes(1);

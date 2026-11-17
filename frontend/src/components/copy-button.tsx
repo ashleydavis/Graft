@@ -1,14 +1,22 @@
 //
-// The copy button: a small button that copies a piece of text to the clipboard.
+// The copy button: a small icon button that copies a piece of text to the clipboard and shows a
+// tick for a moment once it has.
 //
 
-import { faCopy } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { IconButton } from "@mui/material";
-import { JSX } from "react";
+import { IconButton, Tooltip } from "@mui/material";
+import { JSX, useEffect, useState } from "react";
 
 //
-// What the copy button copies and how a smoke test finds it.
+// How long the tick shows after a copy, in milliseconds. A second and a half is long enough to see
+// that the copy worked and short enough that the button is back to Copy before it is needed again,
+// as in the style guide's copy button.
+//
+export const COPIED_DURATION_MS = 1500;
+
+//
+// What the copy button copies, what it is called and how a smoke test finds it.
 //
 export interface ICopyButtonProps {
     // The data-id of the button.
@@ -16,25 +24,56 @@ export interface ICopyButtonProps {
 
     // The text the button copies.
     text: string;
+
+    // The button's name and tooltip, which say what it copies, such as "Copy command".
+    label: string;
 }
 
 //
-// Copies the text to the clipboard when clicked. A copy the web view refuses is reported in the
-// log with what to look at, because the button has nowhere else to show it.
+// Copies the text to the clipboard when clicked. Once the copy has worked, the copy icon turns
+// into a tick in the success colour and the button's name and tooltip say "Copied" for
+// COPIED_DURATION_MS, so the user sees the copy happened. A copy the web view refuses is reported
+// in the log with what to look at, because the button has nowhere else to show it.
 //
-export function CopyButton({ dataId, text }: ICopyButtonProps): JSX.Element {
+export function CopyButton({ dataId, text, label }: ICopyButtonProps): JSX.Element {
+    const [isCopied, setCopied] = useState(false);
+
+    useEffect(() => {
+        if (!isCopied) {
+            return undefined;
+        }
+        const timer = setTimeout(() => setCopied(false), COPIED_DURATION_MS);
+        return () => clearTimeout(timer);
+    }, [isCopied]);
+
+    let name = label;
+    if (isCopied) {
+        name = "Copied";
+    }
+
     return (
-        <IconButton data-id={dataId} size="small" aria-label="Copy" title="Copy" onClick={() => copyText(text)}>
-            <FontAwesomeIcon icon={faCopy} />
-        </IconButton>
+        <Tooltip title={name}>
+            <IconButton
+                data-id={dataId}
+                size="small"
+                aria-label={name}
+                onClick={() => copyText(text, () => setCopied(true))}
+                className={isCopied ? "text-[var(--color-success)] hover:text-[var(--color-success)]" : ""}
+            >
+                <FontAwesomeIcon icon={isCopied ? faCheck : faCopy} />
+            </IconButton>
+        </Tooltip>
     );
 }
 
 //
-// Writes the text to the clipboard and reports a failure in the log.
+// Writes the text to the clipboard, calls onCopied once it is there, so the button can show the
+// tick, and reports a failure in the log.
 //
-export function copyText(text: string): void {
-    navigator.clipboard.writeText(text).catch(error => {
-        console.error(`Graft could not copy "${text}" to the clipboard: ${String(error)}. Nothing was copied, so look at whether the web view allows the clipboard.`);
-    });
+export function copyText(text: string, onCopied: () => void): void {
+    navigator.clipboard.writeText(text)
+        .then(onCopied)
+        .catch(error => {
+            console.error(`Graft could not copy "${text}" to the clipboard: ${String(error)}. Nothing was copied, so look at whether the web view allows the clipboard.`);
+        });
 }

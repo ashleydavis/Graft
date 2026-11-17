@@ -4,6 +4,13 @@ const ziggyCopies = [
     "<rootDir>/zig-pkg/",
 ];
 
+// Git worktrees made inside the checkout hold other branches' copies of the code. Their tests
+// belong to those branches, so a run here leaves them out.
+const worktreeCopies = [
+    "<rootDir>/worktrees/",
+    "<rootDir>/.claude/worktrees/",
+];
+
 export default {
     preset: 'ts-jest',
 
@@ -33,9 +40,11 @@ export default {
         "<rootDir>/dist/",
         "<rootDir>/build/",
         ...ziggyCopies,
+        ...worktreeCopies,
     ],
     testPathIgnorePatterns: [
         "/node_modules/",
         ...ziggyCopies,
+        ...worktreeCopies,
     ],
 };

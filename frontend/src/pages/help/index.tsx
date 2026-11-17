@@ -10,7 +10,7 @@ import { JSX } from "react";
 //
 export function HelpPage(): JSX.Element {
     return (
-        <main data-id="help-page" className="graft-page-in flex max-w-3xl flex-col items-start gap-4 p-6">
+        <main data-id="help-page" className="graft-page-in flex max-w-3xl flex-col items-start gap-[var(--space-4)] p-[var(--space-6)]">
             <h1 data-id="help-heading" className="text-[length:var(--text-2xl)] font-[var(--weight-bold)] text-[var(--color-text)]">
                 Help
             </h1>

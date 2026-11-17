@@ -73,3 +73,19 @@ export function shortcutColumns(shortcuts: IShortcut[]): IShortcut[][] {
     }
     return columns;
 }
+
+//
+// Splits a shortcut's keys, as the platform shows them, into the keys pressed together, so the
+// overlay draws each one as a key cap: "Ctrl+Shift+P" gives Ctrl, Shift and P. A shortcut whose
+// last key is the plus key, such as "Ctrl++", keeps it as a key of its own, and "+" alone is the
+// plus key. Keys with no "+" between them, such as macOS's "⌘O", are one key cap.
+//
+export function shortcutKeyNames(keys: string): string[] {
+    if (keys === "+") {
+        return ["+"];
+    }
+    if (keys.endsWith("++")) {
+        return [...keys.slice(0, -2).split("+"), "+"];
+    }
+    return keys.split("+");
+}
