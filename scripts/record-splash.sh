@@ -110,37 +110,38 @@ case "$platform" in
         stop "$app_pid"
         ;;
     macos)
-        require screencapture
-        # screencapture records the main display for the number of seconds given. The app is the .app bundle, run by its executable
-        # so this script owns its process.
+        require ffmpeg
+        # The app is the .app bundle, run by its executable so this script owns its process.
         executable="$app/Contents/MacOS/$(/usr/libexec/PlistBuddy -c "Print CFBundleExecutable" "$app/Contents/Info.plist")"
-        screencapture -v -V "$((seconds + 1))" "$output" &
-        capture_pid=$!
+        # ffmpeg records the main display through AVFoundation, which names it "Capture screen 0" in its list of devices.
+        # screencapture, which records through replayd, the system's screen recording service, hung on several Splash videos runs
+        # waiting for replayd and wrote no recording.
+        # Listing the devices, ffmpeg opens no input and exits with an error, which is not a failure here.
+        devices="$(ffmpeg -hide_banner -f avfoundation -list_devices true -i "" 2>&1 || true)"
+        screen="$(printf '%s\n' "$devices" | sed -n 's/.*\[\([0-9][0-9]*\)\] Capture screen 0$/\1/p' | head -n 1)"
+        if [ -z "$screen" ]; then
+            echo "ERROR: ffmpeg lists no \"Capture screen 0\" device to record the main display." >&2
+            exit 1
+        fi
+        # The window's content is put at a known place and size, and only that area is kept: the title bar, whose close button is
+        # red, the Dock and the rest of the desktop are not in the video. The menu bar is the system's, outside the window. The
+        # area is in pixels, which on the 1024x768 display of CI's runners are points. A CI runner kept 13 frames a second, with gaps
+        # of up to 466 milliseconds in the fade, where screencapture had kept a frame every 16 on the same app, both at the encoder's
+        # default setting and at its fastest. The input's queue of captured frames is made larger, since ffmpeg drops frames when
+        # it fills, and its warnings are printed so a recording that still drops frames says why. The frames are taken as bgr0, the
+        # display's own layout: with none asked for, AVFoundation converted each to uyvy422, with no hardware scaler on the runner
+        # ("IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver"), and the recording still kept under 13 frames a second.
+        # The area kept starts four rows below the content's place, as on a CI runner the content started three rows lower than
+        # placed and the bottom of the light title bar showed as a line across the top of the video. It is 552 rows tall, an even
+        # number as the encoder needs, so it ends inside the content.
+        ffmpeg -loglevel warning -y -f avfoundation -thread_queue_size 1024 -pixel_format bgr0 -capture_cursor 0 -framerate 30 \
+            -i "$screen:none" \
+            -t "$((seconds + 1))" -vf "crop=800:552:112:64" -c:v libx264 -preset ultrafast -crf 18 -pix_fmt yuv420p "$output" &
+        ffmpeg_pid=$!
         sleep 1
-        "$executable" &
+        "$executable" "-geometry=800x560+112+60" &
         app_pid=$!
-        # screencapture stops itself after its seconds. One still running a minute after that is stuck, so the script says what was
-        # running, and what any crash of the app reported, and fails, rather than wait until the job's time runs out.
-        waited=0
-        while kill -0 "$capture_pid" 2>/dev/null; do
-            if [ "$waited" -ge "$((seconds + 60))" ]; then
-                echo "record-splash: screencapture was still recording $waited seconds after it started. The processes running:" >&2
-                ps -axo pid,ppid,stat,etime,command >&2
-                echo "record-splash: the crash reports in ~/Library/Logs/DiagnosticReports:" >&2
-                ls -la "$HOME/Library/Logs/DiagnosticReports" >&2 || true
-                for report in "$HOME"/Library/Logs/DiagnosticReports/*; do
-                    [ -f "$report" ] || continue
-                    echo "--- $report" >&2
-                    head -60 "$report" >&2
-                done
-                kill "$capture_pid"
-                stop "$app_pid"
-                exit 1
-            fi
-            sleep 1
-            waited=$((waited + 1))
-        done
-        wait "$capture_pid"
+        wait "$ffmpeg_pid"
         stop "$app_pid"
         ;;
     ios)
