@@ -41,7 +41,7 @@ type TestCommandZiggy = Pick<IZiggyBridge, "onTestCommand" | "sendTestResult" | 
 //
 // The calls of window.ziggy showSplashScreen makes.
 //
-type SplashZiggy = Pick<IZiggyBridge, "onEvent" | "frontendReady">;
+type SplashZiggy = Pick<IZiggyBridge, "onEvent" | "frontendReady" | "splashFading">;
 
 //
 // Puts a fake on window.ziggy whose sendTestResult settles the way the test asks, and returns it.
@@ -61,6 +61,7 @@ function installSplashZiggy(): SplashZiggy {
     return installFakeZiggy({
         onEvent: jest.fn(),
         frontendReady: jest.fn(),
+        splashFading: jest.fn(),
     });
 }
 
