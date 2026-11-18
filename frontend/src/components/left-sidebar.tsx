@@ -85,14 +85,14 @@ export function LeftSidebar({ isMinimised, isRepoOpen }: ILeftSidebarProps): JSX
     return (
         <aside
             data-id="left-sidebar"
-            className={`flex shrink-0 flex-col justify-between overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-panel)] p-[var(--space-2)] transition-[width] duration-[var(--duration-normal)] ease-[var(--ease-standard)] ${isMinimised ? "w-16" : "w-64"}`}
+            className={`flex shrink-0 flex-col justify-between overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-panel)] p-[var(--space-2)] transition-[width] duration-[var(--duration-normal)] ease-[var(--ease-standard)] ${isMinimised ? "w-16" : "w-[260px]"}`}
         >
-            <nav className="flex flex-col gap-[var(--space-1)]">
+            <nav className="flex flex-col">
                 {isRepoOpen && (
                     <SidebarLink to="/commits" icon={faCodeCommit} label="Commits" dataId="left-sidebar-commits-link" isMinimised={isMinimised} />
                 )}
             </nav>
-            <nav className="flex flex-col gap-[var(--space-1)]">
+            <nav className="flex flex-col">
                 <SidebarLink to="/help" icon={faCircleQuestion} label="Help" dataId="left-sidebar-help-link" isMinimised={isMinimised} />
                 <SidebarLink to="/about" icon={faCircleInfo} label="About" dataId="left-sidebar-about-link" isMinimised={isMinimised} />
             </nav>

@@ -1,10 +1,10 @@
 //
 // Tests what the keyboard shortcuts overlay lists: the actions with a shortcut picked from Ziggy's
-// action list, the shortcuts a search matches by label or keys and the columns they fill.
+// action list and the shortcuts a search matches by label or keys.
 //
 
 import type { IActionInfo } from "ziggy";
-import { actionShortcuts, IShortcut, matchingShortcuts, SHORTCUT_COLUMN_ROW_COUNT_MAX, shortcutColumns, shortcutKeyNames } from "../../lib/shortcuts";
+import { actionShortcuts, IShortcut, matchingShortcuts, shortcutKeyNames } from "../../lib/shortcuts";
 
 //
 // Makes a shortcut with the name, label and keys, so a test writes each on one line.
@@ -15,25 +15,6 @@ function makeShortcut(name: string, label: string, keys: string): IShortcut {
         label,
         keys,
     };
-}
-
-//
-// Makes the number of shortcuts given, named shortcut-0, shortcut-1 and so on, for the column
-// tests.
-//
-function makeShortcuts(count: number): IShortcut[] {
-    const shortcuts: IShortcut[] = [];
-    for (let index = 0; index < count; index += 1) {
-        shortcuts.push(makeShortcut(`shortcut-${index}`, `Shortcut ${index}`, `Ctrl+${index}`));
-    }
-    return shortcuts;
-}
-
-//
-// The names of the shortcuts in each column, so a test checks the layout in one comparison.
-//
-function columnNames(columns: IShortcut[][]): string[][] {
-    return columns.map(column => column.map(shortcut => shortcut.name));
 }
 
 //
@@ -99,33 +80,6 @@ describe("matchingShortcuts", () => {
 
     test("text no label or keys contain matches no shortcut", () => {
         expect(matchingShortcuts(listedShortcuts, "branch")).toEqual([]);
-    });
-});
-
-describe("shortcutColumns", () => {
-    test("a column holds eight shortcuts", () => {
-        expect(SHORTCUT_COLUMN_ROW_COUNT_MAX).toBe(8);
-    });
-
-    test("no shortcuts give no columns", () => {
-        expect(shortcutColumns([])).toEqual([]);
-    });
-
-    test("shortcuts that fit in one column fill one column", () => {
-        expect(columnNames(shortcutColumns(makeShortcuts(3)))).toEqual([["shortcut-0", "shortcut-1", "shortcut-2"]]);
-    });
-
-    test("a full column holds every shortcut in one column", () => {
-        const columns = shortcutColumns(makeShortcuts(SHORTCUT_COLUMN_ROW_COUNT_MAX));
-        expect(columns.map(column => column.length)).toEqual([SHORTCUT_COLUMN_ROW_COUNT_MAX]);
-    });
-
-    test("when a column is full the list carries on in the next column", () => {
-        const columns = shortcutColumns(makeShortcuts(SHORTCUT_COLUMN_ROW_COUNT_MAX * 2 + 1));
-        expect(columns.map(column => column.length)).toEqual([SHORTCUT_COLUMN_ROW_COUNT_MAX, SHORTCUT_COLUMN_ROW_COUNT_MAX, 1]);
-        expect(columnNames(columns).flat()).toEqual(columnNames([makeShortcuts(SHORTCUT_COLUMN_ROW_COUNT_MAX * 2 + 1)]).flat());
-        expect(columnNames(columns)[1][0]).toBe(`shortcut-${SHORTCUT_COLUMN_ROW_COUNT_MAX}`);
-        expect(columnNames(columns)[2]).toEqual([`shortcut-${SHORTCUT_COLUMN_ROW_COUNT_MAX * 2}`]);
     });
 });
 

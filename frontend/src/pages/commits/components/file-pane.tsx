@@ -5,9 +5,9 @@
 //
 
 import { JSX, useEffect, useState } from "react";
-import { DiffLineKind, IDiffLine, parseDiffLines } from "../../../lib/diff-lines";
+import { DiffLineKind, IDiffHunk, IDiffLine, parseDiffLines, splitDiffHunks } from "../../../lib/diff-lines";
 import { readFileDiff } from "../../../lib/file-diff";
-import { activePaneClass } from "./active-pane-style";
+import { activeFlatPaneClass } from "./active-pane-style";
 import { FileIcon } from "./file-icon";
 import { FilePath } from "./file-path";
 import { CloseButton } from "./pane-header";
@@ -38,7 +38,8 @@ export interface IFilePaneProps {
 // headed. It shows that it is loading until the task ends and what went wrong when the diff could
 // not be read. The card is 840 pixels wide, or the width of the page's visible area when that is
 // narrower, so the whole diff can be scrolled into view. The card's border is in the style guide's
-// active pane colour while the pane is active. The card fades in as it opens.
+// active pane colour while the pane is active. The card has no shadow, as the style guide's file
+// diff card has none. The card fades in as it opens.
 //
 export function FilePane({ repoPath, hash, path, isActive, onClose }: IFilePaneProps): JSX.Element {
     const [diff, setDiff] = useState<string | undefined>(undefined);
@@ -61,7 +62,7 @@ export function FilePane({ repoPath, hash, path, isActive, onClose }: IFilePaneP
     }, [repoPath, hash, path]);
 
     return (
-        <section data-id="file-pane" aria-label="File diff" className={`graft-pane-in flex w-[min(840px,calc(100cqw-var(--space-6)*2))] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
+        <section data-id="file-pane" aria-label="File diff" className={`graft-pane-in flex w-[min(840px,calc(100cqw-var(--space-6)*2))] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activeFlatPaneClass(isActive)}`}>
             <div className="flex flex-none items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-panel)] p-2">
                 <span title={path} className="flex min-w-0 flex-1 items-center gap-2 text-[length:var(--text-sm)] font-[var(--weight-medium)] text-[var(--color-text)]">
                     <FileIcon path={path} />
@@ -88,8 +89,8 @@ export interface IFileDiffContentProps {
 }
 
 //
-// Shows every line of the file's diff as git wrote it, one row each, or says it is loading or why
-// it could not be read.
+// Shows every line of the file's diff as git wrote it, one row each, hunk by hunk, or says it is
+// loading or why it could not be read.
 //
 export function FileDiffContent({ diff, error }: IFileDiffContentProps): JSX.Element {
     if (error !== undefined) {
@@ -100,8 +101,36 @@ export function FileDiffContent({ diff, error }: IFileDiffContentProps): JSX.Ele
     }
     return (
         <div data-id="file-diff" role="table" aria-label="Unified diff" className="py-2 font-[family-name:var(--font-mono)] text-[length:var(--text-sm)] leading-[var(--leading-normal)] text-[var(--color-text)]">
-            {parseDiffLines(diff).map((line, index) => <DiffRow key={index} line={line} />)}
+            {splitDiffHunks(parseDiffLines(diff)).map((hunk, index) => <DiffHunk key={index} hunk={hunk} />)}
         </div>
+    );
+}
+
+//
+// What one hunk of the diff shows.
+//
+export interface IDiffHunkProps {
+    // The hunk, or git's header lines before the first hunk.
+    hunk: IDiffHunk;
+}
+
+//
+// Shows a hunk's "@@" header row, then its lines with a spacing step above and below them, as the
+// style guide's diff view leaves room round each hunk's lines. Git's header lines before the first
+// hunk show as rows with no room round them.
+//
+export function DiffHunk({ hunk }: IDiffHunkProps): JSX.Element {
+    const rows = hunk.lines.map((line, index) => <DiffRow key={index} line={line} />);
+    if (!hunk.header) {
+        return <>{rows}</>;
+    }
+    return (
+        <>
+            <DiffRow line={hunk.header} />
+            <div role="rowgroup" className="py-[var(--space-2)]">
+                {rows}
+            </div>
+        </>
     );
 }
 
@@ -123,17 +152,19 @@ export interface IDiffLineStyle {
 //
 // The look of each kind of diff line, from the style guide's diff view: an added line on the
 // added background with a "+" in the added line colour, a deleted line on the removed background
-// with a "−" in the removed line colour, a kept line on the panel, a hunk header muted on the
-// raised background as the style guide's bars between hunks are and git's own header lines muted.
+// with a "−" in the removed line colour, both backgrounds inset a spacing step from each end of
+// the row as the style guide insets a hunk's lines, a kept line on the panel, a hunk header muted
+// on the raised background as the style guide's bars between hunks are and git's own header lines
+// muted.
 //
 export const diffLineStyles: Record<DiffLineKind, IDiffLineStyle> = {
     added: {
-        rowClasses: "bg-[var(--color-diff-added)]",
+        rowClasses: "bg-[image:linear-gradient(var(--color-diff-added),var(--color-diff-added))] bg-[length:calc(100%_-_var(--space-1)_*_2)_100%] bg-[position:var(--space-1)_0] bg-no-repeat",
         markerClass: "text-[var(--color-diff-added-line)]",
         marker: "+",
     },
     deleted: {
-        rowClasses: "bg-[var(--color-diff-removed)]",
+        rowClasses: "bg-[image:linear-gradient(var(--color-diff-removed),var(--color-diff-removed))] bg-[length:calc(100%_-_var(--space-1)_*_2)_100%] bg-[position:var(--space-1)_0] bg-no-repeat",
         markerClass: "text-[var(--color-diff-removed-line)]",
         marker: "−",
     },

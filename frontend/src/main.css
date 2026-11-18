@@ -22,7 +22,10 @@
 
 /*
  * The page's own colours and type, from the style guide's role tokens. AppTheme sets the dark class
- * on the root element, which switches graft.css's role tokens to their dark values.
+ * on the root element, which switches graft.css's role tokens to their dark values. The text size
+ * is set on the body, as the style guide sets it, so the root element keeps the browser's 16px and
+ * each Tailwind spacing and size class, which is in rem, comes out at the size of the token it
+ * copies.
  */
 @layer base {
     html,
@@ -30,8 +33,11 @@
         background-color: var(--color-bg);
         color: var(--color-text);
         font-family: var(--font-sans);
-        font-size: var(--text-md);
         line-height: var(--leading-normal);
+    }
+
+    body {
+        font-size: var(--text-md);
     }
 
     code,

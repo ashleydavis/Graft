@@ -26,3 +26,28 @@ export function activePaneClass(isActive: boolean): string {
     }
     return inactivePaneClasses;
 }
+
+//
+// The Tailwind classes of the file pane's card while it is active: a border and a ring in
+// graft.css's --color-select-pane alone, as the style guide's file diff card is drawn.
+//
+export const activeFlatPaneClasses = "border-[var(--color-select-pane)] shadow-[0_0_0_1px_var(--color-select-pane)]";
+
+//
+// The Tailwind class of the file pane's card while it is not active: a border in graft.css's
+// --color-border alone, as the style guide's file diff card is drawn.
+//
+export const inactiveFlatPaneClasses = "border-[var(--color-border)]";
+
+//
+// Picks the Tailwind classes of the file pane's card border for whether the pane is active. It
+// marks the active pane with the same border and ring as activePaneClass, so the user sees the same
+// mark on every pane. The card keeps to its border, as the style guide's file diff card does, where
+// the other panes add the raised shadow.
+//
+export function activeFlatPaneClass(isActive: boolean): string {
+    if (isActive) {
+        return activeFlatPaneClasses;
+    }
+    return inactiveFlatPaneClasses;
+}

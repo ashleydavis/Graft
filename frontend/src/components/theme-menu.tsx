@@ -3,7 +3,7 @@
 // where the user picks Light, Dark or System.
 //
 
-import { faCheck, faChevronDown, faCircleHalfStroke, faMoon, faSun, IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faCircleHalfStroke, faMoon, faSun, IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ButtonBase, ListItemIcon, ListItemText, Menu, MenuItem, Tooltip } from "@mui/material";
 import { JSX, useState } from "react";
@@ -13,7 +13,7 @@ import { themeButtonLabel, themeOptions, ThemeSetting } from "../lib/theme";
 // What the theme menu shows and what it reports.
 //
 export interface IThemeMenuProps {
-    // The theme the user picked, which the button shows and the menu ticks.
+    // The theme the user picked, which the button shows and the menu marks.
     setting: ThemeSetting;
 
     // Called with the theme the user chooses from the menu.
@@ -33,9 +33,11 @@ export const themeIcons: Record<ThemeSetting, IconDefinition> = {
 //
 // Shows the theme in use as its icon with a small chevron, so it reads as a drop-down. A click
 // opens a menu under it, aligned to its right edge, headed "Theme", with a row for each setting
-// laid out as the style guide's menu items: the setting's muted icon, its name, what it does below
-// it and a tick on the one in use, whose row has the selected colour. Choosing a row closes the
-// menu and reports the setting, unless it is the one already in use.
+// laid out as the style guide's menu items: the setting's muted icon, its name and what it does
+// below it. The row of the one in use has the selected colour, which marks it as the style guide's
+// select list marks its chosen item. The button has the style guide's outlined button border and
+// the menu sits a spacing step below it. Choosing a row closes the menu and reports the setting,
+// unless it is the one already in use.
 //
 export function ThemeMenu({ setting, onChooseSetting }: IThemeMenuProps): JSX.Element {
     const [anchor, setAnchor] = useState<HTMLElement | undefined>(undefined);
@@ -57,7 +59,7 @@ export function ThemeMenu({ setting, onChooseSetting }: IThemeMenuProps): JSX.El
                     aria-haspopup="menu"
                     aria-expanded={anchor !== undefined}
                     onClick={event => setAnchor(event.currentTarget)}
-                    className="flex h-[calc(var(--icon-lg)+var(--space-3))] flex-none items-center gap-[var(--space-2)] rounded-[var(--radius-md)] px-[var(--space-2)] text-[var(--color-text-muted)] border border-[var(--color-border)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-[var(--color-hover)] hover:text-[var(--color-text)] focus-visible:outline-solid focus-visible:outline-[length:var(--focus-ring-width)] focus-visible:outline-offset-[var(--focus-ring-offset)] focus-visible:outline-[var(--color-focus)]"
+                    className="flex h-[calc(var(--icon-lg)+var(--space-3))] flex-none items-center gap-[var(--space-2)] rounded-[var(--radius-md)] px-[var(--space-2)] text-[var(--color-text)] border border-[var(--color-border-control)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:border-[var(--color-text-muted)] hover:bg-[var(--color-hover)] focus-visible:outline-solid focus-visible:outline-[length:var(--focus-ring-width)] focus-visible:outline-offset-[var(--focus-ring-offset)] focus-visible:outline-[var(--color-focus)]"
                 >
                     <FontAwesomeIcon data-id={`theme-icon-${setting}`} icon={themeIcons[setting]} className="text-[length:var(--icon-lg)]" />
                     <FontAwesomeIcon icon={faChevronDown} className={`text-[length:var(--icon-sm)] transition-transform duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${anchor !== undefined ? "rotate-180" : ""}`} />
@@ -78,15 +80,15 @@ export function ThemeMenu({ setting, onChooseSetting }: IThemeMenuProps): JSX.El
                 }}
                 slotProps={{
                     paper: {
-                        className: "mt-[var(--space-2)] w-72",
+                        className: "mt-[var(--space-1)] w-72",
                         elevation: 0,
                     },
                     list: {
-                        className: "flex flex-col gap-[var(--space-1)]",
+                        className: "flex flex-col",
                     },
                 }}
             >
-                <li data-id="theme-menu-heading" className="px-[var(--space-3)] pb-[var(--space-1)] text-[length:var(--text-sm)] font-[var(--weight-bold)] leading-[var(--leading-normal)] text-[var(--color-text-muted)]" role="presentation">
+                <li data-id="theme-menu-heading" className="px-[var(--space-3)] pt-[var(--space-2)] pb-[var(--space-1)] text-[length:var(--text-sm)] font-[var(--weight-bold)] leading-[var(--leading-normal)] text-[var(--color-text-muted)]" role="presentation">
                     Theme
                 </li>
                 {themeOptions.map(option => {
@@ -114,9 +116,6 @@ export function ThemeMenu({ setting, onChooseSetting }: IThemeMenuProps): JSX.El
                                     },
                                 }}
                             />
-                            <span className="flex w-[var(--space-4)] justify-center text-[length:var(--icon-sm)] text-[var(--color-accent)]">
-                                {isChosen && <FontAwesomeIcon data-id={`theme-option-${option.setting}-check`} icon={faCheck} />}
-                            </span>
                         </MenuItem>
                     );
                 })}

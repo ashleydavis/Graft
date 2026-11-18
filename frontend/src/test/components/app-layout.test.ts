@@ -236,7 +236,7 @@ describe("AppLayout", () => {
         act(() => {
             elementWithDataId(container, "left-sidebar-toggle")?.click();
         });
-        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-64")).toBe(true);
+        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-[260px]")).toBe(true);
         expect(elementWithDataId(container, "left-sidebar-commits-link-label")).not.toBeUndefined();
         expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
     });
@@ -313,7 +313,7 @@ describe("AppLayout", () => {
         await act(async () => {
             await Promise.resolve();
         });
-        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-64")).toBe(true);
+        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-[260px]")).toBe(true);
         expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
     });
 
@@ -328,7 +328,7 @@ describe("AppLayout", () => {
         await act(async () => {
             await Promise.resolve();
         });
-        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-64")).toBe(true);
+        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-[260px]")).toBe(true);
         expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
     });
 
@@ -343,7 +343,7 @@ describe("AppLayout", () => {
             expect(consoleError).toHaveBeenCalledWith(`Graft could not read whether the left sidebar is minimised from its state file at ${leftSidebarMinimisedStateKey}: Error: the disk is gone. Graft starts with the default until it is changed.`);
         });
         expect(consoleError).toHaveBeenCalledWith(`Graft could not read whether the right sidebar is open from its state file at ${rightSidebarOpenStateKey}: Error: the disk is gone. Graft starts with the default until it is changed.`);
-        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-64")).toBe(true);
+        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-[260px]")).toBe(true);
         expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
         consoleError.mockRestore();
     });

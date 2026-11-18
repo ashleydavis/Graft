@@ -68,9 +68,9 @@ export function CommandBlock({ command, textDataId, copyDataId }: ICommandBlockP
 
 //
 // Shows a heading with a line on what the panel is for, then the `cd` into the repo above the
-// page's Git commands, the most recent first and marked as such, each with a button that copies
-// it, so a user can run what Graft ran in a terminal. For a page that has run no commands it shows
-// the line "This page has run no Git commands." in a dashed box with a terminal icon.
+// page's Git commands, the most recent first, each with a button that copies it, so a user can run
+// what Graft ran in a terminal. For a page that has run no commands it shows the line "This page
+// has run no Git commands." in a dashed box with a terminal icon.
 //
 export function GitCommandsPanel({ pageCommands }: IGitCommandsPanelProps): JSX.Element {
     return (
@@ -99,12 +99,7 @@ export function GitCommandsPanel({ pageCommands }: IGitCommandsPanelProps): JSX.
                     <CommandBlock command={pageCommands.directoryCommand} textDataId="git-commands-directory" copyDataId="git-commands-directory-copy" />
                     <ol data-id="git-commands-list" className="flex flex-col gap-[var(--space-2)]">
                         {pageCommands.commands.map((command, index) => (
-                            <li key={command} data-id={`git-command-${index}`} className="flex flex-col gap-[var(--space-1)]">
-                                {index === 0 && (
-                                    <span data-id="git-command-most-recent" className="text-[length:var(--text-xs)] font-[var(--weight-medium)] text-[var(--color-text-muted)]">
-                                        Most recent
-                                    </span>
-                                )}
+                            <li key={command} data-id={`git-command-${index}`} className="flex flex-col">
                                 <CommandBlock command={command} textDataId={`git-command-${index}-text`} copyDataId={`git-command-${index}-copy`} />
                             </li>
                         ))}

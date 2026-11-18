@@ -1,8 +1,8 @@
 //
 // Tests the breadcrumb trail: renders it with plain and drop-down steps and checks the text and
-// tooltip of each step, that long steps are cut short, that a drop-down lists and ticks its pages,
-// that its search box narrows them, says when none match and is cleared on closing and that picking
-// a page opens it while picking the page shown only closes the drop-down.
+// tooltip of each step, that long steps are cut short, that a drop-down lists and selects its
+// pages, that its search box narrows them, says when none match and is cleared on closing and that
+// picking a page opens it while picking the page shown only closes the drop-down.
 //
 
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -88,36 +88,37 @@ describe("BreadcrumbTrail", () => {
         expect(repoStep?.classList.contains("text-[var(--color-text-muted)]")).toBe(true);
     });
 
-    test("shows the last step in bold, whether plain text or a drop-down", () => {
+    test("shows the last step in the medium weight, whether plain text or a drop-down", () => {
         renderTrail([trail[0]]);
-        expect(elementWithDataId("breadcrumb-repo")?.classList.contains("font-[var(--weight-bold)]")).toBe(true);
+        expect(elementWithDataId("breadcrumb-repo")?.classList.contains("font-[var(--weight-medium)]")).toBe(true);
     });
 
-    test("shows a step with options as a button with a drop-down arrow, in bold when it is last", () => {
+    test("shows a step with options as a button with a drop-down arrow, in the medium weight when it is last", () => {
         renderTrail(trail);
         const pageStep = elementWithDataId("breadcrumb-page");
         expect(pageStep?.tagName).toBe("BUTTON");
         expect(pageStep?.textContent).toBe("About");
         expect(pageStep?.getAttribute("aria-label")).toBe("About");
         expect(pageStep?.querySelector("svg[data-icon=\"chevron-down\"]")).not.toBeNull();
-        expect(pageStep?.classList.contains("font-[var(--weight-bold)]")).toBe(true);
+        expect(pageStep?.classList.contains("font-[var(--weight-medium)]")).toBe(true);
     });
 
     test("shows a drop-down step before the last one in the muted text colour", () => {
         renderTrail([trail[1], trail[0]]);
-        expect(elementWithDataId("breadcrumb-page")?.classList.contains("font-[var(--weight-bold)]")).toBe(false);
+        expect(elementWithDataId("breadcrumb-page")?.classList.contains("font-[var(--weight-medium)]")).toBe(false);
         expect(elementWithDataId("breadcrumb-page")?.classList.contains("text-[var(--color-text-muted)]")).toBe(true);
     });
 
-    test("opens a drop-down that lists the step's pages and ticks the one shown", () => {
+    test("opens a drop-down that lists the step's pages and selects the one shown, with no tick", () => {
         renderTrail(trail);
         expect(elementWithDataId("breadcrumb-page-menu")).toBeUndefined();
         openPageMenu();
         expect(elementWithDataId("breadcrumb-page-menu")).not.toBeUndefined();
         expect(elementWithDataId("breadcrumb-option-help")?.textContent).toBe("Help");
         expect(elementWithDataId("breadcrumb-option-about")?.textContent).toBe("About");
-        expect(elementWithDataId("breadcrumb-option-about")?.querySelector("svg[data-icon=\"check\"]")).not.toBeNull();
-        expect(elementWithDataId("breadcrumb-option-help")?.querySelector("svg[data-icon=\"check\"]")).toBeNull();
+        expect(elementWithDataId("breadcrumb-option-about")?.classList.contains("Mui-selected")).toBe(true);
+        expect(elementWithDataId("breadcrumb-option-help")?.classList.contains("Mui-selected")).toBe(false);
+        expect(elementWithDataId("breadcrumb-page-menu")?.querySelector("svg[data-icon=\"check\"]")).toBeNull();
         expect(screen.getByPlaceholderText("Search pages")).not.toBeNull();
     });
 

@@ -1,7 +1,7 @@
 //
 // Tests the Git commands panel: what it says when the page has run no commands, and that it shows
-// the cd into the repo above the page's commands, the most recent first and marked, each with a
-// copy button that copies it.
+// the cd into the repo above the page's commands, the most recent first, each with a copy button
+// that copies it.
 //
 
 import { act, render } from "@testing-library/react";
@@ -26,7 +26,7 @@ describe("GitCommandsPanel", () => {
         expect(elementWithDataId(container, "git-commands-directory")).toBeUndefined();
     });
 
-    test("shows the cd into the repo above the commands, the most recent first and marked", () => {
+    test("shows the cd into the repo above the commands, the most recent first", () => {
         const { container } = render(createElement(GitCommandsPanel, {
             pageCommands: {
                 directoryCommand: "cd /repo",
@@ -38,9 +38,6 @@ describe("GitCommandsPanel", () => {
         expect(elementWithDataId(container, "git-command-0-text")?.textContent).toBe("git diff-tree abc");
         expect(elementWithDataId(container, "git-command-1-text")?.textContent).toBe("git log --max-count=50");
         expect(elementWithDataId(container, "git-command-2")).toBeUndefined();
-        const mostRecent = elementWithDataId(container, "git-command-most-recent");
-        expect(mostRecent?.textContent).toBe("Most recent");
-        expect(elementWithDataId(container, "git-command-0")?.contains(mostRecent ?? null)).toBe(true);
         const directory = elementWithDataId(container, "git-commands-directory");
         const list = elementWithDataId(container, "git-commands-list");
         expect(list).toBeDefined();

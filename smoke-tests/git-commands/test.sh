@@ -72,7 +72,6 @@ click left-sidebar-commits-link
 wait_for_element commit-pane 30
 wait_for_text git-command-0-text "git log --max-count=50" 30
 wait_for_text git-commands-directory "cd $repo" 30
-wait_for_element git-command-most-recent 30
 
 wait_for_element "commit-$head_hash" 30
 click "commit-$head_hash"

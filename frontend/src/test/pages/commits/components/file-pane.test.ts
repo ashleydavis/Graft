@@ -1,14 +1,15 @@
 //
-// Tests the file pane: renders it with a fake window.ziggy made of Jest mocks and checks that it queues
-// the file diff task for the file, shows that it is loading, then shows the diff's lines numbered
-// and coloured by kind or says why it could not be read, that the close button reports it and that
-// the pane's border is in the style guide's active pane colour while it is active.
+// Tests the file pane: renders it with a fake window.ziggy made of Jest mocks and checks that it
+// queues the file diff task for the file, shows that it is loading, then shows the diff's lines
+// numbered and coloured by kind, each hunk's lines in a group of their own, or says why it could
+// not be read. It checks that the close button reports it and that the pane's border is in the
+// style guide's active pane colour while it is active, with the card kept to its border.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import type { IAddTask, ITaskCompletedEvent } from "ziggy";
-import { activePaneClasses } from "../../../../pages/commits/components/active-pane-style";
+import { activeFlatPaneClasses } from "../../../../pages/commits/components/active-pane-style";
 import { FilePane } from "../../../../pages/commits/components/file-pane";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../../../fake-ziggy";
 
@@ -51,7 +52,7 @@ function renderPane(onClose: jest.Mock, isActive: boolean): void {
 // Reports whether the pane's card carries the active pane's border classes.
 //
 function isPaneMarkedActive(): boolean {
-    return document.querySelector<HTMLElement>("[data-id=\"file-pane\"]")?.className.includes(activePaneClasses) ?? false;
+    return document.querySelector<HTMLElement>("[data-id=\"file-pane\"]")?.className.includes(activeFlatPaneClasses) ?? false;
 }
 
 describe("FilePane", () => {
@@ -91,9 +92,14 @@ describe("FilePane", () => {
             "1+The second note.",
             "22Kept.",
         ]);
-        expect(rows[3].className).toContain("bg-[var(--color-diff-removed)]");
-        expect(rows[4].className).toContain("bg-[var(--color-diff-added)]");
+        expect(rows[3].className).toContain("bg-[image:linear-gradient(var(--color-diff-removed),var(--color-diff-removed))]");
+        expect(rows[4].className).toContain("bg-[image:linear-gradient(var(--color-diff-added),var(--color-diff-added))]");
+        expect(rows[4].className).toContain("bg-[position:var(--space-1)_0]");
         expect(rows[2].className).toContain("bg-[var(--color-raised)]");
+        const hunkGroups = Array.from(document.querySelectorAll("[data-id=\"file-diff\"] [role=\"rowgroup\"]"));
+        expect(hunkGroups.length).toBe(1);
+        expect(hunkGroups[0].className).toContain("py-[var(--space-2)]");
+        expect(Array.from(hunkGroups[0].children).map(row => row.getAttribute("data-line"))).toEqual(["deleted", "added", "context"]);
     });
 
     test("says why the diff could not be read when the task failed", () => {
@@ -123,6 +129,15 @@ describe("FilePane", () => {
         installFakeTaskZiggy();
         renderPane(jest.fn(), true);
         expect(isPaneMarkedActive()).toBe(true);
+    });
+
+    test("has no shadow, active or not", () => {
+        installFakeTaskZiggy();
+        renderPane(jest.fn(), true);
+        renderPane(jest.fn(), false);
+        const panes = Array.from(document.querySelectorAll<HTMLElement>("[data-id=\"file-pane\"]"));
+        expect(panes.length).toBe(2);
+        expect(panes.map(pane => pane.className.includes("--shadow-raised"))).toEqual([false, false]);
     });
 
     test("keeps its grey border while it is not active", () => {

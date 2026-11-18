@@ -59,7 +59,7 @@ export function TopBar({ isLeftSidebarMinimised, onToggleLeftSidebar, isRightSid
     return (
         <header data-id="top-bar" className="relative z-10 flex h-12 shrink-0 items-center gap-[var(--space-2)] border-b border-[var(--color-border)] bg-[var(--color-panel)] px-[var(--space-2)] shadow-[var(--shadow-raised)]">
             <Tooltip title={leftSidebarLabel}>
-                <IconButton data-id="left-sidebar-toggle" aria-label={leftSidebarLabel} onClick={onToggleLeftSidebar}>
+                <IconButton data-id="left-sidebar-toggle" aria-label={leftSidebarLabel} size="small" onClick={onToggleLeftSidebar}>
                     <FontAwesomeIcon icon={faBars} />
                 </IconButton>
             </Tooltip>
@@ -71,7 +71,7 @@ export function TopBar({ isLeftSidebarMinimised, onToggleLeftSidebar, isRightSid
             </div>
             <ThemeMenu setting={themeSetting} onChooseSetting={onChooseThemeSetting} />
             <Tooltip title={rightSidebarLabel}>
-                <IconButton data-id="right-sidebar-toggle" aria-label={rightSidebarLabel} onClick={onToggleRightSidebar}>
+                <IconButton data-id="right-sidebar-toggle" aria-label={rightSidebarLabel} size="small" onClick={onToggleRightSidebar}>
                     <FontAwesomeIcon icon={faTableColumns} />
                 </IconButton>
             </Tooltip>

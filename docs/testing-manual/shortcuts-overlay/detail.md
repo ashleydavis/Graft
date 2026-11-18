@@ -25,7 +25,7 @@ bun run macos
 ## Steps
 
 1. Wait for Graft's window to open on the welcome page.
-2. Press `?`. Check the overlay shows over the page with the heading "Keyboard shortcuts", a search box with the focus and the shortcuts in columns, and the page behind it is dimmed. Check the first shortcut is "Open repo" with Ctrl+O (Command+O on macOS), and that the menu items with shortcuts, such as Quit and Reload, and the zoom actions Zoom In, Zoom Out and Actual Size are listed with the keys the menus show.
+2. Press `?`. Check the overlay shows over the page with the heading "Keyboard shortcuts", a search box with the focus and the shortcuts in one column, and the page behind it is dimmed. Check the first shortcut is "Open repo" with Ctrl+O (Command+O on macOS), and that the menu items with shortcuts, such as Quit and Reload, and the zoom actions Zoom In, Zoom Out and Actual Size are listed with the keys the menus show.
 3. Click outside the overlay. Check it stays open.
 4. Type `open`. Check only "Open repo" is listed. Clear the search and type `ctrl+q` (on macOS, `⌘Q`). Check only "Quit" is listed. Type `branch` in place of it and check the overlay says no shortcut matches "branch".
 5. Clear the search and type `?`. Check the search box shows `?`, only "Keyboard Shortcuts" is listed and the overlay stays open.
@@ -37,4 +37,4 @@ bun run macos
 
 ## Expected result
 
-`?` shows the keyboard shortcuts overlay, which lists every shortcut of Ziggy's action list in columns, starting with Open repo's Ctrl+O. Its search box filters them by label or keys and types `?` without closing the overlay. Escape closes it, a click outside leaves it open and `?` typed in another text box types the character and leaves the overlay closed.
+`?` shows the keyboard shortcuts overlay, which lists every shortcut of Ziggy's action list in one column, starting with Open repo's Ctrl+O. Its search box filters them by label or keys and types `?` without closing the overlay. Escape closes it, a click outside leaves it open and `?` typed in another text box types the character and leaves the overlay closed.

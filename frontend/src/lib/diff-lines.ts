@@ -85,6 +85,44 @@ export function parseDiffLines(diff: string): IDiffLine[] {
 }
 
 //
+// A run of a diff's lines that the file pane draws together: a hunk's "@@" header with the lines
+// under it, or git's header lines before the first hunk.
+//
+export interface IDiffHunk {
+    // The hunk's "@@" header line, or undefined for git's header lines before the first hunk.
+    header: IDiffLine | undefined;
+
+    // The lines after the header up to the next hunk's header, or git's header lines.
+    lines: IDiffLine[];
+}
+
+//
+// Splits the lines parseDiffLines returns into hunks, in order, so the file pane can put room above
+// and below each hunk's lines as the style guide's diff view does. Lines before the first hunk
+// header make a hunk with no header. A diff with no lines gives no hunks.
+//
+export function splitDiffHunks(lines: IDiffLine[]): IDiffHunk[] {
+    const hunks: IDiffHunk[] = [];
+    for (const line of lines) {
+        if (line.kind === "hunk") {
+            hunks.push({
+                header: line,
+                lines: [],
+            });
+            continue;
+        }
+        if (hunks.length === 0) {
+            hunks.push({
+                header: undefined,
+                lines: [],
+            });
+        }
+        hunks[hunks.length - 1].lines.push(line);
+    }
+    return hunks;
+}
+
+//
 // Builds one line of a diff, so parseDiffLines writes each line's parts in one place.
 //
 export function diffLine(kind: DiffLineKind, oldNumber: number | undefined, newNumber: number | undefined, text: string): IDiffLine {

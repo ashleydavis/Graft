@@ -19,7 +19,7 @@ import { RepoProvider, useRepo } from "../../../components/repo-context";
 import { ICommit } from "../../../lib/commits";
 import { formatDate, formatDateTime } from "../../../lib/date-format";
 import { CommitsPage, scrollLastPaneIntoView } from "../../../pages/commits";
-import { activePaneClasses } from "../../../pages/commits/components/active-pane-style";
+import { activeFlatPaneClasses, activePaneClasses } from "../../../pages/commits/components/active-pane-style";
 import { openRowClasses } from "../../../pages/commits/components/commit-list";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../../fake-ziggy";
 
@@ -273,11 +273,12 @@ function isSelected(dataId: string): boolean {
 
 //
 // Returns the data-ids of the open panes whose border is in the style guide's active pane colour,
-// graft.css's --color-select-pane, so a test reads which pane is active.
+// graft.css's --color-select-pane, so a test reads which pane is active. The file pane marks it
+// with the classes of activeFlatPaneClass.
 //
 function activePaneIds(): (string | null)[] {
     return Array.from(elementWithDataId("commit-columns").children)
-        .filter(pane => pane instanceof HTMLElement && pane.className.includes(activePaneClasses))
+        .filter(pane => pane instanceof HTMLElement && (pane.className.includes(activePaneClasses) || pane.className.includes(activeFlatPaneClasses)))
         .map(pane => pane.getAttribute("data-id"));
 }
 

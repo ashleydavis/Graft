@@ -25,7 +25,7 @@ bun run macos
 ## Steps
 
 1. Wait for Graft's window to open on the welcome page. Check the left sidebar has no "Commits" link and the breadcrumb trail is empty, because no repo is open. Choose File, then "Open repo", choose `/tmp/graft/test-repo`, then click "About" in the left sidebar.
-2. Check a top bar runs across the top of the window, holding only a menu button and the name "Graft" at its left, two buttons at its right and the breadcrumb trail between them: "test-repo", a chevron, then "About" in bold with a drop-down arrow.
+2. Check a top bar runs across the top of the window, holding only a menu button and the name "Graft" at its left, two buttons at its right and the breadcrumb trail between them: "test-repo", a chevron, then "About" in the medium weight with a drop-down arrow.
 3. Check the left sidebar runs down the left under the top bar, with a "Commits" link at its top and "Help" and "About" links at its bottom, each with an icon. Check the About link is highlighted.
 4. Check the About page shows in the main content area, to the right of the left sidebar.
 5. Check the right sidebar is closed: the main content area reaches the right edge of the window.
@@ -38,13 +38,13 @@ bun run macos
 12. Click the same button again. Check the right sidebar slides back out.
 13. Hover over "test-repo" in the trail. Check its tooltip is "/tmp/graft/test-repo".
 14. Click "Help" in the left sidebar. Check the Help page shows and the trail ends with "Help".
-15. Click "Help" in the trail. Check a drop-down opens under it with a search box, "Help" ticked and "About".
+15. Click "Help" in the trail. Check a drop-down opens under it with a search box, "Help" highlighted and "About".
 16. Type "ab" in the search box. Check only "About" is listed. Type "zz". Check it says "No page matches "zz".".
 17. Press Escape. Check the drop-down closes. Click "Help" in the trail again and check both pages are listed.
 18. Click "Help" in the drop-down. Check the drop-down closes and the Help page still shows.
 19. Click "Help" in the trail, then "About". Check the About page shows and the trail ends with "About".
 20. Hover over the button to the left of the right sidebar's button. Check it shows a half filled circle with a small chevron and its tooltip is "Theme: System. Choose a theme".
-21. Click it. Check a menu opens under it, headed "Theme", with rows for Light, Dark and System, each with its icon and a line saying what it does, and System highlighted and ticked.
+21. Click it. Check a menu opens under it, headed "Theme", with rows for Light, Dark and System, each with its icon and a line saying what it does, and System highlighted.
 22. Press Escape. Check the menu closes and the theme does not change.
 23. Open the menu and choose Light. Check the menu closes, the button shows a sun and Graft is drawn in light colours.
 24. Open the menu and choose Dark. Check the button shows a moon and Graft is drawn in dark colours: a dark background with light text, in the top bar, both sidebars, the main content area and the menu itself.
@@ -65,6 +65,6 @@ The top bar's breadcrumb trail names the open repo and the page shown. On the He
 
 The menu button minimises and expands the left sidebar, and its links work in both states. The button at the far right of the top bar slides the right sidebar in and out.
 
-The theme menu moves Graft between light, dark and the system's theme, ticks the one in use, and Graft starts on the theme last picked.
+The theme menu moves Graft between light, dark and the system's theme, highlights the one in use, and Graft starts on the theme last picked.
 
 Graft starts with the left sidebar minimised or expanded and the right sidebar open or closed, as they were left when it last closed.

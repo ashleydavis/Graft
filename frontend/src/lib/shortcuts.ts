@@ -1,6 +1,6 @@
 //
 // Works out what the keyboard shortcuts overlay lists from Ziggy's action list: the actions that
-// have a shortcut, those a search matches and the columns they are laid out in.
+// have a shortcut and those a search matches.
 //
 
 import type { IActionInfo } from "ziggy";
@@ -20,13 +20,6 @@ export interface IShortcut {
     // macOS.
     keys: string;
 }
-
-//
-// The most shortcuts a column of the overlay holds before the list carries on in the next column.
-// Eight keeps the overlay short enough for a small window while the shortcuts Graft has fill only a
-// few columns.
-//
-export const SHORTCUT_COLUMN_ROW_COUNT_MAX = 8;
 
 //
 // Picks the actions from window.ziggy.listActions that have a shortcut, in the order Ziggy lists
@@ -59,19 +52,6 @@ export function matchingShortcuts(shortcuts: IShortcut[], searchText: string): I
         }
         return shortcut.keys.toLowerCase().includes(wanted);
     });
-}
-
-//
-// Splits the shortcuts into columns of at most SHORTCUT_COLUMN_ROW_COUNT_MAX each, in order, so the
-// overlay fills a column before it carries on in the next one. An empty list gives an empty list of
-// columns.
-//
-export function shortcutColumns(shortcuts: IShortcut[]): IShortcut[][] {
-    const columns: IShortcut[][] = [];
-    for (let start = 0; start < shortcuts.length; start += SHORTCUT_COLUMN_ROW_COUNT_MAX) {
-        columns.push(shortcuts.slice(start, start + SHORTCUT_COLUMN_ROW_COUNT_MAX));
-    }
-    return columns;
 }
 
 //

@@ -1,9 +1,9 @@
 //
 // Tests the diff line parser: parses diffs as git diff-tree writes them and checks each line's
-// kind, numbers and text.
+// kind, numbers and text, then splits the lines into hunks and checks each hunk's header and lines.
 //
 
-import { diffLine, parseDiffLines } from "../../lib/diff-lines";
+import { diffLine, parseDiffLines, splitDiffHunks } from "../../lib/diff-lines";
 
 describe("parseDiffLines", () => {
     test("reads git's header lines before the first hunk as header lines", () => {
@@ -43,5 +43,39 @@ describe("parseDiffLines", () => {
 
     test("reads an empty diff as no lines", () => {
         expect(parseDiffLines("")).toEqual([]);
+    });
+});
+
+describe("splitDiffHunks", () => {
+    test("puts git's header lines in a hunk with no header and each hunk's lines under its header", () => {
+        const lines = parseDiffLines("--- a/notes.txt\n+++ b/notes.txt\n@@ -1 +1 @@\n-a\n+b\n@@ -10,0 +11,1 @@\n+c\n\\ No newline at end of file\n");
+        expect(splitDiffHunks(lines)).toEqual([
+            {
+                header: undefined,
+                lines: [lines[0], lines[1]],
+            },
+            {
+                header: lines[2],
+                lines: [lines[3], lines[4]],
+            },
+            {
+                header: lines[5],
+                lines: [lines[6], lines[7]],
+            },
+        ]);
+    });
+
+    test("gives a hunk with no lines when its header is the last line", () => {
+        const lines = parseDiffLines("@@ -1 +1 @@\n");
+        expect(splitDiffHunks(lines)).toEqual([
+            {
+                header: lines[0],
+                lines: [],
+            },
+        ]);
+    });
+
+    test("gives no hunks for no lines", () => {
+        expect(splitDiffHunks([])).toEqual([]);
     });
 });

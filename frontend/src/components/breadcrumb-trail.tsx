@@ -3,7 +3,7 @@
 // plain text or a drop-down of the pages it can switch to.
 //
 
-import { faCheck, faChevronDown, faChevronRight, faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronRight, faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Breadcrumbs, InputAdornment, MenuItem, MenuList, Popover, TextField, Tooltip } from "@mui/material";
 import { JSX, useState } from "react";
@@ -65,7 +65,7 @@ export function TrailStep({ step, isLast, onNavigate }: ITrailStepProps): JSX.El
     }
     return (
         <Tooltip title={step.tooltip}>
-            <span data-id={step.dataId} className={isLast ? "text-[length:var(--text-md)] font-[var(--weight-bold)] text-[var(--color-text)]" : "text-[length:var(--text-md)] text-[var(--color-text-muted)]"}>
+            <span data-id={step.dataId} className={isLast ? "text-[length:var(--text-md)] font-[var(--weight-medium)] text-[var(--color-text)]" : "text-[length:var(--text-md)] text-[var(--color-text-muted)]"}>
                 {clipStepLabel(step.label)}
             </span>
         </Tooltip>
@@ -75,9 +75,10 @@ export function TrailStep({ step, isLast, onNavigate }: ITrailStepProps): JSX.El
 //
 // Shows a step as a drop-down button in the style guide's look, a bordered button with a down
 // chevron after its label, that opens a drop-down of the pages it can switch to, with a search box
-// that narrows them by name. The page being shown is ticked. Picking it only closes the
-// drop-down. Picking another page opens it. The search is cleared each time the drop-down closes,
-// so it opens on every page again.
+// that narrows them by name. The page being shown has the selected colour, as the style guide's
+// select list marks its chosen item. The drop-down sits a spacing step below the button. Picking
+// the page being shown only closes the drop-down. Picking another page opens it. The search is
+// cleared each time the drop-down closes, so it opens on every page again.
 //
 export function TrailStepMenu({ step, isLast, onNavigate }: ITrailStepProps): JSX.Element {
     const [anchor, setAnchor] = useState<HTMLElement | undefined>(undefined);
@@ -106,7 +107,7 @@ export function TrailStepMenu({ step, isLast, onNavigate }: ITrailStepProps): JS
                     aria-haspopup="menu"
                     aria-expanded={anchor !== undefined}
                     onClick={event => setAnchor(event.currentTarget)}
-                    className={`inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-md)] px-[var(--space-3)] py-[var(--space-1)] text-[length:var(--text-md)] leading-[var(--leading-normal)] shadow-[inset_0_0_0_1px_var(--color-border-control)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-[var(--color-hover)] hover:text-[var(--color-text)] hover:shadow-[inset_0_0_0_1px_var(--color-text-muted)] focus-visible:outline-solid focus-visible:outline-[length:var(--focus-ring-width)] focus-visible:outline-offset-[var(--focus-ring-offset)] focus-visible:outline-[var(--color-focus)] ${isLast ? "font-[var(--weight-bold)] text-[var(--color-text)]" : "text-[var(--color-text-muted)]"}`}
+                    className={`inline-flex items-center gap-[var(--space-2)] rounded-[var(--radius-md)] px-[var(--space-3)] py-[var(--space-1)] text-[length:var(--text-md)] leading-[var(--leading-normal)] shadow-[inset_0_0_0_1px_var(--color-border-control)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-[var(--color-hover)] hover:text-[var(--color-text)] hover:shadow-[inset_0_0_0_1px_var(--color-text-muted)] focus-visible:outline-solid focus-visible:outline-[length:var(--focus-ring-width)] focus-visible:outline-offset-[var(--focus-ring-offset)] focus-visible:outline-[var(--color-focus)] ${isLast ? "font-[var(--weight-medium)] text-[var(--color-text)]" : "text-[var(--color-text-muted)]"}`}
                 >
                     {clipStepLabel(step.label)}
                     <FontAwesomeIcon icon={faChevronDown} className={`text-[length:var(--icon-sm)] transition-transform duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${anchor !== undefined ? "rotate-180" : ""}`} />
@@ -123,7 +124,7 @@ export function TrailStepMenu({ step, isLast, onNavigate }: ITrailStepProps): JS
                 }}
                 slotProps={{
                     paper: {
-                        className: "mt-[var(--space-2)]",
+                        className: "mt-[var(--space-1)]",
                     },
                 }}
             >
@@ -152,10 +153,7 @@ export function TrailStepMenu({ step, isLast, onNavigate }: ITrailStepProps): JS
                     )}
                     <MenuList className="flex flex-col gap-[var(--space-1)] p-0">
                         {shownOptions.map(option => (
-                            <MenuItem key={option.dataId} data-id={option.dataId} selected={option.isSelected} onClick={() => choose(option)} className="gap-[var(--space-2)]">
-                                <span className="flex w-[var(--space-4)] justify-center text-[length:var(--icon-sm)] text-[var(--color-accent)]">
-                                    {option.isSelected && <FontAwesomeIcon icon={faCheck} />}
-                                </span>
+                            <MenuItem key={option.dataId} data-id={option.dataId} selected={option.isSelected} onClick={() => choose(option)}>
                                 {option.label}
                             </MenuItem>
                         ))}

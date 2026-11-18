@@ -1,8 +1,8 @@
 //
-// Tests the theme menu: renders it with each theme setting and checks the button shows the theme
-// in use, that a click opens the menu with its heading and a row for each setting with the one in
-// use ticked, and that choosing a row closes the menu and reports the setting unless it is already
-// in use.
+// Tests the theme menu: renders it with each theme setting and checks the button shows the theme in
+// use, that a click opens the menu with its heading and a row for each setting with the one in use
+// selected and that choosing a row closes the menu and reports the setting unless it is already in
+// use.
 //
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -71,11 +71,10 @@ describe("ThemeMenu", () => {
         ]);
     });
 
-    test("ticks the setting in use only", () => {
+    test("marks the setting in use only, with the selected colour and no tick", () => {
         renderThemeMenu("dark");
         openMenu();
-        expect(elementWithDataId("theme-option-dark-check")).not.toBeNull();
-        expect(document.querySelectorAll("[data-id$=\"-check\"]").length).toBe(1);
+        expect(document.querySelector("[data-id=\"theme-menu\"] svg[data-icon=\"check\"]")).toBeNull();
         expect(elementWithDataId("theme-option-dark")?.classList.contains("Mui-selected")).toBe(true);
         expect(elementWithDataId("theme-option-light")?.classList.contains("Mui-selected")).toBe(false);
     });
