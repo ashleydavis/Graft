@@ -17,30 +17,29 @@ export interface IDateFormatOptions {
 }
 
 //
-// Formats the day of the date in the locale's short numeric form ("1/3/2026" in en-US), for the
-// commit pane, where each row has room for the day only.
+// Formats the day of the date as its day and short month name ("Jan 3" in en-US), for the commit
+// pane, where each row has room for the day only, as the style guide's commit list shows it.
 //
 export function formatDate(date: Date, options: IDateFormatOptions): string {
     return date.toLocaleDateString(options.locale, {
         timeZone: options.timeZone,
-        year: "numeric",
-        month: "numeric",
+        month: "short",
         day: "numeric",
     });
 }
 
 //
-// Formats the date with its time to the second ("1/3/2026, 9:00:00 AM" in en-US), for the commit
-// details pane, which shows when a commit was written and made.
+// Formats the date with its time to the minute ("Jan 3, 2026, 9:00 AM" in en-US), for the commit
+// details pane, which shows when a commit was written and made, as the style guide's commit details
+// show it.
 //
 export function formatDateTime(date: Date, options: IDateFormatOptions): string {
     return date.toLocaleString(options.locale, {
         timeZone: options.timeZone,
         year: "numeric",
-        month: "numeric",
+        month: "short",
         day: "numeric",
         hour: "numeric",
         minute: "2-digit",
-        second: "2-digit",
     });
 }

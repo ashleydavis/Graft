@@ -106,7 +106,7 @@ describe("RepoProvider", () => {
         });
         window.removeEventListener("error", recordError);
         consoleError.mockRestore();
-        expect(String(errors[0])).toBe("Error: openRepo was given an empty path, so there is no folder to open. Pass the path of the folder the user chose.");
+        expect(String(errors[0])).toBe("Error: openRepo was given an empty path, so there is no directory to open. Pass the path of the directory the user chose.");
     });
 });
 

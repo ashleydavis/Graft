@@ -42,7 +42,7 @@ export function RepoProvider({ initialRepoPath, children }: IRepoProviderProps):
 
     function openRepo(newRepoPath: string): void {
         if (newRepoPath.length === 0) {
-            throw new Error("openRepo was given an empty path, so there is no folder to open. Pass the path of the folder the user chose.");
+            throw new Error("openRepo was given an empty path, so there is no directory to open. Pass the path of the directory the user chose.");
         }
         setRepoPath(newRepoPath);
     }

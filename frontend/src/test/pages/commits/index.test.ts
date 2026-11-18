@@ -19,6 +19,8 @@ import { RepoProvider, useRepo } from "../../../components/repo-context";
 import { ICommit } from "../../../lib/commits";
 import { formatDate, formatDateTime } from "../../../lib/date-format";
 import { CommitsPage, scrollLastPaneIntoView } from "../../../pages/commits";
+import { activePaneClasses } from "../../../pages/commits/components/active-pane-style";
+import { openRowClasses } from "../../../pages/commits/components/commit-list";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../../fake-ziggy";
 
 //
@@ -270,12 +272,12 @@ function isSelected(dataId: string): boolean {
 }
 
 //
-// Returns the data-ids of the open panes whose border is in the theme's primary colour, MaterialUI's
-// default #1976d2, so a test reads which pane is active.
+// Returns the data-ids of the open panes whose border is in the style guide's active pane colour,
+// graft.css's --color-select-pane, so a test reads which pane is active.
 //
 function activePaneIds(): (string | null)[] {
     return Array.from(elementWithDataId("commit-columns").children)
-        .filter(pane => pane instanceof HTMLElement && pane.style.borderColor === "#1976d2")
+        .filter(pane => pane instanceof HTMLElement && pane.className.includes(activePaneClasses))
         .map(pane => pane.getAttribute("data-id"));
 }
 
@@ -284,7 +286,7 @@ describe("CommitsPage", () => {
         const ziggy = installFakeTaskZiggy();
         renderCommitsPage(undefined);
         expect((await screen.findByText(/No repo is open/)).getAttribute("data-id")).toBe("commits-no-repo");
-        expect(screen.getByText("Commits").getAttribute("data-id")).toBe("commits-heading");
+        expect(elementWithDataId("commits-heading").textContent).toBe("Commits");
         expect(ziggy.addTask).not.toHaveBeenCalled();
     });
 
@@ -308,7 +310,7 @@ describe("CommitsPage", () => {
         const ziggy = installFakeTaskZiggy();
         renderCommitsPage("/repo");
         expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
-        expect(screen.getByText("Commits").getAttribute("data-id")).toBe("commits-heading");
+        expect(elementWithDataId("commits-heading").textContent).toBe("Commits");
         expect(screen.getByText("About").getAttribute("data-id")).toBe("commits-about-link");
         expect(screen.getByText("About").getAttribute("href")).toBe("/about");
         const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[0][0];
@@ -345,7 +347,7 @@ describe("CommitsPage", () => {
             inputs: null,
         });
         expect((await screen.findByText("The first commit")).closest("li")?.getAttribute("data-id")).toBe(`commit-${commit.hash}`);
-        expect(elementWithDataId(`commit-${commit.hash}`).textContent).toBe(`The first commitHEAD -> mainAda Author${formatDate(commit.authorDate, Intl.DateTimeFormat().resolvedOptions())}1111111`);
+        expect(elementWithDataId(`commit-${commit.hash}`).textContent).toBe(`The first commitmainAda Author${formatDate(commit.authorDate, Intl.DateTimeFormat().resolvedOptions())}1111111`);
     });
 
     test("says why the commits could not be read when the task failed", async () => {
@@ -369,7 +371,7 @@ describe("CommitsPage", () => {
         expect(task.taskType).toBe("commit-details");
         const paneIds = Array.from(elementWithDataId("commit-columns").children).map(pane => pane.getAttribute("data-id"));
         expect(paneIds).toEqual(["commit-pane", "commit-details-pane"]);
-        expect(elementWithDataId(`commit-${commitJson.hash}`).className).toContain("font-bold");
+        expect(elementWithDataId(`commit-${commitJson.hash}`).className).toContain(openRowClasses);
         expect(elementWithDataId(`commit-${commitJson.hash}`).className).toContain("Mui-selected");
         expect(elementWithDataId("commit-details-author").textContent).toContain(formatDateTime(commit.authorDate, Intl.DateTimeFormat().resolvedOptions()));
     });
@@ -388,7 +390,7 @@ describe("CommitsPage", () => {
         completeTaskAt(ziggy, 2, {
             diff: "+# Test repo\n",
         });
-        expect(screen.getByText(/# Test repo/).getAttribute("data-id")).toBe("file-diff");
+        expect(elementWithDataId("file-diff").textContent).toContain("# Test repo");
         const paneIds = Array.from(elementWithDataId("commit-columns").children).map(pane => pane.getAttribute("data-id"));
         expect(paneIds).toEqual(["commit-pane", "commit-details-pane", "file-pane"]);
         expect(elementWithDataId("changed-file-README.md").className).toContain("Mui-selected");

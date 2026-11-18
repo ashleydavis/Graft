@@ -7,6 +7,8 @@
       "dependencies": {
         "@emotion/react": "11.14.0",
         "@emotion/styled": "11.14.1",
+        "@fontsource/mona-sans": "5.3.0",
+        "@fontsource/monaspace-neon": "5.3.0",
         "@fortawesome/fontawesome-svg-core": "7.3.1",
         "@fortawesome/free-solid-svg-icons": "7.3.1",
         "@fortawesome/react-fontawesome": "3.5.0",
@@ -15,7 +17,7 @@
         "react": "19.3.1",
         "react-dom": "19.3.1",
         "tailwindcss": "4.3.3",
-        "ziggy": "git+https://github.com/ashleydavis/ziggy.git#v0.0.30",
+        "ziggy": "git+https://github.com/ashleydavis/ziggy.git#v0.0.31",
       },
       "devDependencies": {
         "@tailwindcss/vite": "4.3.3",
@@ -30,7 +32,7 @@
         "ts-jest": "^29.0.5",
         "typescript": "^5.3.3",
         "vite": "^5.1.6",
-        "ziggy-remote-control-server": "git+https://github.com/ashleydavis/ziggy.git#v0.0.30",
+        "ziggy-remote-control-server": "git+https://github.com/ashleydavis/ziggy.git#v0.0.31",
       },
     },
   },
@@ -178,6 +180,10 @@
     "@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.21.5", "", { "os": "win32", "cpu": "ia32" }, "sha512-SWXFF1CL2RVNMaVs+BBClwtfZSvDgtL//G/smwAc5oVK/UPu2Gu9tIaRgFmYFFKrmg3SyAjSrElf0TiJ1v8fYA=="],
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.21.5", "", { "os": "win32", "cpu": "x64" }, "sha512-tQd/1efJuzPC6rCFwEvLtci/xNFcTZknmXs98FYDfGE4wP9ClFV98nyKrzJKVPMhdDnjzLhdUyMX4PsQAPjwIw=="],
+
+    "@fontsource/mona-sans": ["@fontsource/mona-sans@5.3.0", "", {}, "sha512-+K4yLnbbtNfYuR1Znpq9kWEJUYD1W0yQ5DhWde93lC3O8VHXtydoM0bHZBvO6DofIYEXgZlZU14A9yFClisL+g=="],
+
+    "@fontsource/monaspace-neon": ["@fontsource/monaspace-neon@5.3.0", "", {}, "sha512-a4B4L4nmW+mW42gDb6JUugy2fA3DC0QKi2yRMXKzuNsN+wHhUvrqgYndIBMds+Evq/cWaMJgd06x14dHuBNxwA=="],
 
     "@fortawesome/fontawesome-common-types": ["@fortawesome/fontawesome-common-types@7.3.1", "", {}, "sha512-k0C0sdHmZtAo6dRDtd1Z/qcpyHbL0CKsjV8seMY/21xGhY5Wsv0XRmiI/xEEH4y2c9b1+jvgNs/3EqhV27yUEA=="],
 
@@ -1101,9 +1107,9 @@
 
     "yocto-queue": ["yocto-queue@0.1.0", "", {}, "sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q=="],
 
-    "ziggy": ["ziggy-monorepo@github:ashleydavis/ziggy#252dee9", { "dependencies": { "express": "5.3.0", "ws": "8.22.0" }, "bin": { "ziggy-remote-control-server": "tools/remote-control-server/src/index.ts" } }, "ashleydavis-ziggy-252dee9", "sha512-16MSZmszzGk1aZzvKYkZrBF3oFjN2pjPYKBY6qVBRnyoR5YM6JO26sXkuyZM3vuTfSSBi9t5EMDSh5SbHlx/uQ=="],
+    "ziggy": ["ziggy-monorepo@github:ashleydavis/ziggy#0d22a35", { "dependencies": { "express": "5.3.0", "ws": "8.22.0" }, "bin": { "ziggy-remote-control-server": "tools/remote-control-server/src/index.ts" } }, "ashleydavis-ziggy-0d22a35", "sha512-AUmWwQjVbm0SFpAH6VlxC3wYyQ1Vu4C1r2jlry75eX14KUd1dD7N3F96D2I8Ze8sYccHUJGN46njMZwY6tuLFA=="],
 
-    "ziggy-remote-control-server": ["ziggy-monorepo@github:ashleydavis/ziggy#252dee9", { "dependencies": { "express": "5.3.0", "ws": "8.22.0" }, "bin": { "ziggy-remote-control-server": "tools/remote-control-server/src/index.ts" } }, "ashleydavis-ziggy-252dee9", "sha512-16MSZmszzGk1aZzvKYkZrBF3oFjN2pjPYKBY6qVBRnyoR5YM6JO26sXkuyZM3vuTfSSBi9t5EMDSh5SbHlx/uQ=="],
+    "ziggy-remote-control-server": ["ziggy-monorepo@github:ashleydavis/ziggy#0d22a35", { "dependencies": { "express": "5.3.0", "ws": "8.22.0" }, "bin": { "ziggy-remote-control-server": "tools/remote-control-server/src/index.ts" } }, "ashleydavis-ziggy-0d22a35", "sha512-AUmWwQjVbm0SFpAH6VlxC3wYyQ1Vu4C1r2jlry75eX14KUd1dD7N3F96D2I8Ze8sYccHUJGN46njMZwY6tuLFA=="],
 
     "@babel/core/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 

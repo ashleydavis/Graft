@@ -172,7 +172,7 @@ fn read_changed_files_git(
             .stdout = result.stdout,
             .stderr = result.stderr,
         });
-        services.log.@"error"(
+        services.log.err(
             "git diff-tree exited with an error, so the changed files could not be read.",
         );
         return error.GitDiffTreeFailed;
@@ -227,7 +227,7 @@ pub fn read_file_diff(
             .stdout = result.stdout,
             .stderr = result.stderr,
         });
-        services.log.@"error"(
+        services.log.err(
             "git diff-tree exited with an error, so the file's diff could not be read.",
         );
         return error.GitDiffTreeFailed;

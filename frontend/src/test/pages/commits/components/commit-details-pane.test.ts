@@ -1,19 +1,23 @@
 //
 // Tests the commit details pane: renders it with a fake window.ziggy made of Jest mocks and checks that
 // it queues the commit details task for the commit, shows that it is loading, then shows the
-// commit's full message, author, committer, dates, parents and changed files with their change type
-// and line counts, or shows why they could not be read, and that clicking a file or the close
-// button reports it. It checks each changed file is a MaterialUI ListItemButton with the selected
-// file's set as selected, that the pane reports the paths it read and that its border is in the
-// theme's primary colour while it is active. It also checks the text of the parents and the colour
-// of each change type.
+// commit's full message, author, committer, dates, parents and changed files, with each file's
+// change type and line counts in its tooltip, or shows why they could not be read, and that
+// clicking a file or the close button reports it. It checks each changed file is a MaterialUI
+// ListItemButton with the selected file's set as selected and the open file's marked open, that the
+// pane reports the paths it read and that its border is in the style guide's active pane colour
+// while it is active. It also checks the parents' label and text, the colour, name and meaning of
+// each change type and the text of the line counts.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { IChangedFile } from "../../../../lib/commit-details";
 import { createElement } from "react";
 import type { IAddTask, ITaskCompletedEvent } from "ziggy";
 import { ICommitJson } from "../../../../lib/commits";
-import { CommitDetailsPane, parentsText, statusColorClass } from "../../../../pages/commits/components/commit-details-pane";
+import { activePaneClasses } from "../../../../pages/commits/components/active-pane-style";
+import { CommitDetailsPane, FileTip, lineCountsText, parentsLabel, parentsText, statusColorClass, statusTip } from "../../../../pages/commits/components/commit-details-pane";
+import { openRowClasses } from "../../../../pages/commits/components/commit-list";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../../../fake-ziggy";
 
 //
@@ -114,14 +118,15 @@ function mergeResult(): ITaskCompletedEvent["result"] {
 }
 
 //
-// Renders the pane for the commit with the selected file, active or not, with the callbacks, in
-// en-US and UTC.
+// Renders the pane for the commit with the selected file, the file whose diff is open the same one,
+// active or not, with the callbacks, in en-US and UTC.
 //
 function renderPane(selectedPath: string | undefined, onSelectFile: jest.Mock, onClose: jest.Mock, isActive: boolean, onReadFiles: jest.Mock): void {
     render(createElement(CommitDetailsPane, {
         repoPath: "/repo",
         hash: commitHash,
         selectedPath,
+        openPath: selectedPath,
         isActive,
         dateFormat: {
             locale: "en-US",
@@ -161,7 +166,7 @@ describe("CommitDetailsPane", () => {
         const ziggy = installFakeTaskZiggy();
         renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
         expect(screen.getByText("Loading the commit.").getAttribute("data-id")).toBe("commit-details-loading");
-        expect(screen.getByText("Commit").getAttribute("data-id")).toBe("commit-details-heading");
+        expect(elementWithDataId("commit-details-heading").textContent).toBe("Commit1111111");
         const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[0][0];
         expect(task.taskType).toBe("commit-details");
         expect(task.data).toEqual({
@@ -176,10 +181,11 @@ describe("CommitDetailsPane", () => {
         completeTask(ziggy, succeededResult(["2222222222222222222222222222222222222222"], "The note now says\nwhat the second note is."));
         expect(elementWithDataId("commit-details-title").textContent).toBe("Change the note");
         expect(elementWithDataId("commit-details-description").textContent).toBe("The note now says\nwhat the second note is.");
-        expect(plainSpaces(elementWithDataId("commit-details-author").textContent)).toBe("Authored by Ada Author <ada@example.com> on 1/3/2026, 9:00:00 AM");
-        expect(plainSpaces(elementWithDataId("commit-details-committer").textContent)).toBe("Committed by Cy Committer <cy@example.com> on 1/3/2026, 9:00:01 AM");
+        expect(plainSpaces(elementWithDataId("commit-details-author").textContent)).toBe("Ada Author <ada@example.com>Jan 3, 2026, 9:00 AM");
+        expect(plainSpaces(elementWithDataId("commit-details-committer").textContent)).toBe("Cy Committer <cy@example.com>Jan 3, 2026, 9:00 AM");
         expect(elementWithDataId("commit-details-hash").textContent).toBe(commitHash);
-        expect(elementWithDataId("commit-details-parents").textContent).toBe("Parent: 2222222");
+        expect(elementWithDataId("commit-details-parents").textContent).toBe("2222222");
+        expect(elementWithDataId("commit-details-parents").previousElementSibling?.textContent).toBe("Parent");
     });
 
     test("shows no description when the message is only a title", () => {
@@ -187,17 +193,19 @@ describe("CommitDetailsPane", () => {
         renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
         completeTask(ziggy, succeededResult([], ""));
         expect(document.querySelector("[data-id=\"commit-details-description\"]")).toBeNull();
-        expect(elementWithDataId("commit-details-parents").textContent).toBe("Parents: none");
+        expect(elementWithDataId("commit-details-parents").textContent).toBe("None, this is the first commit");
+        expect(elementWithDataId("commit-details-parents").previousElementSibling?.textContent).toBe("Parents");
     });
 
-    test("lists the changed files with their change type and line counts, or binary", () => {
+    test("lists the changed files by their icon and path", () => {
         const ziggy = installFakeTaskZiggy();
         renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
         completeTask(ziggy, succeededResult([], ""));
         expect(screen.getByText("Files changed (3)").getAttribute("data-id")).toBe("changed-files-heading");
-        expect(elementWithDataId("changed-file-notes.txt").textContent).toBe("Mnotes.txt+1 -2");
-        expect(elementWithDataId("changed-file-docs/new.md").textContent).toBe("Adocs/new.md+12 -0");
-        expect(elementWithDataId("changed-file-logo.png").textContent).toBe("Dlogo.pngbinary");
+        expect(elementWithDataId("changed-file-notes.txt").textContent).toBe("notes.txt");
+        expect(elementWithDataId("changed-file-docs/new.md").textContent).toBe("docs/new.md");
+        expect(elementWithDataId("changed-file-logo.png").textContent).toBe("logo.png");
+        expect(elementWithDataId("changed-file-notes.txt").querySelector("svg")?.getAttribute("data-icon")).toBe("file-lines");
         expect(document.querySelector("[data-id=\"changed-files-none\"]")).toBeNull();
     });
 
@@ -207,15 +215,18 @@ describe("CommitDetailsPane", () => {
         completeTask(ziggy, mergeResult());
         expect(screen.getByText("Files changed (0)")).toBeTruthy();
         expect(elementWithDataId("changed-files-none").textContent).toBe("No files changed in this commit.");
-        expect(elementWithDataId("commit-details-parents").textContent).toBe("Parents: 2222222, 3333333");
+        expect(elementWithDataId("commit-details-parents").textContent).toBe("2222222  3333333");
     });
 
-    test("shows the selected changed file with MaterialUI's selection styling", () => {
+    test("shows the selected changed file as selected and the open one with the open bar", () => {
         const ziggy = installFakeTaskZiggy();
         renderPane("notes.txt", jest.fn(), jest.fn(), false, jest.fn());
         completeTask(ziggy, succeededResult([], ""));
         expect(elementWithDataId("changed-file-notes.txt").className).toContain("Mui-selected");
+        expect(elementWithDataId("changed-file-notes.txt").className).toContain(openRowClasses);
+        expect(elementWithDataId("changed-file-notes.txt").getAttribute("aria-current")).toBe("true");
         expect(elementWithDataId("changed-file-logo.png").className).not.toContain("Mui-selected");
+        expect(elementWithDataId("changed-file-logo.png").className).not.toContain(openRowClasses);
     });
 
     test("draws each changed file as a MaterialUI ListItemButton in a list item", () => {
@@ -236,16 +247,16 @@ describe("CommitDetailsPane", () => {
         expect(onReadFiles).toHaveBeenCalledWith(["notes.txt", "docs/new.md", "logo.png"]);
     });
 
-    test("draws its border in the theme's primary colour while it is active", () => {
+    test("draws its border in the style guide's active pane colour while it is active", () => {
         installFakeTaskZiggy();
         renderPane(undefined, jest.fn(), jest.fn(), true, jest.fn());
-        expect(document.querySelector<HTMLElement>("[data-id=\"commit-details-pane\"]")?.style.borderColor).toBe("#1976d2");
+        expect(document.querySelector<HTMLElement>("[data-id=\"commit-details-pane\"]")?.className).toContain(activePaneClasses);
     });
 
     test("keeps its grey border while it is not active", () => {
         installFakeTaskZiggy();
         renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
-        expect(document.querySelector<HTMLElement>("[data-id=\"commit-details-pane\"]")?.style.borderColor).toBe("");
+        expect(document.querySelector<HTMLElement>("[data-id=\"commit-details-pane\"]")?.className).not.toContain(activePaneClasses);
     });
 
     test("reports the path of the changed file the user clicks", () => {
@@ -279,19 +290,71 @@ describe("CommitDetailsPane", () => {
     });
 });
 
+describe("parentsLabel", () => {
+    test("labels one parent Parent and none or several Parents", () => {
+        expect(parentsLabel([])).toBe("Parents");
+        expect(parentsLabel(["2222222222222222222222222222222222222222"])).toBe("Parent");
+        expect(parentsLabel(["2222222222222222222222222222222222222222", "3333333333333333333333333333333333333333"])).toBe("Parents");
+    });
+});
+
 describe("parentsText", () => {
-    test("writes no parents as none, one as Parent and several as Parents, each as its short hash", () => {
-        expect(parentsText([])).toBe("Parents: none");
-        expect(parentsText(["2222222222222222222222222222222222222222"])).toBe("Parent: 2222222");
-        expect(parentsText(["2222222222222222222222222222222222222222", "3333333333333333333333333333333333333333"])).toBe("Parents: 2222222, 3333333");
+    test("writes each parent as its short hash, two spaces apart", () => {
+        expect(parentsText(["2222222222222222222222222222222222222222"])).toBe("2222222");
+        expect(parentsText(["2222222222222222222222222222222222222222", "3333333333333333333333333333333333333333"])).toBe("2222222  3333333");
     });
 });
 
 describe("statusColorClass", () => {
-    test("colours added green, deleted red and every other change orange", () => {
-        expect(statusColorClass("A")).toContain("text-green-600");
-        expect(statusColorClass("D")).toContain("text-red-600");
-        expect(statusColorClass("M")).toContain("text-orange-600");
-        expect(statusColorClass("T")).toContain("text-orange-600");
+    test("colours added in the success colour, deleted in the danger colour and every other change in the warning colour", () => {
+        expect(statusColorClass("A")).toBe("text-[var(--color-success)]");
+        expect(statusColorClass("D")).toBe("text-[var(--color-danger)]");
+        expect(statusColorClass("M")).toBe("text-[var(--color-warning)]");
+        expect(statusColorClass("T")).toBe("text-[var(--color-warning)]");
+    });
+});
+
+describe("statusTip", () => {
+    test("names each change type and says what it means, any other letter as modified", () => {
+        expect(statusTip("A").title).toBe("Added");
+        expect(statusTip("D").title).toBe("Deleted");
+        expect(statusTip("T").title).toBe("Type changed");
+        expect(statusTip("M")).toEqual({
+            title: "Modified",
+            detail: "The file's lines changed.",
+        });
+    });
+});
+
+//
+// A modified text file, for the line counts and the tooltip.
+//
+const modifiedFile: IChangedFile = {
+    status: "M",
+    path: "docs/notes.txt",
+    linesAdded: 9,
+    linesDeleted: 2,
+    isBinary: false,
+};
+
+describe("lineCountsText", () => {
+    test("writes the lines added and deleted, or that the file is binary", () => {
+        expect(lineCountsText(modifiedFile)).toBe("+9 −2");
+        expect(lineCountsText({
+            ...modifiedFile,
+            linesAdded: 0,
+            linesDeleted: 0,
+            isBinary: true,
+        })).toBe("Binary file");
+    });
+});
+
+describe("FileTip", () => {
+    test("shows the change type in its colour, its name, the line counts, what it means and the path", () => {
+        const { container } = render(createElement(FileTip, {
+            file: modifiedFile,
+        }));
+        expect(container.textContent).toBe("MModified+9 −2The file's lines changed.Pathdocs/notes.txt");
+        expect(screen.getByText("M").className).toContain("text-[var(--color-warning)]");
     });
 });

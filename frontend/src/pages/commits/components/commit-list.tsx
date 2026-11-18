@@ -3,7 +3,9 @@
 // place while they load or when they could not be read.
 //
 
-import { Chip, List, ListItemButton } from "@mui/material";
+import { faCloud, faCodeBranch, faTag, IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Chip, List, ListItemButton, Tooltip } from "@mui/material";
 import { JSX } from "react";
 import { ICommit } from "../../../lib/commits";
 import { formatDate, IDateFormatOptions } from "../../../lib/date-format";
@@ -22,8 +24,8 @@ export interface ICommitListProps {
     // The hash of the selected commit, which the list shows as selected, or undefined.
     selectedHash: string | undefined;
 
-    // The hash of the commit whose details are open, whose title the list makes bold, or
-    // undefined.
+    // The hash of the commit whose details are open, whose row the list marks with a bar at its
+    // left edge and a bold title, or undefined.
     openHash: string | undefined;
 
     // The locale and time zone each commit's date is shown in.
@@ -34,20 +36,49 @@ export interface ICommitListProps {
 }
 
 //
+// The Tailwind classes of the bar a row draws at its left edge while what it stands for is open in
+// the pane to its right, in the colour of a selection, as the style guide marks an open row.
+//
+export const openRowClasses = "shadow-[inset_2px_0_0_var(--color-select-item)]";
+
+//
+// Picks the Tailwind classes of a row's left edge: the open bar for an open row and no shadow for
+// any other, so the commit list and the changed files mark the open row the same way.
+//
+export function openRowClass(isOpen: boolean): string {
+    if (isOpen) {
+        return openRowClasses;
+    }
+    return "shadow-none";
+}
+
+//
+// Picks the Tailwind class of the commit title's weight: bold for the open commit, normal for the
+// rest.
+//
+export function titleWeightClass(isOpen: boolean): string {
+    if (isOpen) {
+        return "font-[var(--weight-bold)]";
+    }
+    return "font-[var(--weight-normal)]";
+}
+
+//
 // Lists the commits, one row each with its title, refs, author, date and short hash, or shows that
 // the commits are loading or why they could not be read. Each row is a MaterialUI ListItemButton,
-// so the selected commit shows MaterialUI's own selection styling, and the open commit's title is
-// bold, as in the Graft UI mockup. Clicking a commit reports its hash.
+// so the selected commit shows the selected background, and the open commit's row has a bar at its
+// left edge and a bold title, as in the style guide's commit list. The refs keep a column of their
+// own, so the author, date and hash line up from row to row. Clicking a commit reports its hash.
 //
 export function CommitList({ commits, error, selectedHash, openHash, dateFormat, onSelectCommit }: ICommitListProps): JSX.Element {
     if (error !== undefined) {
-        return <p data-id="commits-error" className="p-4 text-red-700 dark:text-red-400">{error}</p>;
+        return <p data-id="commits-error" className="m-3 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[var(--color-text)]">{error}</p>;
     }
     if (commits === undefined) {
-        return <p data-id="commits-loading" className="p-4 text-gray-500 dark:text-gray-400">Loading the commits.</p>;
+        return <p data-id="commits-loading" className="px-4 py-2 text-[length:var(--text-sm)] text-[var(--color-text-muted)]">Loading the commits.</p>;
     }
     return (
-        <List data-id="commit-list" disablePadding={true}>
+        <List data-id="commit-list" disablePadding={true} className="py-2">
             {commits.map(commit => {
                 const isOpen = commit.hash === openHash;
                 return (
@@ -56,14 +87,19 @@ export function CommitList({ commits, error, selectedHash, openHash, dateFormat,
                         component="li"
                         data-id={`commit-${commit.hash}`}
                         selected={commit.hash === selectedHash}
+                        aria-current={isOpen ? "true" : undefined}
                         onClick={() => onSelectCommit(commit.hash)}
-                        className={`flex h-[38px] items-center gap-2 px-4 ${isOpen ? "font-bold" : ""}`}
+                        className={`flex min-h-[calc(var(--space-8)+var(--space-1))] items-center gap-3 rounded-none px-3 py-0 ${openRowClass(isOpen)}`}
                     >
-                        <span title={commit.title} className="min-w-0 flex-1 truncate text-sm">{commit.title}</span>
-                        {commit.refs.map(ref => <RefChip key={ref} gitRef={ref} />)}
-                        <span className="w-28 flex-none truncate text-right text-xs font-normal text-gray-500 dark:text-gray-400">{commit.authorName}</span>
-                        <span className="w-20 flex-none text-right text-xs font-normal text-gray-500 dark:text-gray-400">{formatDate(commit.authorDate, dateFormat)}</span>
-                        <code className="w-14 flex-none font-mono text-xs font-normal text-gray-500 dark:text-gray-400">{commit.hash.slice(0, 7)}</code>
+                        <Tooltip title={commit.title} enterDelay={500}>
+                            <span className={`min-w-0 flex-1 truncate text-[var(--color-text)] ${titleWeightClass(isOpen)}`}>{commit.title}</span>
+                        </Tooltip>
+                        <span className="flex min-w-[calc(var(--space-8)*5)] flex-none items-center gap-1">
+                            {commit.refs.map(ref => <RefBadge key={ref} gitRef={ref} />)}
+                        </span>
+                        <span className="w-[80px] flex-none truncate text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{commit.authorName}</span>
+                        <span className="w-[52px] flex-none text-right text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{formatDate(commit.authorDate, dateFormat)}</span>
+                        <code className="flex-none font-[family-name:var(--font-mono)] text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{commit.hash.slice(0, 7)}</code>
                     </ListItemButton>
                 );
             })}
@@ -72,24 +108,75 @@ export function CommitList({ commits, error, selectedHash, openHash, dateFormat,
 }
 
 //
-// What a ref chip shows: one ref as git names it.
+// The kinds of ref a badge marks, one Chip variant each.
 //
-export interface IRefChipProps {
+export type RefBadgeKind = "current" | "branch" | "remote" | "tag";
+
+//
+// The kind of a ref and the name its badge shows.
+//
+export interface IRefBadge {
+    // The kind of ref, which picks the badge's look and icon.
+    kind: RefBadgeKind;
+
+    // The name the badge shows, as in "main" or "v1.0".
+    name: string;
+}
+
+//
+// The icon of each kind of ref, as the style guide's badges have them.
+//
+export const refIcons: Record<RefBadgeKind, IconDefinition> = {
+    current: faCodeBranch,
+    branch: faCodeBranch,
+    remote: faCloud,
+    tag: faTag,
+};
+
+//
+// Works out the kind and name of a ref as git log's %D names it: "HEAD -> main" is the checked-out
+// branch, shown as "main", "tag: v1" a tag shown without its prefix, a name under origin/ a remote
+// branch and any other name a local branch, as the style guide's commit list reads them.
+//
+export function refBadge(gitRef: string): IRefBadge {
+    if (gitRef.startsWith("HEAD -> ")) {
+        return {
+            kind: "current",
+            name: gitRef.slice("HEAD -> ".length),
+        };
+    }
+    if (gitRef.startsWith("tag: ")) {
+        return {
+            kind: "tag",
+            name: gitRef.slice("tag: ".length),
+        };
+    }
+    if (gitRef.startsWith("origin/")) {
+        return {
+            kind: "remote",
+            name: gitRef,
+        };
+    }
+    return {
+        kind: "branch",
+        name: gitRef,
+    };
+}
+
+//
+// What a ref badge shows: one ref as git names it.
+//
+export interface IRefBadgeProps {
     // The ref as git log's %D names it: "HEAD -> main", "tag: v1.0" or a branch such as "main".
     gitRef: string;
 }
 
 //
-// Shows one ref as a small chip, coloured as the Graft UI mockup colours them: HEAD filled in the
-// primary colour, a tag outlined in orange with its "tag: " prefix left off and any other branch
-// outlined in grey.
+// Shows one ref as a badge in the style guide's ref badge look (graft-theme.ts's Chip variants):
+// the checked-out branch filled in the accent colour, every other ref outlined in the colour of its
+// kind, each with its kind's icon before its name.
 //
-export function RefChip({ gitRef }: IRefChipProps): JSX.Element {
-    if (gitRef.startsWith("HEAD")) {
-        return <Chip size="small" label={gitRef} color="primary" variant="filled" />;
-    }
-    if (gitRef.startsWith("tag: ")) {
-        return <Chip size="small" label={gitRef.slice("tag: ".length)} color="warning" variant="outlined" />;
-    }
-    return <Chip size="small" label={gitRef} color="default" variant="outlined" />;
+export function RefBadge({ gitRef }: IRefBadgeProps): JSX.Element {
+    const badge = refBadge(gitRef);
+    return <Chip variant={badge.kind} icon={<FontAwesomeIcon icon={refIcons[badge.kind]} />} label={badge.name} />;
 }
