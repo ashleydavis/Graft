@@ -111,6 +111,14 @@ jobs:
         shell: bash
         run: bun run build:windows --prefix "$(cygpath -m "$PWD")/splash-build"
 
+      # The runner's screen is 1024x768, smaller than Graft's window, whose title bar and menu bar were then above the top of the
+      # screen and out of the recording. At 1920x1080 the whole window is on screen.
+      - name: Set the screen to 1920x1080 (Windows)
+        shell: pwsh
+        run: |
+          Set-DisplayResolution -Width 1920 -Height 1080 -Force
+          Get-DisplayResolution
+
       - name: Record the splash
         shell: bash
         run: bash scripts/record-splash.sh --platform windows --app "$PWD/splash-build/graft/graft.exe" --output "$PWD/splash-videos/graft-windows.mp4"
