@@ -92,8 +92,8 @@ export function startApp(rootElement: HTMLElement): void {
 export function showSplashScreen(page: IDocumentLike | Document): void {
     const splash = installSplashScreen(page, {
         background: splashBackground,
-        minimumDisplayMilliseconds: 2000,
-        fadeDurationMilliseconds: 2000,
+        minimumDisplayMilliseconds: 1000,
+        fadeDurationMilliseconds: 1000,
         // The native app fades the splash colour over its menu bar with the overlay.
         onFadeStart: durationMilliseconds => window.ziggy.splashFading(durationMilliseconds),
     });

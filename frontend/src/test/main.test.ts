@@ -305,13 +305,13 @@ describe("showSplashScreen", () => {
         onEvent({
             type: "frontend-visible",
         });
-        jest.advanceTimersByTime(1900);
+        jest.advanceTimersByTime(900);
         expect(overlay.isConnected).toBe(true);
         jest.advanceTimersByTime(200);
         expect(overlay.isConnected).toBe(false);
     });
 
-    test("holds the splash for two seconds after it goes up, then fades it out over two seconds", () => {
+    test("holds the splash for one second after it goes up, then fades it out over one second", () => {
         jest.useFakeTimers();
         installSplashZiggy();
         showSplashScreen(document);
@@ -321,9 +321,9 @@ describe("showSplashScreen", () => {
         onEvent({
             type: "frontend-visible",
         });
-        jest.advanceTimersByTime(1999);
+        jest.advanceTimersByTime(999);
         expect(overlay.style.opacity).toBe("");
-        jest.advanceTimersByTime(1900);
+        jest.advanceTimersByTime(900);
         expect(overlay.isConnected).toBe(true);
         jest.advanceTimersByTime(200);
         expect(overlay.isConnected).toBe(false);
