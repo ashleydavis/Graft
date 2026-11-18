@@ -18,7 +18,7 @@ What it needs and does on each platform:
 - **Linux**: `Xvfb` and `ffmpeg`. Records a display of its own, 1280x1000, with `ffmpeg`'s x11grab, and starts the app on it with
   `ZIGGY_THEME=dark` unless `ZIGGY_THEME` is already set.
 - **Windows**: `ffmpeg`. Records the whole desktop with `ffmpeg`'s gdigrab.
-- **macOS**: records the main display with `screencapture`, which needs the screen recording permission.
+- **macOS**: records the main display with `screencapture`, which needs the screen recording permission. If `screencapture` is still recording a minute after its time is up, the script prints the running processes and any crash reports and fails.
 - **iOS**: `xcrun` and `jq`. Installs the app on the simulator `ZIGGY_IOS_SIMULATOR` names, else one already booted, else the first
   available iPhone, and records it with `simctl io recordVideo`.
 - **Android**: `adb`. Installs the app on the device `ANDROID_SERIAL` names (else adb's only device) and records it with

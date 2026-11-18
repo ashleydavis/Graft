@@ -113,6 +113,27 @@ case "$platform" in
         sleep 1
         "$executable" &
         app_pid=$!
+        # screencapture stops itself after its seconds. One still running a minute after that is stuck, so the script says what was
+        # running, and what any crash of the app reported, and fails, rather than wait until the job's time runs out.
+        waited=0
+        while kill -0 "$capture_pid" 2>/dev/null; do
+            if [ "$waited" -ge "$((seconds + 60))" ]; then
+                echo "record-splash: screencapture was still recording $waited seconds after it started. The processes running:" >&2
+                ps -axo pid,ppid,stat,etime,command >&2
+                echo "record-splash: the crash reports in ~/Library/Logs/DiagnosticReports:" >&2
+                ls -la "$HOME/Library/Logs/DiagnosticReports" >&2 || true
+                for report in "$HOME"/Library/Logs/DiagnosticReports/*; do
+                    [ -f "$report" ] || continue
+                    echo "--- $report" >&2
+                    head -60 "$report" >&2
+                done
+                kill "$capture_pid"
+                stop "$app_pid"
+                exit 1
+            fi
+            sleep 1
+            waited=$((waited + 1))
+        done
         wait "$capture_pid"
         stop "$app_pid"
         ;;
