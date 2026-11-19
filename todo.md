@@ -1,8 +1,28 @@
 # Todo
 
+## Now
+
 - Almost every ticket has merge conflicts because of how some code is laid out (for example the actions list). The conflicts break Playbook's merge train. Restructure the code so parallel tickets rarely touch the same lines.
     - First this before anything else.
     - All other tickets are dependent on this one.
+    - Backend:
+        - `backend/src/lib/actions.zig`: split the one action list into a declaration per feature and build the list from them. Move the comment that describes every action to each declaration.
+        - `backend/src/test/actions.test.zig`: check actions by name. Drop the checks of the total and of indexes.
+        - `backend/src/app.zig`: the shared message and task lists. Let each feature declare its own.
+        - `backend/src/lib/menu.zig`: menu items for actions all go in this one file.
+    - Frontend:
+        - `frontend/src/components/app-layout.tsx`: move each action handler into a hook the feature owns (for example `useOpenRepoAction`), so the layout gains one line per feature.
+        - `frontend/src/test/components/app-layout.test.ts`: split the tests to match the feature hooks.
+        - `frontend/src/test/install-app-window.ts`: build the `window.ziggy` fake from one small fake per feature.
+        - `frontend/src/main.tsx`: one route per line, and no single-line `addChildren([...])` list.
+        - `frontend/src/components/left-sidebar.tsx`: the shared list of sidebar links.
+    - Docs:
+        - `docs/architecture.md` and `docs/user-guide.md`: stop listing every shortcut and feature in shared sentences. Link to each feature's own section instead.
+        - `docs/spec/open-repo/detail.md`: remove the shared shortcut text.
+        - `docs/spec/index.md`, `docs/testing-manual/index.md` and `what-changed.yaml`: one entry per line, so additions do not touch neighbouring lines.
+    - Smoke tests:
+        - `smoke-tests/lib/common.sh`: add a helper that starts Graft and waits for the start page, and one that opens a page from the left sidebar.
+        - Change every `smoke-tests/*/test.sh` that waits for `about-page` or `welcome-page` itself to use those helpers.
 - In the project rules, reference the Graft style guide (repo at ../../style-guide). The style guide shows what Graft should look like. Make this note in the project rules: Don't add features to Graft just because they are in the style guide. But for feature you are asked to add or change please make sure they follow the standard set in the style guide.
     - All other tickets depend on this one because they need to follow the styling laid down in the styl guide.
 - Next big feature:
@@ -39,6 +59,22 @@
 - Commits: the highlighted file in the commit file list should always be visible, starting with the first file and while moving between files with the arrow keys.
 - A navbar button that shows the keyboard shortcuts overlay.
 - Animate the panes in the commit explorer as they open and close.
+
+## Code Review
+
+- Remove `shown_args` from `GitCommand` in `backend/src/lib/git-interface.zig` and derive the command the help panel shows from `args`, by leaving out `-z` and the `--format` argument with separator characters.
+    - Stop filtering at `--`, so a file path such as `-z` after it is never removed.
+    - Update the spec (`docs/spec/layout/git-commands/detail.md`), which says each wrapper passes both lists, and the tests that check `expected_shown_args`.
+- Remove `GRAFT_TEST_REPO` and `backend/src/lib/ui-query.zig`. Smoke tests that require a repo to be open can click Graft's open repo button and cause the repo to be opened through the normal mechanism.
+
+## Code Review Later
+
+- `read_file_diff` in `backend/src/lib/git-diff-tree.zig`: git reads the file path as a pattern, so opening `foo[1].txt` also shows the diff of `foo1.txt`. Pass the path as `:(literal)<path>` in `args` and keep the plain path in `shown_args`.
+- `backend/src/lib/git-log.zig`: with `log.showSignature=true` in the user's git config, `git log` adds signature text to its output, so parsing fails and the commits page shows an error. Add `--no-show-signature` to both `git log` calls.
+- `backend/src/lib/git-log.zig`: each later page of commits runs `git log` from the last commit shown, so commits from the other side of a merge never appear. Start every page from the same commit (HEAD or a saved hash) and use `--skip=<offset>`.
+- `git-log.zig`, `git-diff-tree.zig` and `pick-repo-folder.zig` in `backend/src/lib/`: `assert` checks data from the frontend (for example an empty repo path), so bad data crashes the backend. Return an error instead (for example `error.InvalidRepoPath`) with text in `describe_error`.
+- `backend/src/lib/git-log.zig`: the hash goes to `git log` with no `--` after it, so a branch or file with the same name (for example `cafe`) can return the wrong commit. Add `--` after the hash in `read_commit` and `read_log_page_command`.
+- `backend/src/lib/error-text.zig`: when git is not on PATH the user sees only a bare error name such as `FileNotFound`. Add text in `describe_error` saying git was not found on PATH.
 
 ## Later
 
