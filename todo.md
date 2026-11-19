@@ -36,6 +36,9 @@
 - Breadcrumb trail: It should show all current panes to the righmost. E.g. <repo> => <commits> => <the commit> => <the-file>
 - In the title bar of the diff pane only show the file name and not the full path. 
 - Clicking anywhere in a pane (e.g. in the pane title bar) should seleted the pane.
+- Commits: the highlighted file in the commit file list should always be visible, starting with the first file and while moving between files with the arrow keys.
+- A navbar button that shows the keyboard shortcuts overlay.
+- Animate the panes in the commit explorer as they open and close.
 
 ## Later
 
