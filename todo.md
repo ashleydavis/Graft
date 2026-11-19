@@ -72,9 +72,9 @@
 - `read_file_diff` in `backend/src/lib/git-diff-tree.zig`: git reads the file path as a pattern, so opening `foo[1].txt` also shows the diff of `foo1.txt`. Pass the path as `:(literal)<path>` in `args` and keep the plain path in `shown_args`.
 - `backend/src/lib/git-log.zig`: with `log.showSignature=true` in the user's git config, `git log` adds signature text to its output, so parsing fails and the commits page shows an error. Add `--no-show-signature` to both `git log` calls.
 - `backend/src/lib/git-log.zig`: each later page of commits runs `git log` from the last commit shown, so commits from the other side of a merge never appear. Start every page from the same commit (HEAD or a saved hash) and use `--skip=<offset>`.
-- `git-log.zig`, `git-diff-tree.zig` and `pick-repo-folder.zig` in `backend/src/lib/`: `assert` checks data from the frontend (for example an empty repo path), so bad data crashes the backend. Return an error instead (for example `error.InvalidRepoPath`) with text in `describe_error`.
+- `git-log.zig`, `git-diff-tree.zig` and `pick-repo-folder.zig` in `backend/src/lib/`: `assert` checks data from the frontend (for example an empty repo path), so bad data crashes the backend. Return an error instead (for example `error.InvalidRepoPath`) with text set with `services.fail_with`.
 - `backend/src/lib/git-log.zig`: the hash goes to `git log` with no `--` after it, so a branch or file with the same name (for example `cafe`) can return the wrong commit. Add `--` after the hash in `read_commit` and `read_log_page_command`.
-- `backend/src/lib/error-text.zig`: when git is not on PATH the user sees only a bare error name such as `FileNotFound`. Add text in `describe_error` saying git was not found on PATH.
+- `backend/src/lib/git-interface.zig`: when git is not on PATH the user sees only a bare error name such as `FileNotFound`. Set text with `services.fail_with` saying git was not found on PATH.
 
 ## Later
 

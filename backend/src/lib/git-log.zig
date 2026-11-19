@@ -29,6 +29,20 @@ const log_format = "--format=%H%x1f%P%x1f%D%x1f" ++
     "%s%x1f%b";
 
 //
+// The text the frontend is sent when a commit is asked for by a hash that is not hexadecimal. It
+// is public because the diff-tree wrapper checks the hashes it is given in the same way.
+//
+pub const invalid_commit_hash_text = "A commit was asked for by a hash that is not hexadecimal. " ++
+    "Give the hash of a commit.";
+
+//
+// The text the frontend is sent when git log writes output Graft cannot read, which both the
+// commits page and the commit details can meet.
+//
+const unexpected_log_output_text = "Git log wrote output Graft could not read, so the commits " ++
+    "could not be read. Check that the git on PATH is a standard git.";
+
+//
 // The number of fields in one commit's record, which is one for each field in `log_format`.
 //
 const field_count = 11;
@@ -147,10 +161,13 @@ pub fn read_log_page(
     request: LogPageRequest,
 ) !LogPage {
     if (request.page_size == 0) {
+        services.fail_with("The commits were asked for with a page size of 0. Ask for at least " ++
+            "one commit.");
         return error.InvalidPageSize;
     }
     if (request.after_hash) |hash| {
         if (!is_commit_hash(hash)) {
+            services.fail_with(invalid_commit_hash_text);
             return error.InvalidCommitHash;
         }
     }
@@ -165,9 +182,16 @@ pub fn read_log_page(
             .stderr = result.stderr,
         });
         services.log.err("git log exited with an error, so the commits could not be read.");
+        services.fail_with("Running git log failed, so the commits could not be read. Check " ++
+            "that the repo exists and has at least one commit. What git said is in Graft's log.");
         return error.GitLogFailed;
     }
-    const commits = try parse_log_output(allocator, result.stdout, request.page_size);
+    const commits = parse_log_output(allocator, result.stdout, request.page_size) catch |err| {
+        if (err == error.UnexpectedGitLogOutput) {
+            services.fail_with(unexpected_log_output_text);
+        }
+        return err;
+    };
     assert(commits.len <= request.page_size);
     return .{
         .commits = commits,
@@ -189,6 +213,7 @@ pub fn read_commit(
     request: CommitRequest,
 ) !Commit {
     if (!is_commit_hash(request.hash)) {
+        services.fail_with(invalid_commit_hash_text);
         return error.InvalidCommitHash;
     }
     assert(request.repo_path.len > 0);
@@ -214,10 +239,18 @@ pub fn read_commit(
             .stderr = result.stderr,
         });
         services.log.err("git log exited with an error, so the commit could not be read.");
+        services.fail_with("Running git log failed, so the commit's details could not be " ++
+            "read. Check that the repo has the commit. What git said is in Graft's log.");
         return error.CommitReadFailed;
     }
-    const commits = try parse_log_output(allocator, result.stdout, 1);
+    const commits = parse_log_output(allocator, result.stdout, 1) catch |err| {
+        if (err == error.UnexpectedGitLogOutput) {
+            services.fail_with(unexpected_log_output_text);
+        }
+        return err;
+    };
     if (commits.len != 1) {
+        services.fail_with(unexpected_log_output_text);
         return error.UnexpectedGitLogOutput;
     }
     assert(commits.len == 1);

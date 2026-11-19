@@ -7,18 +7,42 @@ const std = @import("std");
 const ziggy = @import("ziggy");
 const git_interface = @import("../lib/git-interface.zig");
 
+const RunningTask = ziggy.task_runner.RunningTask;
 const TaskServices = ziggy.task_runner.TaskServices;
 
 //
-// The task services a unit test of a wrapper passes, for the wrappers that run a mock in place of
-// the Git interface function. The mocks send no event, so nothing reads the task, which is left
-// undefined because a running task exists only inside a worker. The wrappers write to the log when
-// git fails, so it is a real one that writes to the console.
+// Makes the running task a unit test of a wrapper gives its task services, which keeps the text a
+// wrapper sets with fail_with, so the test can check the text the frontend would be sent. The
+// mocks send no event and queue no child, so nothing reads the worker, which is left undefined
+// because a worker exists only inside a pool.
 //
-pub const mock_services: TaskServices = .{
-    .task = undefined,
-    .log = ziggy.log.ConsoleLog.init(),
-};
+pub fn mock_task() RunningTask {
+    const task: RunningTask = .{
+        .worker = undefined,
+        .task_id = "mock-task",
+        .task_source = "mock-source",
+        .cancelled = false,
+        .children = .empty,
+        .inflight_children = 0,
+        .next_child = 0,
+        .failure = null,
+    };
+    std.debug.assert(task.failure == null);
+    return task;
+}
+
+//
+// Gives the task services a unit test of a wrapper passes, for the wrappers that run a mock in
+// place of the Git interface function, over the test's own task from mock_task. The wrappers write
+// to the log when git fails, so it is a real one that writes to the console.
+//
+pub fn mock_services(task: *RunningTask) TaskServices {
+    std.debug.assert(task.failure == null);
+    return .{
+        .task = task,
+        .log = ziggy.log.ConsoleLog.init(),
+    };
+}
 
 //
 // What a mock of the Git interface function expects and answers.

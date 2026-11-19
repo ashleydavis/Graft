@@ -178,13 +178,14 @@ const mock_never_called = git_mock.mock_git(.{
 });
 
 test "read_changed_files lists each file the commit changed with its status and line counts" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
     const mock = comptime git_mock.mock_git_calls(three_files_calls);
     const files = try git_diff_tree.read_changed_files(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         changed_files_request,
@@ -208,6 +209,7 @@ test "read_changed_files lists each file the commit changed with its status and 
 }
 
 test "read_changed_files lists no files when git lists none, as for a merge commit" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -231,7 +233,7 @@ test "read_changed_files lists no files when git lists none, as for a merge comm
     });
     const files = try git_diff_tree.read_changed_files(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         changed_files_request,
@@ -240,9 +242,10 @@ test "read_changed_files lists no files when git lists none, as for a merge comm
 }
 
 test "read_changed_files refuses a hash that git could read as an option without starting git" {
+    var task = git_mock.mock_task();
     try std.testing.expectError(error.InvalidCommitHash, git_diff_tree.read_changed_files(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         std.testing.allocator,
         mock_never_called,
         .{
@@ -250,9 +253,14 @@ test "read_changed_files refuses a hash that git could read as an option without
             .hash = "--all",
         },
     ));
+    try std.testing.expectEqualStrings(
+        "A commit was asked for by a hash that is not hexadecimal. Give the hash of a commit.",
+        task.failure.?,
+    );
 }
 
 test "read_changed_files fails with GitDiffTreeFailed when git exits with an error" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -266,14 +274,20 @@ test "read_changed_files fails with GitDiffTreeFailed when git exits with an err
     });
     try std.testing.expectError(error.GitDiffTreeFailed, git_diff_tree.read_changed_files(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         changed_files_request,
     ));
+    try std.testing.expectEqualStrings(
+        "Running git diff-tree failed, so the commit's changes could not be read. Check that " ++
+            "the repo has the commit. What git said is in Graft's log.",
+        task.failure.?,
+    );
 }
 
 test "read_changed_files fails with GitDiffTreeFailed when git exits with an error counting lines" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -290,14 +304,20 @@ test "read_changed_files fails with GitDiffTreeFailed when git exits with an err
     });
     try std.testing.expectError(error.GitDiffTreeFailed, git_diff_tree.read_changed_files(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         changed_files_request,
     ));
+    try std.testing.expectEqualStrings(
+        "Running git diff-tree failed, so the commit's changes could not be read. Check that " ++
+            "the repo has the commit. What git said is in Graft's log.",
+        task.failure.?,
+    );
 }
 
 test "read_changed_files refuses line counts that are not for the files git listed" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -314,14 +334,20 @@ test "read_changed_files refuses line counts that are not for the files git list
     });
     try std.testing.expectError(error.UnexpectedGitDiffTreeOutput, git_diff_tree.read_changed_files(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         changed_files_request,
     ));
+    try std.testing.expectEqualStrings(
+        "Git diff-tree wrote output Graft could not read, so the commit's changed files could " ++
+            "not be read. Check that the git on PATH is a standard git.",
+        task.failure.?,
+    );
 }
 
 test "read_changed_files passes up the error when git cannot be started" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -335,11 +361,12 @@ test "read_changed_files passes up the error when git cannot be started" {
     });
     try std.testing.expectError(error.FileNotFound, git_diff_tree.read_changed_files(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         changed_files_request,
     ));
+    try std.testing.expectEqual(@as(?[]const u8, null), task.failure);
 }
 
 //
@@ -347,13 +374,14 @@ test "read_changed_files passes up the error when git cannot be started" {
 // test. They are allocated in an arena over the allocator, as a task's are.
 //
 fn read_three_files(allocator: std.mem.Allocator) !void {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(allocator);
     defer arena.deinit();
 
     const mock = comptime git_mock.mock_git_calls(three_files_calls);
     _ = try git_diff_tree.read_changed_files(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         changed_files_request,
@@ -503,6 +531,7 @@ test "parse_numstat_output keeps a path that holds a tab whole" {
 }
 
 test "read_file_diff reads the diff of the one file in the commit" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -516,7 +545,7 @@ test "read_file_diff reads the diff of the one file in the commit" {
     });
     const diff = try git_diff_tree.read_file_diff(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         file_diff_request,
@@ -525,9 +554,10 @@ test "read_file_diff reads the diff of the one file in the commit" {
 }
 
 test "read_file_diff refuses a hash that git could read as an option without starting git" {
+    var task = git_mock.mock_task();
     try std.testing.expectError(error.InvalidCommitHash, git_diff_tree.read_file_diff(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         std.testing.allocator,
         mock_never_called,
         .{
@@ -536,12 +566,17 @@ test "read_file_diff refuses a hash that git could read as an option without sta
             .path = "notes.txt",
         },
     ));
+    try std.testing.expectEqualStrings(
+        "A commit was asked for by a hash that is not hexadecimal. Give the hash of a commit.",
+        task.failure.?,
+    );
 }
 
 test "read_file_diff refuses an empty path without starting git" {
+    var task = git_mock.mock_task();
     try std.testing.expectError(error.InvalidFilePath, git_diff_tree.read_file_diff(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         std.testing.allocator,
         mock_never_called,
         .{
@@ -550,9 +585,15 @@ test "read_file_diff refuses an empty path without starting git" {
             .path = "",
         },
     ));
+    try std.testing.expectEqualStrings(
+        "A file's diff was asked for with an empty path. Give the path of a file the commit " ++
+            "changed.",
+        task.failure.?,
+    );
 }
 
 test "read_file_diff fails with GitDiffTreeFailed when git exits with an error" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -566,11 +607,16 @@ test "read_file_diff fails with GitDiffTreeFailed when git exits with an error" 
     });
     try std.testing.expectError(error.GitDiffTreeFailed, git_diff_tree.read_file_diff(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         file_diff_request,
     ));
+    try std.testing.expectEqualStrings(
+        "Running git diff-tree failed, so the commit's changes could not be read. Check that " ++
+            "the repo has the commit. What git said is in Graft's log.",
+        task.failure.?,
+    );
 }
 
 //
@@ -578,6 +624,7 @@ test "read_file_diff fails with GitDiffTreeFailed when git exits with an error" 
 // allocated in an arena over the allocator, as a task's is.
 //
 fn read_notes_diff(allocator: std.mem.Allocator) !void {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(allocator);
     defer arena.deinit();
 
@@ -591,7 +638,7 @@ fn read_notes_diff(allocator: std.mem.Allocator) !void {
     });
     _ = try git_diff_tree.read_file_diff(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         file_diff_request,

@@ -8,7 +8,6 @@
 
 const std = @import("std");
 const ziggy = @import("ziggy");
-const error_text = @import("../lib/error-text.zig");
 const git_interface = @import("../lib/git-interface.zig");
 const test_environment = @import("test-environment.zig");
 
@@ -254,7 +253,6 @@ test "run_git sends the command as the help panel shows it and runs git in the r
         },
         .menu = &.{},
         .ui_files = &.{},
-        .describe_error = error_text.describe_error,
     }));
     defer native_app.stop(io, std.testing.allocator);
 

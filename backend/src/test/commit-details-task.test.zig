@@ -7,7 +7,6 @@
 const std = @import("std");
 const ziggy = @import("ziggy");
 const commit_details_task = @import("../lib/commit-details-task.zig");
-const error_text = @import("../lib/error-text.zig");
 const git_interface = @import("../lib/git-interface.zig");
 const git_mock = @import("git-mock.zig");
 
@@ -109,7 +108,6 @@ fn declare_app(comptime run_git: git_interface.RunGit) ziggy.core.RegisteredApp 
         },
         .menu = &.{},
         .ui_files = &.{},
-        .describe_error = error_text.describe_error,
     });
 }
 

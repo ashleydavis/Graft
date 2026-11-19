@@ -81,12 +81,13 @@ const first_page_request: git_log.LogPageRequest = .{
 };
 
 test "read_log_page reads the first page from HEAD and parses every field of each commit" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
     const page = try git_log.read_log_page(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock_first_page(two_commits_output),
         first_page_request,
@@ -118,6 +119,7 @@ test "read_log_page reads the first page from HEAD and parses every field of eac
 }
 
 test "read_log_page starts a later page from the previous page's last commit and skips it" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -145,22 +147,29 @@ test "read_log_page starts a later page from the previous page's last commit and
         .stderr = "",
         .start_error = null,
     });
-    const page = try git_log.read_log_page(io, git_mock.mock_services, arena.allocator(), mock, .{
-        .repo_path = "repo",
-        .page_size = 1,
-        .after_hash = second_hash,
-    });
+    const page = try git_log.read_log_page(
+        io,
+        git_mock.mock_services(&task),
+        arena.allocator(),
+        mock,
+        .{
+            .repo_path = "repo",
+            .page_size = 1,
+            .after_hash = second_hash,
+        },
+    );
     try std.testing.expectEqual(@as(usize, 1), page.commits.len);
     try std.testing.expectEqualStrings(first_hash, page.commits[0].hash);
 }
 
 test "read_log_page reads an empty page when git lists no commits" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
     const page = try git_log.read_log_page(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock_first_page(""),
         first_page_request,
@@ -169,6 +178,7 @@ test "read_log_page reads an empty page when git lists no commits" {
 }
 
 test "read_log_page refuses a page size of 0 without starting git" {
+    var task = git_mock.mock_task();
     const mock = comptime git_mock.mock_git(.{
         .expected_args = &.{},
         .expected_shown_args = &.{},
@@ -179,7 +189,7 @@ test "read_log_page refuses a page size of 0 without starting git" {
     });
     try std.testing.expectError(error.InvalidPageSize, git_log.read_log_page(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         std.testing.allocator,
         mock,
         .{
@@ -188,9 +198,14 @@ test "read_log_page refuses a page size of 0 without starting git" {
             .after_hash = null,
         },
     ));
+    try std.testing.expectEqualStrings(
+        "The commits were asked for with a page size of 0. Ask for at least one commit.",
+        task.failure.?,
+    );
 }
 
 test "read_log_page refuses an after hash that git could read as an option" {
+    var task = git_mock.mock_task();
     const mock = comptime git_mock.mock_git(.{
         .expected_args = &.{},
         .expected_shown_args = &.{},
@@ -201,7 +216,7 @@ test "read_log_page refuses an after hash that git could read as an option" {
     });
     try std.testing.expectError(error.InvalidCommitHash, git_log.read_log_page(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         std.testing.allocator,
         mock,
         .{
@@ -210,9 +225,14 @@ test "read_log_page refuses an after hash that git could read as an option" {
             .after_hash = "--all",
         },
     ));
+    try std.testing.expectEqualStrings(
+        "A commit was asked for by a hash that is not hexadecimal. Give the hash of a commit.",
+        task.failure.?,
+    );
 }
 
 test "read_log_page fails with GitLogFailed when git exits with an error" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -226,14 +246,20 @@ test "read_log_page fails with GitLogFailed when git exits with an error" {
     });
     try std.testing.expectError(error.GitLogFailed, git_log.read_log_page(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         first_page_request,
     ));
+    try std.testing.expectEqualStrings(
+        "Running git log failed, so the commits could not be read. Check that the repo exists " ++
+            "and has at least one commit. What git said is in Graft's log.",
+        task.failure.?,
+    );
 }
 
 test "read_log_page fails with GitLogFailed when git ends without exiting" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -247,14 +273,20 @@ test "read_log_page fails with GitLogFailed when git ends without exiting" {
     });
     try std.testing.expectError(error.GitLogFailed, git_log.read_log_page(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         first_page_request,
     ));
+    try std.testing.expectEqualStrings(
+        "Running git log failed, so the commits could not be read. Check that the repo exists " ++
+            "and has at least one commit. What git said is in Graft's log.",
+        task.failure.?,
+    );
 }
 
 test "read_log_page passes up the error when git cannot be started" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -268,11 +300,12 @@ test "read_log_page passes up the error when git cannot be started" {
     });
     try std.testing.expectError(error.FileNotFound, git_log.read_log_page(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         first_page_request,
     ));
+    try std.testing.expectEqual(@as(?[]const u8, null), task.failure);
 }
 
 //
@@ -280,12 +313,13 @@ test "read_log_page passes up the error when git cannot be started" {
 // test. The page is allocated in an arena over the allocator, as a task's is.
 //
 fn read_two_commits(allocator: std.mem.Allocator) !void {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(allocator);
     defer arena.deinit();
 
     _ = try git_log.read_log_page(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock_first_page(two_commits_output),
         first_page_request,
@@ -438,6 +472,7 @@ const second_commit_output = second_hash ++ "\x1f" ++ first_hash ++ "\x1f" ++
     "The second commit\x1fThe first line.\nThe second line.\n\x00";
 
 test "read_commit reads the one commit the hash names and parses its fields" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -451,7 +486,7 @@ test "read_commit reads the one commit the hash names and parses its fields" {
     });
     const commit = try git_log.read_commit(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         commit_request,
@@ -465,6 +500,7 @@ test "read_commit reads the one commit the hash names and parses its fields" {
 }
 
 test "read_commit refuses a hash that git could read as an option without starting git" {
+    var task = git_mock.mock_task();
     const mock = comptime git_mock.mock_git(.{
         .expected_args = &.{},
         .expected_shown_args = &.{},
@@ -475,7 +511,7 @@ test "read_commit refuses a hash that git could read as an option without starti
     });
     try std.testing.expectError(error.InvalidCommitHash, git_log.read_commit(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         std.testing.allocator,
         mock,
         .{
@@ -483,9 +519,14 @@ test "read_commit refuses a hash that git could read as an option without starti
             .hash = "--all",
         },
     ));
+    try std.testing.expectEqualStrings(
+        "A commit was asked for by a hash that is not hexadecimal. Give the hash of a commit.",
+        task.failure.?,
+    );
 }
 
 test "read_commit fails with CommitReadFailed when git exits with an error" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -499,14 +540,20 @@ test "read_commit fails with CommitReadFailed when git exits with an error" {
     });
     try std.testing.expectError(error.CommitReadFailed, git_log.read_commit(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         commit_request,
     ));
+    try std.testing.expectEqualStrings(
+        "Running git log failed, so the commit's details could not be read. Check that the " ++
+            "repo has the commit. What git said is in Graft's log.",
+        task.failure.?,
+    );
 }
 
 test "read_commit refuses output that holds no commit" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -520,14 +567,20 @@ test "read_commit refuses output that holds no commit" {
     });
     try std.testing.expectError(error.UnexpectedGitLogOutput, git_log.read_commit(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         commit_request,
     ));
+    try std.testing.expectEqualStrings(
+        "Git log wrote output Graft could not read, so the commits could not be read. Check " ++
+            "that the git on PATH is a standard git.",
+        task.failure.?,
+    );
 }
 
 test "read_commit refuses output that holds more than one commit" {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
@@ -541,11 +594,16 @@ test "read_commit refuses output that holds more than one commit" {
     });
     try std.testing.expectError(error.UnexpectedGitLogOutput, git_log.read_commit(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         commit_request,
     ));
+    try std.testing.expectEqualStrings(
+        "Git log wrote output Graft could not read, so the commits could not be read. Check " ++
+            "that the git on PATH is a standard git.",
+        task.failure.?,
+    );
 }
 
 //
@@ -553,6 +611,7 @@ test "read_commit refuses output that holds more than one commit" {
 // allocated in an arena over the allocator, as a task's is.
 //
 fn read_second_commit(allocator: std.mem.Allocator) !void {
+    var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(allocator);
     defer arena.deinit();
 
@@ -566,7 +625,7 @@ fn read_second_commit(allocator: std.mem.Allocator) !void {
     });
     _ = try git_log.read_commit(
         io,
-        git_mock.mock_services,
+        git_mock.mock_services(&task),
         arena.allocator(),
         mock,
         commit_request,

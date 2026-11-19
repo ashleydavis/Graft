@@ -12,6 +12,20 @@ const assert = std.debug.assert;
 const TaskServices = ziggy.task_runner.TaskServices;
 
 //
+// The text the frontend is sent when git diff-tree writes output Graft cannot read, which both
+// parts of the changed files list can meet.
+//
+const unexpected_diff_tree_output_text = "Git diff-tree wrote output Graft could not read, so " ++
+    "the commit's changed files could not be read. Check that the git on PATH is a standard git.";
+
+//
+// The text the frontend is sent when git diff-tree fails, so the commit's changes could not be
+// read, for the changed files list and for a file's diff.
+//
+const diff_tree_failed_text = "Running git diff-tree failed, so the commit's changes could not " ++
+    "be read. Check that the repo has the commit. What git said is in Graft's log.";
+
+//
 // One file a commit changed. The field names are camelCase because the struct is turned into the
 // JSON the frontend reads and the frontend's names are camelCase.
 //
@@ -101,6 +115,7 @@ pub fn read_changed_files(
     request: ChangedFilesRequest,
 ) ![]const ChangedFile {
     if (!git_log.is_commit_hash(request.hash)) {
+        services.fail_with(git_log.invalid_commit_hash_text);
         return error.InvalidCommitHash;
     }
     assert(request.repo_path.len > 0);
@@ -125,7 +140,12 @@ pub fn read_changed_files(
             request.hash,
         },
     });
-    const files = try parse_name_status_output(allocator, name_status);
+    const files = parse_name_status_output(allocator, name_status) catch |err| {
+        if (err == error.UnexpectedGitDiffTreeOutput) {
+            services.fail_with(unexpected_diff_tree_output_text);
+        }
+        return err;
+    };
     const numstat = try read_changed_files_git(io, services, allocator, run_git, .{
         .repo_path = request.repo_path,
         .args = &.{
@@ -146,7 +166,12 @@ pub fn read_changed_files(
             request.hash,
         },
     });
-    try parse_numstat_output(files, numstat);
+    parse_numstat_output(files, numstat) catch |err| {
+        if (err == error.UnexpectedGitDiffTreeOutput) {
+            services.fail_with(unexpected_diff_tree_output_text);
+        }
+        return err;
+    };
     assert(files.len <= name_status.len);
     assert(files.len <= numstat.len);
     return files;
@@ -175,6 +200,7 @@ fn read_changed_files_git(
         services.log.err(
             "git diff-tree exited with an error, so the changed files could not be read.",
         );
+        services.fail_with(diff_tree_failed_text);
         return error.GitDiffTreeFailed;
     }
     assert(result.exit_code.? == 0);
@@ -196,9 +222,12 @@ pub fn read_file_diff(
     request: FileDiffRequest,
 ) ![]const u8 {
     if (!git_log.is_commit_hash(request.hash)) {
+        services.fail_with(git_log.invalid_commit_hash_text);
         return error.InvalidCommitHash;
     }
     if (request.path.len == 0) {
+        services.fail_with("A file's diff was asked for with an empty path. Give the path of a " ++
+            "file the commit changed.");
         return error.InvalidFilePath;
     }
     assert(request.repo_path.len > 0);
@@ -230,6 +259,7 @@ pub fn read_file_diff(
         services.log.err(
             "git diff-tree exited with an error, so the file's diff could not be read.",
         );
+        services.fail_with(diff_tree_failed_text);
         return error.GitDiffTreeFailed;
     }
     return result.stdout;

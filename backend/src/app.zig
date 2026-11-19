@@ -8,7 +8,6 @@ const ziggy = @import("ziggy");
 const actions = @import("lib/actions.zig");
 const commit_details_task = @import("lib/commit-details-task.zig");
 const commits_task = @import("lib/commits-task.zig");
-const error_text = @import("lib/error-text.zig");
 const file_diff_task = @import("lib/file-diff-task.zig");
 const git_interface = @import("lib/git-interface.zig");
 const menu = @import("lib/menu.zig");
@@ -42,5 +41,4 @@ pub const app = ziggy.core.App(.{
     },
     .ui_files = &ui.files,
     .ui_query = ui_query.ui_query,
-    .describe_error = error_text.describe_error,
 });
