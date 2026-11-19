@@ -3,7 +3,7 @@
 - Almost every ticket has merge conflicts because of how some code is laid out (for example the actions list). The conflicts break Playbook's merge train. Restructure the code so parallel tickets rarely touch the same lines.
     - First this before anything else.
     - All other tickets are dependent on this one.
-- In the project rules, reference the Graft style guide (sibling repo at ../style-guide). The style guide shows what Graft should look like. Make this note in the project rules: Don't add features to Graft just because they are in the style guide. But for feature you are asked to add or change please make sure they follow the standard set in the style guide.
+- In the project rules, reference the Graft style guide (repo at ../../style-guide). The style guide shows what Graft should look like. Make this note in the project rules: Don't add features to Graft just because they are in the style guide. But for feature you are asked to add or change please make sure they follow the standard set in the style guide.
     - All other tickets depend on this one because they need to follow the styling laid down in the styl guide.
 - Next big feature:
     - The Commit pane, including
