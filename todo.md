@@ -26,13 +26,14 @@
 - In the project rules, reference the Graft style guide (repo at ../../style-guide). The style guide shows what Graft should look like. Make this note in the project rules: Don't add features to Graft just because they are in the style guide. But for feature you are asked to add or change please make sure they follow the standard set in the style guide.
     - All other tickets depend on this one because they need to follow the styling laid down in the styl guide.
 - Next big feature:
-    - The Commit pane, including
+    - The Changes pane, including
         - Stage
         - Unstage 
-        - Commit
+        - Commit section
     - I want this implemented minimally.
     - Follow the mockup in the style guide for styllng.
         - There's no need to add all the buttons and features indicated in the style guide. Do the minimum possible so that I can stage / unstage and commit files (hunks are not necesary right now). Make sure it looks good though, like the style guide.
+    - I want the split staged / unstaged file lists with single file diff pane.
     - I want this implemented using panes like what we have in the commit explorer. 
         - When a repo is opened show the repo details.
         - From the repo details click Commits which opens the Commits paned to the right.
