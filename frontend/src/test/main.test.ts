@@ -283,7 +283,7 @@ describe("showSplashScreen", () => {
         const overlays = splashOverlays();
         expect(overlays.length).toBe(before + 1);
         const overlay = overlays[overlays.length - 1];
-        expect(overlay.style.background).toBe("rgb(255, 255, 255)");
+        expect(overlay.style.background).toBe("rgb(20, 23, 26)");
         expect(overlay.querySelector("img")?.getAttribute("src")).toBe("/ziggy-splash-portrait.png");
         expect(ziggy.frontendReady).toHaveBeenCalledTimes(1);
         overlay.remove();
@@ -305,13 +305,13 @@ describe("showSplashScreen", () => {
         onEvent({
             type: "frontend-visible",
         });
-        jest.advanceTimersByTime(400);
+        jest.advanceTimersByTime(1900);
         expect(overlay.isConnected).toBe(true);
         jest.advanceTimersByTime(200);
         expect(overlay.isConnected).toBe(false);
     });
 
-    test("holds the splash for half a second after it goes up, then fades it out over half a second", () => {
+    test("holds the splash for two seconds after it goes up, then fades it out over two seconds", () => {
         jest.useFakeTimers();
         installSplashZiggy();
         showSplashScreen(document);
@@ -321,9 +321,9 @@ describe("showSplashScreen", () => {
         onEvent({
             type: "frontend-visible",
         });
-        jest.advanceTimersByTime(499);
+        jest.advanceTimersByTime(1999);
         expect(overlay.style.opacity).toBe("");
-        jest.advanceTimersByTime(400);
+        jest.advanceTimersByTime(1900);
         expect(overlay.isConnected).toBe(true);
         jest.advanceTimersByTime(200);
         expect(overlay.isConnected).toBe(false);

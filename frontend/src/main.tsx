@@ -21,7 +21,7 @@ import { WelcomePage } from "./pages/welcome";
 //
 // The colour behind the splash art, the same as .splash's background in app.zon.
 //
-const splashBackground = "#FFFFFF";
+const splashBackground = "#14171A";
 
 //
 // Makes the router that picks the page to show. Every page shows in the main content area of the
@@ -92,8 +92,8 @@ export function startApp(rootElement: HTMLElement): void {
 export function showSplashScreen(page: IDocumentLike | Document): void {
     const splash = installSplashScreen(page, {
         background: splashBackground,
-        minimumDisplayMilliseconds: 500,
-        fadeDurationMilliseconds: 500,
+        minimumDisplayMilliseconds: 2000,
+        fadeDurationMilliseconds: 2000,
         // The native app fades the splash colour over its menu bar with the overlay.
         onFadeStart: durationMilliseconds => window.ziggy.splashFading(durationMilliseconds),
     });

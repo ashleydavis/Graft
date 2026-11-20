@@ -3,9 +3,9 @@
     "prefix": "graft",
     "icon": "app-icon.svg",
     "foreground": "app-icon-foreground.svg",
-    "portrait": "splash-portrait.svg",
-    "landscape": "splash-landscape.svg",
-    "background": "#FFFFFF",
+    "portrait": "splash-portrait-dark.svg",
+    "landscape": "splash-landscape-dark.svg",
+    "background": "#14171A",
     "macosTarget": "Graft",
     "iosTarget": "Graft"
 }
