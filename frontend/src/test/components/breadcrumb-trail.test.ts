@@ -84,7 +84,7 @@ describe("BreadcrumbTrail", () => {
         const repoStep = elementWithDataId("breadcrumb-repo");
         expect(repoStep?.tagName).toBe("SPAN");
         expect(repoStep?.textContent).toBe("a-repo-with-a-lon\u2026");
-        expect(repoStep?.getAttribute("title")).toBe("/repos/a-repo-with-a-long-name");
+        expect(repoStep?.getAttribute("aria-label")).toBe("/repos/a-repo-with-a-long-name");
         expect(repoStep?.classList.contains("text-[var(--color-text-muted)]")).toBe(true);
     });
 
@@ -98,8 +98,8 @@ describe("BreadcrumbTrail", () => {
         const pageStep = elementWithDataId("breadcrumb-page");
         expect(pageStep?.tagName).toBe("BUTTON");
         expect(pageStep?.textContent).toBe("About");
-        expect(pageStep?.getAttribute("title")).toBe("About");
-        expect(pageStep?.querySelector("svg[data-icon=\"caret-down\"]")).not.toBeNull();
+        expect(pageStep?.getAttribute("aria-label")).toBe("About");
+        expect(pageStep?.querySelector("svg[data-icon=\"chevron-down\"]")).not.toBeNull();
         expect(pageStep?.classList.contains("font-[var(--weight-bold)]")).toBe(true);
     });
 
@@ -118,7 +118,7 @@ describe("BreadcrumbTrail", () => {
         expect(elementWithDataId("breadcrumb-option-about")?.textContent).toBe("About");
         expect(elementWithDataId("breadcrumb-option-about")?.querySelector("svg[data-icon=\"check\"]")).not.toBeNull();
         expect(elementWithDataId("breadcrumb-option-help")?.querySelector("svg[data-icon=\"check\"]")).toBeNull();
-        expect(screen.getByPlaceholderText("Search")).not.toBeNull();
+        expect(screen.getByPlaceholderText("Search pages")).not.toBeNull();
     });
 
     test("picking another page opens it and closes the drop-down", async () => {
@@ -148,7 +148,7 @@ describe("BreadcrumbTrail", () => {
     test("the search box narrows the pages by name", () => {
         renderTrail(trail);
         openPageMenu();
-        fireEvent.change(screen.getByPlaceholderText("Search"), {
+        fireEvent.change(screen.getByPlaceholderText("Search pages"), {
             target: {
                 value: "he",
             },
@@ -161,7 +161,7 @@ describe("BreadcrumbTrail", () => {
     test("says when no page matches the search", () => {
         renderTrail(trail);
         openPageMenu();
-        fireEvent.change(screen.getByPlaceholderText("Search"), {
+        fireEvent.change(screen.getByPlaceholderText("Search pages"), {
             target: {
                 value: "branches",
             },
@@ -173,12 +173,12 @@ describe("BreadcrumbTrail", () => {
     test("closing the drop-down clears the search, so it opens on every page again", async () => {
         renderTrail(trail);
         openPageMenu();
-        fireEvent.change(screen.getByPlaceholderText("Search"), {
+        fireEvent.change(screen.getByPlaceholderText("Search pages"), {
             target: {
                 value: "branches",
             },
         });
-        fireEvent.keyDown(screen.getByPlaceholderText("Search"), {
+        fireEvent.keyDown(screen.getByPlaceholderText("Search pages"), {
             key: "Escape",
         });
         await waitFor(() => {
@@ -188,7 +188,7 @@ describe("BreadcrumbTrail", () => {
             expect(elementWithDataId("breadcrumb-page-menu")).toBeUndefined();
         });
         openPageMenu();
-        expect(screen.getByPlaceholderText("Search")).toHaveProperty("value", "");
+        expect(screen.getByPlaceholderText("Search pages")).toHaveProperty("value", "");
         expect(elementWithDataId("breadcrumb-option-help")).not.toBeUndefined();
     });
 });

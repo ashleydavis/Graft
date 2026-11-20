@@ -236,7 +236,7 @@ describe("AppLayout", () => {
         act(() => {
             elementWithDataId(container, "left-sidebar-toggle")?.click();
         });
-        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-60")).toBe(true);
+        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-64")).toBe(true);
         expect(elementWithDataId(container, "left-sidebar-commits-link-label")).not.toBeUndefined();
         expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
     });
@@ -313,7 +313,7 @@ describe("AppLayout", () => {
         await act(async () => {
             await Promise.resolve();
         });
-        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-60")).toBe(true);
+        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-64")).toBe(true);
         expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
     });
 
@@ -328,7 +328,7 @@ describe("AppLayout", () => {
         await act(async () => {
             await Promise.resolve();
         });
-        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-60")).toBe(true);
+        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-64")).toBe(true);
         expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
     });
 
@@ -343,7 +343,7 @@ describe("AppLayout", () => {
             expect(consoleError).toHaveBeenCalledWith(`Graft could not read whether the left sidebar is minimised from its state file at ${leftSidebarMinimisedStateKey}: Error: the disk is gone. Graft starts with the default until it is changed.`);
         });
         expect(consoleError).toHaveBeenCalledWith(`Graft could not read whether the right sidebar is open from its state file at ${rightSidebarOpenStateKey}: Error: the disk is gone. Graft starts with the default until it is changed.`);
-        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-60")).toBe(true);
+        expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-64")).toBe(true);
         expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
         consoleError.mockRestore();
     });
@@ -398,7 +398,7 @@ describe("AppLayout", () => {
         const trailArea = elementWithDataId(container, "top-bar-trail");
         expect(elementWithDataId(container, "top-bar")?.contains(trailArea ?? null)).toBe(true);
         expect(elementWithDataId(container, "breadcrumb-repo")?.textContent).toBe("graft");
-        expect(elementWithDataId(container, "breadcrumb-repo")?.getAttribute("title")).toBe("/repos/graft");
+        expect(elementWithDataId(container, "breadcrumb-repo")?.getAttribute("aria-label")).toBe("/repos/graft");
         expect(elementWithDataId(container, "breadcrumb-page")?.textContent).toBe("About");
     });
 
@@ -435,7 +435,7 @@ describe("AppLayout's open-repo action", () => {
         expect(invoke).toHaveBeenCalledWith("pick-repo-folder", null);
         await screen.findByText("The commits page");
         expect(elementWithDataId(container, "breadcrumb-repo")?.textContent).toBe("picked");
-        expect(elementWithDataId(container, "breadcrumb-repo")?.getAttribute("title")).toBe("/repos/picked");
+        expect(elementWithDataId(container, "breadcrumb-repo")?.getAttribute("aria-label")).toBe("/repos/picked");
         expect(elementWithDataId(container, "breadcrumb-page")?.textContent).toBe("Commits");
         expect(elementWithDataId(container, "left-sidebar-commits-link")).not.toBeUndefined();
     });

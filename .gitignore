@@ -14,3 +14,7 @@ webview2-sdk/
 wix/
 native/windows/package/
 .what-changed/
+
+# Git worktrees made inside the checkout, which hold other branches of this repo.
+worktrees/
+.claude/worktrees/

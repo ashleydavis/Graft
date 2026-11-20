@@ -28,7 +28,7 @@ export interface IAboutLinkProps {
 //
 export function AboutLink({ href, label, dataId }: IAboutLinkProps): JSX.Element {
     return (
-        <a href={href} target="_blank" rel="noreferrer" data-id={dataId} className="text-[var(--color-accent)] underline decoration-[var(--color-accent)] underline-offset-2 transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:text-[var(--color-accent-hover)]">
+        <a href={href} target="_blank" rel="noreferrer" data-id={dataId} className="rounded-[var(--radius-sm)] text-[var(--color-accent)] underline decoration-[var(--color-accent)] underline-offset-2 transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:text-[var(--color-accent-hover)] focus-visible:outline-solid focus-visible:outline-[length:var(--focus-ring-width)] focus-visible:outline-offset-[var(--focus-ring-offset)] focus-visible:outline-[var(--color-focus)]">
             {label}
         </a>
     );
@@ -42,7 +42,7 @@ export function AboutLink({ href, label, dataId }: IAboutLinkProps): JSX.Element
 //
 export function AboutPage(): JSX.Element {
     return (
-        <main data-id="about-page" className="graft-page-in flex max-w-3xl flex-col items-start gap-4 p-6">
+        <main data-id="about-page" className="graft-page-in flex max-w-3xl flex-col items-start gap-[var(--space-4)] p-[var(--space-6)]">
             <Avatar data-id="about-icon">
                 <FontAwesomeIcon icon={faCodeBranch} />
             </Avatar>
@@ -55,7 +55,7 @@ export function AboutPage(): JSX.Element {
             <p data-id="about-description">
                 Graft is a desktop Git client with a simple, intuitive UI that supports your own process instead of getting in the way.
             </p>
-            <ul data-id="about-links" className="flex flex-col gap-2">
+            <ul data-id="about-links" className="flex flex-col gap-[var(--space-2)]">
                 <li>
                     <AboutLink href="https://github.com/ashleydavis/Graft" label="Graft on GitHub" dataId="about-graft-link" />
                 </li>

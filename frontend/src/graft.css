@@ -17,6 +17,9 @@
  * pane, --color-select-item a selection inside it, such as the current hunk, and --color-focus
  * the keyboard focus inside that, such as a focused text box. Each step inward stands further from
  * the background.
+ *
+ * Tooltips sit on their own slate panel, blue-grey and cooler than the greys of the page, so a
+ * tooltip stands apart from whatever it opens over in both themes.
  */
 
 /* Raw palette: the same in both themes. */
@@ -91,6 +94,15 @@
     --cyan-700: #0e7490;
     --cyan-750: #0d6a84;
     --cyan-950: #083344;
+
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-350: #b8c3d3;
+    --slate-400: #a3b1c6;
+    --slate-600: #475569;
+    --slate-650: #465266;
+    --slate-700: #3a4557;
+    --slate-750: #2b3444;
 
     --pink-400: #f472b6;
     --pink-600: #db2777;
@@ -175,6 +187,11 @@
     --color-info-subtle: var(--cyan-100);
     --color-on-danger: var(--gray-0);
     --color-scrim: var(--black-40);
+    --color-tooltip: var(--slate-200);
+    --color-tooltip-border: var(--slate-350);
+    --color-tooltip-muted: var(--slate-600);
+    --color-tooltip-button: var(--slate-300);
+    --color-tooltip-button-hover: var(--slate-350);
     --color-diff-added: var(--green-100);
     --color-diff-added-line: var(--green-600);
     --color-diff-added-word: var(--green-200);
@@ -226,6 +243,11 @@
     --color-info-subtle: var(--cyan-950);
     --color-on-danger: var(--red-975);
     --color-scrim: var(--black-60);
+    --color-tooltip: var(--slate-750);
+    --color-tooltip-border: var(--slate-650);
+    --color-tooltip-muted: var(--slate-400);
+    --color-tooltip-button: var(--slate-700);
+    --color-tooltip-button-hover: var(--slate-650);
     --color-diff-added: var(--green-950);
     --color-diff-added-line: var(--green-400);
     --color-diff-added-word: var(--green-900);

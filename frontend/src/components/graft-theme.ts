@@ -79,6 +79,31 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
         defaultProps: {
             disableElevation: true,
         },
+        variants: [
+            //
+            // The danger button: a red border, red words and a red icon on no fill, so an action
+            // that loses work is marked without a block of red. Under the pointer the border
+            // thickens and the fill stays clear, so the red words keep the contrast they have on
+            // the panel.
+            //
+            {
+                props: {
+                    variant: "outlined",
+                    color: "error",
+                },
+                style: {
+                    backgroundColor: "transparent",
+                    color: "var(--color-danger)",
+                    border: "none",
+                    boxShadow: "inset 0 0 0 1px var(--color-danger)",
+                    "&:hover": {
+                        backgroundColor: "transparent",
+                        border: "none",
+                        boxShadow: "inset 0 0 0 2px var(--color-danger)",
+                    },
+                },
+            },
+        ],
         styleOverrides: {
             root: {
                 textTransform: "none",
@@ -88,11 +113,11 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
                 lineHeight: "var(--leading-normal)",
                 padding: "var(--space-2) var(--space-4)",
                 borderRadius: "var(--radius-md)",
-                transition: "background-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard)",
-                "&:active": {
-                    transform: "translateY(1px)",
-                },
+                transition: "background-color var(--duration-fast) var(--ease-standard)",
                 "&:focus-visible": focusRing,
+            },
+            sizeSmall: {
+                padding: "var(--space-1) var(--space-3)",
             },
             sizeLarge: {
                 padding: "var(--space-3) var(--space-6)",
@@ -104,7 +129,8 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
                 },
             },
             //
-            // Every kind of button has a 1px border, drawn as an inset line so it adds no size.
+            // Every kind of button has a 1px border, drawn as an inset line so it adds no size and
+            // every kind of button stays the same height.
             //
             contained: {
                 backgroundColor: "var(--color-accent)",
@@ -112,7 +138,7 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
                 boxShadow: "inset 0 0 0 1px var(--color-accent-hover)",
                 "&:hover": {
                     backgroundColor: "var(--color-accent-hover)",
-                    boxShadow: "inset 0 0 0 1px var(--color-accent-hover), var(--shadow-raised)",
+                    boxShadow: "inset 0 0 0 1px var(--color-accent-hover)",
                 },
                 "&.Mui-disabled": {
                     backgroundColor: "var(--color-disabled)",
@@ -127,12 +153,20 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
                     borderColor: "var(--color-text-muted)",
                     backgroundColor: "var(--color-hover)",
                 },
+                "&.Mui-disabled": {
+                    borderColor: "var(--color-border)",
+                    color: "var(--color-text-disabled)",
+                },
             },
             text: {
                 color: "var(--color-accent)",
                 boxShadow: "inset 0 0 0 1px var(--color-border)",
                 "&:hover": {
                     backgroundColor: "var(--color-hover)",
+                },
+                "&.Mui-disabled": {
+                    color: "var(--color-text-disabled)",
+                    boxShadow: "inset 0 0 0 1px var(--color-border)",
                 },
             },
         },
@@ -152,7 +186,6 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
                 color: "var(--color-text-muted)",
                 borderRadius: "var(--radius-md)",
                 boxShadow: "inset 0 0 0 1px var(--color-border)",
-                transition: "background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard)",
                 "&:hover": {
                     backgroundColor: "var(--color-hover)",
                     color: "var(--color-text)",
@@ -168,6 +201,30 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
                 fontSize: "var(--icon-md)",
             },
         },
+        variants: [
+            {
+                //
+                // A danger icon button, such as Discard, looks like the danger button: the icon and
+                // the border in the danger colour, the border thickening on hover.
+                //
+                props: {
+                    color: "error",
+                },
+                style: {
+                    color: "var(--color-danger)",
+                    boxShadow: "inset 0 0 0 1px var(--color-danger)",
+                    "&:hover": {
+                        backgroundColor: "transparent",
+                        color: "var(--color-danger)",
+                        boxShadow: "inset 0 0 0 2px var(--color-danger)",
+                    },
+                    "&.Mui-disabled": {
+                        color: "var(--color-text-disabled)",
+                        boxShadow: "inset 0 0 0 1px var(--color-border)",
+                    },
+                },
+            },
+        ],
     },
     MuiOutlinedInput: {
         styleOverrides: {
@@ -179,7 +236,6 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
                 borderRadius: "var(--radius-md)",
                 "& .MuiOutlinedInput-notchedOutline": {
                     borderColor: "var(--color-border-control)",
-                    transition: "border-color var(--duration-fast) var(--ease-standard)",
                 },
                 "&:hover .MuiOutlinedInput-notchedOutline": {
                     borderColor: "var(--color-text-muted)",
@@ -187,23 +243,33 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
                 "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
                     borderColor: "var(--color-focus)",
                 },
+                "&.Mui-error .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "var(--color-danger)",
+                },
+                "&.Mui-disabled": {
+                    backgroundColor: "var(--color-disabled)",
+                },
+                "&.Mui-disabled .MuiOutlinedInput-notchedOutline": {
+                    borderColor: "var(--color-border)",
+                },
             },
             input: {
                 "&::placeholder": {
                     color: "var(--color-text-muted)",
                     opacity: 1,
                 },
+                "&.Mui-disabled": {
+                    WebkitTextFillColor: "var(--color-text-disabled)",
+                },
             },
         },
     },
     MuiPaper: {
         styleOverrides: {
-            root: {
+            outlined: {
                 backgroundColor: "var(--color-panel)",
                 backgroundImage: "none",
                 color: "var(--color-text)",
-            },
-            outlined: {
                 border: "1px solid var(--color-border)",
                 borderRadius: "var(--radius-md)",
             },
@@ -214,6 +280,9 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
                     variant: "overlay",
                 },
                 style: {
+                    backgroundColor: "var(--color-panel)",
+                    backgroundImage: "none",
+                    color: "var(--color-text)",
                     border: "1px solid var(--color-border)",
                     borderRadius: "var(--radius-md)",
                     boxShadow: "var(--shadow-overlay)",
@@ -224,6 +293,9 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
                     variant: "dialog",
                 },
                 style: {
+                    backgroundColor: "var(--color-panel)",
+                    backgroundImage: "none",
+                    color: "var(--color-text)",
                     border: "1px solid var(--color-border)",
                     borderRadius: "var(--radius-lg)",
                     boxShadow: "var(--shadow-overlay)",
@@ -233,6 +305,7 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
     },
     MuiDialog: {
         defaultProps: {
+            disableScrollLock: true,
             slotProps: {
                 paper: {
                     variant: "dialog",
@@ -263,11 +336,24 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
     MuiDialogContent: {
         styleOverrides: {
             root: {
-                padding: "var(--space-2) var(--space-6) var(--space-6)",
+                padding: "var(--space-2) var(--space-6)",
             },
         },
     },
+    //
+    // Popups mount at the end of the page, so a pane or column that cuts off what overflows it
+    // never cuts off a popup, and a pane to the right never paints over one. They take the light or
+    // dark class AppTheme sets on the page's root element.
+    //
     MuiPopover: {
+        defaultProps: {
+            disablePortal: false,
+            //
+            // The page keeps its scrollbar while a popover or menu is open, so the page does not
+            // jump as it opens and closes.
+            //
+            disableScrollLock: true,
+        },
         styleOverrides: {
             paper: {
                 backgroundColor: "var(--color-panel)",
@@ -284,6 +370,9 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
     // side.
     //
     MuiMenu: {
+        defaultProps: {
+            disableScrollLock: true,
+        },
         styleOverrides: {
             list: {
                 padding: "var(--space-2) var(--space-1)",
@@ -308,17 +397,71 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
                     outline: "var(--focus-ring-width) solid var(--color-focus)",
                     outlineOffset: "calc(var(--focus-ring-width) * -1)",
                 },
-                "&.Mui-selected, &.Mui-selected:hover, &.Mui-selected.Mui-focusVisible": {
+                "&.Mui-selected, &.Mui-selected:hover": {
                     backgroundColor: "var(--color-selected)",
                 },
+                "&.Mui-disabled": {
+                    opacity: 1,
+                    color: "var(--color-text-disabled)",
+                },
             },
+        },
+    },
+    //
+    // Every tooltip is a solid slate panel with a thin border and no arrow, cooler than the page
+    // in both themes, and waits a moment before it shows, so moving the pointer across a toolbar
+    // does not flash a tooltip at each button. It mounts at the end of the page, so a box that
+    // cuts off what overflows it never cuts off its tooltip.
+    //
+    MuiTooltip: {
+        defaultProps: {
+            arrow: false,
+            enterDelay: 400,
+            enterNextDelay: 150,
+            slotProps: {
+                popper: {
+                    disablePortal: false,
+                },
+            },
+        },
+        styleOverrides: {
+            //
+            // A tooltip sets every text style of its own instead of taking the control's, and
+            // takes the width of its text up to its widest, so a tooltip on a button in a narrow
+            // spot does not squeeze its words onto many lines.
+            //
+            tooltip: {
+                width: "max-content",
+                maxWidth: "280px",
+                backgroundColor: "var(--color-tooltip)",
+                border: "1px solid var(--color-tooltip-border)",
+                color: "var(--color-text)",
+                fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-sm)",
+                fontWeight: "var(--weight-medium)",
+                textTransform: "none",
+                letterSpacing: "normal",
+                lineHeight: "var(--leading-tight)",
+                padding: "var(--space-2) var(--space-3)",
+                borderRadius: "calc(var(--radius-lg) * 2)",
+                boxShadow: "var(--shadow-overlay)",
+            },
+        },
+    },
+    //
+    // A popper mounts at the end of the page, as the tooltips do.
+    //
+    MuiPopper: {
+        defaultProps: {
+            disablePortal: false,
         },
     },
     MuiListItemButton: {
         styleOverrides: {
             root: {
                 padding: "var(--space-1) var(--space-3)",
-                transition: "background-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard)",
+                borderRadius: "var(--radius-sm)",
+                transition: "background-color var(--duration-fast) var(--ease-standard)",
                 "&:hover": {
                     backgroundColor: "var(--color-hover)",
                 },
@@ -327,21 +470,9 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
                     outline: "var(--focus-ring-width) solid var(--color-focus)",
                     outlineOffset: "calc(var(--focus-ring-width) * -1)",
                 },
-                //
-                // The selected row carries the selection colour and a line down its left edge in
-                // the colour of a selection inside the active pane.
-                //
-                "&.Mui-selected, &.Mui-selected:hover, &.Mui-selected.Mui-focusVisible": {
+                "&.Mui-selected, &.Mui-selected:hover": {
                     backgroundColor: "var(--color-selected)",
-                    boxShadow: "inset 2px 0 0 var(--color-select-item)",
                 },
-            },
-        },
-    },
-    MuiDivider: {
-        styleOverrides: {
-            root: {
-                borderColor: "var(--color-border)",
             },
         },
     },
@@ -390,6 +521,9 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
                 style: {
                     backgroundColor: "var(--color-accent)",
                     color: "var(--color-on-accent)",
+                    "& .MuiChip-icon": {
+                        color: "var(--color-on-accent)",
+                    },
                 },
             },
             ...refChipKinds.map(kind => ({
@@ -397,12 +531,16 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
                     variant: kind,
                 },
                 //
-                // Each kind of ref is outlined in its colour, with no fill.
+                // Each kind of ref is outlined in its colour, with no fill, and its icon takes the
+                // same colour.
                 //
                 style: {
                     backgroundColor: "transparent",
                     boxShadow: `inset 0 0 0 1px ${refChipColours[kind]}`,
                     color: "var(--color-text)",
+                    "& .MuiChip-icon": {
+                        color: refChipColours[kind],
+                    },
                 },
             })),
         ],
@@ -422,6 +560,22 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
             },
             label: {
                 padding: 0,
+            },
+            //
+            // The root's padding above the text moves the badge's content down half of it, so the
+            // icon is raised by the whole step to sit in the middle of the badge.
+            //
+            icon: {
+                margin: "calc(var(--space-1) / -2) 0 0",
+                fontSize: "var(--icon-sm)",
+            },
+            deleteIcon: {
+                margin: 0,
+                fontSize: "var(--icon-sm)",
+                color: "var(--color-text-muted)",
+                "&:hover": {
+                    color: "var(--color-text)",
+                },
             },
         },
     },

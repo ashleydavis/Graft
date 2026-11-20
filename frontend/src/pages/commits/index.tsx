@@ -131,12 +131,12 @@ export function CommitColumns({ repoPath }: ICommitColumnsProps): JSX.Element {
     }, [commits, filePaths]);
 
     return (
-        <main ref={pageRef} tabIndex={-1} data-id="commits-page" className="graft-page-in outline-none flex min-h-full w-max min-w-full flex-col gap-4 bg-[var(--color-bg)] p-6">
+        <main ref={pageRef} tabIndex={-1} data-id="commits-page" className="graft-page-in outline-none flex h-full w-max min-w-full flex-col gap-4 bg-[var(--color-bg)] p-6">
             <div className="flex items-baseline gap-4">
                 <h1 data-id="commits-heading" className="text-[length:var(--text-2xl)] font-[var(--weight-bold)] text-[var(--color-text)]">Commits</h1>
                 <Link to="/about" data-id="commits-about-link" className="text-[length:var(--text-md)] text-[var(--color-accent)] underline-offset-2 transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:text-[var(--color-accent-hover)] hover:underline">About</Link>
             </div>
-            <div ref={columnsRef} data-id="commit-columns" className="flex items-start gap-3">
+            <div ref={columnsRef} data-id="commit-columns" className="flex min-h-0 flex-1 items-stretch gap-3">
                 <CommitPane commits={commits} error={error} selectedHash={explorer.selectedHash} openHash={explorer.openHash} isActive={explorer.activePaneIndex === 0} dateFormat={dateFormat} onSelectCommit={hash => setExplorer(selectCommit(hash))} />
                 {explorer.openHash !== undefined && (
                     <CommitDetailsPane
@@ -144,6 +144,7 @@ export function CommitColumns({ repoPath }: ICommitColumnsProps): JSX.Element {
                         repoPath={repoPath}
                         hash={explorer.openHash}
                         selectedPath={explorer.selectedPath}
+                        openPath={explorer.openPath}
                         isActive={explorer.activePaneIndex === 1}
                         dateFormat={dateFormat}
                         onSelectFile={path => setExplorer(state => selectFile(state, path))}

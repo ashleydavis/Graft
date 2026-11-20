@@ -18,7 +18,7 @@ describe("RightSidebar", () => {
         }));
         const sidebar = container.querySelector("[data-id=\"right-sidebar\"]");
         expect(sidebar?.classList.contains("w-0")).toBe(true);
-        expect(sidebar?.classList.contains("w-[340px]")).toBe(false);
+        expect(sidebar?.classList.contains("w-[320px]")).toBe(false);
         expect(sidebar?.classList.contains("border-l")).toBe(false);
         expect(container.querySelector("[data-id=\"right-sidebar-content\"]")).toBeNull();
         expect(container.querySelector("[data-id=\"sidebar-child\"]")).toBeNull();
@@ -32,7 +32,7 @@ describe("RightSidebar", () => {
             }, "The child"),
         }));
         const sidebar = container.querySelector("[data-id=\"right-sidebar\"]");
-        expect(sidebar?.classList.contains("w-[340px]")).toBe(true);
+        expect(sidebar?.classList.contains("w-[320px]")).toBe(true);
         expect(sidebar?.classList.contains("w-0")).toBe(false);
         expect(sidebar?.classList.contains("border-l")).toBe(true);
         expect(sidebar?.querySelector("[data-id=\"right-sidebar-content\"] [data-id=\"sidebar-child\"]")?.textContent).toBe("The child");

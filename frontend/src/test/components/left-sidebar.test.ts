@@ -72,7 +72,7 @@ describe("LeftSidebar", () => {
     test("is wide and shows each link's name while expanded", async () => {
         const container = await renderLeftSidebar(false, true);
         const sidebar = elementWithDataId(container, "left-sidebar");
-        expect(sidebar?.classList.contains("w-60")).toBe(true);
+        expect(sidebar?.classList.contains("w-64")).toBe(true);
         expect(sidebar?.classList.contains("w-16")).toBe(false);
         expect(elementWithDataId(container, "left-sidebar-commits-link-label")?.textContent).toBe("Commits");
         expect(elementWithDataId(container, "left-sidebar-help-link-label")?.textContent).toBe("Help");
@@ -83,7 +83,7 @@ describe("LeftSidebar", () => {
         const container = await renderLeftSidebar(true, true);
         const sidebar = elementWithDataId(container, "left-sidebar");
         expect(sidebar?.classList.contains("w-16")).toBe(true);
-        expect(sidebar?.classList.contains("w-60")).toBe(false);
+        expect(sidebar?.classList.contains("w-64")).toBe(false);
         expect(elementWithDataId(container, "left-sidebar-commits-link-label")).toBeUndefined();
         expect(elementWithDataId(container, "left-sidebar-about-link-label")).toBeUndefined();
         expect(elementWithDataId(container, "left-sidebar-help-link-label")).toBeUndefined();
@@ -96,11 +96,11 @@ describe("LeftSidebar", () => {
     test("names each link in its label and tooltip, whether expanded or minimised", async () => {
         const container = await renderLeftSidebar(true, true);
         expect(elementWithDataId(container, "left-sidebar-commits-link")?.getAttribute("aria-label")).toBe("Commits");
-        expect(elementWithDataId(container, "left-sidebar-commits-link")?.getAttribute("title")).toBe("Commits");
+        expect(elementWithDataId(container, "left-sidebar-commits-link")?.getAttribute("aria-label")).toBe("Commits");
         expect(elementWithDataId(container, "left-sidebar-about-link")?.getAttribute("aria-label")).toBe("About");
-        expect(elementWithDataId(container, "left-sidebar-about-link")?.getAttribute("title")).toBe("About");
+        expect(elementWithDataId(container, "left-sidebar-about-link")?.getAttribute("aria-label")).toBe("About");
         expect(elementWithDataId(container, "left-sidebar-help-link")?.getAttribute("aria-label")).toBe("Help");
-        expect(elementWithDataId(container, "left-sidebar-help-link")?.getAttribute("title")).toBe("Help");
+        expect(elementWithDataId(container, "left-sidebar-help-link")?.getAttribute("aria-label")).toBe("Help");
     });
 
     test("links to the commits page, the Help page and the About page", async () => {
