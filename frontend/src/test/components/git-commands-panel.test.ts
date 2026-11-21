@@ -1,7 +1,7 @@
 //
 // Tests the Git commands panel: what it says when the page has run no commands, and that it shows
-// the cd into the repo above the page's commands, the most recent first, each with a copy button
-// that copies it and how long it took, with the total time of them all.
+// the cd into the repo above the page's most recent commands, at most two, each with a copy button
+// that copies it and how long it took, with the total time of every command the page ran.
 //
 
 import { act, render } from "@testing-library/react";
@@ -78,6 +78,37 @@ describe("GitCommandsPanel", () => {
         expect(elementWithDataId(container, "git-commands-total")?.textContent).toBe("1.4 s");
         expect(elementWithDataId(container, "git-commands-total")?.parentElement?.textContent).toBe("Total time: 1.4 s");
         expect(elementWithDataId(container, "git-command-0-duration")?.parentElement?.textContent).toBe("Took 12 ms");
+    });
+
+    test("lists only the two most recent commands and totals every command the page ran", () => {
+        const { container } = render(createElement(GitCommandsPanel, {
+            pageCommands: {
+                directoryCommand: "cd /repo",
+                commands: [
+                    {
+                        command: "git diff-tree -p abc -- notes.txt",
+                        durationMs: 10,
+                    },
+                    {
+                        command: "git diff-tree --numstat abc",
+                        durationMs: 20,
+                    },
+                    {
+                        command: "git diff-tree --name-status abc",
+                        durationMs: 30,
+                    },
+                    {
+                        command: "git log --max-count=50",
+                        durationMs: 40,
+                    },
+                ],
+            },
+        }));
+        expect(container.querySelectorAll('[data-id="git-commands-list"] > li').length).toBe(2);
+        expect(elementWithDataId(container, "git-command-0-text")?.textContent).toBe("git diff-tree -p abc -- notes.txt");
+        expect(elementWithDataId(container, "git-command-1-text")?.textContent).toBe("git diff-tree --numstat abc");
+        expect(elementWithDataId(container, "git-command-2")).toBeUndefined();
+        expect(elementWithDataId(container, "git-commands-total")?.textContent).toBe("100 ms");
     });
 
     test("copies the cd and each command with its own button", async () => {

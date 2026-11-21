@@ -1,10 +1,10 @@
 //
 // Tests the record of the Git commands each page has run: which task data is a Git command event,
-// how a command is added to a page's commands, which page's commands the help panel shows, the
-// total time of a page's commands and how a duration is written.
+// how a command is added to a page's commands, which page's commands the help panel shows, which of
+// them it lists, the total time of a page's commands and how a duration is written.
 //
 
-import { addGitCommand, formatDuration, IGitCommandEvent, IPageGitCommands, isGitCommandEvent, MAX_COMMANDS_PER_PAGE, pageGitCommands, totalDurationMs } from "../../lib/git-commands";
+import { addGitCommand, COMMANDS_SHOWN_MAX, formatDuration, IGitCommandEvent, IPageGitCommands, isGitCommandEvent, MAX_COMMANDS_PER_PAGE, pageGitCommands, shownGitCommands, totalDurationMs } from "../../lib/git-commands";
 
 //
 // Makes the event for the command run in /repo that took 5 ms.
@@ -166,6 +166,43 @@ describe("pageGitCommands", () => {
         const history = addGitCommand(new Map(), "repo-explorer-page", commandEvent("git log"));
         expect(pageGitCommands(history, "/")).toBeUndefined();
         expect(pageGitCommands(history, "/help")).toBeUndefined();
+    });
+});
+
+describe("shownGitCommands", () => {
+    test("shows only the two most recent commands of a page that ran many", () => {
+        let history: ReadonlyMap<string, IPageGitCommands> = new Map();
+        history = addGitCommand(history, "commits-page", commandEvent("git log --max-count=50"));
+        history = addGitCommand(history, "commits-page", commandEvent("git log --max-count=1 abc"));
+        history = addGitCommand(history, "commits-page", commandEvent("git diff-tree -r --root --no-commit-id --name-status abc"));
+        history = addGitCommand(history, "commits-page", commandEvent("git diff-tree -r --root --no-commit-id --numstat abc"));
+        history = addGitCommand(history, "commits-page", commandEvent("git diff-tree -r -p --root --no-commit-id abc -- notes.txt"));
+        const pageCommands = history.get("commits-page");
+        expect(pageCommands).toBeDefined();
+        if (pageCommands) {
+            expect(COMMANDS_SHOWN_MAX).toBe(2);
+            expect(shownGitCommands(pageCommands).map(run => run.command)).toEqual([
+                "git diff-tree -r -p --root --no-commit-id abc -- notes.txt",
+                "git diff-tree -r --root --no-commit-id --numstat abc",
+            ]);
+            expect(pageCommands.commands.length).toBe(5);
+        }
+    });
+
+    test("shows every command of a page that ran fewer than the most shown", () => {
+        const history = addGitCommand(new Map(), "commits-page", commandEvent("git log --max-count=50"));
+        const pageCommands = history.get("commits-page");
+        expect(pageCommands).toBeDefined();
+        if (pageCommands) {
+            expect(shownGitCommands(pageCommands).map(run => run.command)).toEqual(["git log --max-count=50"]);
+        }
+    });
+
+    test("shows no commands for a page with none", () => {
+        expect(shownGitCommands({
+            directoryCommand: "cd /repo",
+            commands: [],
+        })).toEqual([]);
     });
 });
 

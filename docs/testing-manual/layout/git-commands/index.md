@@ -2,7 +2,7 @@
 
 **ID:** git-commands
 
-Manual test steps for the Git commands the right sidebar shows for the open page and how long they took.
+Manual test steps for the Git commands the right sidebar shows for the open page, at most the two most recent, and how long they took.
 
 ## Sub-features
 

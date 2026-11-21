@@ -6,9 +6,17 @@
 
 //
 // The most commands kept for one page. A page that runs more, such as one where many commits are
-// opened, keeps the most recent ones, which fill the sidebar with room to spare.
+// opened, keeps the most recent ones. The panel's total time adds up every command kept, and the
+// panel lists the most recent COMMANDS_SHOWN_MAX of them.
 //
 export const MAX_COMMANDS_PER_PAGE = 20;
+
+//
+// The most commands the panel shows for one page. The page's most recent commands are the ones
+// that read what the user opened last, such as a file's diff or a commit's changed files, so two
+// of them show where the page's newest content came from without filling the sidebar.
+//
+export const COMMANDS_SHOWN_MAX = 2;
 
 //
 // The source each page queues its tasks under, by the page's path, so the help panel shows the
@@ -111,6 +119,14 @@ export function pageGitCommands(history: ReadonlyMap<string, IPageGitCommands>, 
         return undefined;
     }
     return history.get(source);
+}
+
+//
+// Picks the commands the panel shows for the page: its most recent ones, up to COMMANDS_SHOWN_MAX,
+// the most recent first. The rest stay in the page's commands so the total time covers them too.
+//
+export function shownGitCommands(pageCommands: IPageGitCommands): IGitCommandRun[] {
+    return pageCommands.commands.slice(0, COMMANDS_SHOWN_MAX);
 }
 
 //

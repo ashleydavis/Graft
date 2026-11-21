@@ -72,7 +72,7 @@ wait_for_text changes-staged-heading "Staged (1)" 30
 wait_for_staged "M	notes.txt"
 wait_for_text git-command-0-text "git diff --cached -- notes.txt" 30
 wait_for_text git-command-1-text "git status --porcelain=v1 --untracked-files=all --no-renames" 30
-wait_for_text git-command-2-text "git add -- notes.txt" 30
+wait_for_missing_element git-command-2 30
 wait_for_text file-diff "The changed note." 30
 
 click "change-unstaged-docs/new.txt"
@@ -103,7 +103,7 @@ wait_for_text changes-staged-heading "Staged (2)" 30
 wait_for_staged "D	README.md
 A	docs/new.txt"
 wait_for_text git-command-1-text "git status --porcelain=v1 --untracked-files=all --no-renames" 30
-wait_for_text git-command-2-text "git restore --staged -- notes.txt" 30
+wait_for_missing_element git-command-2 30
 wait_for_text file-pane-path "README.md" 30
 
 # The keys: Escape closes the file pane, then the changes pane, Enter on the selected Commit link

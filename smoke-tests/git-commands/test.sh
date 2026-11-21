@@ -2,11 +2,12 @@
 
 #
 # Creates a test repo of the smoke test's own, starts the real app with remote control on, opens the
-# repo with the welcome page's Open repo button and checks the right sidebar shows the Git commands
-# the repo explorer page runs: none while the repo details pane is alone, git log when the commit
-# pane opens, then git log and git diff-tree when a commit opens and git diff-tree for a file's
-# diff. It checks every command the repo explorer page ran shows how long it took and the panel
-# shows their total time. It checks the commands stay when a pane closes and when the sidebar closes
+# repo with the welcome page's Open repo button and checks the right sidebar lists the two Git
+# commands the repo explorer page ran most recently: none while the repo details pane is alone, git
+# log when the commit pane opens, then the two git diff-tree commands for a commit's changed files
+# when a commit opens and git diff-tree for a file's diff above the line counts when a file opens.
+# It checks every command listed shows how long it took and the panel shows the total time of every
+# command the page ran. It checks the commands stay when a pane closes and when the sidebar closes
 # and that the About page shows none. It runs every command the sidebar shows in a terminal's shell,
 # after the cd it shows, so a command that does not work fails the test. See test.md.
 #
@@ -22,9 +23,9 @@ repo="$ZIGGY_TEST_DIR/repo"
 head_hash="$(git -C "$repo" rev-parse HEAD)" || fail "could not read the test repo's newest commit"
 
 #
-# The most commands the sidebar can show for one page, the limit the frontend keeps.
+# The most commands the sidebar lists for one page, COMMANDS_SHOWN_MAX in the frontend.
 #
-MAX_COMMANDS=20
+MAX_COMMANDS=2
 
 #
 # Fails unless the duration the element with the data-id shows is written as the panel writes one:
@@ -41,8 +42,7 @@ check_duration_text() {
 }
 
 #
-# Checks every command the repo explorer page ran shows its duration and the panel shows the total time
-# of them all.
+# Checks every command the sidebar lists shows its duration and the panel shows the total time.
 #
 check_durations() {
     local index=0
@@ -104,23 +104,26 @@ wait_for_text git-commands-empty "This page has run no Git commands." 30
 open_commit_pane
 wait_for_text git-command-0-text "git log --max-count=50" 30
 wait_for_text git-commands-directory "cd $repo" 30
+run_shown_commands
 
 wait_for_element "commit-$head_hash" 30
 click "commit-$head_hash"
 wait_for_element commit-details 30
 wait_for_text git-command-0-text "git diff-tree -r --root --no-commit-id --numstat $head_hash" 30
 wait_for_text git-command-1-text "git diff-tree -r --root --no-commit-id --name-status $head_hash" 30
-wait_for_text git-command-2-text "git log --max-count=1 $head_hash" 30
-wait_for_text git-command-3-text "git log --max-count=50" 30
+wait_for_missing_element git-command-2 30
 
 click changed-file-notes.txt
 wait_for_element file-diff 30
 wait_for_text git-command-0-text "git diff-tree -r -p --root --no-commit-id $head_hash -- notes.txt" 30
+wait_for_text git-command-1-text "git diff-tree -r --root --no-commit-id --numstat $head_hash" 30
+wait_for_missing_element git-command-2 30
 
 click commit-details-close
 wait_for_missing_element commit-details-pane 30
 wait_for_text git-command-0-text "git diff-tree -r -p --root --no-commit-id $head_hash -- notes.txt" 30
-wait_for_text git-command-4-text "git log --max-count=50" 30
+wait_for_text git-command-1-text "git diff-tree -r --root --no-commit-id --numstat $head_hash" 30
+wait_for_missing_element git-command-2 30
 check_durations
 
 click right-sidebar-toggle
