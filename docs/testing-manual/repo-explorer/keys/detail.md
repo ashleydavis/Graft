@@ -37,8 +37,17 @@ On macOS press Cmd+1 wherever these steps say Ctrl+1.
 9. Click "Help" in the left sidebar, then press Ctrl+1. Check the repo explorer page opens again on the repo details pane.
 10. Click "About" in the left sidebar. Click the breadcrumb trail's "About" step to open its drop-down. In its search box type "a", press Left and type "b". Check the drop-down shows that no page matches "ba", so Left moved the cursor. Press Escape to close it.
 11. Choose Dark from the theme menu in the top bar, press Ctrl+1, press Down and Enter to open the commit list and repeat steps 2 to 4. Check the selected item and the active pane's border are drawn in dark colours and are easy to see.
-12. Close the window.
+12. Choose Light from the theme menu. In a terminal, add a commit that changes two files to the test repo:
+
+    ```bash
+    printf '# The test repo\n' > /tmp/graft/test-repo/README.md
+    printf 'The third note.\n' > /tmp/graft/test-repo/notes.txt
+    git -C /tmp/graft/test-repo commit --all --message "Change two files"
+    ```
+
+    Back in Graft press Ctrl+1, press Escape until only the repo details pane is open, then press Enter to open the commit list. Press Down and Enter on "Change two files", then Down and Enter on README.md, and check the file pane shows its diff. Press Left so the commit details pane has the blue border. Press Down. Check notes.txt is selected and the file pane shows its diff at once, without Enter, while the commit details pane keeps the blue border. Press Up and check the file pane shows README.md's diff again. Press Down, then Enter, and check the blue border moves to the file pane. Press Up and check the file pane still shows notes.txt.
+13. Close the window.
 
 ## Expected result
 
-On the repo explorer page Up and Down move the selection. While a commit's details are open, Up and Down in the commit list show the newly selected commit at once. Left and Right move the active pane. Enter opens the selected Commits link, commit or file in the pane to the right and makes it active. Escape closes the rightmost pane. Clicking anywhere in a pane makes it the active pane. The selected item shows MaterialUI's selection styling and the active pane has a border in the theme's primary colour, in the light and dark themes. Ctrl+1 opens the repo explorer page from any page. The arrow keys still move the cursor in a text box.
+On the repo explorer page Up and Down move the selection. While a commit's details are open, Up and Down in the commit list show the newly selected commit at once. While a file's diff is open, Up and Down in the commit's changed files show the newly selected file's diff at once. Left and Right move the active pane. Enter opens the selected Commits link, commit or file in the pane to the right and makes it active. Escape closes the rightmost pane. Clicking anywhere in a pane makes it the active pane. The selected item shows MaterialUI's selection styling and the active pane has a border in the theme's primary colour, in the light and dark themes. Ctrl+1 opens the repo explorer page from any page. The arrow keys still move the cursor in a text box.

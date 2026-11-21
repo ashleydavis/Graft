@@ -441,6 +441,38 @@ describe("moveSelection", () => {
         expect(moveSelection(detailsOpen, items, 1).selectedHash).toBe("bbb");
     });
 
+    test("leaves the file pane closed when it moves the selected file with no file open", () => {
+        expect(moveSelection(detailsOpen, items, 1).openPath).toBeUndefined();
+    });
+
+    test("opens the newly selected file in the file pane when a file is open, keeping the commit details pane active", () => {
+        const fileOpen: IRepoExplorerState = {
+            ...allOpen,
+            activePaneIndex: 2,
+            selectedPath: "README.md",
+            openPath: "README.md",
+        };
+        const down = moveSelection(fileOpen, items, 1);
+        expect(down.selectedPath).toBe("notes.txt");
+        expect(down.openPath).toBe("notes.txt");
+        expect(down.activePaneIndex).toBe(2);
+        const up = moveSelection(down, items, -1);
+        expect(up.selectedPath).toBe("README.md");
+        expect(up.openPath).toBe("README.md");
+        expect(up.activePaneIndex).toBe(2);
+    });
+
+    test("keeps the open file when the commit's files are not listed yet", () => {
+        const fileOpen: IRepoExplorerState = {
+            ...allOpen,
+            activePaneIndex: 2,
+        };
+        expect(moveSelection(fileOpen, {
+            ...items,
+            filePaths: [],
+        }, 1)).toBe(fileOpen);
+    });
+
     test("changes nothing in the file pane, which lists no items", () => {
         expect(moveSelection(allOpen, items, 1)).toBe(allOpen);
         expect(moveSelection(changeFileOpen, items, 1)).toBe(changeFileOpen);
@@ -571,6 +603,21 @@ describe("explorerStateAfterKey", () => {
             ...commitsOpen,
             selectedHash: "bbb",
         }, "ArrowUp", items).selectedHash).toBe("aaa");
+    });
+
+    test("Down in the commit's file list shows the next file's diff at once, and Enter then makes the file pane active", () => {
+        const fileOpen: IRepoExplorerState = {
+            ...allOpen,
+            activePaneIndex: 2,
+            selectedPath: "README.md",
+            openPath: "README.md",
+        };
+        const down = explorerStateAfterKey(fileOpen, "ArrowDown", items);
+        expect(down.openPath).toBe("notes.txt");
+        expect(down.activePaneIndex).toBe(2);
+        const enter = explorerStateAfterKey(down, "Enter", items);
+        expect(enter.openPath).toBe("notes.txt");
+        expect(enter.activePaneIndex).toBe(3);
     });
 
     test("Left makes the pane to the left active and stops at the repo details pane", () => {
