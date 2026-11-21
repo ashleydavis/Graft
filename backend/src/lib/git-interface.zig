@@ -338,9 +338,13 @@ pub fn is_plain_shell_word(word: []const u8) bool {
 
 //
 // Starts `git` (found on PATH) with the arguments, waits for it to end and reports its exit code,
-// standard output and standard error. A `git` that exits with an error still returns its result,
-// and the caller reads the exit code, because what a failure means depends on the command. The
-// function returns an error when it fails to start `git`.
+// standard output and standard error. Git runs with Graft's own environment, so it reads the
+// user's git config from their home directory and the variables that set the author of a commit,
+// as git in the user's terminal does. A thread Ziggy gave an environment of its own (a test's)
+// passes that one. Any other thread passes a copy of the process's environment, because a spawn
+// given no environment starts git with an empty one on Linux and macOS. A `git` that exits with an
+// error still returns its result, and the caller reads the exit code, because what a failure means
+// depends on the command. The function returns an error when it fails to start `git`.
 //
 pub fn start_git(
     io: std.Io,
@@ -354,12 +358,24 @@ pub fn start_git(
 
     argv[0] = "git";
     @memcpy(argv[1..], args);
+
+    var arena_state = std.heap.ArenaAllocator.init(allocator);
+    defer arena_state.deinit();
+
+    var process_environ: std.process.Environ.Map = undefined;
+    var environ_map: *const std.process.Environ.Map = undefined;
+    if (ziggy.utils.process_env.getEnvironMap()) |thread_environ| {
+        environ_map = thread_environ;
+    } else {
+        process_environ = try ziggy.new_instance.process_environ_map(arena_state.allocator());
+        environ_map = &process_environ;
+    }
     const result = try std.process.run(allocator, io, .{
         .argv = argv,
         .stdout_limit = .unlimited,
         .stderr_limit = .unlimited,
         .cwd = .inherit,
-        .environ_map = null,
+        .environ_map = environ_map,
         .create_no_window = true,
         .timeout = .none,
     });

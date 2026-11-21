@@ -1,9 +1,12 @@
 //
 // Tests the commands the smoke tests send through the remote control connection: each command is
 // performed on a fake element finder, and each result is checked, including every failure and how
-// a result is turned into JSON.
+// a result is turned into JSON. The type command is also performed on a text box React controls,
+// to check React sees the typed value.
 //
 
+import { render } from "@testing-library/react";
+import { ChangeEvent, createElement } from "react";
 import { elementInViewResult, IElementFinder, IFoundElement, IHorizontalBounds, performTestCommand, testResultToJson } from "../../lib/test-commands";
 
 //
@@ -152,6 +155,28 @@ describe("performTestCommand", () => {
         expect(element.value).toBe("typed");
         expect(element.events.map(event => event.type)).toEqual(["input"]);
         expect(element.events[0].bubbles).toBe(true);
+    });
+
+    test("type changes the value of a text box React controls, so React calls its onChange", () => {
+        const onChange = jest.fn();
+        render(createElement("textarea", {
+            "data-id": "message",
+            value: "",
+            onChange: (event: ChangeEvent<HTMLTextAreaElement>) => onChange(event.target.value),
+        }));
+        const finder: IElementFinder = {
+            find: (dataId: string) => document.querySelector<HTMLElement>(`[data-id="${dataId}"]`),
+            windowWidth: WINDOW_WIDTH,
+            windowHeight: WINDOW_HEIGHT,
+        };
+        expect(performTestCommand(finder, {
+            command: "type",
+            dataId: "message",
+            text: "Add the notes",
+        })).toEqual({
+            ok: true,
+        });
+        expect(onChange).toHaveBeenCalledWith("Add the notes");
     });
 
     test("type with no text fails and changes nothing", () => {

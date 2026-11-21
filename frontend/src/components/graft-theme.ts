@@ -264,6 +264,23 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
             },
         },
     },
+    MuiInputLabel: {
+        styleOverrides: {
+            root: {
+                color: "var(--color-text-muted)",
+                fontSize: "var(--text-md)",
+                "&.Mui-focused": {
+                    color: "var(--color-focus)",
+                },
+                "&.Mui-error": {
+                    color: "var(--color-danger)",
+                },
+                "&.Mui-disabled": {
+                    color: "var(--color-text-disabled)",
+                },
+            },
+        },
+    },
     MuiPaper: {
         styleOverrides: {
             outlined: {

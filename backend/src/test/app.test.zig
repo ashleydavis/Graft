@@ -49,4 +49,5 @@ test "the app registers the changes pane's tasks" {
     try std.testing.expect(has_task("working-file-diff"));
     try std.testing.expect(has_task("stage-file"));
     try std.testing.expect(has_task("unstage-file"));
+    try std.testing.expect(has_task("commit"));
 }

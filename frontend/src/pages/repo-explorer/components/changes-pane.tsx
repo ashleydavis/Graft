@@ -1,13 +1,15 @@
 //
 // The changes pane: the column the repo details pane's Commit link opens, headed "Commit", with
 // the working tree's unstaged files and staged files in two lists, as the style guide's Commit
-// page lays them out, and a button on each row that stages or unstages the whole file.
+// page lays them out, a button on each row that stages or unstages the whole file and the commit
+// section under the lists, with the commit message box and the Commit button.
 //
 
 import { faAnglesLeft, faAnglesRight, faCheck } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { IconButton, List, ListItemButton, Tooltip } from "@mui/material";
+import { Button, IconButton, List, ListItemButton, TextField, Tooltip } from "@mui/material";
 import { JSX } from "react";
+import { canCommit, commitButtonText, commitTip } from "../../../lib/commit";
 import { changeKey } from "../../../lib/repo-explorer";
 import { changedFileCount, IWorkingChanges, IWorkingFile } from "../../../lib/working-changes";
 import { activePaneClass } from "./active-pane-style";
@@ -44,15 +46,36 @@ export interface IChangesPaneProps {
     // Called with the file whose stage or unstage button the user clicks and whether it is in the
     // staged list.
     onToggleStaged(file: IWorkingFile, isStaged: boolean): void;
+
+    // The commit message as the user has written it so far.
+    commitMessage: string;
+
+    // Why the last commit was not made, with git's own error text, or undefined.
+    commitError: string | undefined;
+
+    // Whether a commit is being made, so the Commit button waits for it to end.
+    isCommitting: boolean;
+
+    // Called with the message each time the user changes it.
+    onCommitMessageChange(message: string): void;
+
+    // Called when the user clicks the Commit button.
+    onCommit(): void;
 }
 
 //
 // Shows the changes in a rounded card headed "Commit", with how many files changed and how many
 // are staged beside it in muted text, as the style guide's Changes pane is headed. The card is as
 // tall as the page's columns and never shrinks, as the other panes. Its border is in the style
-// guide's active pane colour while the pane is active. The card fades in as it opens.
+// guide's active pane colour while the pane is active. The card fades in as it opens. The commit
+// section sits at the bottom of the card, under the lists, as the style guide's Commit pane sits
+// under its Changes pane.
 //
-export function ChangesPane({ changes, error, stageError, selectedKey, openKey, isActive, onSelectChange, onToggleStaged }: IChangesPaneProps): JSX.Element {
+export function ChangesPane({ changes, error, stageError, selectedKey, openKey, isActive, onSelectChange, onToggleStaged, commitMessage, commitError, isCommitting, onCommitMessageChange, onCommit }: IChangesPaneProps): JSX.Element {
+    let stagedCount = 0;
+    if (changes) {
+        stagedCount = changes.staged.length;
+    }
     const title = (
         <span className="flex items-baseline gap-2">
             Commit
@@ -68,6 +91,7 @@ export function ChangesPane({ changes, error, stageError, selectedKey, openKey, 
             <div className="flex min-h-0 flex-1 flex-col">
                 <ChangesContent changes={changes} error={error} selectedKey={selectedKey} openKey={openKey} onSelectChange={onSelectChange} onToggleStaged={onToggleStaged} />
             </div>
+            <CommitSection message={commitMessage} stagedCount={stagedCount} error={commitError} isCommitting={isCommitting} onMessageChange={onCommitMessageChange} onCommit={onCommit} />
         </section>
     );
 }
@@ -335,8 +359,8 @@ export interface IStageTipProps {
 }
 
 //
-// Shows the stage button's tooltip: what the button does in bold, then what that means for the
-// file, as the style guide's tooltips with a title and a detail are laid out.
+// Shows the tooltip of the stage button and of the Commit button: what the button does in bold,
+// then what that means, as the style guide's tooltips with a title and a detail are laid out.
 //
 export function StageTip({ title, detail }: IStageTipProps): JSX.Element {
     return (
@@ -344,5 +368,69 @@ export function StageTip({ title, detail }: IStageTipProps): JSX.Element {
             <span className="font-[var(--weight-bold)]">{title}</span>
             <span className="text-[length:var(--text-xs)] font-[var(--weight-normal)] opacity-80">{detail}</span>
         </span>
+    );
+}
+
+//
+// What the commit section shows and what it reports.
+//
+export interface ICommitSectionProps {
+    // The commit message as the user has written it so far.
+    message: string;
+
+    // How many files are staged, which the Commit button counts.
+    stagedCount: number;
+
+    // Why the last commit was not made, with git's own error text, or undefined.
+    error: string | undefined;
+
+    // Whether a commit is being made, so the Commit button waits for it to end.
+    isCommitting: boolean;
+
+    // Called with the message each time the user changes it.
+    onMessageChange(message: string): void;
+
+    // Called when the user clicks the Commit button.
+    onCommit(): void;
+}
+
+//
+// Shows the commit message box and the Commit button below it, across the bottom of the changes
+// pane, as the style guide's Commit pane lays them out. The button counts the staged files and is
+// disabled while the message is empty, no file is staged or a commit is being made, with a tooltip
+// that names what is missing. Why the last commit failed shows between the box and the button,
+// keeping git's line breaks, so a hook's output reads as git wrote it.
+//
+export function CommitSection({ message, stagedCount, error, isCommitting, onMessageChange, onCommit }: ICommitSectionProps): JSX.Element {
+    const tip = commitTip(message, stagedCount);
+    const isDisabled = isCommitting || !canCommit(message, stagedCount);
+    return (
+        <section data-id="commit-section" aria-label="Commit the staged files" className="flex flex-none flex-col gap-[var(--space-4)] border-t border-[var(--color-border)] px-[var(--space-3)] pb-[var(--space-3)] pt-[var(--space-4)]">
+            <TextField
+                size="small"
+                fullWidth={true}
+                multiline={true}
+                minRows={4}
+                maxRows={10}
+                label="Commit message"
+                value={message}
+                onChange={event => onMessageChange(event.target.value)}
+                slotProps={{
+                    htmlInput: {
+                        "data-id": "commit-message",
+                    },
+                }}
+            />
+            {error !== undefined && (
+                <p data-id="commit-error" className="max-h-[160px] overflow-auto whitespace-pre-wrap rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[length:var(--text-sm)] text-[var(--color-text)]">{error}</p>
+            )}
+            <Tooltip title={<StageTip title={tip.title} detail={tip.detail} />}>
+                <span className="block">
+                    <Button data-id="commit-button" variant="contained" fullWidth={true} disabled={isDisabled} onClick={onCommit}>
+                        {commitButtonText(stagedCount)}
+                    </Button>
+                </span>
+            </Tooltip>
+        </section>
     );
 }

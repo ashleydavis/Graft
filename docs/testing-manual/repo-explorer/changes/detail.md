@@ -38,10 +38,22 @@ bun run macos
 8. In a terminal run `git -C /tmp/graft/test-repo status --short` and check notes.txt is staged.
 9. Stage README.md and docs/new.txt. Check the Unstaged list shows "Everything is staged." and the terminal shows all three files staged.
 10. Click the double chevron left on notes.txt. Check it moves back to the Unstaged list, the Git commands panel lists at most two commands, with `git status --porcelain=v1 --untracked-files=all --no-renames` among them, and the terminal shows notes.txt modified and not staged.
-11. Press Escape twice. Check the first closes the file pane and the second closes the changes pane, leaving "Commit" selected.
-12. Choose Dark from the theme menu in the top bar and repeat steps 4 to 6. Check the pane is drawn in dark colours and its text is readable.
-13. Close the window.
+11. Check the bottom of the pane shows a "Commit message" box and a "Commit 2 files" button, disabled while the box is empty. Hover the button and check the tooltip shows "Write a commit message.".
+12. In a terminal add a pre-commit hook that fails:
+
+    ```bash
+    mkdir -p /tmp/graft/test-repo/.git/hooks
+    printf '#!/bin/sh\necho "The pre-commit hook refused the commit." >&2\nexit 1\n' > /tmp/graft/test-repo/.git/hooks/pre-commit
+    chmod +x /tmp/graft/test-repo/.git/hooks/pre-commit
+    ```
+
+13. Type "Remove the readme" in the message box, press Enter twice and type "Add the new file too.". Check the button is enabled, then click it. Check the commit section shows "Git did not make the commit:" with "The pre-commit hook refused the commit." under it, the message stays in the box and the Staged list still holds both files.
+14. Remove the hook with `rm /tmp/graft/test-repo/.git/hooks/pre-commit` and click the Commit button again. Check the error goes, the message box empties, the Staged list shows "Nothing staged yet.", the button shows "Nothing to commit" and the Git commands panel lists at most two commands, with `git commit --message` and the message among them.
+15. Run `git -C /tmp/graft/test-repo log -1` in the terminal and check the newest commit has both lines of the message. Click "Commits" in the repo details pane and check the commit pane lists "Remove the readme" first.
+16. Click "Commit" again, then press Escape twice. Check the first closes the file pane if it is open and the next closes the changes pane, leaving "Commit" selected.
+17. Choose Dark from the theme menu in the top bar and repeat steps 4 to 6 and 11. Check the pane and its commit section are drawn in dark colours and their text is readable.
+18. Close the window.
 
 ## Expected result
 
-The Commit link opens the changes pane with the unstaged and staged files in two lists. Clicking a file shows its diff in the file pane to the right. Each file's button stages or unstages the whole file, the lists show what git holds after each, and the Git commands panel lists the two git commands the page ran most recently, in the light and dark themes.
+The Commit link opens the changes pane with the unstaged and staged files in two lists. Clicking a file shows its diff in the file pane to the right. Each file's button stages or unstages the whole file, the lists show what git holds after each, the Commit button commits the staged files with the message or shows git's error text when git refuses, and the Git commands panel lists the two git commands the page ran most recently, in the light and dark themes.

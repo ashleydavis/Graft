@@ -3,7 +3,8 @@
 // test makes its own repo in a uniquely named directory under the project's `tmp/`, so the tests
 // can run in parallel with themselves, and checks only that the function starts git with the
 // arguments, reports its exit code, standard output and standard error and sends the event that
-// names the command with how long it ran, and how that command is written for a shell.
+// names the command with how long it ran, and how that command is written for a shell. It checks
+// git runs with the environment Ziggy gives the calling thread, or with the process's own.
 //
 
 const std = @import("std");
@@ -162,6 +163,42 @@ test "start_git reports git's error exit code and standard error without failing
     try std.testing.expectEqual(@as(?u8, 128), result.exit_code);
     try std.testing.expectEqualStrings("", result.stdout);
     try std.testing.expect(result.stderr.len > 0);
+}
+
+test "start_git runs git with the environment Ziggy gives the calling thread" {
+    var environment = try std.testing.environ.createMap(std.testing.allocator);
+    defer environment.deinit();
+
+    try environment.put("GIT_AUTHOR_NAME", "Ada Author");
+    try environment.put("GIT_AUTHOR_EMAIL", "ada@example.com");
+    ziggy.utils.process_env.setEnvironMap(&environment);
+    defer ziggy.utils.process_env.setEnvironMap(null);
+
+    const result = try git_interface.start_git(io, std.testing.allocator, &.{
+        "var",
+        "GIT_AUTHOR_IDENT",
+    });
+    defer std.testing.allocator.free(result.stdout);
+    defer std.testing.allocator.free(result.stderr);
+
+    try std.testing.expectEqual(@as(?u8, 0), result.exit_code);
+    try std.testing.expect(std.mem.startsWith(u8, result.stdout, "Ada Author <ada@example.com> "));
+}
+
+test "start_git runs git with the process's environment when the thread has none of its own" {
+    try std.testing.expectEqual(
+        @as(?*const std.process.Environ.Map, null),
+        ziggy.utils.process_env.getEnvironMap(),
+    );
+    const result = try git_interface.start_git(io, std.testing.allocator, &.{
+        "-c",
+        "alias.has-home=!test -n \"$HOME\"",
+        "has-home",
+    });
+    defer std.testing.allocator.free(result.stdout);
+    defer std.testing.allocator.free(result.stderr);
+
+    try std.testing.expectEqual(@as(?u8, 0), result.exit_code);
 }
 
 //

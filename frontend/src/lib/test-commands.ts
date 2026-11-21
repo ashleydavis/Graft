@@ -130,7 +130,7 @@ export function performTestCommand(finder: IElementFinder, command: ITestCommand
         if (command.text === undefined) {
             return { ok: false, error: "The type command needs text." };
         }
-        element.value = command.text;
+        setElementValue(element, command.text);
         element.dispatchEvent(new Event("input", { bubbles: true }));
         return { ok: true };
     }
@@ -147,6 +147,23 @@ export function performTestCommand(finder: IElementFinder, command: ITestCommand
         return elementInViewResult(element.getBoundingClientRect(), finder.windowWidth, command.dataId);
     }
     return { ok: false, error: `Unknown test command ${command.command}.` };
+}
+
+//
+// Sets the element's value for the type command so React sees the change and calls the control's
+// onChange, as when a user types. React watches a control's value through a setter it puts on the
+// element itself, and a value set through that setter looks to React like its own, so the input
+// event that follows changes nothing. The setter of the element's prototype, the browser's own,
+// sets the value past React's. An element with no such setter has its value set directly.
+//
+export function setElementValue(element: IFoundElement, text: string): void {
+    const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), "value")?.set;
+    if (setter) {
+        setter.call(element, text);
+    }
+    else {
+        element.value = text;
+    }
 }
 
 //

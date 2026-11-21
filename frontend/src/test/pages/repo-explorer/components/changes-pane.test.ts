@@ -4,7 +4,10 @@
 // buttons, what it shows while the changes load, when they could not be read, when a stage failed
 // and when there are none, that each row and button reports its file, that a button's click does
 // not select its row and that the pane marks the selected and open rows and its active border. It
-// checks the stage button's tooltip shows what the button does and what that means.
+// checks the stage button's tooltip shows what the button does and what that means. It checks the
+// commit section under the lists: the message box reports each change, the Commit button counts
+// the staged files, is disabled while the message is empty, no file is staged or a commit is being
+// made, reports its click once enabled and shows why the last commit failed with git's line breaks.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
@@ -44,7 +47,7 @@ const changes: IWorkingChanges = {
 
 //
 // What a test renders the pane with, each left out taking a value of nothing selected or open,
-// no errors and an inactive pane.
+// no errors, an inactive pane, an empty commit message and no commit being made.
 //
 interface IRenderOptions {
     changes: IWorkingChanges | undefined;
@@ -55,6 +58,11 @@ interface IRenderOptions {
     isActive?: boolean;
     onSelectChange?: jest.Mock;
     onToggleStaged?: jest.Mock;
+    commitMessage?: string;
+    commitError?: string;
+    isCommitting?: boolean;
+    onCommitMessageChange?: jest.Mock;
+    onCommit?: jest.Mock;
 }
 
 //
@@ -70,6 +78,11 @@ function renderPane(options: IRenderOptions): void {
         isActive: options.isActive ?? false,
         onSelectChange: options.onSelectChange ?? jest.fn(),
         onToggleStaged: options.onToggleStaged ?? jest.fn(),
+        commitMessage: options.commitMessage ?? "",
+        commitError: options.commitError,
+        isCommitting: options.isCommitting ?? false,
+        onCommitMessageChange: options.onCommitMessageChange ?? jest.fn(),
+        onCommit: options.onCommit ?? jest.fn(),
     }));
 }
 
@@ -104,7 +117,7 @@ describe("ChangesPane", () => {
         expect(elementWithDataId("changes-unstaged-heading").textContent).toBe("Unstaged (2)");
         expect(elementWithDataId("changes-staged-heading").textContent).toBe("Staged (2)");
         const sections = Array.from(document.querySelectorAll("section section")).map(section => section.getAttribute("data-id"));
-        expect(sections).toEqual(["changes-unstaged", "changes-staged"]);
+        expect(sections).toEqual(["changes-unstaged", "changes-staged", "commit-section"]);
         expect(rowIds("changes-unstaged-list")).toEqual(["change-unstaged-notes.txt", "change-unstaged-docs/new.txt"]);
         expect(rowIds("changes-staged-list")).toEqual(["change-staged-old.txt", "change-staged-notes.txt"]);
         expect(elementWithDataId("change-unstaged-docs/new.txt").textContent).toBe("docs/new.txt");
@@ -223,6 +236,118 @@ describe("ChangesPane", () => {
             isActive: true,
         });
         expect(elementWithDataId("changes-pane").className).toContain(activePaneClasses);
+    });
+});
+
+//
+// Reads the Commit button, failing the test when the pane does not show it.
+//
+function commitButton(): HTMLButtonElement {
+    const button = elementWithDataId("commit-button");
+    expect(button).toBeInstanceOf(HTMLButtonElement);
+
+    //
+    // The cast is safe because the expect above fails the test for any other element, and a type
+    // guard cannot narrow it because Jest's expect does not narrow the type.
+    //
+    return button as HTMLButtonElement;
+}
+
+describe("ChangesPane commit section", () => {
+    test("shows the message box and the Commit button under the lists", () => {
+        renderPane({
+            changes,
+            commitMessage: "Add the notes",
+        });
+        const pane = elementWithDataId("changes-pane");
+        expect(pane.lastElementChild?.getAttribute("data-id")).toBe("commit-section");
+        expect(screen.getByLabelText("Commit message")).toBe(elementWithDataId("commit-message"));
+        expect(elementWithDataId("commit-message")).toHaveProperty("value", "Add the notes");
+        expect(commitButton().textContent).toBe("Commit 2 files");
+        expect(commitButton().disabled).toBe(false);
+    });
+
+    test("reports each change to the message", () => {
+        const onCommitMessageChange = jest.fn();
+        renderPane({
+            changes,
+            onCommitMessageChange,
+        });
+        fireEvent.change(elementWithDataId("commit-message"), {
+            target: {
+                value: "Fix the notes",
+            },
+        });
+        expect(onCommitMessageChange).toHaveBeenCalledWith("Fix the notes");
+    });
+
+    test("reports a click on the Commit button once it is enabled", () => {
+        const onCommit = jest.fn();
+        renderPane({
+            changes,
+            commitMessage: "Add the notes",
+            onCommit,
+        });
+        fireEvent.click(commitButton());
+        expect(onCommit).toHaveBeenCalledTimes(1);
+    });
+
+    test("disables the Commit button while the message is empty or only white space", () => {
+        renderPane({
+            changes,
+            commitMessage: " \n ",
+        });
+        expect(commitButton().disabled).toBe(true);
+        expect(commitButton().textContent).toBe("Commit 2 files");
+    });
+
+    test("disables the Commit button and shows 'Nothing to commit' while no file is staged", () => {
+        renderPane({
+            changes: {
+                unstaged: changes.unstaged,
+                staged: [],
+            },
+            commitMessage: "Add the notes",
+        });
+        expect(commitButton().disabled).toBe(true);
+        expect(commitButton().textContent).toBe("Nothing to commit");
+    });
+
+    test("disables the Commit button while the changes are read", () => {
+        renderPane({
+            changes: undefined,
+            commitMessage: "Add the notes",
+        });
+        expect(commitButton().disabled).toBe(true);
+        expect(commitButton().textContent).toBe("Nothing to commit");
+    });
+
+    test("disables the Commit button while a commit is being made", () => {
+        renderPane({
+            changes,
+            commitMessage: "Add the notes",
+            isCommitting: true,
+        });
+        expect(commitButton().disabled).toBe(true);
+    });
+
+    test("shows why the last commit failed with git's line breaks, above the Commit button", () => {
+        renderPane({
+            changes,
+            commitMessage: "Add the notes",
+            commitError: "Git did not make the commit:\nThe pre-commit hook found a problem.",
+        });
+        const error = elementWithDataId("commit-error");
+        expect(error.textContent).toBe("Git did not make the commit:\nThe pre-commit hook found a problem.");
+        expect(error.className).toContain("whitespace-pre-wrap");
+        expect(error.nextElementSibling?.contains(commitButton())).toBe(true);
+    });
+
+    test("shows no error while the last commit has not failed", () => {
+        renderPane({
+            changes,
+        });
+        expect(document.querySelector("[data-id=\"commit-error\"]")).toBeNull();
     });
 });
 

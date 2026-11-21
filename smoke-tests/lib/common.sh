@@ -285,6 +285,33 @@ text_of() {
 }
 
 #
+# Sets the value of the text box with the data-id to the text, as typing does. The text reaches jq
+# through the environment, as press_key's key does, so any character in it is sent as it is.
+# Usage: type_text <data-id> <text>
+#
+type_text() {
+    local line
+    line="$(TYPE_DATA_ID="$1" TYPE_TEXT="$2" jq -nc '{command: "type", dataId: env.TYPE_DATA_ID, text: env.TYPE_TEXT}')"
+    local answer
+    answer="$(control "$line")"
+    if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
+        fail "typing into $1 failed: $answer"
+    fi
+}
+
+#
+# Prints the value of the text box with the data-id. Usage: value_of <data-id>
+#
+value_of() {
+    local answer
+    answer="$(control "{\"command\":\"get-value\",\"dataId\":\"$1\"}")"
+    if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
+        fail "get-value $1 failed: $answer"
+    fi
+    printf '%s' "$answer" | jq -r '.value'
+}
+
+#
 # Waits until the text of the element contains the text, and fails with what it did show when it never does.
 # Usage: wait_for_text <data-id> <text> [seconds]
 #

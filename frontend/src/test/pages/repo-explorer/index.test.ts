@@ -14,7 +14,9 @@
 // with its panes, or with the message that no repo is open, because the breadcrumb trail names it.
 // Its Commit link opens the changes pane, which reads the working tree's changes, opens a changed
 // file's pane on a click or on Enter, and stages or unstages a file and reads the changes again,
-// with the file's pane following the file to the other list.
+// with the file's pane following the file to the other list. The commit section commits the
+// staged files with the typed message, clears it and reads the changes again, or shows git's error
+// text and keeps it.
 //
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
@@ -1036,5 +1038,75 @@ describe("RepoExplorerPage changes pane", () => {
         pressKey("Escape");
         expect(document.querySelector("[data-id=\"changes-pane\"]")).toBeNull();
         expect(isSelected("repo-details-commit")).toBe(true);
+    });
+});
+
+//
+// Types the message into the commit section's message box, as a user does.
+//
+function typeCommitMessage(message: string): void {
+    fireEvent.change(elementWithDataId("commit-message"), {
+        target: {
+            value: message,
+        },
+    });
+}
+
+describe("RepoExplorerPage commit section", () => {
+    test("commits the staged files with the message, clears the message and reads the changes again", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        typeCommitMessage("Remove the old file");
+        expect(elementWithDataId("commit-button").textContent).toBe("Commit 1 file");
+        fireEvent.click(elementWithDataId("commit-button"));
+        expect(taskTypeAt(ziggy, 1)).toBe("commit");
+        expect((ziggy.addTask as jest.Mock).mock.calls[1][0].data).toEqual({
+            repoPath: "/repo",
+            message: "Remove the old file",
+        });
+        expect(elementWithDataId("commit-button")).toHaveProperty("disabled", true);
+        completeTaskAt(ziggy, 1, {
+            message: "Remove the old file",
+        });
+        expect(elementWithDataId("commit-message")).toHaveProperty("value", "");
+        expect(taskTypeAt(ziggy, 2)).toBe("working-changes");
+        completeTaskAt(ziggy, 2, {
+            unstaged: changesJson.unstaged,
+            staged: [],
+        });
+        expect(await screen.findByText("Staged (0)")).not.toBeNull();
+        expect(elementWithDataId("commit-button").textContent).toBe("Nothing to commit");
+        expect(document.querySelector("[data-id=\"commit-error\"]")).toBeNull();
+    });
+
+    test("shows git's error text when the commit fails, keeps the message and clears the error on the next commit", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        typeCommitMessage("Remove the old file");
+        fireEvent.click(elementWithDataId("commit-button"));
+        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[1][0];
+        const onTaskCompleted = (ziggy.onTaskCompleted as jest.Mock).mock.calls[1][0];
+        act(() => {
+            onTaskCompleted({
+                taskId: task.taskId,
+                result: {
+                    taskId: task.taskId,
+                    status: "failed",
+                    errorMessage: "Git did not make the commit:\nThe pre-commit hook found a problem.",
+                    type: "commit",
+                    inputs: null,
+                },
+            });
+        });
+        expect(elementWithDataId("commit-error").textContent).toBe("Git did not make the commit:\nThe pre-commit hook found a problem.");
+        expect(elementWithDataId("commit-message")).toHaveProperty("value", "Remove the old file");
+        expect(elementWithDataId("commit-button")).toHaveProperty("disabled", false);
+        expect((ziggy.addTask as jest.Mock).mock.calls.length).toBe(2);
+
+        fireEvent.click(elementWithDataId("commit-button"));
+        completeTaskAt(ziggy, 2, {
+            message: "Remove the old file",
+        });
+        expect(document.querySelector("[data-id=\"commit-error\"]")).toBeNull();
     });
 });

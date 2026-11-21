@@ -10,6 +10,7 @@
 
 import { JSX, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRepo } from "../../components/repo-context";
+import { commitStagedFiles } from "../../lib/commit";
 import { ICommit, readCommitPage } from "../../lib/commits";
 import { changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, COMMIT_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, initialRepoExplorerState, IRepoExplorerState, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectCommit, selectFile, selectLink } from "../../lib/repo-explorer";
 import { toggleFileStaged } from "../../lib/stage-file";
@@ -73,7 +74,10 @@ export function RepoExplorerPage(): JSX.Element {
 // effects), before the browser paints, so a key pressed as soon as the page or its items show acts
 // on them. It reads the working tree's changes when the Commit link opens the changes pane and
 // again after each stage and unstage, so the lists show what git holds. The changed file's pane is
-// keyed by the number of reads, so its diff is read afresh with the lists.
+// keyed by the number of reads, so its diff is read afresh with the lists. The Commit button commits
+// the staged files with the message in the commit section, then clears the message and reads the
+// changes again, so the staged list empties. The commit pane shows the new commit because it reads
+// the commits afresh each time it opens.
 //
 export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const [commits, setCommits] = useState<ICommit[] | undefined>(undefined);
@@ -84,6 +88,9 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const [changesError, setChangesError] = useState<string | undefined>(undefined);
     const [stageError, setStageError] = useState<string | undefined>(undefined);
     const [changesReadCount, setChangesReadCount] = useState(0);
+    const [commitMessage, setCommitMessage] = useState("");
+    const [commitError, setCommitError] = useState<string | undefined>(undefined);
+    const [isCommitting, setIsCommitting] = useState(false);
     const pageRef = useRef<HTMLElement>(null);
     const columnsRef = useRef<HTMLDivElement>(null);
     const dateFormat = Intl.DateTimeFormat().resolvedOptions();
@@ -131,10 +138,34 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
         });
     }
 
+    //
+    // Commits the staged files with the message, then clears the message and reads the changes
+    // again. When git refuses, the commit section shows git's reason and keeps the message, so the
+    // user can fix the problem and commit again.
+    //
+    function onCommit(): void {
+        setIsCommitting(true);
+        commitStagedFiles({
+            taskId: `commit-${Date.now()}-${Math.random()}`,
+            repoPath,
+            message: commitMessage,
+        }, result => {
+            setIsCommitting(false);
+            if (!result.ok) {
+                setCommitError(result.error.message);
+                return;
+            }
+            setCommitError(undefined);
+            setCommitMessage("");
+            readChanges(state => state);
+        });
+    }
+
     useEffect(() => {
         setChanges(undefined);
         setChangesError(undefined);
         setStageError(undefined);
+        setCommitError(undefined);
         if (!isChangesOpen) {
             return;
         }
@@ -242,6 +273,11 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                         isActive={explorer.activePaneIndex === 1}
                         onSelectChange={key => setExplorer(state => selectChange(state, key))}
                         onToggleStaged={onToggleStaged}
+                        commitMessage={commitMessage}
+                        commitError={commitError}
+                        isCommitting={isCommitting}
+                        onCommitMessageChange={setCommitMessage}
+                        onCommit={onCommit}
                     />
                 )}
                 {isChangesOpen && openChange && (
