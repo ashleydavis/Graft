@@ -86,11 +86,12 @@ export interface IFileDiffCardProps {
 // and what went wrong when it could not be. The card is 840 pixels wide, or the width of the
 // page's visible area when that is narrower, so the whole diff can be scrolled into view. The
 // card's border is in the style guide's active pane colour while the pane is active. The card has
-// no shadow, as the style guide's file diff card has none. The card fades in as it opens.
+// no shadow, as the style guide's file diff card has none. The page's AnimatedPane column animates
+// it as it opens and closes.
 //
 export function FileDiffCard({ path, diff, error, isActive, onClose }: IFileDiffCardProps): JSX.Element {
     return (
-        <section data-id="file-pane" aria-label="File diff" className={`graft-pane-in flex w-[min(840px,calc(100cqw-var(--space-6)*2))] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activeFlatPaneClass(isActive)}`}>
+        <section data-id="file-pane" aria-label="File diff" className={`flex w-[min(840px,calc(100cqw-var(--space-6)*2))] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activeFlatPaneClass(isActive)}`}>
             <div className="flex flex-none items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-panel)] p-2">
                 <span title={path} className="flex min-w-0 flex-1 items-center gap-2 text-[length:var(--text-sm)] font-[var(--weight-medium)] text-[var(--color-text)]">
                     <FileIcon path={path} />

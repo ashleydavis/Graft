@@ -18,6 +18,10 @@
 // staged files with the typed message, clears it and reads the changes again, or shows git's error
 // text and keeps it. It checks the page puts a step in the breadcrumb trail for each open pane as
 // panes open and close, and takes them out when it closes.
+// Each pane after the repo details pane fades in as it opens, and as it closes stays drawn, inert,
+// in a column that fades and narrows until its animation ends, while the keys and clicks still act
+// on the other panes. Under reduced motion the columns have an empty animation class and a closed
+// pane goes at once.
 //
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
@@ -29,10 +33,12 @@ import { RepoProvider, useRepo } from "../../../components/repo-context";
 import { ITrailStep } from "../../../lib/breadcrumb-trail";
 import { ICommit } from "../../../lib/commits";
 import { formatDate, formatDateTime } from "../../../lib/date-format";
+import { REDUCED_MOTION_QUERY } from "../../../lib/pane-animation";
 import { RepoExplorerPage, scrollLastPaneIntoView } from "../../../pages/repo-explorer";
 import { activeFlatPaneClasses, activePaneClasses } from "../../../pages/repo-explorer/components/active-pane-style";
 import { openRowClasses } from "../../../pages/repo-explorer/components/commit-list";
 import { IFakeListLayout, installFakeListLayout } from "../../fake-list-layout";
+import { makeFakeMediaQuery } from "../../fake-media-query";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../../fake-ziggy";
 import { RepoOpener } from "../../repo-opener";
 
@@ -82,7 +88,23 @@ function lastPaneStepIds(): string[] {
 }
 
 //
-// Reads the data-ids of the elements the page scrolled into view, in the order it scrolled them.
+// Installs a fake window.matchMedia whose reduced motion query matches when isReducedMotion is
+// true. jsdom has no window.matchMedia and runs no animations, so a closing pane would stay drawn
+// for good. Most tests check what the page draws once a pane has gone, so they run with reduced
+// motion, where a closed pane goes at once. The tests of the animation turn it off and end each
+// closing animation themselves.
+//
+function installReducedMotion(isReducedMotion: boolean): void {
+    window.matchMedia = (query: string): MediaQueryList => makeFakeMediaQuery(query, query === REDUCED_MOTION_QUERY && isReducedMotion);
+}
+
+beforeEach(() => {
+    installReducedMotion(true);
+});
+
+//
+// Reads the data-ids of the panes in the columns the page scrolled into view, in the order it
+// scrolled them.
 //
 function scrolledDataIds(): (string | null)[] {
     return scrollIntoView.mock.contexts.map(element => {
@@ -90,8 +112,32 @@ function scrolledDataIds(): (string | null)[] {
         // The cast is safe because the mock is only ever called as a method of an element, and a
         // type guard cannot narrow it because Jest types each context as unknown.
         //
-        return (element as Element).getAttribute("data-id");
+        return paneInColumn(element as Element).getAttribute("data-id");
     });
+}
+
+//
+// Finds the pane the page draws in the column: the column itself for the repo details pane, which
+// the page draws on its own, or else the one pane the column holds.
+//
+function paneInColumn(column: Element): Element {
+    if (column.hasAttribute("data-id")) {
+        return column;
+    }
+    expect(column.firstElementChild).not.toBeNull();
+
+    //
+    // The cast is safe because the expect above fails the test on null, and a type guard cannot
+    // narrow it because Jest's expect does not narrow the type.
+    //
+    return column.firstElementChild as Element;
+}
+
+//
+// Lists the panes the page draws, from left to right.
+//
+function paneElements(): Element[] {
+    return Array.from(elementWithDataId("repo-explorer-columns").children).map(column => paneInColumn(column));
 }
 
 //
@@ -337,10 +383,12 @@ function isSelected(dataId: string): boolean {
 //
 // Returns the data-ids of the open panes whose border is in the style guide's active pane colour,
 // graft.css's --color-select-pane, so a test reads which pane is active. The file pane marks it
-// with the classes of activeFlatPaneClass.
+// with the classes of activeFlatPaneClass. A closing pane keeps how it last looked, so only the
+// panes still open count.
 //
 function activePaneIds(): (string | null)[] {
-    return Array.from(elementWithDataId("repo-explorer-columns").children)
+    return paneElements()
+        .filter(pane => pane.closest("[inert]") === null)
         .filter(pane => pane instanceof HTMLElement && (pane.className.includes(activePaneClasses) || pane.className.includes(activeFlatPaneClasses)))
         .map(pane => pane.getAttribute("data-id"));
 }
@@ -381,7 +429,7 @@ describe("RepoExplorerPage", () => {
         expect(elementWithDataId("repo-details-name").textContent).toBe("graft");
         expect(elementWithDataId("repo-details-heading").textContent).toBe("Repograft");
         expect(elementWithDataId("repo-details-commits").textContent).toBe("Commits");
-        const paneIds = Array.from(elementWithDataId("repo-explorer-columns").children).map(pane => pane.getAttribute("data-id"));
+        const paneIds = paneElements().map(pane => pane.getAttribute("data-id"));
         expect(paneIds).toEqual(["repo-details-pane"]);
         expect(ziggy.addTask).not.toHaveBeenCalled();
     });
@@ -391,7 +439,7 @@ describe("RepoExplorerPage", () => {
         renderRepoExplorerPage("/repo");
         await clickCommitsLink();
         await screen.findByText("Loading the commits.");
-        const paneIds = Array.from(elementWithDataId("repo-explorer-columns").children).map(pane => pane.getAttribute("data-id"));
+        const paneIds = paneElements().map(pane => pane.getAttribute("data-id"));
         expect(paneIds).toEqual(["repo-details-pane", "commit-pane"]);
         expect(elementWithDataId("repo-details-commits").className).toContain(openRowClasses);
         expect(isSelected("repo-details-commits")).toBe(true);
@@ -486,7 +534,7 @@ describe("RepoExplorerPage", () => {
         await openCommitDetails(ziggy);
         const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[1][0];
         expect(task.taskType).toBe("commit-details");
-        const paneIds = Array.from(elementWithDataId("repo-explorer-columns").children).map(pane => pane.getAttribute("data-id"));
+        const paneIds = paneElements().map(pane => pane.getAttribute("data-id"));
         expect(paneIds).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane"]);
         expect(elementWithDataId(`commit-${commitJson.hash}`).className).toContain(openRowClasses);
         expect(elementWithDataId(`commit-${commitJson.hash}`).className).toContain("Mui-selected");
@@ -508,7 +556,7 @@ describe("RepoExplorerPage", () => {
             diff: "+# Test repo\n",
         });
         expect(elementWithDataId("file-diff").textContent).toContain("# Test repo");
-        const paneIds = Array.from(elementWithDataId("repo-explorer-columns").children).map(pane => pane.getAttribute("data-id"));
+        const paneIds = paneElements().map(pane => pane.getAttribute("data-id"));
         expect(paneIds).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane"]);
         expect(elementWithDataId("changed-file-README.md").className).toContain("Mui-selected");
     });
@@ -1070,6 +1118,159 @@ describe("RepoExplorerPage commit pages", () => {
         pressKey("ArrowDown");
         pressKey("ArrowDown");
         expect(isSelected(`commit-${commitPageJson(52, 1)[0].hash}`)).toBe(true);
+// Finds the column the page draws the pane with the data-id in, failing the test when the page
+// does not show the pane.
+//
+function columnOf(dataId: string): HTMLElement {
+    const column = elementWithDataId(dataId).parentElement;
+    expect(column).not.toBeNull();
+
+    //
+    // The cast is safe because the expect above fails the test on null, and a type guard cannot
+    // narrow it because Jest's expect does not narrow the type.
+    //
+    return column as HTMLElement;
+}
+
+describe("RepoExplorerPage pane animation", () => {
+    beforeEach(() => {
+        installReducedMotion(false);
+    });
+
+    test("fades each pane in as it opens", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        for (const dataId of ["commit-pane", "commit-details-pane", "file-pane"]) {
+            expect(columnOf(dataId).className).toContain("graft-pane-in");
+            expect(columnOf(dataId).className).not.toContain("graft-pane-out");
+            expect(columnOf(dataId).hasAttribute("inert")).toBe(false);
+        }
+        expect(elementWithDataId("repo-details-pane").parentElement).toBe(elementWithDataId("repo-explorer-columns"));
+    });
+
+    test("keeps a closing pane drawn, inert and fading out, until its own animation ends", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        fireEvent.click(elementWithDataId("file-pane-close"));
+        const column = columnOf("file-pane");
+        expect(column.className).toContain("graft-pane-out");
+        expect(column.className).not.toContain("graft-pane-in");
+        expect(column.hasAttribute("inert")).toBe(true);
+        fireEvent.animationEnd(elementWithDataId("file-pane"));
+        expect(columnOf("file-pane")).toBe(column);
+        fireEvent.animationEnd(column);
+        expect(document.querySelector("[data-id=\"file-pane\"]")).toBeNull();
+        expect(columnOf("commit-details-pane").className).toContain("graft-pane-in");
+    });
+
+    test("narrows a closing pane from its column's width as the animation starts", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("commit-details-close"));
+        const column = columnOf("commit-details-pane");
+        jest.spyOn(column, "offsetWidth", "get").mockReturnValue(450);
+        fireEvent.animationStart(elementWithDataId("commit-details-pane"));
+        expect(column.style.getPropertyValue("--pane-width")).toBe("");
+        fireEvent.animationStart(column);
+        expect(column.style.getPropertyValue("--pane-width")).toBe("450px");
+    });
+
+    test("moves the focus out of a closing pane as its animation starts", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        const closeButton = document.querySelector<HTMLElement>("[data-id=\"file-pane-close\"]");
+        //
+        // The button's focus ripple starts and stops after a promise settles, so the focus and the
+        // blur run in an async act that waits for it.
+        //
+        await act(async () => {
+            closeButton?.focus();
+        });
+        expect(document.activeElement).toBe(closeButton);
+        fireEvent.click(elementWithDataId("file-pane-close"));
+        const column = columnOf("file-pane");
+        await act(async () => {
+            fireEvent.animationStart(column);
+        });
+        expect(document.activeElement).toBe(document.body);
+        pressKey("Escape");
+        expect(columnOf("commit-details-pane").className).toContain("graft-pane-out");
+    });
+
+    test("closes the panes with the keys while they animate and reopens a closing pane", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        completeCommitDetails(ziggy, 1);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        pressKey("Escape");
+        pressKey("Escape");
+        expect(columnOf("file-pane").className).toContain("graft-pane-out");
+        expect(columnOf("commit-details-pane").className).toContain("graft-pane-out");
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        pressKey("Enter");
+        expect(columnOf("commit-details-pane").className).toContain("graft-pane-in");
+        expect(columnOf("commit-details-pane").hasAttribute("inert")).toBe(false);
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        fireEvent.animationEnd(columnOf("file-pane"));
+        expect(document.querySelector("[data-id=\"file-pane\"]")).toBeNull();
+    });
+
+    test("clicks the open panes while a pane closes", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("commit-details-close"));
+        fireEvent.click(elementWithDataId(`commit-${commitJson.hash}`));
+        expect(columnOf("commit-details-pane").className).toContain("graft-pane-in");
+    });
+
+    test("scrolls the last pane still open into view as a pane closes", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        scrollIntoView.mockClear();
+        fireEvent.click(elementWithDataId("file-pane-close"));
+        expect(scrolledDataIds()).toEqual(["commit-details-pane"]);
+        expect(scrollIntoView.mock.contexts).toEqual([columnOf("commit-details-pane")]);
+    });
+
+    test("draws another commit's details afresh, so they fade in again", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        const firstColumn = columnOf("commit-details-pane");
+        pressKey("ArrowLeft");
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        expect(columnOf("commit-details-pane")).not.toBe(firstColumn);
+        expect(columnOf("commit-details-pane").className).toContain("graft-pane-in");
+    });
+
+    test("closes the commit pane as the Commit link opens the changes pane in its place", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        await clickCommitsLink();
+        fireEvent.click(await screen.findByText("Commit"));
+        expect(columnOf("commit-pane").className).toContain("graft-pane-out");
+        expect(columnOf("changes-pane").className).toContain("graft-pane-in");
+        expect(taskTypeAt(ziggy, 1)).toBe("working-changes");
+    });
+});
+
+describe("RepoExplorerPage pane animation under reduced motion", () => {
+    test("gives the columns no animation class and removes a closed pane at once", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        expect(columnOf("commit-details-pane").className).not.toContain("graft-pane");
+        fireEvent.click(elementWithDataId("commit-details-close"));
+        expect(document.querySelector("[data-id=\"commit-details-pane\"]")).toBeNull();
+        expect(columnOf("commit-pane").className).not.toContain("graft-pane");
     });
 });
 
@@ -1081,6 +1282,16 @@ describe("scrollLastPaneIntoView", () => {
         columns.append(firstPane, lastPane);
         scrollLastPaneIntoView(columns);
         expect(scrollIntoView.mock.contexts).toEqual([lastPane]);
+    });
+
+    test("passes over a closing pane, whose column is inert, to the last pane still open", () => {
+        const columns = document.createElement("div");
+        const openPane = document.createElement("section");
+        const closingPane = document.createElement("section");
+        closingPane.setAttribute("inert", "");
+        columns.append(openPane, closingPane);
+        scrollLastPaneIntoView(columns);
+        expect(scrollIntoView.mock.contexts).toEqual([openPane]);
     });
 
     test("scrolls nothing when the columns are not drawn or hold no pane", () => {
@@ -1132,7 +1343,7 @@ describe("RepoExplorerPage changes pane", () => {
         expect((ziggy.addTask as jest.Mock).mock.calls[0][0].data).toEqual({
             repoPath: "/repo",
         });
-        const paneIds = Array.from(elementWithDataId("repo-explorer-columns").children).map(pane => pane.getAttribute("data-id"));
+        const paneIds = paneElements().map(pane => pane.getAttribute("data-id"));
         expect(paneIds).toEqual(["repo-details-pane", "changes-pane"]);
         expect(elementWithDataId("change-unstaged-notes.txt").textContent).toBe("notes.txt");
         expect(elementWithDataId("change-staged-old.txt").textContent).toBe("old.txt");

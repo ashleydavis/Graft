@@ -15,9 +15,11 @@ import { explorerPaneSteps } from "../../lib/breadcrumb-trail";
 import { commitStagedFiles } from "../../lib/commit";
 import { canReadNextPage, COMMIT_PAGE_SIZE, commitPagesAfterRead, commitPagesReading, ICommitPages, nextPageAfterHash, noCommitPages } from "../../lib/commit-pages";
 import { readCommitPage } from "../../lib/commits";
+import { openPaneIds } from "../../lib/pane-animation";
 import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, COMMIT_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, initialRepoExplorerState, IRepoExplorerState, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
 import { toggleFileStaged } from "../../lib/stage-file";
 import { IWorkingChanges, IWorkingFile, readWorkingChanges } from "../../lib/working-changes";
+import { AnimatedPane } from "./components/animated-pane";
 import { ChangesPane } from "./components/changes-pane";
 import { CommitDetailsPane } from "./components/commit-details-pane";
 import { CommitPane } from "./components/commit-pane";
@@ -271,61 +273,72 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
         setPaneSteps(explorerPaneSteps(explorer, changedFilePath));
         return () => setPaneSteps([]);
     }, [explorer.openLink, explorer.openHash, explorer.openPath, changedFilePath]);
+    const paneIds = openPaneIds(explorer, openChange !== undefined);
 
     return (
         <main ref={pageRef} tabIndex={-1} data-id="repo-explorer-page" className="graft-page-in outline-none flex h-full w-max min-w-full flex-col gap-4 bg-[var(--color-bg)] p-6">
             <div ref={columnsRef} data-id="repo-explorer-columns" onClickCapture={onColumnsClickCapture} className="flex min-h-0 flex-1 items-stretch gap-3">
                 <RepoDetailsPane repoPath={repoPath} selectedLink={explorer.selectedLink} openLink={explorer.openLink} isActive={explorer.activePaneIndex === 0} onSelectLink={link => setExplorer(selectLink(link))} />
-                {isCommitsOpen && (
-                    <CommitPane
-                        commits={commitPages.commits}
-                        isLoading={commitPages.readTaskId !== undefined}
-                        error={commitPages.error}
-                        selectedHash={explorer.selectedHash}
-                        openHash={explorer.openHash}
-                        isActive={explorer.activePaneIndex === 1}
-                        dateFormat={dateFormat}
-                        onSelectCommit={hash => setExplorer(state => selectCommit(state, hash))}
-                        onNearEnd={readNextPage}
-                    />
-                )}
-                {explorer.openHash !== undefined && (
-                    <CommitDetailsPane
-                        key={explorer.openHash}
-                        repoPath={repoPath}
-                        hash={explorer.openHash}
-                        selectedPath={explorer.selectedPath}
-                        openPath={explorer.openPath}
-                        isActive={explorer.activePaneIndex === 2}
-                        dateFormat={dateFormat}
-                        onSelectFile={path => setExplorer(state => selectFile(state, path))}
-                        onReadFiles={setFilePaths}
-                        onClose={() => setExplorer(closeCommitDetailsPane)}
-                    />
-                )}
-                {explorer.openHash !== undefined && explorer.openPath !== undefined && (
-                    <FilePane key={`${explorer.openHash} ${explorer.openPath}`} repoPath={repoPath} hash={explorer.openHash} path={explorer.openPath} isActive={explorer.activePaneIndex === 3} onClose={() => setExplorer(closeFilePane)} />
-                )}
-                {isChangesOpen && (
-                    <ChangesPane
-                        changes={changes}
-                        error={changesError}
-                        stageError={stageError}
-                        selectedKey={explorer.selectedChange}
-                        openKey={explorer.openChange}
-                        isActive={explorer.activePaneIndex === 1}
-                        onSelectChange={key => setExplorer(state => selectChange(state, key))}
-                        onToggleStaged={onToggleStaged}
-                        commitMessage={commitMessage}
-                        commitError={commitError}
-                        isCommitting={isCommitting}
-                        onCommitMessageChange={setCommitMessage}
-                        onCommit={onCommit}
-                    />
-                )}
-                {isChangesOpen && openChange && (
-                    <WorkingFilePane key={`${explorer.openChange} ${changesReadCount}`} repoPath={repoPath} file={openChange.file} isStaged={openChange.isStaged} isActive={explorer.activePaneIndex === 2} onClose={() => setExplorer(closeChangeFilePane)} />
-                )}
+                <AnimatedPane openId={paneIds.commitPane}>
+                    {isCommitsOpen && (
+                        <CommitPane
+                            commits={commitPages.commits}
+                            isLoading={commitPages.readTaskId !== undefined}
+                            error={commitPages.error}
+                            selectedHash={explorer.selectedHash}
+                            openHash={explorer.openHash}
+                            isActive={explorer.activePaneIndex === 1}
+                            dateFormat={dateFormat}
+                            onSelectCommit={hash => setExplorer(state => selectCommit(state, hash))}
+                            onNearEnd={readNextPage}
+                        />
+                    )}
+                </AnimatedPane>
+                <AnimatedPane openId={paneIds.commitDetailsPane}>
+                    {explorer.openHash !== undefined && (
+                        <CommitDetailsPane
+                            key={explorer.openHash}
+                            repoPath={repoPath}
+                            hash={explorer.openHash}
+                            selectedPath={explorer.selectedPath}
+                            openPath={explorer.openPath}
+                            isActive={explorer.activePaneIndex === 2}
+                            dateFormat={dateFormat}
+                            onSelectFile={path => setExplorer(state => selectFile(state, path))}
+                            onReadFiles={setFilePaths}
+                            onClose={() => setExplorer(closeCommitDetailsPane)}
+                        />
+                    )}
+                </AnimatedPane>
+                <AnimatedPane openId={paneIds.filePane}>
+                    {explorer.openHash !== undefined && explorer.openPath !== undefined && (
+                        <FilePane key={`${explorer.openHash} ${explorer.openPath}`} repoPath={repoPath} hash={explorer.openHash} path={explorer.openPath} isActive={explorer.activePaneIndex === 3} onClose={() => setExplorer(closeFilePane)} />
+                    )}
+                </AnimatedPane>
+                <AnimatedPane openId={paneIds.changesPane}>
+                    {isChangesOpen && (
+                        <ChangesPane
+                            changes={changes}
+                            error={changesError}
+                            stageError={stageError}
+                            selectedKey={explorer.selectedChange}
+                            openKey={explorer.openChange}
+                            isActive={explorer.activePaneIndex === 1}
+                            onSelectChange={key => setExplorer(state => selectChange(state, key))}
+                            onToggleStaged={onToggleStaged}
+                            commitMessage={commitMessage}
+                            commitError={commitError}
+                            isCommitting={isCommitting}
+                            onCommitMessageChange={setCommitMessage}
+                            onCommit={onCommit}
+                        />
+                    )}
+                </AnimatedPane>
+                <AnimatedPane openId={paneIds.workingFilePane}>
+                    {isChangesOpen && openChange && (
+                        <WorkingFilePane key={`${explorer.openChange} ${changesReadCount}`} repoPath={repoPath} file={openChange.file} isStaged={openChange.isStaged} isActive={explorer.activePaneIndex === 2} onClose={() => setExplorer(closeChangeFilePane)} />
+                    )}
+                </AnimatedPane>
             </div>
         </main>
     );
@@ -335,14 +348,16 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
 // Scrolls the page by the least amount that shows the last pane in the columns, the one just
 // opened, so a pane that opens beyond the right edge of the window comes into view. It scrolls
 // smoothly so the user sees where the pane came from, and leaves the page where it is when the pane
-// is already in view. The columns are null only before React has drawn them, when there is no pane
-// to show.
+// is already in view. It passes over a closing pane, whose column is inert while it animates,
+// because the pane the user reads next is the last one still open. The columns are null only
+// before React has drawn them, when there is no pane to show.
 //
 export function scrollLastPaneIntoView(columns: HTMLElement | null): void {
     if (!columns) {
         return;
     }
-    const lastPane = columns.lastElementChild;
+    const openPanes = columns.querySelectorAll(":scope > :not([inert])");
+    const lastPane = openPanes.item(openPanes.length - 1);
     if (!lastPane) {
         return;
     }

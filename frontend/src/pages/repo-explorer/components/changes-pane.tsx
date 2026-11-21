@@ -67,9 +67,9 @@ export interface IChangesPaneProps {
 // Shows the changes in a rounded card headed "Commit", with how many files changed and how many
 // are staged beside it in muted text, as the style guide's Changes pane is headed. The card is as
 // tall as the page's columns and never shrinks, as the other panes. Its border is in the style
-// guide's active pane colour while the pane is active. The card fades in as it opens. The commit
-// section sits at the bottom of the card, under the lists, as the style guide's Commit pane sits
-// under its Changes pane.
+// guide's active pane colour while the pane is active. The page's AnimatedPane column animates it
+// as it opens and closes. The commit section sits at the bottom of the card, under the lists, as
+// the style guide's Commit pane sits under its Changes pane.
 //
 export function ChangesPane({ changes, error, stageError, selectedKey, openKey, isActive, onSelectChange, onToggleStaged, commitMessage, commitError, isCommitting, onCommitMessageChange, onCommit }: IChangesPaneProps): JSX.Element {
     let stagedCount = 0;
@@ -83,7 +83,7 @@ export function ChangesPane({ changes, error, stageError, selectedKey, openKey, 
         </span>
     );
     return (
-        <section data-id="changes-pane" aria-label="Commit" className={`graft-pane-in flex w-[420px] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
+        <section data-id="changes-pane" aria-label="Commit" className={`flex w-[420px] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
             <PaneHeader title={title} titleDataId="changes-heading" action={undefined} />
             {stageError !== undefined && (
                 <p data-id="changes-stage-error" className="m-2 mb-0 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[length:var(--text-sm)] text-[var(--color-text)]">{stageError}</p>

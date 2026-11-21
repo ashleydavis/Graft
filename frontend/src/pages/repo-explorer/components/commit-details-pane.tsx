@@ -53,7 +53,7 @@ export interface ICommitDetailsPaneProps {
 // rounded card headed "Commit" and the commit's short hash, with a button that closes the pane. It
 // shows that it is loading until the task ends and what went wrong when the commit could not be
 // read. The card's border is in the style guide's active pane colour while the pane is active. The
-// card fades in as it opens.
+// page's AnimatedPane column animates it as it opens and closes.
 //
 export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isActive, dateFormat, onSelectFile, onReadFiles, onClose }: ICommitDetailsPaneProps): JSX.Element {
     const [details, setDetails] = useState<ICommitDetails | undefined>(undefined);
@@ -82,7 +82,7 @@ export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isAc
         </span>
     );
     return (
-        <section data-id="commit-details-pane" aria-label="Commit details" className={`graft-pane-in flex w-[450px] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
+        <section data-id="commit-details-pane" aria-label="Commit details" className={`flex w-[450px] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
             <PaneHeader title={title} titleDataId="commit-details-heading" action={<CloseButton paneLabel="Commit details" dataId="commit-details-close" onClose={onClose} />} />
             <div className="min-h-0 flex-1 overflow-auto">
                 <CommitDetailsContent details={details} error={error} selectedPath={selectedPath} openPath={openPath} dateFormat={dateFormat} onSelectFile={onSelectFile} />

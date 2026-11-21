@@ -6,8 +6,9 @@
 # presses keys as a user does: Left in the breadcrumb trail drop-down's search box moves its cursor,
 # Ctrl+1 opens the repo explorer, the arrow keys and Enter open the commit pane from the repo
 # details pane's Commits link, then a commit, Up and Down show another commit's details at once,
-# Enter opens one of its files, Escape closes the panes one at a time and Ctrl+1 returns to the
-# repo explorer from the Help page. See test.md.
+# Enter opens one of its files, Escape closes the panes one at a time, Ctrl+1 returns to the repo
+# explorer from the Help page and Escape then Enter at once closes the commit pane and opens it
+# again while it animates. See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -90,3 +91,11 @@ wait_for_element repo-explorer-page 30
 press_key Down
 press_key Enter
 wait_for_text commit-list "Change the note" 30
+
+# Escape closes the commit pane and Enter, pressed at once while the pane animates as it closes,
+# opens it again. The pane stays open once the animation is over.
+press_key Escape
+press_key Enter
+wait_for_text commit-list "Change the note" 30
+sleep 1
+wait_for_element commit-pane 5

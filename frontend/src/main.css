@@ -79,6 +79,32 @@
 }
 
 /*
+ * A pane that closes in the repo explorer page fades out over the normal duration as its column
+ * narrows from its width, which the page sets in --pane-width as the animation starts, to nothing.
+ * The column's negative margin grows to the gap between the columns, so the panes to its right
+ * slide left into its place without a jump when it goes. The column keeps its last frame until the
+ * page stops drawing it. The page gives a closing pane this class only while the system allows
+ * motion, and stops drawing the pane when the animation ends.
+ */
+@keyframes graft-pane-out {
+    0% {
+        opacity: 1;
+        max-width: var(--pane-width);
+        margin-left: 0;
+    }
+    100% {
+        opacity: 0;
+        max-width: 0;
+        margin-left: calc(var(--spacing) * -3);
+    }
+}
+
+.graft-pane-out {
+    overflow: hidden;
+    animation: graft-pane-out var(--duration-normal) var(--ease-standard) forwards;
+}
+
+/*
  * A page's content fades in over the normal duration as the page opens.
  */
 @keyframes graft-page-in {

@@ -18,6 +18,9 @@ The repo explorer page shows its panes side by side in columns. The first is the
 - Under a "Files changed (<count>)" heading it lists the files the commit changed, each with its file icon and its path, the directory muted. Hovering a file shows a tooltip with git's one letter change type in its colour (A green, D red, M or T orange) and its name, the lines the commit added and deleted ("+1 −1"), or "Binary file" for a binary file, what the change means and the path. A commit with no changed files, such as a merge, shows "No files changed in this commit.". The selected file has the selected background and the file whose diff is open has a bar on its left edge.
 - Clicking a changed file opens the file pane to the right of the commit details pane. It is headed by the file's icon and the file's name, with the full path in the title's tooltip, and shows every line of the file's diff in the commit as git writes it, as rows: an added or removed line on its diff colour with its old and new line numbers and a "+" or "−" marker, a hunk header as a muted bar and git's own header lines muted.
 - When a pane opens beyond the right edge of the window, the page scrolls sideways, smoothly and by the least amount needed, until the pane is in view. A pane that opens already in view leaves the page where it is.
+- Each pane after the repo details pane animates as it opens and as it closes, over the style guide's normal duration (`--duration-normal`) with its standard easing (`--ease-standard`). An opening pane fades in. A closing pane stays drawn while it fades out and its column narrows to nothing, so the panes to its right slide left into its place, and then it goes. Opening another commit's details or another file's diff fades the pane in afresh.
+- The keys and clicks act on the open panes while a pane animates. A closing pane ignores clicks and gives up the focus. A pane that is closing opens again at once when the user opens it again, such as with Enter after Escape closed it.
+- While the system's reduced motion setting is on, the panes open and close at once.
 - Each of the commit details pane and the file pane has a close button (an X icon) in its header. Closing the file pane leaves the commit details pane open. Closing the commit details pane closes the file pane with it.
 - While a pane's task runs it says "Loading the commit." or "Loading the diff.". When the task fails the pane shows why.
 - The commit details pane queues the commit details task, a background task that runs the `log` wrapper for the commit's details and the `diff-tree` wrapper for its changed files.
@@ -47,6 +50,9 @@ The repo explorer page shows its panes side by side in columns. The first is the
 - [x] The commit list is a virtual list built with TanStack Virtual (`@tanstack/react-virtual`, at an exact version).
 - [x] Scrolling near the end of the loaded commits reads the next page, until the repo's last commit.
 - [x] A loading row shows while a page is read and an error row when it fails.
+- [x] A pane animates as it opens and as it closes, using the style guide's duration and easing tokens.
+- [x] The animation is turned off while the system's reduced motion setting is on.
+- [x] Keys and clicks work during the animation.
 
 ## Open questions
 
