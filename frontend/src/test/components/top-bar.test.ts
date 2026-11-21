@@ -58,7 +58,7 @@ describe("TopBar", () => {
         renderTopBar(false, false);
         const button = screen.getByLabelText("Minimise the left sidebar");
         expect(button.getAttribute("data-id")).toBe("left-sidebar-toggle");
-        expect(button.getAttribute("title")).toBe("Minimise the left sidebar");
+        expect(button.getAttribute("aria-label")).toBe("Minimise the left sidebar");
     });
 
     test("offers to expand the left sidebar while it is minimised", () => {
@@ -70,7 +70,7 @@ describe("TopBar", () => {
         renderTopBar(false, false);
         const button = screen.getByLabelText("Open the right sidebar");
         expect(button.getAttribute("data-id")).toBe("right-sidebar-toggle");
-        expect(button.getAttribute("title")).toBe("Open the right sidebar");
+        expect(button.getAttribute("aria-label")).toBe("Open the right sidebar");
     });
 
     test("offers to close the right sidebar while it is open", () => {

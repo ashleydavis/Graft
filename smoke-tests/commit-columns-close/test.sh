@@ -23,10 +23,8 @@ click left-sidebar-commits-link
 wait_for_element "commit-$root_hash" 30
 click "commit-$root_hash"
 wait_for_element changed-files 30
-wait_for_text commit-details-parents "Parents: none" 30
-wait_for_text changed-file-README.md "A" 30
+wait_for_text commit-details-parents "None, this is the first commit" 30
 wait_for_text changed-file-README.md "README.md" 30
-wait_for_text changed-file-README.md "+1 -0" 30
 click changed-file-README.md
 wait_for_element file-diff 30
 wait_for_text file-diff "+# Test repo" 30

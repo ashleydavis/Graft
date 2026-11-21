@@ -82,7 +82,7 @@ export function useSavedSwitch(stateKey: string, description: string): [boolean,
 // runs, listening whether the right sidebar is open or not, so closing a pane or the sidebar or
 // moving to another page loses none, and the right sidebar shows the commands of the page that is
 // open. It holds the keyboard shortcuts overlay, so `?` shows it over every page. It registers the
-// handler of the open-repo action, which opens the folder the user picks and shows it in the
+// handler of the open-repo action, which opens the directory the user picks and shows it in the
 // commit explorer, because the layout is inside both the router and the open repo's context for as
 // long as the window is open. It registers the handler of the Commit Explorer action, which opens
 // the commits page, so Ctrl+1 (Cmd+1 on macOS) returns to the commit explorer from every page. For
@@ -160,7 +160,7 @@ export function AppLayout(): JSX.Element {
             />
             <div className="flex min-h-0 flex-1">
                 <LeftSidebar isMinimised={isLeftSidebarMinimised} isRepoOpen={Boolean(repoPath)} />
-                <div data-id="main-content" className="min-w-0 flex-1 overflow-auto">
+                <div data-id="main-content" className="@container min-w-0 flex-1 overflow-auto">
                     <Outlet />
                 </div>
                 <RightSidebar isOpen={isRightSidebarOpen}>

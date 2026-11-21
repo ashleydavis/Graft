@@ -1,14 +1,14 @@
 //
 // Tests the commit list: renders it with commits, while they load and with an error, and checks
 // what each row shows, that each row is a MaterialUI ListItemButton with the selected commit's set
-// as selected, that the open commit's title is bold, how each kind of ref is drawn and that
-// clicking a commit reports its hash.
+// as selected, that the open commit's row has the open bar and a bold title, how each kind of ref
+// is read and drawn and that clicking a commit reports its hash.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { ICommit } from "../../../../lib/commits";
-import { CommitList, RefChip } from "../../../../pages/commits/components/commit-list";
+import { CommitList, openRowClass, openRowClasses, RefBadge, refBadge, titleWeightClass } from "../../../../pages/commits/components/commit-list";
 
 //
 // A commit to list, with HEAD, a branch and a tag pointing at it.
@@ -59,8 +59,8 @@ function renderList(selectedHash: string | undefined, openHash: string | undefin
 describe("CommitList", () => {
     test("shows each commit's title, refs, author, date and short hash", () => {
         const container = renderList(undefined, undefined, jest.fn());
-        expect(container.querySelector(`[data-id="commit-${commit.hash}"]`)?.textContent).toBe("The first commitHEAD -> mainorigin/mainv1.0Ada Author1/3/20261111111");
-        expect(container.querySelector(`[data-id="commit-${secondCommit.hash}"]`)?.textContent).toBe("The second commitAda Author1/3/20262222222");
+        expect(container.querySelector(`[data-id="commit-${commit.hash}"]`)?.textContent).toBe("The first commitmainorigin/mainv1.0Ada AuthorJan 31111111");
+        expect(container.querySelector(`[data-id="commit-${secondCommit.hash}"]`)?.textContent).toBe("The second commitAda AuthorJan 32222222");
     });
 
     test("draws each row as a MaterialUI ListItemButton in a list item", () => {
@@ -78,10 +78,16 @@ describe("CommitList", () => {
         expect(container.querySelector(`[data-id="commit-${commit.hash}"]`)?.className).not.toContain("Mui-selected");
     });
 
-    test("makes the open commit's title bold", () => {
+    test("marks the open commit's row with the open bar and its title in bold", () => {
         const container = renderList(secondCommit.hash, commit.hash, jest.fn());
-        expect(container.querySelector(`[data-id="commit-${commit.hash}"]`)?.className).toContain("font-bold");
-        expect(container.querySelector(`[data-id="commit-${secondCommit.hash}"]`)?.className).not.toContain("font-bold");
+        const openRow = container.querySelector(`[data-id="commit-${commit.hash}"]`);
+        const otherRow = container.querySelector(`[data-id="commit-${secondCommit.hash}"]`);
+        expect(openRow?.className).toContain(openRowClasses);
+        expect(openRow?.getAttribute("aria-current")).toBe("true");
+        expect(screen.getByText("The first commit").className).toContain("font-[var(--weight-bold)]");
+        expect(otherRow?.className).not.toContain(openRowClasses);
+        expect(otherRow?.getAttribute("aria-current")).toBeNull();
+        expect(screen.getByText("The second commit").className).toContain("font-[var(--weight-normal)]");
     });
 
     test("shows that the commits are loading until they are read", () => {
@@ -122,31 +128,92 @@ describe("CommitList", () => {
     });
 });
 
-describe("RefChip", () => {
-    test("fills HEAD in the primary colour", () => {
-        const { container } = render(createElement(RefChip, {
+describe("openRowClass", () => {
+    test("draws the open bar on an open row and no shadow on any other", () => {
+        expect(openRowClass(true)).toBe(openRowClasses);
+        expect(openRowClass(false)).toBe("shadow-none");
+    });
+});
+
+describe("titleWeightClass", () => {
+    test("makes the open commit's title bold and the rest normal", () => {
+        expect(titleWeightClass(true)).toBe("font-[var(--weight-bold)]");
+        expect(titleWeightClass(false)).toBe("font-[var(--weight-normal)]");
+    });
+});
+
+describe("refBadge", () => {
+    test("reads HEAD's branch as the checked-out branch, by its name alone", () => {
+        expect(refBadge("HEAD -> main")).toEqual({
+            kind: "current",
+            name: "main",
+        });
+    });
+
+    test("reads a tag without its tag prefix", () => {
+        expect(refBadge("tag: v1.0")).toEqual({
+            kind: "tag",
+            name: "v1.0",
+        });
+    });
+
+    test("reads a name under origin as a remote branch", () => {
+        expect(refBadge("origin/main")).toEqual({
+            kind: "remote",
+            name: "origin/main",
+        });
+    });
+
+    test("reads any other name, a detached HEAD included, as a local branch", () => {
+        expect(refBadge("feature")).toEqual({
+            kind: "branch",
+            name: "feature",
+        });
+        expect(refBadge("HEAD")).toEqual({
+            kind: "branch",
+            name: "HEAD",
+        });
+    });
+});
+
+describe("RefBadge", () => {
+    test("draws the checked-out branch on the current variant with the branch icon", () => {
+        const { container } = render(createElement(RefBadge, {
             gitRef: "HEAD -> main",
         }));
         const chip = container.firstElementChild;
-        expect(chip?.textContent).toBe("HEAD -> main");
-        expect(chip?.className).toContain("MuiChip-filled MuiChip-sizeSmall MuiChip-colorPrimary");
+        expect(chip?.textContent).toBe("main");
+        expect(chip?.className).toContain("MuiChip-current");
+        expect(chip?.querySelector("svg")?.getAttribute("data-icon")).toBe("code-branch");
     });
 
-    test("outlines a tag in orange, without its tag prefix", () => {
-        const { container } = render(createElement(RefChip, {
+    test("draws a tag on the tag variant with the tag icon", () => {
+        const { container } = render(createElement(RefBadge, {
             gitRef: "tag: v1.0",
         }));
         const chip = container.firstElementChild;
         expect(chip?.textContent).toBe("v1.0");
-        expect(chip?.className).toContain("MuiChip-outlined MuiChip-sizeSmall MuiChip-colorWarning");
+        expect(chip?.className).toContain("MuiChip-tag");
+        expect(chip?.querySelector("svg")?.getAttribute("data-icon")).toBe("tag");
     });
 
-    test("outlines any other branch in grey", () => {
-        const { container } = render(createElement(RefChip, {
+    test("draws a remote branch on the remote variant with the cloud icon", () => {
+        const { container } = render(createElement(RefBadge, {
             gitRef: "origin/main",
         }));
         const chip = container.firstElementChild;
         expect(chip?.textContent).toBe("origin/main");
-        expect(chip?.className).toContain("MuiChip-outlined MuiChip-sizeSmall MuiChip-colorDefault");
+        expect(chip?.className).toContain("MuiChip-remote");
+        expect(chip?.querySelector("svg")?.getAttribute("data-icon")).toBe("cloud");
+    });
+
+    test("draws any other branch on the branch variant with the branch icon", () => {
+        const { container } = render(createElement(RefBadge, {
+            gitRef: "feature",
+        }));
+        const chip = container.firstElementChild;
+        expect(chip?.textContent).toBe("feature");
+        expect(chip?.className).toContain("MuiChip-branch");
+        expect(chip?.querySelector("svg")?.getAttribute("data-icon")).toBe("code-branch");
     });
 });

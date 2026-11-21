@@ -1,12 +1,16 @@
 //
 // The file pane: the column that opens to the right of the commit details pane when a changed file
-// is clicked, with the file's diff in the commit as plain text.
+// is clicked, with the file's diff in the commit, its lines numbered and coloured as the style
+// guide's diff view draws them.
 //
 
 import { JSX, useEffect, useState } from "react";
+import { DiffLineKind, IDiffLine, parseDiffLines } from "../../../lib/diff-lines";
 import { readFileDiff } from "../../../lib/file-diff";
-import { useActivePaneStyle } from "./active-pane-style";
-import { PaneHeader } from "./pane-header";
+import { activePaneClass } from "./active-pane-style";
+import { FileIcon } from "./file-icon";
+import { FilePath } from "./file-path";
+import { CloseButton } from "./pane-header";
 
 //
 // What the file pane is given and what it reports.
@@ -30,12 +34,13 @@ export interface IFilePaneProps {
 
 //
 // Reads the file's diff with the file diff task and shows it in a rounded card headed by the
-// file's path, with a button that closes the pane. It shows that it is loading until the task ends
-// and what went wrong when the diff could not be read. The card's border is in the theme's primary
-// colour while the pane is active.
+// file's icon and path, with a button that closes the pane, as the style guide's file diff card is
+// headed. It shows that it is loading until the task ends and what went wrong when the diff could
+// not be read. The card is 840 pixels wide, or the width of the page's visible area when that is
+// narrower, so the whole diff can be scrolled into view. The card's border is in the style guide's
+// active pane colour while the pane is active. The card fades in as it opens.
 //
 export function FilePane({ repoPath, hash, path, isActive, onClose }: IFilePaneProps): JSX.Element {
-    const activeStyle = useActivePaneStyle(isActive);
     const [diff, setDiff] = useState<string | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
 
@@ -56,9 +61,15 @@ export function FilePane({ repoPath, hash, path, isActive, onClose }: IFilePaneP
     }, [repoPath, hash, path]);
 
     return (
-        <section data-id="file-pane" style={activeStyle} className="w-[640px] flex-none overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-white/5">
-            <PaneHeader title={path} titleDataId="file-pane-path" closeDataId="file-pane-close" onClose={onClose} />
-            <div className="max-h-[70vh] overflow-auto">
+        <section data-id="file-pane" aria-label="File diff" className={`graft-pane-in flex w-[min(840px,calc(100cqw-var(--space-6)*2))] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
+            <div className="flex flex-none items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-panel)] p-2">
+                <span title={path} className="flex min-w-0 flex-1 items-center gap-2 text-[length:var(--text-sm)] font-[var(--weight-medium)] text-[var(--color-text)]">
+                    <FileIcon path={path} />
+                    <FilePath path={path} dataId="file-pane-path" />
+                </span>
+                <CloseButton paneLabel="File diff" dataId="file-pane-close" onClose={onClose} />
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto bg-[var(--color-panel)]">
                 <FileDiffContent diff={diff} error={error} />
             </div>
         </section>
@@ -77,14 +88,94 @@ export interface IFileDiffContentProps {
 }
 
 //
-// Shows the file's diff as git wrote it, or says it is loading or why it could not be read.
+// Shows every line of the file's diff as git wrote it, one row each, or says it is loading or why
+// it could not be read.
 //
 export function FileDiffContent({ diff, error }: IFileDiffContentProps): JSX.Element {
     if (error !== undefined) {
-        return <p data-id="file-diff-error" className="p-4 text-red-700 dark:text-red-400">{error}</p>;
+        return <p data-id="file-diff-error" className="m-3 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[var(--color-text)]">{error}</p>;
     }
     if (diff === undefined) {
-        return <p data-id="file-diff-loading" className="p-4 text-gray-500 dark:text-gray-400">Loading the diff.</p>;
+        return <p data-id="file-diff-loading" className="px-4 py-2 text-[length:var(--text-sm)] text-[var(--color-text-muted)]">Loading the diff.</p>;
     }
-    return <pre data-id="file-diff" className="p-4 font-mono text-xs">{diff}</pre>;
+    return (
+        <div data-id="file-diff" role="table" aria-label="Unified diff" className="py-2 font-[family-name:var(--font-mono)] text-[length:var(--text-sm)] leading-[var(--leading-normal)] text-[var(--color-text)]">
+            {parseDiffLines(diff).map((line, index) => <DiffRow key={index} line={line} />)}
+        </div>
+    );
+}
+
+//
+// The look of one kind of diff line: the Tailwind classes of its background and of its marker, and
+// the marker itself.
+//
+export interface IDiffLineStyle {
+    // The Tailwind classes of the row's background and text colour.
+    rowClasses: string;
+
+    // The Tailwind class of the marker's colour.
+    markerClass: string;
+
+    // The marker before the line's text: "+", "−" or nothing.
+    marker: string;
+}
+
+//
+// The look of each kind of diff line, from the style guide's diff view: an added line on the
+// added background with a "+" in the added line colour, a deleted line on the removed background
+// with a "−" in the removed line colour, a kept line on the panel, a hunk header muted on the
+// raised background as the style guide's bars between hunks are and git's own header lines muted.
+//
+export const diffLineStyles: Record<DiffLineKind, IDiffLineStyle> = {
+    added: {
+        rowClasses: "bg-[var(--color-diff-added)]",
+        markerClass: "text-[var(--color-diff-added-line)]",
+        marker: "+",
+    },
+    deleted: {
+        rowClasses: "bg-[var(--color-diff-removed)]",
+        markerClass: "text-[var(--color-diff-removed-line)]",
+        marker: "−",
+    },
+    context: {
+        rowClasses: "bg-[var(--color-panel)]",
+        markerClass: "text-[var(--color-text-muted)]",
+        marker: "",
+    },
+    hunk: {
+        rowClasses: "my-1 min-h-[calc(var(--space-6)+var(--space-1))] items-center bg-[var(--color-raised)] py-1 text-[var(--color-text-muted)]",
+        markerClass: "text-[var(--color-text-muted)]",
+        marker: "",
+    },
+    meta: {
+        rowClasses: "bg-[var(--color-panel)] text-[var(--color-text-muted)]",
+        markerClass: "text-[var(--color-text-muted)]",
+        marker: "",
+    },
+};
+
+//
+// What one row of the diff shows.
+//
+export interface IDiffRowProps {
+    // The line the row shows.
+    line: IDiffLine;
+}
+
+//
+// Shows one line of the diff as the style guide's unified diff does: its number in the old file
+// and in the new file in gutters of their own, its marker and its text, wrapped when it is wider
+// than the pane. The numbers and the marker cannot be selected, so copying the lines copies their
+// text alone.
+//
+export function DiffRow({ line }: IDiffRowProps): JSX.Element {
+    const style = diffLineStyles[line.kind];
+    return (
+        <div role="row" data-line={line.kind} className={`flex ${style.rowClasses}`}>
+            <span className="w-[calc(var(--space-8)+var(--space-2))] flex-none select-none pr-2 text-right text-[var(--color-text-muted)]">{line.oldNumber}</span>
+            <span className="w-[calc(var(--space-8)+var(--space-2))] flex-none select-none pr-2 text-right text-[var(--color-text-muted)]">{line.newNumber}</span>
+            <span className={`w-[var(--space-4)] flex-none select-none text-center font-[var(--weight-bold)] ${style.markerClass}`}>{style.marker}</span>
+            <span className="min-w-0 flex-1 whitespace-pre-wrap pr-4 [overflow-wrap:anywhere]">{line.text}</span>
+        </div>
+    );
 }

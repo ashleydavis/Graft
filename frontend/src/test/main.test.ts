@@ -152,7 +152,7 @@ describe("main", () => {
             },
         }));
         expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("graft");
-        expect(elementWithDataId("breadcrumb-repo")?.getAttribute("title")).toBe("/repos/graft");
+        expect(elementWithDataId("breadcrumb-repo")?.getAttribute("aria-label")).toBe("/repos/graft");
         act(() => {
             elementWithDataId("commits-about-link")?.click();
         });

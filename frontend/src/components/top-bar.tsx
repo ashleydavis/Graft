@@ -6,7 +6,7 @@
 
 import { faBars, faTableColumns } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { IconButton } from "@mui/material";
+import { IconButton, Tooltip } from "@mui/material";
 import { JSX } from "react";
 import { ITrailStep } from "../lib/breadcrumb-trail";
 import { ThemeSetting } from "../lib/theme";
@@ -47,7 +47,8 @@ export interface ITopBarProps {
 // Shows the menu button that minimises and expands the left sidebar at the left, Graft's name next
 // to it and the button that slides the right sidebar in and out at the right, so each button sits
 // on the side of the sidebar it moves. The theme menu's button sits just inside the right sidebar's
-// button and shows the theme in use. Each button's label and tooltip say what a click does.
+// button and shows the theme in use. Each button's label and tooltip say what a click does, in the
+// style guide's MaterialUI tooltip.
 // The breadcrumb trail takes the free space between them, set off by a divider, so it says where
 // the user is without moving the buttons.
 //
@@ -56,20 +57,24 @@ export function TopBar({ isLeftSidebarMinimised, onToggleLeftSidebar, isRightSid
     const rightSidebarLabel = isRightSidebarOpen ? "Close the right sidebar" : "Open the right sidebar";
 
     return (
-        <header data-id="top-bar" className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-200 dark:border-gray-700 px-2">
-            <IconButton data-id="left-sidebar-toggle" aria-label={leftSidebarLabel} title={leftSidebarLabel} onClick={onToggleLeftSidebar}>
-                <FontAwesomeIcon icon={faBars} />
-            </IconButton>
-            <span data-id="top-bar-name" className="font-extrabold tracking-wide select-none">
+        <header data-id="top-bar" className="relative z-10 flex h-12 shrink-0 items-center gap-[var(--space-2)] border-b border-[var(--color-border)] bg-[var(--color-panel)] px-[var(--space-2)] shadow-[var(--shadow-raised)]">
+            <Tooltip title={leftSidebarLabel}>
+                <IconButton data-id="left-sidebar-toggle" aria-label={leftSidebarLabel} onClick={onToggleLeftSidebar}>
+                    <FontAwesomeIcon icon={faBars} />
+                </IconButton>
+            </Tooltip>
+            <span data-id="top-bar-name" className="select-none px-[var(--space-1)] text-[length:var(--text-lg)] font-[var(--weight-bold)] leading-[var(--leading-tight)] text-[var(--color-text)]">
                 Graft
             </span>
-            <div data-id="top-bar-trail" className="mx-4 flex min-w-0 flex-1 items-center border-l border-gray-200 dark:border-gray-700 pl-4">
+            <div data-id="top-bar-trail" className="mx-[var(--space-2)] flex min-w-0 flex-1 items-center self-stretch border-l border-[var(--color-border)] my-[var(--space-2)] pl-[var(--space-4)]">
                 <BreadcrumbTrail steps={trail} onNavigate={onNavigate} />
             </div>
             <ThemeMenu setting={themeSetting} onChooseSetting={onChooseThemeSetting} />
-            <IconButton data-id="right-sidebar-toggle" aria-label={rightSidebarLabel} title={rightSidebarLabel} onClick={onToggleRightSidebar}>
-                <FontAwesomeIcon icon={faTableColumns} />
-            </IconButton>
+            <Tooltip title={rightSidebarLabel}>
+                <IconButton data-id="right-sidebar-toggle" aria-label={rightSidebarLabel} onClick={onToggleRightSidebar}>
+                    <FontAwesomeIcon icon={faTableColumns} />
+                </IconButton>
+            </Tooltip>
         </header>
     );
 }

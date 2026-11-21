@@ -20,34 +20,34 @@ function plainSpaces(text: string | null | undefined): string {
 }
 
 describe("formatDate", () => {
-    test("formats the day in the locale's short numeric form", () => {
+    test("formats the day as its day and short month name in the locale", () => {
         expect(formatDate(lateDate, {
             locale: "en-US",
             timeZone: "UTC",
-        })).toBe("1/3/2026");
+        })).toBe("Jan 3");
         expect(formatDate(lateDate, {
             locale: "en-GB",
             timeZone: "UTC",
-        })).toBe("03/01/2026");
+        })).toBe("3 Jan");
     });
 
     test("formats the day in the time zone", () => {
         expect(formatDate(lateDate, {
             locale: "en-US",
             timeZone: "Australia/Brisbane",
-        })).toBe("1/4/2026");
+        })).toBe("Jan 4");
     });
 });
 
 describe("formatDateTime", () => {
-    test("formats the date with its time to the second in the locale and time zone", () => {
+    test("formats the date with its time to the minute in the locale and time zone", () => {
         expect(plainSpaces(formatDateTime(lateDate, {
             locale: "en-US",
             timeZone: "UTC",
-        }))).toBe("1/3/2026, 11:30:05 PM");
+        }))).toBe("Jan 3, 2026, 11:30 PM");
         expect(plainSpaces(formatDateTime(lateDate, {
             locale: "en-US",
             timeZone: "Australia/Brisbane",
-        }))).toBe("1/4/2026, 9:30:05 AM");
+        }))).toBe("Jan 4, 2026, 9:30 AM");
     });
 });

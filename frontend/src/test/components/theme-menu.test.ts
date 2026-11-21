@@ -45,7 +45,7 @@ describe("ThemeMenu", () => {
         renderThemeMenu(setting);
         const button = screen.getByLabelText(label);
         expect(button.getAttribute("data-id")).toBe("theme-button");
-        expect(button.getAttribute("title")).toBe(label);
+        expect(button.getAttribute("aria-label")).toBe(label);
         expect(button.getAttribute("aria-haspopup")).toBe("menu");
         expect(button.querySelector(`[data-id="theme-icon-${setting}"]`)).not.toBeNull();
         expect(button.querySelectorAll("[data-id^=\"theme-icon-\"]").length).toBe(1);

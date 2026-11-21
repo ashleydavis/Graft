@@ -164,7 +164,7 @@ pub fn read_log_page(
             .stdout = result.stdout,
             .stderr = result.stderr,
         });
-        services.log.@"error"("git log exited with an error, so the commits could not be read.");
+        services.log.err("git log exited with an error, so the commits could not be read.");
         return error.GitLogFailed;
     }
     const commits = try parse_log_output(allocator, result.stdout, request.page_size);
@@ -213,7 +213,7 @@ pub fn read_commit(
             .stdout = result.stdout,
             .stderr = result.stderr,
         });
-        services.log.@"error"("git log exited with an error, so the commit could not be read.");
+        services.log.err("git log exited with an error, so the commit could not be read.");
         return error.CommitReadFailed;
     }
     const commits = try parse_log_output(allocator, result.stdout, 1);

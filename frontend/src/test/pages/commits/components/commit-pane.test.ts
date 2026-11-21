@@ -1,12 +1,15 @@
 //
 // Tests the commit pane: renders it with commits and checks that it holds the commit list in a
-// card that never shrinks, passes the selected and open commits on to the list, marks the pane
-// active with a border in the theme's primary colour and that clicking a commit reports its hash.
+// card headed "Commits" that never shrinks, passes the selected and open commits on to the list,
+// marks the pane active with a border in the style guide's active pane colour and that clicking a
+// commit reports its hash.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { ICommit } from "../../../../lib/commits";
+import { activePaneClasses } from "../../../../pages/commits/components/active-pane-style";
+import { openRowClasses } from "../../../../pages/commits/components/commit-list";
 import { CommitPane } from "../../../../pages/commits/components/commit-pane";
 
 //
@@ -47,28 +50,29 @@ function renderPane(isActive: boolean, onSelectCommit: jest.Mock): HTMLElement {
 }
 
 describe("CommitPane", () => {
-    test("holds the commit list in a card that never shrinks", () => {
+    test("holds the commit list in a card headed Commits that never shrinks", () => {
         const container = renderPane(false, jest.fn());
         const pane = container.querySelector("[data-id=\"commit-pane\"]");
         expect(pane?.className).toContain("flex-none");
-        expect(pane?.className).toContain("rounded-xl");
-        expect(pane?.querySelector("[data-id=\"commit-list\"]")?.textContent).toBe("The first commitHEAD -> mainAda Author1/1/20261111111");
+        expect(pane?.className).toContain("rounded-[var(--radius-lg)]");
+        expect(pane?.querySelector("[data-id=\"commit-pane-heading\"]")?.textContent).toBe("Commits");
+        expect(pane?.querySelector("[data-id=\"commit-list\"]")?.textContent).toBe("The first commitmainAda AuthorJan 11111111");
     });
 
-    test("shows the selected commit as selected and the open commit's title in bold", () => {
+    test("shows the selected commit as selected and the open commit as open", () => {
         const container = renderPane(false, jest.fn());
         expect(container.querySelector(`[data-id="commit-${commit.hash}"]`)?.className).toContain("Mui-selected");
-        expect(container.querySelector(`[data-id="commit-${commit.hash}"]`)?.className).toContain("font-bold");
+        expect(container.querySelector(`[data-id="commit-${commit.hash}"]`)?.className).toContain(openRowClasses);
     });
 
-    test("draws its border in the theme's primary colour while it is active", () => {
+    test("draws its border in the style guide's active pane colour while it is active", () => {
         const container = renderPane(true, jest.fn());
-        expect(container.querySelector<HTMLElement>("[data-id=\"commit-pane\"]")?.style.borderColor).toBe("#1976d2");
+        expect(container.querySelector<HTMLElement>("[data-id=\"commit-pane\"]")?.className).toContain(activePaneClasses);
     });
 
     test("keeps its grey border while it is not active", () => {
         const container = renderPane(false, jest.fn());
-        expect(container.querySelector<HTMLElement>("[data-id=\"commit-pane\"]")?.style.borderColor).toBe("");
+        expect(container.querySelector<HTMLElement>("[data-id=\"commit-pane\"]")?.className).not.toContain(activePaneClasses);
     });
 
     test("reports the hash of the commit the user clicks", () => {

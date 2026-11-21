@@ -4,6 +4,7 @@
 //
 
 import { StyledEngineProvider } from "@mui/material/styles";
+import GlobalStyles from "@mui/material/GlobalStyles";
 import { AnyRouter, createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
@@ -74,6 +75,13 @@ export function startApp(rootElement: HTMLElement): void {
     createRoot(rootElement).render(
         <StrictMode>
             <StyledEngineProvider enableCssLayer={true}>
+                {/*
+                  MaterialUI inserts its styles at the top of the page head, ahead of main.css,
+                  and the first declaration of the layer order wins, so the order is declared here
+                  as well. It puts Tailwind's base styles under MaterialUI's, so Tailwind's reset
+                  of borders and padding does not undo a text box's outline and padding.
+                */}
+                <GlobalStyles styles="@layer theme, base, mui, components, utilities;" />
                 <AppTheme systemDark={window.matchMedia(systemDarkQuery)}>
                     <RepoProvider initialRepoPath={repoPathFromSearch(window.location.search)}>
                         <RouterProvider router={createAppRouter()} />
