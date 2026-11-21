@@ -53,7 +53,7 @@ jobs:
 
       - name: Record the splash
         shell: bash
-        run: bash scripts/record-splash.sh --platform linux --app "$PWD/splash-build/bin/graft" --output "$PWD/splash-videos/graft-linux.mp4"
+        run: bash scripts/record-splash.sh --platform linux --app "$PWD/splash-build/bin/graft" --seconds 25 --output "$PWD/splash-videos/graft-linux.mp4"
 
       - name: Upload the video
         uses: actions/upload-artifact@v4
@@ -111,17 +111,9 @@ jobs:
         shell: bash
         run: bun run build:windows --prefix "$(cygpath -m "$PWD")/splash-build"
 
-      # The runner's screen is 1024x768, smaller than Graft's window, whose title bar and menu bar were then above the top of the
-      # screen and out of the recording. At 1920x1080 the whole window is on screen.
-      - name: Set the screen to 1920x1080 (Windows)
-        shell: pwsh
-        run: |
-          Set-DisplayResolution -Width 1920 -Height 1080 -Force
-          Get-DisplayResolution
-
       - name: Record the splash
         shell: bash
-        run: bash scripts/record-splash.sh --platform windows --app "$PWD/splash-build/graft/graft.exe" --output "$PWD/splash-videos/graft-windows.mp4"
+        run: bash scripts/record-splash.sh --platform windows --app "$PWD/splash-build/graft/graft.exe" --seconds 60 --output "$PWD/splash-videos/graft-windows.mp4"
 
       - name: Upload the video
         uses: actions/upload-artifact@v4
@@ -171,7 +163,7 @@ jobs:
 
       - name: Record the splash
         shell: bash
-        run: bash scripts/record-splash.sh --platform macos --app "$PWD/splash-build/xcode/Build/Products/Release/Graft.app" --output "$PWD/splash-videos/graft-macos.mov"
+        run: bash scripts/record-splash.sh --platform macos --app "$PWD/splash-build/xcode/Build/Products/Release/Graft.app" --seconds 25 --output "$PWD/splash-videos/graft-macos.mov"
 
       - name: Upload the video
         uses: actions/upload-artifact@v4

@@ -100,11 +100,14 @@ case "$platform" in
         ;;
     windows)
         require ffmpeg
-        ffmpeg -loglevel error -y -f gdigrab -framerate 30 -i desktop -t "$((seconds + 1))" -c:v libx264 -pix_fmt yuv420p \
-            -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" "$output" &
+        # The window is put at a known place and size (its outer edge at 112,20, its frontend 800x560, which with the title bar
+        # and the menu bar fits a 1024x768 screen above the taskbar), and only the area around it is recorded: the title bar and
+        # the menu bar are in the video, and the desktop's icons and the taskbar are not.
+        ffmpeg -loglevel error -y -f gdigrab -framerate 30 -offset_x 96 -offset_y 0 -video_size 848x704 -i desktop \
+            -t "$((seconds + 1))" -c:v libx264 -pix_fmt yuv420p "$output" &
         ffmpeg_pid=$!
         sleep 1
-        "$app" &
+        "$app" "-geometry=800x560+112+20" &
         app_pid=$!
         wait "$ffmpeg_pid"
         stop "$app_pid"
@@ -164,6 +167,7 @@ case "$platform" in
         bundle_id="$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$app/Info.plist")"
         xcrun simctl terminate "$simulator" "$bundle_id" 2> /dev/null || true
         xcrun simctl install "$simulator" "$app"
+        # The whole recording, from a moment before the app opens: the system's launch and the splash are part of what is checked.
         xcrun simctl io "$simulator" recordVideo --codec h264 --force "$output" &
         record_pid=$!
         sleep 2
@@ -183,11 +187,31 @@ case "$platform" in
         # ANDROID_SERIAL picks the device, as it does for adb itself.
         adb install -r "$app" > /dev/null
         adb shell am force-stop "$package"
-        on_device="/sdcard/record-splash-$$.mp4"
+        # The shell's own folder, which is always writable: on CI's emulator, just after it booted, screenrecord could not open a
+        # file in /sdcard ("Operation not permitted").
+        on_device="/data/local/tmp/record-splash-$$.mp4"
+        # The app's launcher activity, once Android can find it: on CI's emulator, just after it booted and the app was installed,
+        # monkey found no activity to start and failed. Up to 60 seconds.
+        launcher=""
+        for _ in $(seq 1 60); do
+            launcher="$(adb shell cmd package resolve-activity --brief -c android.intent.category.LAUNCHER "$package" | tail -n 1 | tr -d '\r')"
+            case "$launcher" in
+                "$package"/*)
+                    break
+                    ;;
+            esac
+            launcher=""
+            sleep 1
+        done
+        if [ -z "$launcher" ]; then
+            echo "ERROR: Android found no launcher activity for $package within 60 seconds of installing it." >&2
+            exit 1
+        fi
         adb shell screenrecord --time-limit "$((seconds + 1))" "$on_device" &
         record_pid=$!
         sleep 1
-        adb shell monkey -p "$package" -c android.intent.category.LAUNCHER 1 > /dev/null
+        # Started as the launcher starts it.
+        adb shell am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n "$launcher" > /dev/null
         wait "$record_pid"
         # screenrecord finishes writing the file a moment after it exits.
         sleep 1
