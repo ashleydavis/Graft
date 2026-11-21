@@ -52,7 +52,7 @@ export interface ITopBarProps {
 // style guide's MaterialUI tooltip.
 // The breadcrumb trail takes the free space between them, set off by a divider, so it says where
 // the user is without moving the buttons. Between the trail and the theme menu's button the bar
-// always shows "Ctrl+?: Show hotkeys", to remind the user of the key that shows the keyboard
+// always shows "Ctrl+/: Show hotkeys", to remind the user of the key that shows the keyboard
 // shortcuts overlay. It is styled as the style guide shows a shortcut beside a command: small,
 // muted and in the code font, kept on one line.
 //

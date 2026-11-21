@@ -72,16 +72,16 @@ export function shortcutKeyNames(keys: string): string[] {
 
 //
 // The keys of the second shortcut that shows and closes the keyboard shortcuts overlay, as Graft
-// writes them on every platform. Ziggy's shortcut syntax refuses a modifier on `?`, so Graft
-// matches this one itself, and the overlay and the top bar's reminder show it from here.
+// writes them on every platform. Ziggy's shortcut syntax refuses `/` as a key, so Graft matches
+// this one itself, and the overlay and the top bar's reminder show it from here.
 //
-export const shortcutsOverlayCtrlKeys = "Ctrl+?";
+export const shortcutsOverlayCtrlKeys = "Ctrl+/";
 
 //
-// The parts of a key press that decide whether it is Ctrl+?.
+// The parts of a key press that decide whether it is Ctrl+/.
 //
 export interface IKeyPress {
-    // The character the key gives, such as "?".
+    // The character the key gives, such as "/".
     key: string;
 
     // Whether Control is held.
@@ -98,13 +98,13 @@ export interface IKeyPress {
 }
 
 //
-// Whether a key press is Ctrl+?: the key gives `?` with Control held and neither Alt nor Command.
-// Shift may be up or down, because whether `?` needs Shift depends on the keyboard layout. Only
-// the first press counts and its repeats are left alone, so holding the keys opens or closes the
-// overlay once.
+// Works out whether a key press is Ctrl+/, for the shortcuts overlay's keydown listener: the key
+// gives `/` with Control held and neither Alt nor Command. Shift may be up or down, because whether
+// `/` needs Shift depends on the keyboard layout. Only the first press counts and its repeats are
+// left alone, so holding the keys opens or closes the overlay once.
 //
 export function isShortcutsOverlayCtrlKey(press: IKeyPress): boolean {
-    if (press.key === "?") {
+    if (press.key === "/") {
         if (press.ctrlKey) {
             if (press.altKey) {
                 return false;
@@ -122,7 +122,7 @@ export function isShortcutsOverlayCtrlKey(press: IKeyPress): boolean {
 // The parts of a key event that decide whether it ends a hold of Control.
 //
 export interface IControlKeyEvent {
-    // The character or name of the key, such as "?" or "Control".
+    // The character or name of the key, such as "/" or "Control".
     key: string;
 
     // Whether Control is held.
@@ -131,11 +131,11 @@ export interface IControlKeyEvent {
 
 //
 // Works out whether a keydown or keyup shows that Control has been released since the last
-// Ctrl+?: a keydown or keyup of Control itself, or any key event with Control up. The shortcuts
-// overlay uses it to open or close once per hold of Control, because a held `?` repeats and on
+// Ctrl+/: a keydown or keyup of Control itself, or any key event with Control up. The shortcuts
+// overlay uses it to open or close once per hold of Control, because a held `/` repeats and on
 // some Linux desktops each repeat reaches the page as a keyup and a keydown with `repeat` false,
 // the same as a new press. Control sends one keydown when it goes down and one keyup when it comes
-// up, so its events mark where one press of Ctrl+? ends and the next begins.
+// up, so its events mark where one press of Ctrl+/ ends and the next begins.
 //
 export function isControlReleased(event: IControlKeyEvent): boolean {
     if (event.key === "Control") {
@@ -145,7 +145,7 @@ export function isControlReleased(event: IControlKeyEvent): boolean {
 }
 
 //
-// Works out the shortcuts the overlay lists: the shortcuts given, with Ctrl+? in a row of its own
+// Works out the shortcuts the overlay lists: the shortcuts given, with Ctrl+/ in a row of its own
 // straight after the row of the action it runs, with that row's label. Its name is the action's
 // name with "-ctrl" added, so the row has a data-id of its own. A list without the action comes
 // back with the same rows.

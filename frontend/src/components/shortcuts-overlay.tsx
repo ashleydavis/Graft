@@ -12,7 +12,7 @@ import { actionShortcuts, isControlReleased, isShortcutsOverlayCtrlKey, IShortcu
 //
 // The name of the backend's Keyboard Shortcuts action (backend/src/features/shortcuts-overlay.zig),
 // whose shortcut is `?`. The overlay registers its handler under this name and removes it under
-// the same name. Ctrl+? is matched by the overlay itself and listed under this name with "-ctrl"
+// the same name. Ctrl+/ is matched by the overlay itself and listed under this name with "-ctrl"
 // added.
 //
 export const shortcutsOverlayAction = "toggle-shortcuts-overlay";
@@ -64,12 +64,12 @@ export function KeyCaps({ keys, dataId }: IKeyCapsProps): JSX.Element {
 // mark. Escape closes the overlay. A click outside the overlay leaves it open. The search is
 // cleared each time the overlay closes. The handler is removed when the overlay goes, so a later
 // overlay can register it again. When the list cannot be read, the overlay shows why in its place.
-// Ctrl+? also opens and closes the overlay, from anywhere in the window and from a text box too.
-// Ziggy's shortcut syntax refuses a modifier on `?`, so the overlay listens for Ctrl+? itself, on
-// the window in the capture phase so it hears the key before any element does, and keeps the key
-// from doing anything else, so a text box with the focus keeps its text. Ctrl+? opens or closes the
+// Ctrl+/ also opens and closes the overlay, from anywhere in the window and from a text box too.
+// Ziggy's shortcut syntax refuses `/` as a key, so the overlay listens for Ctrl+/ itself, on the
+// window in the capture phase so it hears the key before any element does, and keeps the key from
+// doing anything else, so a text box with the focus keeps its text. Ctrl+/ opens or closes the
 // overlay once each time Control is held, so holding the keys long enough to repeat leaves the
-// overlay as the first press left it. The list shows Ctrl+? in a row of its own after the Keyboard
+// overlay as the first press left it. The list shows Ctrl+/ in a row of its own after the Keyboard
 // Shortcuts action's `?`.
 //
 export function ShortcutsOverlay(): JSX.Element {
@@ -99,8 +99,8 @@ export function ShortcutsOverlay(): JSX.Element {
 
     useEffect(() => {
         //
-        // Whether the next Ctrl+? opens or closes the overlay: true until Ctrl+? does, then false
-        // until Control is released (isControlReleased), so a held Ctrl+? whose repeats look like
+        // Whether the next Ctrl+/ opens or closes the overlay: true until Ctrl+/ does, then false
+        // until Control is released (isControlReleased), so a held Ctrl+/ whose repeats look like
         // new presses opens or closes the overlay once.
         //
         let isToggleAllowed = true;
@@ -125,7 +125,7 @@ export function ShortcutsOverlay(): JSX.Element {
         }
 
         //
-        // Allows the next Ctrl+? when the window loses the focus, because Control released in
+        // Allows the next Ctrl+/ when the window loses the focus, because Control released in
         // another window sends this window no keyup.
         //
         function onBlur(): void {

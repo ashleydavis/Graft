@@ -1,7 +1,7 @@
 //
 // Tests what the keyboard shortcuts overlay lists: the actions with a shortcut picked from Ziggy's
-// action list, the Ctrl+? row added after the Keyboard Shortcuts action and the shortcuts a search
-// matches by label or keys. Also tests which key presses are Ctrl+? and which key events show
+// action list, the Ctrl+/ row added after the Keyboard Shortcuts action and the shortcuts a search
+// matches by label or keys. Also tests which key presses are Ctrl+/ and which key events show
 // Control released.
 //
 
@@ -119,44 +119,44 @@ function makeCtrlPress(key: string): IKeyPress {
 }
 
 describe("shortcutsOverlayCtrlKeys", () => {
-    test("is Ctrl+?", () => {
-        expect(shortcutsOverlayCtrlKeys).toBe("Ctrl+?");
+    test("is Ctrl+/", () => {
+        expect(shortcutsOverlayCtrlKeys).toBe("Ctrl+/");
     });
 });
 
 describe("isShortcutsOverlayCtrlKey", () => {
-    test("? with Control held is Ctrl+?", () => {
-        expect(isShortcutsOverlayCtrlKey(makeCtrlPress("?"))).toBe(true);
+    test("/ with Control held is Ctrl+/", () => {
+        expect(isShortcutsOverlayCtrlKey(makeCtrlPress("/"))).toBe(true);
     });
 
-    test("? without Control is not Ctrl+?", () => {
+    test("/ without Control is not Ctrl+/", () => {
         expect(isShortcutsOverlayCtrlKey({
-            ...makeCtrlPress("?"),
+            ...makeCtrlPress("/"),
             ctrlKey: false,
         })).toBe(false);
     });
 
-    test("another key with Control held is not Ctrl+?", () => {
-        expect(isShortcutsOverlayCtrlKey(makeCtrlPress("/"))).toBe(false);
+    test("? with Control held, as Ctrl+Shift+/ gives on a US layout, is not Ctrl+/", () => {
+        expect(isShortcutsOverlayCtrlKey(makeCtrlPress("?"))).toBe(false);
     });
 
-    test("? with Control and Alt held is not Ctrl+?", () => {
+    test("/ with Control and Alt held is not Ctrl+/", () => {
         expect(isShortcutsOverlayCtrlKey({
-            ...makeCtrlPress("?"),
+            ...makeCtrlPress("/"),
             altKey: true,
         })).toBe(false);
     });
 
-    test("? with Control and Command held is not Ctrl+?", () => {
+    test("/ with Control and Command held is not Ctrl+/", () => {
         expect(isShortcutsOverlayCtrlKey({
-            ...makeCtrlPress("?"),
+            ...makeCtrlPress("/"),
             metaKey: true,
         })).toBe(false);
     });
 
-    test("a repeat of a held Ctrl+? is not a new press", () => {
+    test("a repeat of a held Ctrl+/ is not a new press", () => {
         expect(isShortcutsOverlayCtrlKey({
-            ...makeCtrlPress("?"),
+            ...makeCtrlPress("/"),
             repeat: true,
         })).toBe(false);
     });
@@ -177,20 +177,20 @@ describe("isControlReleased", () => {
         })).toBe(true);
     });
 
-    test("a keyup or keydown of ? with Control held, as a repeat of a held Ctrl+? gives, leaves Control held", () => {
+    test("a keyup or keydown of / with Control held, as a repeat of a held Ctrl+/ gives, leaves Control held", () => {
         expect(isControlReleased({
-            key: "?",
+            key: "/",
             ctrlKey: true,
         })).toBe(false);
     });
 });
 
 describe("overlayShortcuts", () => {
-    test("adds Ctrl+? straight after the action's row, with its label", () => {
+    test("adds Ctrl+/ straight after the action's row, with its label", () => {
         expect(overlayShortcuts(listedShortcuts, "toggle-shortcuts-overlay")).toEqual([
             makeShortcut("open-repo", "Open repo", "Ctrl+O"),
             makeShortcut("toggle-shortcuts-overlay", "Keyboard Shortcuts", "?"),
-            makeShortcut("toggle-shortcuts-overlay-ctrl", "Keyboard Shortcuts", "Ctrl+?"),
+            makeShortcut("toggle-shortcuts-overlay-ctrl", "Keyboard Shortcuts", "Ctrl+/"),
             makeShortcut("quit", "Quit", "Ctrl+Q"),
             makeShortcut("zoom-in", "Zoom In", "Ctrl+Plus"),
         ]);

@@ -6,9 +6,9 @@
 # box. `?` typed there types the character, filters the list to the Keyboard Shortcuts action and
 # leaves the overlay open. Escape closes it. Typing "quit" in the search box filters the list to
 # Quit. Then `?` typed in the breadcrumb trail drop-down's search box types the character and leaves
-# the overlay closed. Ctrl+?, pressed with the key-down test command, shows the overlay from that
-# search box without typing, stays open while Ctrl+? repeats, lists Ctrl+?, closes the overlay
-# from its own search box and shows it from the page. The top bar shows "Ctrl+?: Show hotkeys".
+# the overlay closed. Ctrl+/, pressed with the key-down test command, shows the overlay from that
+# search box without typing, stays open while Ctrl+/ repeats, lists Ctrl+/, closes the overlay
+# from its own search box and shows it from the page. The top bar shows "Ctrl+/: Show hotkeys".
 # See test.md.
 #
 
@@ -54,36 +54,35 @@ search_value() {
 }
 
 #
-# Sends a keydown of `?` with Control held to the element with the data-id, with the key-down test
-# command, as a held Ctrl+? repeats, and fails unless Graft kept the key from doing anything else.
-# Usage: repeat_ctrl_question_mark <data-id>
+# Sends a keydown of `/` with Control held to the element with the data-id, with the key-down test
+# command, as a held Ctrl+/ repeats, and fails unless Graft kept the key from doing anything else.
+# Usage: repeat_ctrl_slash <data-id>
 #
-repeat_ctrl_question_mark() {
+repeat_ctrl_slash() {
     local answer
-    answer="$(control "{\"command\":\"key-down\",\"dataId\":\"$1\",\"key\":\"?\",\"ctrl\":true}")"
+    answer="$(control "{\"command\":\"key-down\",\"dataId\":\"$1\",\"key\":\"/\",\"ctrl\":true}")"
     if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
-        fail "pressing Ctrl+? on $1 failed: $answer"
+        fail "pressing Ctrl+/ on $1 failed: $answer"
     fi
     if [ "$(printf '%s' "$answer" | jq -r '.value')" != "prevented" ]; then
-        fail "Graft did not handle Ctrl+? pressed on $1: $answer"
+        fail "Graft did not handle Ctrl+/ pressed on $1: $answer"
     fi
 }
 
 #
-# Presses Ctrl+? on the element with the data-id, with the key-down test command, because the
-# native app's press-key takes only Ziggy's shortcut syntax, which refuses a modifier on `?`. It
-# sends a keydown of Control first, as a user presses Control before `?`, because Graft opens or
-# closes the overlay once per press of Control. Fails unless Graft kept the key from doing anything
-# else.
-# Usage: press_ctrl_question_mark <data-id>
+# Presses Ctrl+/ on the element with the data-id, with the key-down test command, because the
+# native app's press-key takes only Ziggy's shortcut syntax, which refuses `/` as a key. It sends a
+# keydown of Control first, as a user presses Control before `/`, because Graft opens or closes the
+# overlay once per press of Control. Fails unless Graft kept the key from doing anything else.
+# Usage: press_ctrl_slash <data-id>
 #
-press_ctrl_question_mark() {
+press_ctrl_slash() {
     local answer
     answer="$(control "{\"command\":\"key-down\",\"dataId\":\"$1\",\"key\":\"Control\",\"ctrl\":true}")"
     if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
         fail "pressing Control on $1 failed: $answer"
     fi
-    repeat_ctrl_question_mark "$1"
+    repeat_ctrl_slash "$1"
 }
 
 start_app_on_start_page
@@ -146,41 +145,41 @@ wait_for_text breadcrumb-page-no-match "No page matches \"?\"." 30
 expect_missing shortcuts-overlay "the keyboard shortcuts overlay showed when ? was typed in the search box"
 wait_for_element about-page 30
 
-# Ctrl+? with the focus in the drop-down's search box shows the overlay and types nothing there.
+# Ctrl+/ with the focus in the drop-down's search box shows the overlay and types nothing there.
 press_key Escape
 wait_for_missing_element breadcrumb-page-menu 30
 click breadcrumb-page
 wait_for_element breadcrumb-page-search 30
-press_ctrl_question_mark breadcrumb-page-search
+press_ctrl_slash breadcrumb-page-search
 wait_for_element shortcuts-overlay-search 30
 if [ "$(value_of breadcrumb-page-search)" != "" ]; then
-    fail "Ctrl+? typed into the drop-down's search box. It holds: $(value_of breadcrumb-page-search)"
+    fail "Ctrl+/ typed into the drop-down's search box. It holds: $(value_of breadcrumb-page-search)"
 fi
 
-# A held Ctrl+? repeats as another keydown of `?` with Control held. It leaves the overlay open.
+# A held Ctrl+/ repeats as another keydown of `/` with Control held. It leaves the overlay open.
 # The wait is longer than the overlay's closing transition, so an overlay it closed has gone.
-repeat_ctrl_question_mark shortcuts-overlay-search
+repeat_ctrl_slash shortcuts-overlay-search
 sleep 1
 wait_for_element shortcuts-overlay-search 30
 
-# The overlay lists Ctrl+? straight after `?`, under the Keyboard Shortcuts action's label.
+# The overlay lists Ctrl+/ straight after `?`, under the Keyboard Shortcuts action's label.
 wait_for_text shortcut-toggle-shortcuts-overlay-ctrl-label "Keyboard Shortcuts" 30
-wait_for_text shortcut-toggle-shortcuts-overlay-ctrl-keys "Ctrl+?" 30
+wait_for_text shortcut-toggle-shortcuts-overlay-ctrl-keys "Ctrl+/" 30
 
-# Ctrl+? in the overlay's own search box closes the overlay and types nothing there.
-press_ctrl_question_mark shortcuts-overlay-search
+# Ctrl+/ in the overlay's own search box closes the overlay and types nothing there.
+press_ctrl_slash shortcuts-overlay-search
 wait_for_missing_element shortcuts-overlay 30
 
-# Ctrl+? on the page, with no text box involved, shows the overlay. Escape closes it.
+# Ctrl+/ on the page, with no text box involved, shows the overlay. Escape closes it.
 press_key Escape
 wait_for_missing_element breadcrumb-page-menu 30
-press_ctrl_question_mark about-page
+press_ctrl_slash about-page
 wait_for_element shortcuts-overlay-search 30
 if [ "$(search_value)" != "" ]; then
-    fail "the overlay's search box is not empty after Ctrl+?. It holds: $(search_value)"
+    fail "the overlay's search box is not empty after Ctrl+/. It holds: $(search_value)"
 fi
 press_key Escape
 wait_for_missing_element shortcuts-overlay 30
 
-# The top bar reminds the user of Ctrl+?.
-wait_for_text top-bar-shortcuts-reminder "Ctrl+?: Show hotkeys" 30
+# The top bar reminds the user of Ctrl+/.
+wait_for_text top-bar-shortcuts-reminder "Ctrl+/: Show hotkeys" 30

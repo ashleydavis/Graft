@@ -2,7 +2,7 @@
 // Tests the top bar: renders it with each state of the two sidebars and each theme setting and
 // checks it shows Graft's name, that each button's label says what a click does next, that a click
 // asks for the change, that the theme menu's choice is passed on, that it shows the breadcrumb
-// trail it is given between the buttons and that it shows the Ctrl+? reminder.
+// trail it is given between the buttons and that it shows the Ctrl+/ reminder.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
@@ -127,12 +127,12 @@ describe("TopBar", () => {
             themeSetting: "dark",
             onChooseThemeSetting: jest.fn(),
         }));
-        expect(container.querySelector("[data-id=\"top-bar-shortcuts-reminder\"]")?.textContent).toBe("Ctrl+?: Show hotkeys");
+        expect(container.querySelector("[data-id=\"top-bar-shortcuts-reminder\"]")?.textContent).toBe("Ctrl+/: Show hotkeys");
     });
 
     test("puts the reminder between the breadcrumb trail and the theme menu's button", () => {
         renderTopBar(false, false);
-        const reminder = screen.getByText("Ctrl+?: Show hotkeys");
+        const reminder = screen.getByText("Ctrl+/: Show hotkeys");
         expect(reminder.getAttribute("data-id")).toBe("top-bar-shortcuts-reminder");
         expect(reminder.previousElementSibling?.getAttribute("data-id")).toBe("top-bar-trail");
         expect(reminder.nextElementSibling?.getAttribute("data-id")).toBe("theme-button");
@@ -168,6 +168,6 @@ describe("TopBar", () => {
         const topBar = container.querySelector("[data-id=\"top-bar\"]");
         expect(topBar?.querySelectorAll("button").length).toBe(3);
         expect(topBar?.querySelectorAll("a").length).toBe(0);
-        expect(topBar?.textContent).toBe("GraftgraftRepo explorerCtrl+?: Show hotkeys");
+        expect(topBar?.textContent).toBe("GraftgraftRepo explorerCtrl+/: Show hotkeys");
     });
 });

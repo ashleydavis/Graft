@@ -189,7 +189,7 @@ export function elementInViewResult(bounds: IHorizontalBounds, windowWidth: numb
 // Performs the key-down command: dispatches a keydown event for the key, with Control held when
 // the command's ctrl field is true, on the element, from where it bubbles up to the window as a
 // real key press does. The native app's press-key takes only Ziggy's shortcut syntax, which refuses
-// a modifier on `?`, so the smoke tests press Ctrl+? this way. The value is "prevented" when a
+// `/` as a key, so the smoke tests press Ctrl+/ this way. The value is "prevented" when a
 // listener kept the key from doing anything else, as Graft does with a key it handles, and
 // "not prevented" when the key went on to its default.
 //

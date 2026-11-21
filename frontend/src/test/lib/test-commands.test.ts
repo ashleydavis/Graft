@@ -167,12 +167,12 @@ describe("performTestCommand", () => {
         expect(element.events).toEqual([]);
     });
 
-    test("key-down dispatches a bubbling keydown of the key with Control held and reports it was not prevented", () => {
+    test("key-down dispatches a bubbling keydown of the key with Control held and returns that it was not prevented", () => {
         const element = makeElement("", "");
         expect(performTestCommand(makeFinder(element), {
             command: "key-down",
             dataId: "target",
-            key: "?",
+            key: "/",
             ctrl: true,
         })).toEqual({
             ok: true,
@@ -182,7 +182,7 @@ describe("performTestCommand", () => {
         const event = element.events[0];
         expect(event).toBeInstanceOf(KeyboardEvent);
         expect(event).toHaveProperty("type", "keydown");
-        expect(event).toHaveProperty("key", "?");
+        expect(event).toHaveProperty("key", "/");
         expect(event).toHaveProperty("ctrlKey", true);
         expect(event).toHaveProperty("bubbles", true);
         expect(event).toHaveProperty("cancelable", true);
@@ -193,12 +193,12 @@ describe("performTestCommand", () => {
         performTestCommand(makeFinder(element), {
             command: "key-down",
             dataId: "target",
-            key: "?",
+            key: "/",
         });
         expect(element.events[0]).toHaveProperty("ctrlKey", false);
     });
 
-    test("key-down reports a key a listener kept from doing anything else as prevented", () => {
+    test("key-down returns prevented for a key a listener kept from doing anything else", () => {
         const element = makeElement("", "");
         element.dispatchEvent = (event: Event): boolean => {
             element.events.push(event);
@@ -207,7 +207,7 @@ describe("performTestCommand", () => {
         expect(performTestCommand(makeFinder(element), {
             command: "key-down",
             dataId: "target",
-            key: "?",
+            key: "/",
             ctrl: true,
         })).toEqual({
             ok: true,
