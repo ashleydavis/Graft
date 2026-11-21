@@ -26,8 +26,7 @@ wait_for_saved_state() {
     done
 }
 
-start_test_app
-wait_for_element welcome-page 30
+start_app_on_start_page
 wait_for_text left-sidebar-about-link-label "About" 30
 wait_for_missing_element right-sidebar-content 30
 
@@ -38,8 +37,7 @@ wait_for_element right-sidebar-content 30
 wait_for_saved_state sidebar.left.minimised true
 wait_for_saved_state sidebar.right.open true
 
-restart_test_app
-wait_for_element welcome-page 30
+restart_app_on_start_page
 wait_for_element right-sidebar-content 30
 wait_for_element left-sidebar-about-link 30
 wait_for_missing_element left-sidebar-about-link-label 30
@@ -51,7 +49,6 @@ wait_for_missing_element right-sidebar-content 30
 wait_for_saved_state sidebar.left.minimised false
 wait_for_saved_state sidebar.right.open false
 
-restart_test_app
-wait_for_element welcome-page 30
+restart_app_on_start_page
 wait_for_text left-sidebar-about-link-label "About" 30
 wait_for_missing_element right-sidebar-content 30

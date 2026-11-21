@@ -7,10 +7,14 @@
 // close-window, reload, the zoom and editing actions, full screen and the developer tools). A
 // `.zig` item calls a Zig function of the app's on the thread that handles messages. A `.ui` item
 // reaches the frontend as the app event {"type": "menu", "item": "<name>"}; each of those has a
-// `.name`. See Ziggy's guide "Menus".
+// `.name`. Each feature declares the items that run its actions in its file under
+// backend/src/features/, and this file puts them in their menus. See Ziggy's guide "Menus".
 //
 
 const ziggy = @import("ziggy");
+const new_window = @import("../features/new-window.zig");
+const open_repo = @import("../features/open-repo.zig");
+const zoom = @import("../features/zoom.zig");
 
 //
 // The menu Graft passes to ziggy.core.App as `.menu`.
@@ -18,33 +22,25 @@ const ziggy = @import("ziggy");
 pub const menu: []const ziggy.menu.Menu = &.{
     .{
         .label = "File",
-        .items = &.{
-            .{
-                .run = .{
-                    .action = "new-window",
+        .items = new_window.file_menu_items ++
+            open_repo.file_menu_items ++
+            &[_]ziggy.menu.Item{
+                ziggy.menu.separator,
+                .{
+                    .label = "Close Window",
+                    .shortcut = "CmdOrCtrl+W",
+                    .run = .{
+                        .standard = .@"close-window",
+                    },
+                },
+                .{
+                    .label = "Quit",
+                    .shortcut = "CmdOrCtrl+Q",
+                    .run = .{
+                        .standard = .quit,
+                    },
                 },
             },
-            .{
-                .run = .{
-                    .action = "open-repo",
-                },
-            },
-            ziggy.menu.separator,
-            .{
-                .label = "Close Window",
-                .shortcut = "CmdOrCtrl+W",
-                .run = .{
-                    .standard = .@"close-window",
-                },
-            },
-            .{
-                .label = "Quit",
-                .shortcut = "CmdOrCtrl+Q",
-                .run = .{
-                    .standard = .quit,
-                },
-            },
-        },
     },
     .{
         .label = "Edit",
@@ -96,7 +92,7 @@ pub const menu: []const ziggy.menu.Menu = &.{
     },
     .{
         .label = "View",
-        .items = &.{
+        .items = &[_]ziggy.menu.Item{
             .{
                 .label = "Reload",
                 .shortcut = "CmdOrCtrl+R",
@@ -105,37 +101,25 @@ pub const menu: []const ziggy.menu.Menu = &.{
                 },
             },
             ziggy.menu.separator,
-            .{
-                .run = .{
-                    .action = "zoom-in-step",
+        } ++
+            zoom.view_menu_items ++
+            &[_]ziggy.menu.Item{
+                ziggy.menu.separator,
+                .{
+                    .label = "Toggle Full Screen",
+                    .shortcut = "F11",
+                    .run = .{
+                        .standard = .@"toggle-fullscreen",
+                    },
+                },
+                ziggy.menu.separator,
+                .{
+                    .label = "Toggle Developer Tools",
+                    .shortcut = "CmdOrCtrl+Shift+I",
+                    .run = .{
+                        .standard = .@"toggle-devtools",
+                    },
                 },
             },
-            .{
-                .run = .{
-                    .action = "zoom-out-step",
-                },
-            },
-            .{
-                .run = .{
-                    .action = "zoom-actual-size",
-                },
-            },
-            ziggy.menu.separator,
-            .{
-                .label = "Toggle Full Screen",
-                .shortcut = "F11",
-                .run = .{
-                    .standard = .@"toggle-fullscreen",
-                },
-            },
-            ziggy.menu.separator,
-            .{
-                .label = "Toggle Developer Tools",
-                .shortcut = "CmdOrCtrl+Shift+I",
-                .run = .{
-                    .standard = .@"toggle-devtools",
-                },
-            },
-        },
     },
 };

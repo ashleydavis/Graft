@@ -13,19 +13,15 @@ repo="$ZIGGY_TEST_DIR/repo"
 "$ZIGGY_SMOKE_APP_DIR/scripts/test/create-test-repo.sh" "$repo" || fail "could not create the test repo at $repo"
 
 export GRAFT_TEST_REPO="$repo"
-start_test_app
-wait_for_element welcome-page 30
+start_app_on_start_page
 wait_for_element left-sidebar 30
 wait_for_text left-sidebar-commits-link-label "Commits" 30
 wait_for_text left-sidebar-help-link-label "Help" 30
 wait_for_text left-sidebar-about-link-label "About" 30
 
-click left-sidebar-commits-link
-wait_for_element commits-page 30
-click left-sidebar-help-link
-wait_for_element help-page 30
-click left-sidebar-about-link
-wait_for_element about-page 30
+open_sidebar_page commits
+open_sidebar_page help
+open_sidebar_page about
 
 click left-sidebar-toggle
 wait_for_missing_element left-sidebar-commits-link-label 30
@@ -35,12 +31,9 @@ wait_for_element left-sidebar-commits-link 30
 wait_for_element left-sidebar-help-link 30
 wait_for_element left-sidebar-about-link 30
 
-click left-sidebar-commits-link
-wait_for_element commits-page 30
-click left-sidebar-help-link
-wait_for_element help-page 30
-click left-sidebar-about-link
-wait_for_element about-page 30
+open_sidebar_page commits
+open_sidebar_page help
+open_sidebar_page about
 
 click left-sidebar-toggle
 wait_for_text left-sidebar-commits-link-label "Commits" 30

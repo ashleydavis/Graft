@@ -10,8 +10,9 @@ import { Fragment, JSX, useEffect, useState } from "react";
 import { actionShortcuts, IShortcut, matchingShortcuts, shortcutKeyNames } from "../lib/shortcuts";
 
 //
-// The name of the backend's Keyboard Shortcuts action (backend/src/lib/actions.zig), whose shortcut
-// is `?`. The overlay registers its handler under this name and removes it under the same name.
+// The name of the backend's Keyboard Shortcuts action (backend/src/features/shortcuts-overlay.zig),
+// whose shortcut is `?`. The overlay registers its handler under this name and removes it under
+// the same name.
 //
 export const shortcutsOverlayAction = "toggle-shortcuts-overlay";
 

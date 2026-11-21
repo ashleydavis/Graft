@@ -6,7 +6,7 @@ A user makes everything in Graft's window bigger or smaller with the zoom keys o
 
 ## Behaviour
 
-- Zoom In, Zoom Out and Actual Size are Graft's actions, declared in `backend/src/lib/actions.zig` as `zoom-in-step`, `zoom-out-step` and `zoom-actual-size`, with the shortcuts `CmdOrCtrl+Plus`, `CmdOrCtrl+Minus` and `CmdOrCtrl+0`. Ziggy keeps the names `zoom-in`, `zoom-out` and `zoom-reset` for its standard actions.
+- Zoom In, Zoom Out and Actual Size are Graft's actions, declared in `backend/src/features/zoom.zig` as `zoom-in-step`, `zoom-out-step` and `zoom-actual-size`, with the shortcuts `CmdOrCtrl+Plus`, `CmdOrCtrl+Minus` and `CmdOrCtrl+0`. Ziggy keeps the names `zoom-in`, `zoom-out` and `zoom-reset` for its standard actions.
 - The View menu's Zoom In, Zoom Out and Actual Size items run the actions. Ziggy shows each action's label and shortcut on the item in the platform's own form.
 - Ziggy runs a `Plus` shortcut on `=` too, so Ctrl+= zooms in as Ctrl+Plus does, without Shift. On macOS the keys are Command+Plus, Command+=, Command+Minus and Command+0.
 - The actions' handlers are in the frontend (`frontend/src/components/page-zoom.ts`). Each sends the backend's `zoom` message, which has the native app run its own `zoom-in`, `zoom-out` or `zoom-reset` action. The native app's zoom changes the size of everything in the window by 0.1 a step.

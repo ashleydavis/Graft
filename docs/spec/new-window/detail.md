@@ -6,7 +6,7 @@ A user opens another window of Graft, for example to work on a second repo or on
 
 ## Behaviour
 
-- The File menu has a "New window" item, its first item, above "Open repo". It runs the `new-window` action, declared in `backend/src/lib/actions.zig`.
+- The File menu has a "New window" item, its first item. It runs the `new-window` action, declared in `backend/src/features/new-window.zig`.
 - The `new-window` action has the shortcut `CmdOrCtrl+N`: Command+N on macOS and Ctrl+N on Linux and Windows. Ziggy shows it beside the menu item in each platform's own form. Pressing it opens a new window the same way the menu item does.
 - The action's frontend handler, `openNewWindow` in `frontend/src/lib/new-window.ts`, calls Ziggy's `window.ziggy.newWindow([])`. Ziggy starts the new window as a process of its own, with one window and its own backend and task queue.
 - The new window gets the command line and environment of the window that started it and no arguments of its own, so it starts as Graft does: on the welcome page with no repo open.

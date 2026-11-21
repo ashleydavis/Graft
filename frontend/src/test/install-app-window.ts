@@ -3,12 +3,16 @@
 // a fake media query that does not match, so the app draws in light colours, and a window.ziggy
 // with the calls the theme, the splash screen, the layout's task event listener, the layout's
 // open-repo action and the keyboard shortcuts overlay make, whose config file holds no theme
-// setting and whose system's theme is light. A test imports this before main.tsx, because main.tsx
-// draws the app as it loads. A test that needs more of window.ziggy replaces it.
+// setting and whose system's theme is light. The window.ziggy is built from one small fake per
+// feature, so a feature that needs another call adds a fake of its own. A test imports this before
+// main.tsx, because main.tsx draws the app as it loads. A test that needs more of window.ziggy
+// replaces it.
 //
 
 import { makeFakeActionZiggy } from "./fake-action-ziggy";
 import { makeFakeMediaQuery } from "./fake-media-query";
+import { makeFakeSplashZiggy } from "./fake-splash-ziggy";
+import { makeFakeTaskEventZiggy } from "./fake-task-event-ziggy";
 import { makeFakeThemeZiggy } from "./fake-theme-ziggy";
 
 window.matchMedia = (query: string): MediaQueryList => makeFakeMediaQuery(query, false);
@@ -22,11 +26,8 @@ export const installedZiggy = {
         systemTheme: "light",
     }),
     ...makeFakeActionZiggy([]),
-    onEvent: jest.fn(),
-    frontendReady: jest.fn(),
-    splashFading: jest.fn(),
-    onTaskEvent: jest.fn(),
-    removeTaskEventListener: jest.fn(),
+    ...makeFakeSplashZiggy(),
+    ...makeFakeTaskEventZiggy(),
 };
 
 Object.defineProperty(window, "ziggy", {

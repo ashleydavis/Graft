@@ -30,7 +30,7 @@ bun run macos
 
 1. Wait for Graft's window to open on the welcome page.
 2. Check the left sidebar shows only the "Help" and "About" links and the breadcrumb trail is empty.
-3. Open the File menu. Check it has "Open repo", below "New window" and above "Close Window", with its shortcut beside it: Ctrl+O on Linux and Windows, Command+O on macOS.
+3. Open the File menu. Check it has "Open repo", above "Close Window", with its shortcut beside it: Ctrl+O on Linux and Windows, Command+O on macOS.
 4. Choose "Open repo". Check the system folder picker opens, titled "Open repo".
 5. Cancel the picker. Check Graft still shows the welcome page with no repo open.
 6. Choose File, then "Open repo" again, and choose `/tmp/graft/test-repo`.

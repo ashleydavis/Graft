@@ -1,12 +1,13 @@
 //
-// Tests Graft's actions. It checks Open repo is declared with the shortcut CmdOrCtrl+O, the
-// Keyboard Shortcuts action with the shortcut `?`, the Commit Explorer action with the shortcut
-// `CmdOrCtrl+1`, Zoom In, Zoom Out and Actual Size with the usual zoom keys and New window with the
-// shortcut CmdOrCtrl+N. It checks every action's shortcut is clear of the web view's own keys. It
-// checks running Keyboard Shortcuts and Commit Explorer, as their shortcuts and the frontend do,
-// sends the frontend the action event naming each, and that the File menu's New window item and
-// its shortcut send the frontend New window's action event. Each running test starts the backend
-// with Ziggy's fake native app and sends the system message the native app or the frontend would.
+// Tests Graft's actions, each found by its name. It checks Open repo is declared with the shortcut
+// CmdOrCtrl+O, the Keyboard Shortcuts action with the shortcut `?`, the Commit Explorer action with
+// the shortcut `CmdOrCtrl+1`, Zoom In, Zoom Out and Actual Size with the usual zoom keys and New
+// window with the shortcut CmdOrCtrl+N. It checks every action's shortcut is clear of the web
+// view's own keys. It checks running Keyboard Shortcuts and Commit Explorer, as their shortcuts and
+// the frontend do, sends the frontend the action event naming each, and that the File menu's New
+// window item and its shortcut send the frontend New window's action event. Each running test
+// starts the backend with Ziggy's fake native app and sends the system message the native app or
+// the frontend would.
 //
 
 const std = @import("std");
@@ -71,26 +72,84 @@ const commit_explorer_event = "{\"kind\":\"system\",\"name\":\"action\"," ++
 const new_window_event = "{\"kind\":\"system\",\"name\":\"action\"," ++
     "\"data\":{\"action\":\"new-window\"}}";
 
-test "Graft's actions are Open repo, Keyboard Shortcuts, Commit Explorer, zoom and New window" {
-    try std.testing.expectEqual(@as(usize, 7), actions.actions.len);
-    try std.testing.expectEqualStrings("open-repo", actions.actions[0].name);
-    try std.testing.expectEqualStrings("Open repo", actions.actions[0].label);
-    try std.testing.expectEqualStrings("CmdOrCtrl+O", actions.actions[0].shortcut.?);
-    try std.testing.expectEqualStrings("toggle-shortcuts-overlay", actions.actions[1].name);
-    try std.testing.expectEqualStrings("Keyboard Shortcuts", actions.actions[1].label);
-    try std.testing.expectEqualStrings("?", actions.actions[1].shortcut.?);
-    try std.testing.expectEqualStrings("zoom-in-step", actions.actions[3].name);
-    try std.testing.expectEqualStrings("Zoom In", actions.actions[3].label);
-    try std.testing.expectEqualStrings("CmdOrCtrl+Plus", actions.actions[3].shortcut.?);
-    try std.testing.expectEqualStrings("zoom-out-step", actions.actions[4].name);
-    try std.testing.expectEqualStrings("Zoom Out", actions.actions[4].label);
-    try std.testing.expectEqualStrings("CmdOrCtrl+Minus", actions.actions[4].shortcut.?);
-    try std.testing.expectEqualStrings("zoom-actual-size", actions.actions[5].name);
-    try std.testing.expectEqualStrings("Actual Size", actions.actions[5].label);
-    try std.testing.expectEqualStrings("CmdOrCtrl+0", actions.actions[5].shortcut.?);
-    try std.testing.expectEqualStrings("new-window", actions.actions[6].name);
-    try std.testing.expectEqualStrings("New window", actions.actions[6].label);
-    try std.testing.expectEqualStrings("CmdOrCtrl+N", actions.actions[6].shortcut.?);
+//
+// Searches Graft's actions for the one with the name, and returns it, or null when no action has
+// that name. The tests read each action by its name, so a feature that adds an action leaves them
+// as they are.
+//
+fn find_action(name: []const u8) ?ziggy.action.Action {
+    for (actions.actions) |action| {
+        if (std.mem.eql(u8, action.name, name)) {
+            return action;
+        }
+    }
+    return null;
+}
+
+//
+// What expect_action expects of one action. All three are strings, so they are named fields to
+// keep a call from swapping them.
+//
+const ExpectedAction = struct {
+    // The action's name.
+    name: []const u8,
+
+    // The label its menu item and the keyboard shortcuts overlay show.
+    label: []const u8,
+
+    // Its keyboard shortcut.
+    shortcut: []const u8,
+};
+
+//
+// Checks Graft declares an action of the name, with the label and the shortcut.
+//
+fn expect_action(expected: ExpectedAction) !void {
+    const action = find_action(expected.name) orelse return error.ActionMissing;
+    try std.testing.expectEqualStrings(expected.label, action.label);
+    try std.testing.expectEqualStrings(expected.shortcut, action.shortcut.?);
+}
+
+test "Open repo is an action with the shortcut CmdOrCtrl+O" {
+    try expect_action(.{
+        .name = "open-repo",
+        .label = "Open repo",
+        .shortcut = "CmdOrCtrl+O",
+    });
+}
+
+test "Keyboard Shortcuts is an action with the shortcut ?" {
+    try expect_action(.{
+        .name = "toggle-shortcuts-overlay",
+        .label = "Keyboard Shortcuts",
+        .shortcut = "?",
+    });
+}
+
+test "Zoom In, Zoom Out and Actual Size are actions with the usual zoom keys" {
+    try expect_action(.{
+        .name = "zoom-in-step",
+        .label = "Zoom In",
+        .shortcut = "CmdOrCtrl+Plus",
+    });
+    try expect_action(.{
+        .name = "zoom-out-step",
+        .label = "Zoom Out",
+        .shortcut = "CmdOrCtrl+Minus",
+    });
+    try expect_action(.{
+        .name = "zoom-actual-size",
+        .label = "Actual Size",
+        .shortcut = "CmdOrCtrl+0",
+    });
+}
+
+test "New window is an action with the shortcut CmdOrCtrl+N" {
+    try expect_action(.{
+        .name = "new-window",
+        .label = "New window",
+        .shortcut = "CmdOrCtrl+N",
+    });
 }
 
 test "no action's shortcut is one of the web view's own keys" {
@@ -114,9 +173,11 @@ test "no action's shortcut is one of the web view's own keys" {
 }
 
 test "Commit Explorer is an action with the shortcut CmdOrCtrl+1" {
-    try std.testing.expectEqualStrings("open-commit-explorer", actions.actions[2].name);
-    try std.testing.expectEqualStrings("Commit Explorer", actions.actions[2].label);
-    try std.testing.expectEqualStrings("CmdOrCtrl+1", actions.actions[2].shortcut.?);
+    try expect_action(.{
+        .name = "open-commit-explorer",
+        .label = "Commit Explorer",
+        .shortcut = "CmdOrCtrl+1",
+    });
 }
 
 test "Graft's app declares the actions" {

@@ -14,7 +14,7 @@ import { savedZoomStepCount, ZoomAction, zoomInStepCount, zoomLevel, zoomOutStep
 export const zoomLevelStateKey = "zoom.level";
 
 //
-// The name of the backend's Zoom In action (backend/src/lib/actions.zig), whose shortcut is
+// The name of the backend's Zoom In action (backend/src/features/zoom.zig), whose shortcut is
 // CmdOrCtrl+Plus. Ziggy keeps the name "zoom-in" for the native app's standard action.
 //
 export const zoomInActionName = "zoom-in-step";

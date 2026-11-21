@@ -4,8 +4,9 @@
 //
 
 //
-// The name of the open-repo action, declared in the backend's actions.zig, which the File menu's
-// "Open repo" item runs. The layout registers its handler and removes it again under this name.
+// The name of the open-repo action, declared in the backend's features/open-repo.zig, which the
+// File menu's "Open repo" item runs. useOpenRepoAction registers its handler and removes it again
+// under this name.
 //
 export const openRepoActionName = "open-repo";
 

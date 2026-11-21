@@ -57,7 +57,12 @@ export function createAppRouter(): AnyRouter {
         component: HelpPage,
     });
     return createRouter({
-        routeTree: rootRoute.addChildren([welcomeRoute, aboutRoute, commitsRoute, helpRoute]),
+        routeTree: rootRoute.addChildren([
+            welcomeRoute,
+            aboutRoute,
+            commitsRoute,
+            helpRoute,
+        ]),
         history: createMemoryHistory({
             initialEntries: ["/"],
         }),

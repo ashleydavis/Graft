@@ -8,10 +8,12 @@ import { JSX, useEffect, useState } from "react";
 import type { ITaskEvent } from "ziggy";
 import { pageTrail } from "../lib/breadcrumb-trail";
 import { addGitCommand, IPageGitCommands, isGitCommandEvent, pageGitCommands } from "../lib/git-commands";
-import { newWindowActionName, openNewWindow } from "../lib/new-window";
-import { openPickedRepo, openRepoActionName } from "../lib/open-repo";
+import { openPage } from "../lib/navigation";
+import { useCommitExplorerAction } from "./commit-explorer-action";
 import { GitCommandsPanel } from "./git-commands-panel";
 import { LeftSidebar } from "./left-sidebar";
+import { useNewWindowAction } from "./new-window-action";
+import { useOpenRepoAction } from "./open-repo-action";
 import { usePageZoom } from "./page-zoom";
 import { useRepo } from "./repo-context";
 import { RightSidebar } from "./right-sidebar";
@@ -32,13 +34,6 @@ export const leftSidebarMinimisedStateKey = "sidebar.left.minimised";
 // `sidebar` beside the left sidebar's key, so the state file keeps them together.
 //
 export const rightSidebarOpenStateKey = "sidebar.right.open";
-
-//
-// The name of the backend's Commit Explorer action (backend/src/lib/actions.zig), whose shortcut
-// is `CmdOrCtrl+1`. The layout registers its handler under this name and removes it under the same
-// name.
-//
-export const commitExplorerAction = "open-commit-explorer";
 
 //
 // Keeps a switch that is off until Graft's state file holds true for it, with the function that
@@ -81,13 +76,9 @@ export function useSavedSwitch(stateKey: string, description: string): [boolean,
 // without drawing it itself. It keeps the Git commands every page has run for as long as the app
 // runs, listening whether the right sidebar is open or not, so closing a pane or the sidebar or
 // moving to another page loses none, and the right sidebar shows the commands of the page that is
-// open. It holds the keyboard shortcuts overlay, so `?` shows it over every page. It registers the
-// handler of the open-repo action, which opens the directory the user picks and shows it in the
-// commit explorer, because the layout is inside both the router and the open repo's context for as
-// long as the window is open. It registers the handler of the Commit Explorer action, which opens
-// the commits page, so Ctrl+1 (Cmd+1 on macOS) returns to the commit explorer from every page. For
-// the same reason it holds the handlers of the zoom actions, which zoom the window and keep its
-// zoom level in Graft's state file.
+// open. It holds the keyboard shortcuts overlay, so `?` shows it over every page. It calls the hook
+// of each feature whose action works on every page, one line per feature, because the layout is
+// inside both the router and the open repo's context for as long as the window is open.
 //
 export function AppLayout(): JSX.Element {
     const [isLeftSidebarMinimised, toggleLeftSidebar] = useSavedSwitch(leftSidebarMinimisedStateKey, "whether the left sidebar is minimised");
@@ -95,9 +86,12 @@ export function AppLayout(): JSX.Element {
     const location = useLocation();
     const navigate = useNavigate();
     const theme = useThemeSetting();
-    const { repoPath, openRepo } = useRepo();
+    const { repoPath } = useRepo();
     const [gitCommandHistory, setGitCommandHistory] = useState<ReadonlyMap<string, IPageGitCommands>>(new Map());
     usePageZoom();
+    useOpenRepoAction();
+    useCommitExplorerAction();
+    useNewWindowAction();
 
     useEffect(() => {
         function onTaskEvent(event: ITaskEvent<unknown>): void {
@@ -111,41 +105,6 @@ export function AppLayout(): JSX.Element {
         return () => window.ziggy.removeTaskEventListener(onTaskEvent);
     }, []);
 
-    function openPage(path: string): void {
-        navigate({
-            to: path,
-        }).catch(navigationFailureReporter(path));
-    }
-
-    //
-    // The handler is registered again whenever the router's navigate changes, because openPage
-    // calls the navigate of the render that registered it.
-    //
-    useEffect(() => {
-        window.ziggy.registerAction(commitExplorerAction, () => openPage("/commits"));
-        return () => {
-            window.ziggy.removeAction(commitExplorerAction);
-        };
-    }, [navigate]);
-
-    //
-    // The handlers are registered once. openRepo and openPage only call the provider's state setter
-    // and the router's navigate, which stay the same for as long as the layout is shown, so the
-    // first render's open-repo handler stays current. The new-window handler calls only
-    // window.ziggy.
-    //
-    useEffect(() => {
-        window.ziggy.registerAction(openRepoActionName, () => openPickedRepo(pickedRepoPath => {
-            openRepo(pickedRepoPath);
-            openPage("/commits");
-        }));
-        window.ziggy.registerAction(newWindowActionName, openNewWindow);
-        return () => {
-            window.ziggy.removeAction(openRepoActionName);
-            window.ziggy.removeAction(newWindowActionName);
-        };
-    }, []);
-
     return (
         <div data-id="app-layout" className="flex h-screen flex-col overflow-hidden">
             <TopBar
@@ -154,7 +113,7 @@ export function AppLayout(): JSX.Element {
                 isRightSidebarOpen={isRightSidebarOpen}
                 onToggleRightSidebar={toggleRightSidebar}
                 trail={pageTrail(location.pathname, repoPath)}
-                onNavigate={openPage}
+                onNavigate={path => openPage(navigate, path)}
                 themeSetting={theme.setting}
                 onChooseThemeSetting={theme.onChooseSetting}
             />
@@ -170,15 +129,4 @@ export function AppLayout(): JSX.Element {
             <ShortcutsOverlay />
         </div>
     );
-}
-
-//
-// Makes the function that reports that the router could not open the page at the path, which the
-// breadcrumb trail asked for, so the failure is seen in the log rather than lost, with what to look
-// at.
-//
-export function navigationFailureReporter(path: string): (error: unknown) => void {
-    return error => {
-        console.error(`Graft could not open the page at ${path}: ${String(error)}. The page stays as it was, so look at the router's routes for that path.`);
-    };
 }

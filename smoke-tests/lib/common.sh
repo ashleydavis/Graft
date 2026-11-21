@@ -119,6 +119,15 @@ start_test_app() {
 }
 
 #
+# Starts the app as start_test_app does and waits until it shows its start page, the welcome page,
+# so every smoke test begins on the page Graft starts on and a change to that page is one edit here.
+#
+start_app_on_start_page() {
+    start_test_app
+    wait_for_element welcome-page 30
+}
+
+#
 # Stops the app and starts it again on the config and state files it kept, then opens the control connection to the new run. A
 # scenario uses it to check what Graft remembers from one run to the next.
 #
@@ -134,6 +143,15 @@ restart_test_app() {
     ziggy_platform_start "$ZIGGY_TEST_DIR" keep-data || fail "the app did not start again"
     open_control_connection
     wait_for_ready
+}
+
+#
+# Starts the app again as restart_test_app does and waits until it shows its start page, the welcome
+# page, as start_app_on_start_page does for the first run.
+#
+restart_app_on_start_page() {
+    restart_test_app
+    wait_for_element welcome-page 30
 }
 
 #
@@ -204,6 +222,17 @@ click() {
     if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
         fail "click $1 failed: $answer"
     fi
+}
+
+#
+# Opens a page with its link in the left sidebar, as a user does, and waits until the page shows,
+# so a change to the sidebar's links is one edit here. <page> is the page's name as it appears in
+# the link's data-id, left-sidebar-<page>-link, and in the page's own data-id, <page>-page.
+# Usage: open_sidebar_page <page>
+#
+open_sidebar_page() {
+    click "left-sidebar-$1-link"
+    wait_for_element "$1-page" 30
 }
 
 #

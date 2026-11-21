@@ -37,10 +37,8 @@ repo="$ZIGGY_TEST_DIR/repo"
 "$ZIGGY_SMOKE_APP_DIR/scripts/test/create-test-repo.sh" "$repo" || fail "could not create the test repo at $repo"
 
 export GRAFT_TEST_REPO="$repo"
-start_test_app
-wait_for_element welcome-page 30
-click left-sidebar-about-link
-wait_for_element about-page 30
+start_app_on_start_page
+open_sidebar_page about
 
 # In the drop-down's search box, which has the focus when the drop-down opens, Left moves the
 # cursor before the "a" typed, so "b" goes in front of it: the box holds "ba", which no page matches.
@@ -89,8 +87,7 @@ press_key Escape
 wait_for_element commit-pane 5
 
 # Ctrl+1 returns to the commit explorer from the Help page.
-click left-sidebar-help-link
-wait_for_element help-page 30
+open_sidebar_page help
 press_key CmdOrCtrl+1
 wait_for_element commits-page 30
 wait_for_text commit-list "Change the note" 30

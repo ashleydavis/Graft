@@ -20,8 +20,7 @@ if [ "$ZIGGY_SMOKE_PLATFORM" = "macos" ]; then
     open_repo_keys="⌘O"
 fi
 
-start_test_app
-wait_for_element welcome-page 30
+start_app_on_start_page
 wait_for_missing_element breadcrumb-repo 30
 
 # The next folder picker returns the test repo as chosen, so it shows no dialog.

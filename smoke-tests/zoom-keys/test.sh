@@ -75,8 +75,7 @@ if [ "$ZIGGY_SMOKE_PLATFORM" = "macos" ]; then
     actual_size_keys="⌘0"
 fi
 
-start_test_app
-wait_for_element welcome-page 30
+start_app_on_start_page
 actual_size="$(viewport_size)"
 
 # The keys.

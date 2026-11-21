@@ -4,9 +4,9 @@
 //
 
 //
-// The name of the new-window action, declared in the backend's actions.zig, which the File menu's
-// "New window" item and the shortcut CmdOrCtrl+N run. The layout registers its handler and removes
-// it again under this name.
+// The name of the new-window action, declared in the backend's features/new-window.zig, which the
+// File menu's "New window" item and the shortcut CmdOrCtrl+N run. useNewWindowAction registers its
+// handler and removes it again under this name.
 //
 export const newWindowActionName = "new-window";
 

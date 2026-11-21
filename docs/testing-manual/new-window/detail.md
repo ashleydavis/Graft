@@ -26,7 +26,7 @@ bun run macos
 
 1. Wait for Graft's window to open on the welcome page.
 2. Choose File, then "Open repo", then choose `/tmp/graft/test-repo`. Check the commits page shows the test repo's commits.
-3. Open the File menu. Check its first item is "New window", above "Open repo", with its shortcut beside it: Ctrl+N on Linux and Windows, Command+N on macOS.
+3. Open the File menu. Check its first item is "New window", with its shortcut beside it: Ctrl+N on Linux and Windows, Command+N on macOS.
 4. Choose "New window". Check a second Graft window opens on the welcome page, with an empty breadcrumb trail and no "Commits" link in the left sidebar.
 5. Check the first window still shows the test repo's commits.
 6. In the first window, press Ctrl+N (Command+N on macOS). Check a third Graft window opens on the welcome page.

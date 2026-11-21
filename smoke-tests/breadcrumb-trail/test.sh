@@ -11,21 +11,17 @@ repo="$ZIGGY_TEST_DIR/repo"
 "$ZIGGY_SMOKE_APP_DIR/scripts/test/create-test-repo.sh" "$repo" || fail "could not create the test repo at $repo"
 
 export GRAFT_TEST_REPO="$repo"
-start_test_app
-wait_for_element welcome-page 30
-click left-sidebar-about-link
-wait_for_element about-page 30
+start_app_on_start_page
+open_sidebar_page about
 wait_for_element top-bar-trail 30
 wait_for_text breadcrumb-repo "repo" 30
 wait_for_text breadcrumb-page "About" 30
 
-click left-sidebar-commits-link
-wait_for_element commits-page 30
+open_sidebar_page commits
 wait_for_text breadcrumb-repo "repo" 30
 wait_for_text breadcrumb-page "Commits" 30
 
-click left-sidebar-help-link
-wait_for_element help-page 30
+open_sidebar_page help
 wait_for_text help-heading "Help" 30
 wait_for_text breadcrumb-repo "repo" 30
 wait_for_text breadcrumb-page "Help" 30

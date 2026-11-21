@@ -47,7 +47,8 @@ frontend/            The frontend: index.html and the TypeScript and React code 
   src/lib/           Plain, unit tested code the frontend shares, such as the commands remote control performs.
   src/test/          The frontend's Jest unit tests, mirroring the paths of the files they test.
 backend/             The Zig backend.
-  src/app.zig        Graft's declaration to Ziggy: its messages, tasks, menu and built frontend.
+  src/app.zig        Graft's declaration to Ziggy: its messages, tasks, menu and built frontend, gathered from the features.
+  src/features/      One file per feature, declaring its actions, menu items, messages and tasks.
   src/lib/           The Git interface, the Git wrappers, the message handlers, task handlers and menu.
   src/test/          The backend's Zig unit tests and the mocks of the Git interface function (git-mock.zig).
 native/              The native project for each platform (linux, windows and macos).
@@ -113,8 +114,8 @@ Graft follows the developer's global rules in https://github.com/ashleydavis/age
 ## Adding a new feature
 
 1. Write or update the feature's spec in `docs/spec/<id>/` and its manual test steps in `docs/testing-manual/<id>/`.
-2. Add the backend work in Zig under `backend/src/lib/`: a message handler for a quick answer (`/ziggy:add-message`), or a task for anything slow such as running `git` or reading files (`/ziggy:add-task`). Register it in `backend/src/app.zig`.
-3. Add or change the page under `frontend/src/pages/<page>/`. Keep its logic in plain functions under `src/lib/`. Give every element a smoke test touches a `data-id`.
+2. Add the backend work in Zig under `backend/src/lib/`: a message handler for a quick answer (`/ziggy:add-message`), or a task for anything slow such as running `git` or reading files (`/ziggy:add-task`). Declare it, with the feature's actions and menu items, in the feature's file under `backend/src/features/`. A new feature file gets one line in each of `backend/src/app.zig`, `backend/src/lib/actions.zig` and `backend/src/lib/menu.zig` that its declarations need.
+3. Add or change the page under `frontend/src/pages/<page>/`. Keep its logic in plain functions under `src/lib/`. Give every element a smoke test touches a `data-id`. An action that works on every page gets its handler in a hook of the feature's own, which `AppLayout` calls in one line.
 4. Write unit tests for every new or changed function, TypeScript and Zig alike, to full coverage, with the Git interface, the file system and IO mocked.
 5. Add a smoke test under `smoke-tests/<name>/test.sh` for each way the feature can be used. It runs the real app on a real `git` repo in the test's temporary directory.
 6. Run the changed tests with `bash scripts/test-everything.sh`. Then run the app with `bun run <platform>` and screenshot every affected view once, as it shows. Graft has no light/dark mode yet.

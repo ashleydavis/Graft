@@ -61,14 +61,13 @@ run_shown_commands() {
 }
 
 export GRAFT_TEST_REPO="$repo"
-start_test_app
-wait_for_element welcome-page 30
+start_app_on_start_page
 
 click right-sidebar-toggle
 wait_for_element git-commands-panel 30
 wait_for_text git-commands-empty "This page has run no Git commands." 30
 
-click left-sidebar-commits-link
+open_sidebar_page commits
 wait_for_element commit-pane 30
 wait_for_text git-command-0-text "git log --max-count=50" 30
 wait_for_text git-commands-directory "cd $repo" 30

@@ -116,8 +116,7 @@ wait_for_process_end() {
     done
 }
 
-start_test_app
-wait_for_element welcome-page 30
+start_app_on_start_page
 
 # The File menu's New window item starts window 2, which opens on the welcome page.
 choose_menu_item new-window

@@ -60,8 +60,7 @@ wait_for_viewport() {
     fail "the area the frontend is drawn in never became $1. It is $(viewport_size)"
 }
 
-start_test_app
-wait_for_element welcome-page 30
+start_app_on_start_page
 actual_size="$(viewport_size)"
 
 press_key CmdOrCtrl+Plus
@@ -72,8 +71,7 @@ wait_for_saved_state zoom.level 1.2
 two_steps_in="$(wait_for_viewport_other_than "$one_step_in")" || exit 1
 
 # The next run starts zoomed in to the saved level.
-restart_test_app
-wait_for_element welcome-page 30
+restart_app_on_start_page
 wait_for_viewport "$two_steps_in"
 
 press_key CmdOrCtrl+0
@@ -81,6 +79,5 @@ wait_for_saved_state zoom.level 1
 wait_for_viewport "$actual_size"
 
 # The next run starts at the actual size.
-restart_test_app
-wait_for_element welcome-page 30
+restart_app_on_start_page
 wait_for_viewport "$actual_size"

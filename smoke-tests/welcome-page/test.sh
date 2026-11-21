@@ -25,8 +25,7 @@ answer_picker() {
     fi
 }
 
-start_test_app
-wait_for_element welcome-page 30
+start_app_on_start_page
 wait_for_text welcome-heading "Graft" 30
 wait_for_text welcome-open-repo-button "Open repo" 30
 wait_for_missing_element left-sidebar-commits-link 30

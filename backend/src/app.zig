@@ -1,36 +1,34 @@
 //
 // Graft's declaration to Ziggy: the messages its frontend sends and the tasks it queues, each with
-// the Zig function that handles it, its menu, its actions and its built frontend. Ziggy's build
-// serves the app declared here.
+// the Zig function that handles it, its menu, its actions and its built frontend. Each feature
+// declares its own messages and tasks in its file under backend/src/features/, and this file lists
+// the features. Ziggy's build serves the app declared here.
 //
 
 const ziggy = @import("ziggy");
+const commit_explorer = @import("features/commit-explorer.zig");
+const open_repo = @import("features/open-repo.zig");
+const zoom = @import("features/zoom.zig");
 const actions = @import("lib/actions.zig");
-const commit_details_task = @import("lib/commit-details-task.zig");
-const commits_task = @import("lib/commits-task.zig");
-const file_diff_task = @import("lib/file-diff-task.zig");
-const git_interface = @import("lib/git-interface.zig");
 const menu = @import("lib/menu.zig");
-const pick_repo_folder = @import("lib/pick-repo-folder.zig");
+const merge_fields = @import("lib/merge-fields.zig");
 const ui_query = @import("lib/ui-query.zig");
-const zoom = @import("lib/zoom.zig");
 const ui = @import("ui-files");
 
 //
 // Graft, registered with Ziggy's core: each message name with its handler and each task type with
-// its task. Every task runs the real Git interface function.
+// its task, gathered from the features that declare them, one feature per line. Every task runs
+// the real Git interface function.
 //
 pub const app = ziggy.core.App(.{
-    .messages = .{
-        .@"pick-repo-folder" = pick_repo_folder.pick_repo_folder_message_handler,
-        .zoom = zoom.zoom_message_handler,
-    },
-    .tasks = .{
-        .commits = commits_task.commits_task_handler(git_interface.run_git),
-        .@"commit-details" = commit_details_task.commit_details_task_handler(git_interface.run_git),
-        .@"file-diff" = file_diff_task.file_diff_task_handler(git_interface.run_git),
-        .@"pick-repo-folder" = pick_repo_folder.pick_repo_folder_task_handler,
-    },
+    .messages = merge_fields.merge_fields(.{
+        open_repo.messages,
+        zoom.messages,
+    }),
+    .tasks = merge_fields.merge_fields(.{
+        commit_explorer.tasks,
+        open_repo.tasks,
+    }),
     .menu = menu.menu,
     .actions = actions.actions,
     // The window's colour before the page draws: the style guide's --color-bg in each theme (--gray-50 in light and

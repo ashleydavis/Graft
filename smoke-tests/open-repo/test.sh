@@ -34,8 +34,7 @@ answer_picker() {
     fi
 }
 
-start_test_app
-wait_for_element welcome-page 30
+start_app_on_start_page
 wait_for_element left-sidebar-about-link 30
 wait_for_missing_element left-sidebar-commits-link 30
 wait_for_missing_element breadcrumb-repo 30
@@ -57,10 +56,9 @@ wait_for_text breadcrumb-repo "first-repo" 30
 wait_for_text breadcrumb-page "Commits" 30
 wait_for_element left-sidebar-commits-link 30
 
-click left-sidebar-about-link
-wait_for_element about-page 30
+open_sidebar_page about
 wait_for_text breadcrumb-repo "first-repo" 30
-click left-sidebar-commits-link
+open_sidebar_page commits
 wait_for_element commit-list 30
 wait_for_text commit-list "Add the readme" 30
 

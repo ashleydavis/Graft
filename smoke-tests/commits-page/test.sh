@@ -18,10 +18,8 @@ git -C "$repo" -c user.name="Smoke Test" -c user.email=smoke-test@example.com -c
 head_hash="$(git -C "$repo" rev-parse HEAD)"
 
 export GRAFT_TEST_REPO="$repo"
-start_test_app
-wait_for_element welcome-page 30
-click left-sidebar-commits-link
-wait_for_element commits-page 30
+start_app_on_start_page
+open_sidebar_page commits
 wait_for_element commit-list 30
 wait_for_element "commit-$head_hash" 30
 wait_for_text commit-list "$own_title" 30

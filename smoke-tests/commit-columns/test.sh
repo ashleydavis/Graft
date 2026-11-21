@@ -19,9 +19,8 @@ head_hash="$(git -C "$repo" rev-parse HEAD)" || fail "could not read the test re
 parent_hash="$(git -C "$repo" rev-parse HEAD~1)" || fail "could not read the parent of the test repo's newest commit"
 
 export GRAFT_TEST_REPO="$repo"
-start_test_app
-wait_for_element welcome-page 30
-click left-sidebar-commits-link
+start_app_on_start_page
+open_sidebar_page commits
 wait_for_element commit-pane 30
 wait_for_element "commit-$head_hash" 30
 wait_for_text "commit-$head_hash" "Change the note" 30

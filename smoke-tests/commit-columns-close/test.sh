@@ -17,9 +17,8 @@ repo="$ZIGGY_TEST_DIR/repo"
 root_hash="$(git -C "$repo" rev-list --max-parents=0 HEAD)" || fail "could not read the test repo's first commit"
 
 export GRAFT_TEST_REPO="$repo"
-start_test_app
-wait_for_element welcome-page 30
-click left-sidebar-commits-link
+start_app_on_start_page
+open_sidebar_page commits
 wait_for_element "commit-$root_hash" 30
 click "commit-$root_hash"
 wait_for_element changed-files 30

@@ -17,7 +17,8 @@ The Git and Zig rules of this project are in [git.md](git.md) and [zig.md](zig.m
 
 - File names are kebab-case, in TypeScript and Zig alike (`test-commands.ts`, `git-log.zig`).
 - The frontend's `src/` splits into `pages/` (one directory per page, `pages/<page>/index.tsx`, with components only that page uses under `pages/<page>/components/`), `components/` (components more than one page uses) plus `lib/` (plain code that is not UI).
-- The backend's message handlers, task handlers and menu live in `backend/src/lib/` and are registered in `backend/src/app.zig`.
+- The backend's message handlers, task handlers and menu live in `backend/src/lib/`. Each feature declares its own actions, menu items, messages and tasks in its file under `backend/src/features/`, and `backend/src/app.zig`, `backend/src/lib/actions.zig` and `backend/src/lib/menu.zig` build Graft's lists from them, one line per feature.
+- Each frontend feature whose action works on every page registers its handler in a hook of its own under `frontend/src/components/` (such as `useOpenRepoAction`), and `AppLayout` calls one hook per feature.
 - Every element a smoke test touches has a `data-id`.
 - Icons come from the free version of Font Awesome.
 - Styling uses MaterialUI components and Tailwind classes. Graft has no light/dark mode yet. Do not add one or choose a mode.

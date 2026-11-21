@@ -38,10 +38,8 @@ choose_theme() {
 }
 
 ZIGGY_THEME=light
-start_test_app
-wait_for_element welcome-page 30
-click left-sidebar-about-link
-wait_for_element about-page 30
+start_app_on_start_page
+open_sidebar_page about
 wait_for_element theme-icon-light 30
 
 choose_theme dark

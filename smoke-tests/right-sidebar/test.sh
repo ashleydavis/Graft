@@ -8,10 +8,8 @@
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
 
-start_test_app
-wait_for_element welcome-page 30
-click left-sidebar-about-link
-wait_for_element about-page 30
+start_app_on_start_page
+open_sidebar_page about
 wait_for_element right-sidebar 30
 wait_for_missing_element right-sidebar-content 30
 

@@ -30,7 +30,7 @@ Every page shows in the main content area in the middle of the window.
 
 A top bar runs across the top, with Graft's name and the breadcrumb trail, which names the open repo and the page you are on. On the Help and About pages, click the page's name in the trail to switch between them.
 
-The left sidebar has a link to each page: **Commits** at the top and **Help** and **About** at the bottom. The **Commits** link shows only while a repo is open. The menu button at the left of the top bar minimises the left sidebar to a strip of icons and expands it again.
+The left sidebar has a link to each page. Each page's section below gives where its link is. The menu button at the left of the top bar minimises the left sidebar to a strip of icons and expands it again.
 
 The button at the far right of the top bar slides the right sidebar in and out. The right sidebar shows the Git commands the page you are on has run, the most recent first, under the `cd` that moves a terminal into the repo. Click the copy button beside one to copy it, then paste it into a terminal to run it yourself.
 
@@ -56,15 +56,15 @@ Press Ctrl+Plus or Ctrl+= to make everything in the window bigger, Ctrl+Minus to
 
 ### About page
 
-Click **About** in the left sidebar to open the About page, which shows Graft's name, its icon, its version and what Graft is. It links to Graft, Playbook and Ziggy on GitHub and to the Graft video series on YouTube, which open in your web browser. It names Graft's licence, the MIT licence.
+Click **About** at the bottom of the left sidebar to open the About page, which shows Graft's name, its icon, its version and what Graft is. It links to Graft, Playbook and Ziggy on GitHub and to the Graft video series on YouTube, which open in your web browser. It names Graft's licence, the MIT licence.
 
 ### Help page
 
-The Help page says how to move between Graft's pages.
+Click **Help** at the bottom of the left sidebar to open the Help page, which explains how to move between Graft's pages.
 
 ### Commits page
 
-The commits page lists the first page of the open repo's commits, newest first, one row each: the commit's title, the branches, tags and HEAD that point at it, its author, the day it was written and the first seven characters of its hash. Dates follow your system's locale and time zone. While Graft reads them the page shows that the commits are loading, and when git cannot read them the page shows why. Its **About** link goes back to the About page.
+Click **Commits** at the top of the left sidebar to open the commits page. The link shows only while a repo is open. The commits page lists the first page of the open repo's commits, newest first, one row each: the commit's title, the branches, tags and HEAD that point at it, its author, the day it was written and the first seven characters of its hash. Dates follow your system's locale and time zone. While Graft reads them the page shows that the commits are loading, and when git cannot read them the page shows why. Its **About** link goes back to the About page.
 
 The commit list is the first of the page's columns. Click a commit to open a column to its right with the commit's full message, who wrote and made it and when, its hash, its parents and the files it changed. Each changed file shows its change type (A added, D deleted, M modified, T type changed), its path and the lines the commit added and deleted, or "binary" for a binary file. Click one of those files to open another column to the right with the file's diff in that commit, as git writes it. The commit or file you clicked or moved to last in each column is selected, and the open commit's title is bold. Each new column has a close button (an X) and closing the commit's column closes the file's column with it. When a new column opens beyond the right edge of the window, the page scrolls sideways to show it. When the columns are wider than the window, scroll the page sideways.
 
