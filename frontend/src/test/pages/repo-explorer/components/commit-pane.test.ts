@@ -56,7 +56,10 @@ describe("CommitPane", () => {
         expect(pane?.className).toContain("flex-none");
         expect(pane?.className).toContain("rounded-[var(--radius-lg)]");
         expect(pane?.querySelector("[data-id=\"commit-pane-heading\"]")?.textContent).toBe("Commits");
-        expect(pane?.querySelector("[data-id=\"commit-list\"]")?.textContent).toBe("The first commitmainAda AuthorJan 11111111");
+        //
+        // The badge column holds a hidden copy of the badges it measures, so "main" is in it twice.
+        //
+        expect(pane?.querySelector("[data-id=\"commit-list\"]")?.textContent).toBe("The first commitmainmainAda AuthorJan 11111111");
     });
 
     test("shows the selected commit as selected and the open commit as open", () => {

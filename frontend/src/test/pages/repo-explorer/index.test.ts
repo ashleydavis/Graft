@@ -421,7 +421,10 @@ describe("RepoExplorerPage", () => {
             inputs: null,
         });
         expect((await screen.findByText("The first commit")).closest("li")?.getAttribute("data-id")).toBe(`commit-${commit.hash}`);
-        expect(elementWithDataId(`commit-${commit.hash}`).textContent).toBe(`The first commitmainAda Author${formatDate(commit.authorDate, Intl.DateTimeFormat().resolvedOptions())}1111111`);
+        //
+        // The badge column holds a hidden copy of the badges it measures, so "main" is in it twice.
+        //
+        expect(elementWithDataId(`commit-${commit.hash}`).textContent).toBe(`The first commitmainmainAda Author${formatDate(commit.authorDate, Intl.DateTimeFormat().resolvedOptions())}1111111`);
     });
 
     test("says why the commits could not be read when the task failed", async () => {

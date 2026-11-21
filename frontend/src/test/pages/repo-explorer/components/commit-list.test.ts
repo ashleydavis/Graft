@@ -1,14 +1,14 @@
 //
 // Tests the commit list: renders it with commits, while they load and with an error, and checks
 // what each row shows, that each row is a MaterialUI ListItemButton with the selected commit's set
-// as selected, that the open commit's row has the open bar and a bold title, how each kind of ref
-// is read and drawn and that clicking a commit reports its hash.
+// as selected, that the open commit's row has the open bar and a bold title, that the refs sit in
+// their column after the title and that clicking a commit reports its hash.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { ICommit } from "../../../../lib/commits";
-import { CommitList, openRowClass, openRowClasses, RefBadge, refBadge, titleWeightClass } from "../../../../pages/repo-explorer/components/commit-list";
+import { CommitList, openRowClass, openRowClasses, titleWeightClass } from "../../../../pages/repo-explorer/components/commit-list";
 
 //
 // A commit to list, with HEAD, a branch and a tag pointing at it.
@@ -57,9 +57,15 @@ function renderList(selectedHash: string | undefined, openHash: string | undefin
 }
 
 describe("CommitList", () => {
-    test("shows each commit's title, refs, author, date and short hash", () => {
+    test("shows each commit's title, then its refs' column, author, date and short hash", () => {
         const container = renderList(undefined, undefined, jest.fn());
-        expect(container.querySelector(`[data-id="commit-${commit.hash}"]`)?.textContent).toBe("The first commitmainorigin/mainv1.0Ada AuthorJan 31111111");
+        const row = container.querySelector(`[data-id="commit-${commit.hash}"]`);
+        expect(row?.children[0].textContent).toBe("The first commit");
+        expect(row?.children[1].getAttribute("data-id")).toBe(`commit-refs-${commit.hash}`);
+        expect(row?.children[1].textContent).toContain("origin/main");
+        expect(row?.children[2].textContent).toBe("Ada Author");
+        expect(row?.children[3].textContent).toBe("Jan 3");
+        expect(row?.children[4].textContent).toBe("1111111");
         expect(container.querySelector(`[data-id="commit-${secondCommit.hash}"]`)?.textContent).toBe("The second commitAda AuthorJan 32222222");
     });
 
@@ -139,81 +145,5 @@ describe("titleWeightClass", () => {
     test("makes the open commit's title bold and the rest normal", () => {
         expect(titleWeightClass(true)).toBe("font-[var(--weight-bold)]");
         expect(titleWeightClass(false)).toBe("font-[var(--weight-normal)]");
-    });
-});
-
-describe("refBadge", () => {
-    test("reads HEAD's branch as the checked-out branch, by its name alone", () => {
-        expect(refBadge("HEAD -> main")).toEqual({
-            kind: "current",
-            name: "main",
-        });
-    });
-
-    test("reads a tag without its tag prefix", () => {
-        expect(refBadge("tag: v1.0")).toEqual({
-            kind: "tag",
-            name: "v1.0",
-        });
-    });
-
-    test("reads a name under origin as a remote branch", () => {
-        expect(refBadge("origin/main")).toEqual({
-            kind: "remote",
-            name: "origin/main",
-        });
-    });
-
-    test("reads any other name, a detached HEAD included, as a local branch", () => {
-        expect(refBadge("feature")).toEqual({
-            kind: "branch",
-            name: "feature",
-        });
-        expect(refBadge("HEAD")).toEqual({
-            kind: "branch",
-            name: "HEAD",
-        });
-    });
-});
-
-describe("RefBadge", () => {
-    test("draws the checked-out branch on the current variant with the branch icon", () => {
-        const { container } = render(createElement(RefBadge, {
-            gitRef: "HEAD -> main",
-        }));
-        const chip = container.firstElementChild;
-        expect(chip?.textContent).toBe("main");
-        expect(chip?.className).toContain("MuiChip-current");
-        expect(chip?.querySelector("svg")?.getAttribute("data-icon")).toBe("code-branch");
-    });
-
-    test("draws a tag on the tag variant with the tag icon", () => {
-        const { container } = render(createElement(RefBadge, {
-            gitRef: "tag: v1.0",
-        }));
-        const chip = container.firstElementChild;
-        expect(chip?.textContent).toBe("v1.0");
-        expect(chip?.className).toContain("MuiChip-tag");
-        expect(chip?.querySelector("svg")?.getAttribute("data-icon")).toBe("tag");
-    });
-
-    test("draws a remote branch on the remote variant with the cloud icon", () => {
-        const { container } = render(createElement(RefBadge, {
-            gitRef: "origin/main",
-        }));
-        const chip = container.firstElementChild;
-        expect(chip?.textContent).toBe("origin/main");
-        expect(chip?.className).toContain("MuiChip-remote");
-        expect(chip?.querySelector("svg")?.getAttribute("data-icon")).toBe("cloud");
-    });
-
-    test("draws any other branch on the branch variant with the branch icon", () => {
-        const { container } = render(createElement(RefBadge, {
-            gitRef: "feature",
-        }));
-        const chip = container.firstElementChild;
-        expect(chip?.textContent).toBe("feature");
-        expect(chip?.className).toContain("MuiChip-branch");
-        expect(chip?.querySelector("svg")?.getAttribute("data-icon")).toBe("code-branch");
     });
 });
