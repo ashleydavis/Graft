@@ -432,6 +432,26 @@ scroll_to_end() {
 }
 
 #
+# Waits until the element with the data-id has its top and bottom edges inside the visible part of
+# the scrolling element with the container data-id, so the user can see it in that list, and fails
+# with where the edges are when it never does.
+# Usage: wait_for_in_view_of <data-id> <container-data-id> <seconds>
+#
+wait_for_in_view_of() {
+    local waited=0
+    local answer=""
+    while [ "$waited" -lt "$3" ]; do
+        answer="$(control "{\"command\":\"in-view-of\",\"dataId\":\"$1\",\"containerDataId\":\"$2\"}")"
+        if [ "$(printf '%s' "$answer" | jq -r '.ok')" = "true" ]; then
+            return 0
+        fi
+        sleep 1
+        waited=$((waited + 1))
+    done
+    fail "$1 never came into view in $2. The last answer was: $answer"
+}
+
+#
 # Chooses a menu item as a user would, through the native app, so the native app's own actions really happen and any other action reaches the
 # frontend. Usage: choose_menu_item <action>
 #

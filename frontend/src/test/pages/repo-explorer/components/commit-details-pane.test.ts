@@ -6,19 +6,102 @@
 // clicking a file or the close button reports it. It checks each changed file is a MaterialUI
 // ListItemButton with the selected file's set as selected and the open file's marked open, that the
 // pane reports the paths it read and that its border is in the style guide's active pane colour
-// while it is active. It also checks the parents' label and text, the colour, name and meaning of
-// each change type and the text of the line counts.
+// while it is active, and that the pane's scrolling area scrolls to show the selected file's row
+// each time the selection changes. It also checks the parents' label and text, the colour, name
+// and meaning of each change type and the text of the line counts.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { IChangedFile } from "../../../../lib/commit-details";
-import { createElement } from "react";
+import { createElement, ReactElement } from "react";
 import type { IAddTask, ITaskCompletedEvent } from "ziggy";
 import { ICommitJson } from "../../../../lib/commits";
 import { activePaneClasses } from "../../../../pages/repo-explorer/components/active-pane-style";
-import { CommitDetailsPane, FileTip, lineCountsText, parentsLabel, parentsText, statusColorClass, statusTip } from "../../../../pages/repo-explorer/components/commit-details-pane";
+import { CommitDetailsPane, FileTip, lineCountsText, parentsLabel, parentsText, IVerticalEdges, scrollRowIntoView, scrollTopShowingRow, statusColorClass, statusTip } from "../../../../pages/repo-explorer/components/commit-details-pane";
 import { openRowClasses } from "../../../../pages/repo-explorer/components/commit-list";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../../../fake-ziggy";
+
+//
+// Where the tests place the pane's scrolling area and each changed file's row, by data-id, in
+// pixels from the top of the window: the area runs from 100 to 400, notes.txt sits below it and
+// logo.png above it. jsdom lays out no page, so getBoundingClientRect is mocked to return these.
+//
+const placedEdges: Record<string, IVerticalEdges> = {
+    "commit-details-scroll": {
+        top: 100,
+        bottom: 400,
+    },
+    "changed-file-notes.txt": {
+        top: 380,
+        bottom: 420,
+    },
+    "changed-file-docs/new.md": {
+        top: 200,
+        bottom: 240,
+    },
+    "changed-file-logo.png": {
+        top: 50,
+        bottom: 90,
+    },
+};
+
+//
+// Makes the bounds the mock reports for an element with the edges, zero wide. jsdom has no
+// DOMRect class to make one with, so it is built field by field.
+//
+function rectWithEdges(edges: IVerticalEdges): DOMRect {
+    return {
+        x: 0,
+        y: edges.top,
+        width: 0,
+        height: edges.bottom - edges.top,
+        top: edges.top,
+        bottom: edges.bottom,
+        left: 0,
+        right: 0,
+        toJSON(): string {
+            return JSON.stringify(edges);
+        },
+    };
+}
+
+beforeEach(() => {
+    jest.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function placedRect(this: Element): DOMRect {
+        const edges = placedEdges[this.getAttribute("data-id") ?? ""];
+        if (edges) {
+            return rectWithEdges(edges);
+        }
+        return rectWithEdges({
+            top: 0,
+            bottom: 0,
+        });
+    });
+});
+
+afterEach(() => {
+    jest.restoreAllMocks();
+});
+
+//
+// Gives the pane's scrolling area a scrollTop the tests can set and read, starting at the value,
+// because jsdom keeps every element's scrollTop at 0, and returns the area.
+//
+function scrollAreaAt(scrollTop: number): HTMLElement {
+    const area = document.querySelector<HTMLElement>("[data-id=\"commit-details-scroll\"]");
+    expect(area).not.toBeNull();
+
+    //
+    // The cast is safe because the expect above fails the test on null, and a type guard cannot
+    // narrow it because Jest's expect does not narrow the type.
+    //
+    const found = area as HTMLElement;
+    Object.defineProperty(found, "scrollTop", {
+        value: scrollTop,
+        writable: true,
+        configurable: true,
+    });
+    return found;
+}
 
 //
 // The hash of the commit the pane shows.
@@ -122,7 +205,14 @@ function mergeResult(): ITaskCompletedEvent["result"] {
 // active or not, with the callbacks, in en-US and UTC.
 //
 function renderPane(selectedPath: string | undefined, onSelectFile: jest.Mock, onClose: jest.Mock, isActive: boolean, onReadFiles: jest.Mock): void {
-    render(createElement(CommitDetailsPane, {
+    render(paneElement(selectedPath, onSelectFile, onClose, isActive, onReadFiles));
+}
+
+//
+// Makes the pane renderPane renders, so a test can render it again with another selected file.
+//
+function paneElement(selectedPath: string | undefined, onSelectFile: jest.Mock, onClose: jest.Mock, isActive: boolean, onReadFiles: jest.Mock): ReactElement {
+    return createElement(CommitDetailsPane, {
         repoPath: "/repo",
         hash: commitHash,
         selectedPath,
@@ -135,7 +225,7 @@ function renderPane(selectedPath: string | undefined, onSelectFile: jest.Mock, o
         onSelectFile,
         onReadFiles,
         onClose,
-    }));
+    });
 }
 
 //
@@ -229,6 +319,26 @@ describe("CommitDetailsPane", () => {
         expect(elementWithDataId("changed-file-logo.png").className).not.toContain(openRowClasses);
     });
 
+    test("scrolls its area to show the selected file's row once the files are read, and each newly selected row after it", () => {
+        const ziggy = installFakeTaskZiggy();
+        const { rerender } = render(paneElement("notes.txt", jest.fn(), jest.fn(), true, jest.fn()));
+        const area = scrollAreaAt(500);
+        completeTask(ziggy, succeededResult([], ""));
+        expect(area.scrollTop).toBe(520);
+        rerender(paneElement("logo.png", jest.fn(), jest.fn(), true, jest.fn()));
+        expect(area.scrollTop).toBe(470);
+        rerender(paneElement("docs/new.md", jest.fn(), jest.fn(), true, jest.fn()));
+        expect(area.scrollTop).toBe(470);
+    });
+
+    test("leaves its area where it is while no file is selected", () => {
+        const ziggy = installFakeTaskZiggy();
+        renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
+        const area = scrollAreaAt(500);
+        completeTask(ziggy, succeededResult([], ""));
+        expect(area.scrollTop).toBe(500);
+    });
+
     test("draws each changed file as a MaterialUI ListItemButton in a list item", () => {
         const ziggy = installFakeTaskZiggy();
         renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
@@ -287,6 +397,50 @@ describe("CommitDetailsPane", () => {
             inputs: null,
         });
         expect(screen.getByText("Running git log failed.").getAttribute("data-id")).toBe("commit-details-error");
+    });
+});
+
+describe("scrollRowIntoView", () => {
+    test("scrolls nothing when the row is not drawn or sits outside a scrolling area", () => {
+        const row = document.createElement("li");
+        document.body.appendChild(row);
+        const scrollTop = document.body.scrollTop;
+        scrollRowIntoView(null);
+        scrollRowIntoView(row);
+        expect(document.body.scrollTop).toBe(scrollTop);
+        row.remove();
+    });
+});
+
+describe("scrollTopShowingRow", () => {
+    test("scrolls up by as much as the row sits above the area", () => {
+        expect(scrollTopShowingRow(300, {
+            top: 80,
+            bottom: 120,
+        }, {
+            top: 100,
+            bottom: 400,
+        })).toBe(280);
+    });
+
+    test("scrolls down by as much as the row sits below the area", () => {
+        expect(scrollTopShowingRow(300, {
+            top: 390,
+            bottom: 430,
+        }, {
+            top: 100,
+            bottom: 400,
+        })).toBe(330);
+    });
+
+    test("leaves the scroll as it is when the row is in view, including on the area's edges", () => {
+        expect(scrollTopShowingRow(300, {
+            top: 100,
+            bottom: 400,
+        }, {
+            top: 100,
+            bottom: 400,
+        })).toBe(300);
     });
 });
 

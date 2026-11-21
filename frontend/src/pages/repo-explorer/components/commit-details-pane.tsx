@@ -5,7 +5,7 @@
 //
 
 import { List, ListItemButton, Tooltip } from "@mui/material";
-import { JSX, ReactNode, useEffect, useState } from "react";
+import { JSX, ReactNode, useEffect, useRef, useState } from "react";
 import { IChangedFile, ICommitDetails, readCommitDetails } from "../../../lib/commit-details";
 import { formatDateTime, IDateFormatOptions } from "../../../lib/date-format";
 import { activePaneClass } from "./active-pane-style";
@@ -13,6 +13,12 @@ import { openRowClass } from "./commit-list";
 import { FileIcon } from "./file-icon";
 import { FilePath } from "./file-path";
 import { CloseButton, PaneHeader } from "./pane-header";
+
+//
+// The data-id of the pane's scrolling area, which a selected file's row finds and scrolls and the
+// smoke tests check a row is in view of.
+//
+const SCROLL_AREA_DATA_ID = "commit-details-scroll";
 
 //
 // What the commit details pane is given and what it reports.
@@ -84,7 +90,7 @@ export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isAc
     return (
         <section data-id="commit-details-pane" aria-label="Commit details" className={`flex w-[450px] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
             <PaneHeader title={title} titleDataId="commit-details-heading" action={<CloseButton paneLabel="Commit details" dataId="commit-details-close" onClose={onClose} />} />
-            <div className="min-h-0 flex-1 overflow-auto">
+            <div data-id={SCROLL_AREA_DATA_ID} className="min-h-0 flex-1 overflow-auto">
                 <CommitDetailsContent details={details} error={error} selectedPath={selectedPath} openPath={openPath} dateFormat={dateFormat} onSelectFile={onSelectFile} />
             </div>
         </section>
@@ -378,11 +384,22 @@ export interface IChangedFileRowProps {
 //
 // Shows one changed file as the style guide's file rows do: its icon and its path, with its change
 // type and line counts in the tooltip on the path. The row is a MaterialUI ListItemButton, so a
-// selected file shows the selected background.
+// selected file shows the selected background. When the row becomes selected it scrolls itself
+// into view, so the highlighted file stays visible as Up and Down move through a list longer than
+// the pane.
 //
 export function ChangedFileRow({ file, isSelected, isOpen, onSelectFile }: IChangedFileRowProps): JSX.Element {
+    const rowRef = useRef<HTMLLIElement>(null);
+
+    useEffect(() => {
+        if (isSelected) {
+            scrollRowIntoView(rowRef.current);
+        }
+    }, [isSelected]);
+
     return (
         <ListItemButton
+            ref={rowRef}
             component="li"
             data-id={`changed-file-${file.path}`}
             aria-label={file.path}
@@ -399,4 +416,49 @@ export function ChangedFileRow({ file, isSelected, isOpen, onSelectFile }: IChan
             </Tooltip>
         </ListItemButton>
     );
+}
+
+//
+// Scrolls the pane's scrolling area up or down by the least amount that shows the whole row, so
+// the highlighted file stays inside the pane's visible part. It sets the area's scrollTop, which
+// moves only that area, so the page's own smooth sideways scroll that brings a newly opened pane
+// into view runs to its end. It scrolls at once, so the list keeps up with each press of Up or
+// Down. It returns at once when React has yet to draw the row or the row is drawn outside the
+// pane's scrolling area, because then there is no area for it to move.
+//
+export function scrollRowIntoView(row: HTMLElement | null): void {
+    if (!row) {
+        return;
+    }
+    const area = row.closest<HTMLElement>(`[data-id="${SCROLL_AREA_DATA_ID}"]`);
+    if (!area) {
+        return;
+    }
+    area.scrollTop = scrollTopShowingRow(area.scrollTop, row.getBoundingClientRect(), area.getBoundingClientRect());
+}
+
+//
+// Where an element's top and bottom edges are, in pixels from the top of the window.
+//
+export interface IVerticalEdges {
+    // The distance of the element's top edge from the window's top.
+    top: number;
+
+    // The distance of the element's bottom edge from the window's top.
+    bottom: number;
+}
+
+//
+// Works out the scrollTop that shows the whole row in the scrolling area, moving it from the
+// current scrollTop by the least amount: up by as much as the row sits above the area, or down by
+// as much as it sits below. A row already in view leaves scrollTop as it is.
+//
+export function scrollTopShowingRow(scrollTop: number, row: IVerticalEdges, area: IVerticalEdges): number {
+    if (row.top < area.top) {
+        return scrollTop - (area.top - row.top);
+    }
+    if (area.bottom < row.bottom) {
+        return scrollTop + (row.bottom - area.bottom);
+    }
+    return scrollTop;
 }

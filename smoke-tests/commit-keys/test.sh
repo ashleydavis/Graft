@@ -64,7 +64,8 @@ press_key Enter
 wait_for_commit_title "Change the note"
 wait_for_text changed-file-notes.txt "notes.txt" 30
 
-# Down selects its one changed file and Enter opens its diff.
+# Its one changed file is selected once the files are read, Down keeps it selected at the end of
+# the list and Enter opens its diff.
 press_key Down
 press_key Enter
 wait_for_element file-pane 30

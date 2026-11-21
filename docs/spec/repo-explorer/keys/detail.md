@@ -9,6 +9,7 @@ The repo explorer is the repo explorer page's columns: the repo details pane (se
 - One of the open panes is the active pane, which the keys act on. Its border is in the theme's primary colour. The repo details pane is active when the repo explorer page opens.
 - Each pane's items, the Commits and Commit links in the repo details pane, the commits in the commit pane, the changed files in the commit details pane and the rows of the changes pane, are MaterialUI `ListItemButton`s. The selected item has `selected` set, so it shows MaterialUI's own selection styling. No item is selected when the repo explorer page opens or a pane opens. The title of the commit whose details are open is bold.
 - Up and Down move the selection to the item above or below in the active pane. At the first or last item the selection stays where it is. With no item selected, either key selects the first item. In the changes pane they move through the Unstaged rows, then the Staged rows. In the file pane, which shows a diff, Up and Down leave the selection as it is. In the commit pane they move through every commit read so far, across the pages, and the list scrolls by the least amount that brings the selected commit's row into view. Moving the selection near the last commit read scrolls the list there, which reads the next page, so Down reaches the repo's first commit.
+- The selected file in the commit details pane is always in view. When it becomes selected, from the first file as the list opens or as Up and Down move through a list longer than the pane, the pane scrolls by the least amount that shows its whole row.
 - While a commit's details are open, Up and Down in the commit pane also open the newly selected commit, so the commit details pane shows it at once. The commit pane stays active and any file pane closes. At the first or last commit the details stay as they are.
 - While a file's diff is open in the file pane, Up and Down in a commit's changed files also show the newly selected file's diff in the file pane at once, without Enter, and the commit details pane stays active.
 - Right makes the pane to the right active, when there is one. Left makes the pane to the left active, when there is one.
@@ -24,6 +25,8 @@ The repo explorer is the repo explorer page's columns: the repo details pane (se
 
 - [x] Up and Down move the selection to the item above or below in the active pane.
 - [x] Keyboard selection works across pages of commits, and the selected row scrolls into view.
+- [x] When the commit details pane's file list opens, the first file is selected and in view.
+- [x] Moving with Up and Down scrolls the commit details pane so the selected file is always in view.
 - [x] While a commit's details are open, Up and Down in the commit pane select the next commit and the commit details pane shows it at once. Enter then makes the commit details pane active.
 - [x] While a file's diff is open, Up and Down in the commit's changed files select the file above or below and the file pane shows its diff at once. Enter then makes the file pane active.
 - [x] Right makes the pane to the right active, when there is one. Left makes the pane to the left active.

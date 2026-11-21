@@ -768,11 +768,11 @@ describe("RepoExplorerPage keys", () => {
         pressKey("ArrowDown");
         pressKey("Enter");
         completeCommitDetails(ziggy, 1);
-        pressKey("ArrowDown");
         expect(isSelected("changed-file-README.md")).toBe(true);
         pressKey("ArrowDown");
         expect(isSelected("changed-file-notes.txt")).toBe(true);
         pressKey("ArrowUp");
+        expect(isSelected("changed-file-README.md")).toBe(true);
         pressKey("ArrowDown");
         pressKey("Enter");
         const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[2][0];
@@ -785,14 +785,15 @@ describe("RepoExplorerPage keys", () => {
         expect(activePaneIds()).toEqual(["file-pane"]);
     });
 
-    test("Down in the commit details pane selects nothing until its files are read", async () => {
+    test("selects the first changed file once the files are read, after a Down that came before them selected nothing", async () => {
         const ziggy = installFakeTaskZiggy();
         await listTwoCommits(ziggy);
         pressKey("ArrowDown");
         pressKey("Enter");
         pressKey("ArrowDown");
         completeCommitDetails(ziggy, 1);
-        expect(isSelected("changed-file-README.md")).toBe(false);
+        expect(isSelected("changed-file-README.md")).toBe(true);
+        expect(isSelected("changed-file-notes.txt")).toBe(false);
     });
 
     test("Left and Right move between the open panes and stop at the ends", async () => {
@@ -828,7 +829,7 @@ describe("RepoExplorerPage keys", () => {
         pressKey("ArrowDown");
         pressKey("Enter");
         pressKey("ArrowDown");
-        expect(isSelected("changed-file-README.md")).toBe(true);
+        expect(isSelected("changed-file-notes.txt")).toBe(true);
         expect(isSelected(`commit-${commitJson.hash}`)).toBe(true);
     });
 

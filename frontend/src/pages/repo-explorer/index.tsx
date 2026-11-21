@@ -16,7 +16,7 @@ import { commitStagedFiles } from "../../lib/commit";
 import { canReadNextPage, COMMIT_PAGE_SIZE, commitPagesAfterRead, commitPagesReading, ICommitPages, nextPageAfterHash, noCommitPages } from "../../lib/commit-pages";
 import { readCommitPage } from "../../lib/commits";
 import { openPaneIds } from "../../lib/pane-animation";
-import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, COMMIT_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, initialRepoExplorerState, IRepoExplorerState, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
+import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, COMMIT_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, initialRepoExplorerState, IRepoExplorerState, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
 import { toggleFileStaged } from "../../lib/stage-file";
 import { IWorkingChanges, IWorkingFile, readWorkingChanges } from "../../lib/working-changes";
 import { AnimatedPane } from "./components/animated-pane";
@@ -305,7 +305,10 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                             isActive={explorer.activePaneIndex === 2}
                             dateFormat={dateFormat}
                             onSelectFile={path => setExplorer(state => selectFile(state, path))}
-                            onReadFiles={setFilePaths}
+                            onReadFiles={paths => {
+                                setFilePaths(paths);
+                                setExplorer(state => selectFirstFile(state, paths));
+                            }}
                             onClose={() => setExplorer(closeCommitDetailsPane)}
                         />
                     )}

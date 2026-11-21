@@ -32,6 +32,7 @@ import {
     selectChange,
     selectCommit,
     selectFile,
+    selectFirstFile,
     selectLink,
 } from "../../lib/repo-explorer";
 
@@ -194,6 +195,27 @@ describe("selectCommit", () => {
             selectedHash: "ccc",
             openHash: "ccc",
         });
+    });
+});
+
+describe("selectFirstFile", () => {
+    test("selects the first file once the files are read", () => {
+        expect(selectFirstFile(detailsOpen, ["README.md", "notes.txt"])).toEqual({
+            ...detailsOpen,
+            selectedPath: "README.md",
+        });
+    });
+
+    test("keeps a file already selected", () => {
+        const notesSelected = {
+            ...detailsOpen,
+            selectedPath: "notes.txt",
+        };
+        expect(selectFirstFile(notesSelected, ["README.md", "notes.txt"])).toBe(notesSelected);
+    });
+
+    test("selects nothing when the commit changed no files", () => {
+        expect(selectFirstFile(detailsOpen, []).selectedPath).toBeUndefined();
     });
 });
 

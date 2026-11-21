@@ -10,12 +10,16 @@ import type { IJsonObject } from "ziggy";
 // A command from the remote control connection.
 //
 export interface ITestCommand {
-    // What to do: ready, click, type, key-down, get-value, get-text, exists, in-view,
+    // What to do: ready, click, type, key-down, get-value, get-text, exists, in-view, in-view-of,
     // scroll-to-end, insert, viewport or drop-file.
     command: string;
 
     // The data-id of the element to act on.
     dataId?: string;
+
+    // The data-id of the scrolling element the element must show inside, for the in-view-of
+    // command.
+    containerDataId?: string;
 
     // The text to type, for the type command.
     text?: string;
@@ -76,6 +80,18 @@ export interface IHorizontalBounds {
 }
 
 //
+// Where an element's edges are, in pixels from the window's left and top edges, which the in-view
+// command reads across and the in-view-of command reads down.
+//
+export interface IBounds extends IHorizontalBounds {
+    // The distance of the element's top edge from the window's top edge.
+    top: number;
+
+    // The distance of the element's bottom edge from the window's top edge.
+    bottom: number;
+}
+
+//
 // An element a command can act on.
 //
 export interface IFoundElement {
@@ -95,7 +111,7 @@ export interface IFoundElement {
     dispatchEvent(event: Event): boolean;
 
     // Reads where the element's edges are in the window.
-    getBoundingClientRect(): IHorizontalBounds;
+    getBoundingClientRect(): IBounds;
 
     // How far the element's content is scrolled from its top, in pixels, which the scroll-to-end
     // command sets.
@@ -160,6 +176,9 @@ export function performTestCommand(finder: IElementFinder, command: ITestCommand
             ok: true,
         };
     }
+    if (command.command === "in-view-of") {
+        return inViewOfResult(finder, element, command.dataId, command.containerDataId);
+    }
     return { ok: false, error: `Unknown test command ${command.command}.` };
 }
 
@@ -213,6 +232,53 @@ export function elementInViewResult(bounds: IHorizontalBounds, windowWidth: numb
     return {
         ok: false,
         error: `The element with the data-id ${dataId} is outside the window: its left edge is at ${left}, its right edge is at ${right} and the window is ${windowWidth} wide.`,
+    };
+}
+
+//
+// Performs the in-view-of command: finds the container by its data-id and checks the element's
+// top and bottom edges are inside the container's, so a smoke test can check a row is in the
+// visible part of the list that scrolls it. A missing container data-id or container is a failure
+// with a reason.
+//
+export function inViewOfResult(finder: IElementFinder, element: IFoundElement, dataId: string, containerDataId: string | undefined): ITestResult {
+    if (containerDataId === undefined) {
+        return {
+            ok: false,
+            error: "The in-view-of command needs a containerDataId.",
+        };
+    }
+    const container = finder.find(containerDataId);
+    if (container === null) {
+        return {
+            ok: false,
+            error: `No element has the data-id ${containerDataId}.`,
+        };
+    }
+    return elementInsideResult(element.getBoundingClientRect(), container.getBoundingClientRect(), dataId, containerDataId);
+}
+
+//
+// Works out the result of the in-view-of command from where the element and its container are:
+// success when the element's top and bottom edges are both inside the container's, and otherwise
+// a failure with where the edges are. Rounding to whole pixels allows for the fractions a scroll
+// can leave.
+//
+export function elementInsideResult(bounds: IBounds, containerBounds: IBounds, dataId: string, containerDataId: string): ITestResult {
+    const top = Math.round(bounds.top);
+    const bottom = Math.round(bounds.bottom);
+    const containerTop = Math.round(containerBounds.top);
+    const containerBottom = Math.round(containerBounds.bottom);
+    if (containerTop <= top) {
+        if (bottom <= containerBottom) {
+            return {
+                ok: true,
+            };
+        }
+    }
+    return {
+        ok: false,
+        error: `The element with the data-id ${dataId} is outside ${containerDataId}: its top edge is at ${top} and its bottom edge at ${bottom}, and ${containerDataId} runs from ${containerTop} to ${containerBottom}.`,
     };
 }
 

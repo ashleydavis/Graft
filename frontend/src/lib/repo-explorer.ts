@@ -259,6 +259,22 @@ export function selectCommit(state: IRepoExplorerState, hash: string): IRepoExpl
 }
 
 //
+// Selects the first of the open commit's changed files once the commit details pane has read
+// them, so the file list opens with a file highlighted for Up, Down and Enter to start from. A file
+// already selected, by a click or a key pressed while the files were read, stays selected. With no
+// files selectedPath stays undefined.
+//
+export function selectFirstFile(state: IRepoExplorerState, filePaths: string[]): IRepoExplorerState {
+    if (state.selectedPath !== undefined) {
+        return state;
+    }
+    return {
+        ...state,
+        selectedPath: filePaths[0],
+    };
+}
+
+//
 // Selects the changed file and opens its file pane, with the commit details pane active, as a
 // click on the file does.
 //
