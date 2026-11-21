@@ -1,6 +1,6 @@
 # left-sidebar/test.sh
 
-Smoke test of the left sidebar. It creates a test repo of its own in its temporary directory with `scripts/test/create-test-repo.sh` and gives the app its path through `GRAFT_TEST_REPO`, so the commits page has a repo to read. It starts the real app with remote control on and checks the left sidebar starts expanded with the names of its Commits, Help and About links showing. It follows each link, then minimises the sidebar with the top bar's menu button and checks the names are gone while the links stay. It follows each link again while the sidebar is minimised, then expands it with the same button and checks the names show again.
+Smoke test of the left sidebar. It creates a test repo of its own in its temporary directory with `scripts/test/create-test-repo.sh` and starts the real app with remote control on. It opens the repo with the welcome page's Open repo button, through `open_repo_with_button`, so the commits page has a repo to read, and checks the left sidebar starts expanded with the names of its Commits, Help and About links showing. It follows each link, then minimises the sidebar with the top bar's menu button and checks the names are gone while the links stay. It follows each link again while the sidebar is minimised, then expands it with the same button and checks the names show again.
 
 ## How it is invoked
 

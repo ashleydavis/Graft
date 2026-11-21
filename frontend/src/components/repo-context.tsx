@@ -17,13 +17,9 @@ export interface IRepoContext {
 }
 
 //
-// What RepoProvider is given: the repo open when Graft starts and the app inside it.
+// What RepoProvider is given: the app inside it.
 //
 export interface IRepoProviderProps {
-    // The repo open when Graft starts: the test repo a smoke test gave the app, or undefined, so
-    // Graft starts with no repo open.
-    initialRepoPath: string | undefined;
-
     // The app, which reads the open repo with useRepo.
     children: ReactNode;
 }
@@ -37,8 +33,8 @@ export const RepoContext = createContext<IRepoContext | undefined>(undefined);
 // Keeps the open repo for the components inside it. The frontend owns this state, as it owns the
 // rest of the window's state, and it lasts as long as the window, so each run starts afresh.
 //
-export function RepoProvider({ initialRepoPath, children }: IRepoProviderProps): JSX.Element {
-    const [repoPath, setRepoPath] = useState<string | undefined>(initialRepoPath);
+export function RepoProvider({ children }: IRepoProviderProps): JSX.Element {
+    const [repoPath, setRepoPath] = useState<string | undefined>(undefined);
 
     function openRepo(newRepoPath: string): void {
         if (newRepoPath.length === 0) {

@@ -1,11 +1,11 @@
 //
-// Tests reading a page of commits in the frontend: the repo path read from the address, the
-// commits task queued through a fake window.ziggy made of Jest mocks, and how the task's result is
-// checked and turned into commits, including every way it can fail.
+// Tests reading a page of commits in the frontend: the commits task queued through a fake
+// window.ziggy made of Jest mocks, and how the task's result is checked and turned into commits,
+// including every way it can fail.
 //
 
 import type { ITaskCompletedEvent, ITaskResult } from "ziggy";
-import { commitFromJson, commitsFromTaskResult, ICommitJson, isCommitJson, isLogPageJson, isStringList, readCommitPage, repoPathFromSearch } from "../../lib/commits";
+import { commitFromJson, commitsFromTaskResult, ICommitJson, isCommitJson, isLogPageJson, isStringList, readCommitPage } from "../../lib/commits";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../fake-ziggy";
 
 //
@@ -46,18 +46,6 @@ function registeredCallback(ziggy: FakeTaskZiggy): (event: ITaskCompletedEvent) 
     expect(onTaskCompleted).toHaveBeenCalledTimes(1);
     return onTaskCompleted.mock.calls[0][0];
 }
-
-describe("repoPathFromSearch", () => {
-    test("reads the repo a smoke test gave in the query", () => {
-        expect(repoPathFromSearch("?testMode=1&repo=%2Ftmp%2Fa%20repo")).toBe("/tmp/a repo");
-    });
-
-    test("is undefined when the query names no repo, so Graft starts with no repo open", () => {
-        expect(repoPathFromSearch("")).toBeUndefined();
-        expect(repoPathFromSearch("?testMode=1")).toBeUndefined();
-        expect(repoPathFromSearch("?testMode=1&repo=")).toBeUndefined();
-    });
-});
 
 describe("readCommitPage", () => {
     test("queues the commits task as interactive and gives the commits when it ends", () => {

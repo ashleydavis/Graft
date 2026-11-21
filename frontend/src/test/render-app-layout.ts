@@ -16,6 +16,7 @@ import { IFakeActionZiggy, makeFakeActionZiggy } from "./fake-action-ziggy";
 import { makeFakeMediaQuery } from "./fake-media-query";
 import { IFakeThemeZiggy, makeFakeThemeZiggy } from "./fake-theme-ziggy";
 import { installFakeZiggy } from "./fake-ziggy";
+import { RepoOpener } from "./repo-opener";
 
 //
 // The router scrolls the window to the top when it shows a page. jsdom reports window.scrollTo as
@@ -130,10 +131,16 @@ export async function renderFakedAppLayout(fake: Partial<LayoutZiggy>, repoPath:
     const rendered = render(createElement(AppTheme, {
         systemDark: makeFakeMediaQuery(systemDarkQuery, false),
         children: createElement(RepoProvider, {
-            initialRepoPath: repoPath,
-            children: createElement(RouterProvider, {
-                router,
-            }),
+            children: [
+                createElement(RepoOpener, {
+                    key: "repo-opener",
+                    repoPath,
+                }),
+                createElement(RouterProvider, {
+                    key: "router",
+                    router,
+                }),
+            ],
         }),
     }));
     await screen.findByText("The page");

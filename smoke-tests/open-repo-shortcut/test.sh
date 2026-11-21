@@ -24,10 +24,7 @@ start_app_on_start_page
 wait_for_missing_element breadcrumb-repo 30
 
 # The next folder picker returns the test repo as chosen, so it shows no dialog.
-answer="$(control "$(jq -nc --arg path "$repo" '{command: "pick-answer", paths: [$path]}')")"
-if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
-    fail "answering the folder picker with $repo failed: $answer"
-fi
+answer_picker "$repo"
 
 press_key CmdOrCtrl+O
 wait_for_element commits-page 30

@@ -116,18 +116,6 @@ export interface ICommitPageRequest {
 }
 
 //
-// Reads the path of the repo open when Graft starts from the query of the frontend's address: the
-// repo a smoke test gave the app, or undefined, so Graft starts with no repo open.
-//
-export function repoPathFromSearch(search: string): string | undefined {
-    const repoPath = new URLSearchParams(search).get("repo");
-    if (repoPath) {
-        return repoPath;
-    }
-    return undefined;
-}
-
-//
 // Reads the first page of commits from the repo: queues the commits task as interactive, because
 // the user is waiting on it, and calls onRead with the commits or with why they could not be read
 // once the task ends.

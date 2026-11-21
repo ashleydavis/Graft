@@ -11,7 +11,6 @@ import { createRoot } from "react-dom/client";
 import { AppLayout } from "./components/app-layout";
 import { AppTheme, systemDarkQuery } from "./components/app-theme";
 import { RepoProvider } from "./components/repo-context";
-import { repoPathFromSearch } from "./lib/commits";
 import { IDocumentLike, installSplashScreen } from "./lib/splash";
 import { ITestCommand, performTestCommand, testResultToJson } from "./lib/test-commands";
 import { AboutPage } from "./pages/about";
@@ -73,8 +72,7 @@ export function createAppRouter(): AnyRouter {
 // Shows the app's pages in the element, in the theme the user picks. MaterialUI's styles go in a
 // CSS layer of their own, so Tailwind's classes can style MaterialUI components (see main.css). The
 // open repo is kept above the router, so it stays loaded while the user moves between pages. Graft
-// starts with no repo open, or in a smoke test on the test repo the query of the frontend's
-// address names.
+// starts with no repo open, and the user opens one from the welcome page or the File menu.
 //
 export function startApp(rootElement: HTMLElement): void {
     createRoot(rootElement).render(
@@ -88,7 +86,7 @@ export function startApp(rootElement: HTMLElement): void {
                 */}
                 <GlobalStyles styles="@layer theme, base, mui, components, utilities;" />
                 <AppTheme systemDark={window.matchMedia(systemDarkQuery)}>
-                    <RepoProvider initialRepoPath={repoPathFromSearch(window.location.search)}>
+                    <RepoProvider>
                         <RouterProvider router={createAppRouter()} />
                     </RepoProvider>
                 </AppTheme>

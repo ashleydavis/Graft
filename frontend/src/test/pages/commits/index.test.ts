@@ -22,6 +22,7 @@ import { CommitsPage, scrollLastPaneIntoView } from "../../../pages/commits";
 import { activeFlatPaneClasses, activePaneClasses } from "../../../pages/commits/components/active-pane-style";
 import { openRowClasses } from "../../../pages/commits/components/commit-list";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../../fake-ziggy";
+import { RepoOpener } from "../../repo-opener";
 
 //
 // The router scrolls the window to the top when it shows a page. jsdom reports window.scrollTo as
@@ -88,10 +89,16 @@ function renderCommitsPage(repoPath: string | undefined): void {
         }),
     });
     render(createElement(RepoProvider, {
-        initialRepoPath: repoPath,
-        children: createElement(RouterProvider, {
-            router,
-        }),
+        children: [
+            createElement(RepoOpener, {
+                key: "repo-opener",
+                repoPath,
+            }),
+            createElement(RouterProvider, {
+                key: "router",
+                router,
+            }),
+        ],
     }));
 }
 

@@ -43,8 +43,8 @@ search_value() {
     printf '%s' "$answer" | jq -r '.value'
 }
 
-export GRAFT_TEST_REPO="$repo"
 start_app_on_start_page
+open_repo_with_button "$repo"
 open_sidebar_page about
 
 # `?` shows the overlay, which lists the shortcuts from Ziggy's action list.

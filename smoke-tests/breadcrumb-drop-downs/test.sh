@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
 #
-# Starts the real app with remote control on, on a test repo of its own and uses the breadcrumb
-# trail's drop-down on the About and Help pages: picks the other page, checks it opens, then picks
-# the page shown and checks the drop-down closes on the same page. See test.md.
+# Starts the real app with remote control on, opens a test repo of its own with the welcome page's
+# Open repo button and uses the breadcrumb trail's drop-down on the About and Help pages: picks the
+# other page, checks it opens, then picks the page shown and checks the drop-down closes on the same
+# page. See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -11,8 +12,8 @@ source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
 repo="$ZIGGY_TEST_DIR/repo"
 "$ZIGGY_SMOKE_APP_DIR/scripts/test/create-test-repo.sh" "$repo" || fail "could not create the test repo at $repo"
 
-export GRAFT_TEST_REPO="$repo"
 start_app_on_start_page
+open_repo_with_button "$repo"
 open_sidebar_page about
 wait_for_text breadcrumb-page "About" 30
 

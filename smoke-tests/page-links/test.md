@@ -1,6 +1,6 @@
 # page-links/test.sh
 
-Smoke test of the links between the About page and the commits page, which shows the router works. It creates a test repo of its own in its temporary directory with `scripts/test/create-test-repo.sh` and gives the app its path through `GRAFT_TEST_REPO`, so the commits page has a repo to read. It starts the real app with remote control on, on the welcome page, follows the left sidebar's "Commits" link to the commits page, then the commits page's link back to the About page. It checks that each page shows.
+Smoke test of the links between the About page and the commits page, which shows the router works. It creates a test repo of its own in its temporary directory with `scripts/test/create-test-repo.sh` and starts the real app with remote control on, on the welcome page. It opens the repo with the welcome page's Open repo button, through `open_repo_with_button`, so the commits page has a repo to read, then follows the left sidebar's "Commits" link to the commits page, then the commits page's link back to the About page. It checks that each page shows.
 
 ## How it is invoked
 

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
 #
-# Creates a test repo of the smoke test's own, starts the real app with remote control on, on
-# that repo, opens the commit details pane and the file pane on the commits page, then closes the
-# file pane and the commit details pane and checks each has gone. See test.md.
+# Creates a test repo of the smoke test's own, starts the real app with remote control on, opens
+# that repo with the welcome page's Open repo button, opens the commit details pane and the file
+# pane on the commits page, then closes the file pane and the commit details pane and checks each
+# has gone. See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -16,8 +17,8 @@ repo="$ZIGGY_TEST_DIR/repo"
 #
 root_hash="$(git -C "$repo" rev-list --max-parents=0 HEAD)" || fail "could not read the test repo's first commit"
 
-export GRAFT_TEST_REPO="$repo"
 start_app_on_start_page
+open_repo_with_button "$repo"
 open_sidebar_page commits
 wait_for_element "commit-$root_hash" 30
 click "commit-$root_hash"

@@ -236,6 +236,32 @@ open_sidebar_page() {
 }
 
 #
+# Gives the next folder picker the paths, so it shows no dialog and returns them as chosen. No
+# paths is a cancelled picker. Usage: answer_picker [path ...]
+#
+answer_picker() {
+    local line
+    line="$(jq -nc '{command: "pick-answer", paths: $ARGS.positional}' --args "$@")"
+    local answer
+    answer="$(control "$line")"
+    if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
+        fail "answering the folder picker with $* failed: $answer"
+    fi
+}
+
+#
+# Opens the repo at the path from the welcome page, as a user does: gives the folder picker the
+# path, clicks the welcome page's Open repo button and waits until the commits page shows. Every
+# smoke test that needs an open repo opens it with this, through Graft's normal way of opening a
+# repo. Usage: open_repo_with_button <path>
+#
+open_repo_with_button() {
+    answer_picker "$1"
+    click welcome-open-repo-button
+    wait_for_element commits-page 30
+}
+
+#
 # Prints the text of the element with the data-id. Usage: text_of <data-id>
 #
 text_of() {

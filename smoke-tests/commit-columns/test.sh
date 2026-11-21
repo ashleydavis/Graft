@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
 #
-# Creates a test repo of the smoke test's own, starts the real app with remote control on, on
-# that repo and checks what each of the commits page's columns shows: the commit pane's rows,
-# the commit details pane a click on a commit opens and the file pane a click on a changed file
-# opens, and that each pane that opens is scrolled into view. See test.md.
+# Creates a test repo of the smoke test's own, starts the real app with remote control on, opens
+# that repo with the welcome page's Open repo button and checks what each of the commits page's
+# columns shows: the commit pane's rows, the commit details pane a click on a commit opens and the
+# file pane a click on a changed file opens, and that each pane that opens is scrolled into view.
+# See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -18,8 +19,8 @@ repo="$ZIGGY_TEST_DIR/repo"
 head_hash="$(git -C "$repo" rev-parse HEAD)" || fail "could not read the test repo's newest commit"
 parent_hash="$(git -C "$repo" rev-parse HEAD~1)" || fail "could not read the parent of the test repo's newest commit"
 
-export GRAFT_TEST_REPO="$repo"
 start_app_on_start_page
+open_repo_with_button "$repo"
 open_sidebar_page commits
 wait_for_element commit-pane 30
 wait_for_element "commit-$head_hash" 30

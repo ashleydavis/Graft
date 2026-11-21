@@ -14,7 +14,7 @@ A user opens a local repo by choosing its folder. Graft starts with no repo open
 - Cancelling the picker leaves the page and the open repo as they were.
 - The open repo's path is kept in `RepoContext` in `frontend/src/components/repo-context.tsx`, with its provider `RepoProvider` and hook `useRepo`, provided at the root of the app above the router's pages. The layout and the pages read it, so the repo stays loaded while the user moves between pages. The path lasts as long as the window, so each run of Graft starts with no repo open.
 - While no repo is open, the left sidebar's "Commits" link and the About page's "Commits" link are hidden and the breadcrumb trail starts with the page. On the welcome page the trail is empty.
-- A smoke test gives the app its own test repo through `GRAFT_TEST_REPO`, which the app reads only when it was started with `--remote-control`. The app starts with that repo open.
+- A smoke test that needs an open repo opens its own test repo the way a user does: it gives the folder picker the repo's path with remote control's `pick-answer` command and clicks the welcome page's "Open repo" button, through `open_repo_with_button` in `smoke-tests/lib/common.sh`.
 
 ## Acceptance criteria
 
@@ -26,7 +26,7 @@ A user opens a local repo by choosing its folder. Graft starts with no repo open
 - [x] The repo stays loaded while the user moves between pages. The path is not saved between runs.
 - [x] Graft starts with no repo open, on the welcome page.
 - [x] While no repo is open, the left sidebar's "Commits" link is hidden.
-- [x] Smoke tests give the app their own test repo with `GRAFT_TEST_REPO`.
+- [x] Smoke tests open their own test repo with the welcome page's "Open repo" button, through a shared helper in `smoke-tests/lib/common.sh`.
 
 ## Open questions
 

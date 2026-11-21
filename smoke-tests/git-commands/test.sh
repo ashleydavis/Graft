@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
 #
-# Creates a test repo of the smoke test's own, starts the real app with remote control on, on that
-# repo and checks the right sidebar shows the Git commands the commits page runs: git log when the
-# page opens, then git log and git diff-tree when a commit opens and git diff-tree for a file's
-# diff. It checks the commands stay when a pane closes and when the sidebar closes and that the
-# About page shows none. It runs every command the sidebar shows in a terminal's shell, after the
-# cd it shows, so a command that does not work fails the test. See test.md.
+# Creates a test repo of the smoke test's own, starts the real app with remote control on, opens the
+# repo with the welcome page's Open repo button and checks the right sidebar shows the Git commands
+# the commits page runs: git log when the page opens, then git log and git diff-tree when a commit
+# opens and git diff-tree for a file's diff. It checks the commands stay when a pane closes and when
+# the sidebar closes and that the About page shows none. It runs every command the sidebar shows in
+# a terminal's shell, after the cd it shows, so a command that does not work fails the test. See
+# test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -60,14 +61,13 @@ run_shown_commands() {
     [ "$index" -gt 0 ] || fail "the sidebar showed no Git commands"
 }
 
-export GRAFT_TEST_REPO="$repo"
 start_app_on_start_page
 
 click right-sidebar-toggle
 wait_for_element git-commands-panel 30
 wait_for_text git-commands-empty "This page has run no Git commands." 30
 
-open_sidebar_page commits
+open_repo_with_button "$repo"
 wait_for_element commit-pane 30
 wait_for_text git-command-0-text "git log --max-count=50" 30
 wait_for_text git-commands-directory "cd $repo" 30

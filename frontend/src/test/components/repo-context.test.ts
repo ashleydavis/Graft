@@ -1,12 +1,13 @@
 //
-// Tests the open repo's context: RepoProvider starts on the repo it is given, or none, openRepo
-// opens another in its place for every component that reads it, and useRepo refuses to run outside
-// a RepoProvider.
+// Tests the open repo's context: RepoProvider starts with no repo open, openRepo opens a repo, or
+// another in place of the one open, for every component that reads it, and useRepo refuses to run
+// outside a RepoProvider.
 //
 
 import { act, render, screen } from "@testing-library/react";
 import { createElement, JSX } from "react";
 import { RepoProvider, useRepo } from "../../components/repo-context";
+import { RepoOpener } from "../repo-opener";
 
 //
 // Shows the open repo's path, or "No repo" while none is open, so a test can read what useRepo
@@ -25,12 +26,16 @@ function RepoReader(): JSX.Element {
 }
 
 //
-// Shows two readers of the open repo inside a RepoProvider that starts on the repo given.
+// Shows two readers of the open repo inside a RepoProvider, with the repo given opened through
+// openRepo first, or none for undefined.
 //
-function renderReaders(initialRepoPath: string | undefined): void {
+function renderReaders(repoPath: string | undefined): void {
     render(createElement(RepoProvider, {
-        initialRepoPath,
         children: [
+            createElement(RepoOpener, {
+                key: "repo-opener",
+                repoPath,
+            }),
             createElement(RepoReader, {
                 key: "first",
             }),
@@ -61,14 +66,9 @@ function EmptyPathOpener(): JSX.Element {
 }
 
 describe("RepoProvider", () => {
-    test("starts with no repo open when it is given none", () => {
+    test("starts with no repo open", () => {
         renderReaders(undefined);
         expect(shownRepoPaths()).toEqual(["No repo", "No repo"]);
-    });
-
-    test("starts on the repo it is given", () => {
-        renderReaders("/repos/graft");
-        expect(shownRepoPaths()).toEqual(["/repos/graft", "/repos/graft"]);
     });
 
     test("openRepo opens the repo in place of the one open before, for every reader", () => {
@@ -89,7 +89,6 @@ describe("RepoProvider", () => {
 
     test("openRepo refuses an empty path", () => {
         render(createElement(RepoProvider, {
-            initialRepoPath: undefined,
             children: createElement(EmptyPathOpener),
         }));
         const button = screen.getByText("Open no path");

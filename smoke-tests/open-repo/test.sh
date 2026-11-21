@@ -20,20 +20,6 @@ second_repo="$ZIGGY_TEST_DIR/second-repo"
 second_title="The second repo's own commit in $(basename "$ZIGGY_TEST_DIR")"
 git -C "$second_repo" -c user.name="Smoke Test" -c user.email=smoke-test@example.com -c commit.gpgsign=false commit --quiet --allow-empty --message "$second_title" || fail "could not commit to the second test repo"
 
-#
-# Gives the next folder picker the paths, so it shows no dialog and returns them as chosen. No
-# paths is a cancelled picker. Usage: answer_picker [path ...]
-#
-answer_picker() {
-    local line
-    line="$(jq -nc '{command: "pick-answer", paths: $ARGS.positional}' --args "$@")"
-    local answer
-    answer="$(control "$line")"
-    if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
-        fail "answering the folder picker with $* failed: $answer"
-    fi
-}
-
 start_app_on_start_page
 wait_for_element left-sidebar-about-link 30
 wait_for_missing_element left-sidebar-commits-link 30

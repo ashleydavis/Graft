@@ -1,6 +1,6 @@
 # commit-columns-close/test.sh
 
-Smoke test of the columns on the commits page closing. It creates a test repo of its own in its temporary directory with `scripts/test/create-test-repo.sh` and gives the app the repo's path through `GRAFT_TEST_REPO`. It starts the real app with remote control on, opens the commits page, clicks the first commit, "Add the readme", checks it has no parents and that its changed file, README.md, was added with one line, and clicks README.md, so the commit details pane and the file pane are both open. It closes the file pane and checks it has gone while the commit details pane stays. It then closes the commit details pane and checks it has gone while the commit pane stays.
+Smoke test of the columns on the commits page closing. It creates a test repo of its own in its temporary directory with `scripts/test/create-test-repo.sh` and starts the real app with remote control on. It opens the repo with the welcome page's Open repo button, through `open_repo_with_button`, opens the commits page, clicks the first commit, "Add the readme", checks it has no parents and that its changed file, README.md, was added with one line, and clicks README.md, so the commit details pane and the file pane are both open. It closes the file pane and checks it has gone while the commit details pane stays. It then closes the commit details pane and checks it has gone while the commit pane stays.
 
 ## How it is invoked
 

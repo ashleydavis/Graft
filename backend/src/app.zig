@@ -12,7 +12,7 @@ const zoom = @import("features/zoom.zig");
 const actions = @import("lib/actions.zig");
 const menu = @import("lib/menu.zig");
 const merge_fields = @import("lib/merge-fields.zig");
-const ui_query = @import("lib/ui-query.zig");
+const test_mode_query = @import("lib/test-mode-query.zig");
 const ui = @import("ui-files");
 
 //
@@ -38,5 +38,5 @@ pub const app = ziggy.core.App(.{
         .dark = 0x09090B,
     },
     .ui_files = &ui.files,
-    .ui_query = ui_query.ui_query,
+    .ui_query = test_mode_query.test_mode_query,
 });

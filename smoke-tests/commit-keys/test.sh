@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
 #
-# Creates a test repo of the smoke test's own, starts the real app with remote control on, on that
-# repo, opens the About page from the left sidebar and presses keys as a user does: Left in the
-# breadcrumb trail drop-down's search box moves its cursor, Ctrl+1 opens the commit explorer, the
-# arrow keys and Enter open a commit and one of its files, Escape closes the panes one at a time
-# and Ctrl+1 returns to the commit explorer from the Help page. See test.md.
+# Creates a test repo of the smoke test's own, starts the real app with remote control on, opens
+# that repo with the welcome page's Open repo button, opens the About page from the left sidebar and
+# presses keys as a user does: Left in the breadcrumb trail drop-down's search box moves its cursor,
+# Ctrl+1 opens the commit explorer, the arrow keys and Enter open a commit and one of its files,
+# Escape closes the panes one at a time and Ctrl+1 returns to the commit explorer from the Help
+# page. See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -36,8 +37,8 @@ wait_for_commit_title() {
 repo="$ZIGGY_TEST_DIR/repo"
 "$ZIGGY_SMOKE_APP_DIR/scripts/test/create-test-repo.sh" "$repo" || fail "could not create the test repo at $repo"
 
-export GRAFT_TEST_REPO="$repo"
 start_app_on_start_page
+open_repo_with_button "$repo"
 open_sidebar_page about
 
 # In the drop-down's search box, which has the focus when the drop-down opens, Left moves the
