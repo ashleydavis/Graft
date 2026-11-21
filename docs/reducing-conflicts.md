@@ -76,3 +76,52 @@ Each line names the ticket that failed to merge, the ticket on main it clashed w
 - Review tickets soon after they reach human review, so branches age less.
 - Merge the approved tickets that touch the same area one at a time, and merge main into the next one before its train is built.
 - Commit dependency upgrades and other changes on main before running pb:next, and leave no uncommitted change in a ticket's worktree.
+
+## Session of 2026-11-23
+
+Tickets that failed to merge, the ticket they clashed with and the files involved. Taken from each ticket's `detail.md` in the state repo. This list is added to as the session goes on.
+
+- breadcrumb-3 with breadcrumb-2 (same area): `docs/spec/layout/detail.md`, `docs/testing-manual/layout/detail.md`, `frontend/src/test/components/breadcrumb-trail.test.ts`. Merging main then also hit infra-2's changes to `smoke-tests/breadcrumb-trail/test.sh` and `test.md`.
+- welcome-page-2 with infra-2: `smoke-tests/welcome-page/test.md`, because the branch was made before infra-2 changed every smoke test that opens a repo.
+- repo-explorer-1 with git-commands-1: the git commands spec, the layout and git commands testing manuals, `git-commands.test.ts` and the `breadcrumb-trail` and `git-commands` smoke tests.
+- repo-explorer-1 again, with welcome-page-2: `README.md`, the welcome spec and testing manual, `docs/user-guide.md`, `frontend/src/pages/welcome/index.tsx` and the `welcome-page` smoke test.
+- git-commands-2 with changes-1: `docs/testing-manual/layout/git-commands/detail.md` and the `git-commands` smoke test (`test.md`, `test.sh`).
+- shortcuts-overlay-3 with changes-1 and help-page-1: `docs/architecture.md`, `docs/spec/layout/detail.md`, `docs/testing-manual/layout/detail.md`, `frontend/src/test/components/top-bar.test.ts`, `smoke-tests/shortcuts-overlay/test.md`.
+- commits-1 with changes-1: only the description comments at the top of `frontend/src/pages/repo-explorer/index.tsx` and its test.
+- commits-1 again, with git-commands-2: only the description in `smoke-tests/git-commands/test.md`.
+- changes-2 on main `006e348`: `docs/testing-manual/repo-explorer/changes/detail.md`, `docs/user-guide.md`, `frontend/src/pages/repo-explorer/index.tsx` and its test.
+- commits-6 behind commits-2 on the train: `docs/testing-manual/repo-explorer/changes/detail.md`, `docs/user-guide.md`, `smoke-tests/changes-stage/test.md`.
+- welcome-page-3 behind shortcuts-overlay-4 on the train: `docs/spec/layout/detail.md` and `docs/testing-manual/layout/detail.md`.
+- changes-2 again, with commits-6: `docs/spec/repo-explorer/changes/detail.md` and `docs/user-guide.md`.
+- breadcrumb-4 on main `856cf2d`, from the dependencies removed to run the last tickets in parallel: `frontend/src/pages/repo-explorer/index.tsx` and its test.
+- commits-3 on main `856cf2d`, the same way: `frontend/src/pages/repo-explorer/index.tsx`.
+- commits-5 behind commits-4 on the train: `docs/spec/repo-explorer/keys/detail.md` and `docs/testing-manual/repo-explorer/keys/detail.md`.
+- commits-7 behind commits-4 on the train: `docs/testing-manual/repo-explorer/keys/detail.md`, `frontend/src/lib/repo-explorer.ts`, `smoke-tests/commit-keys/test.sh`.
+- commits-8 behind commits-4 on the train: `docs/spec/repo-explorer/keys/detail.md`, `docs/testing-manual/repo-explorer/keys/detail.md`, `smoke-tests/commit-keys/test.md`.
+- commits-9 behind commits-4 on the train: `smoke-tests/commit-keys/test.md` and `test.sh`.
+- breadcrumb-4 and commits-3 again, after commits-7 landed while main was being merged into them: `frontend/src/pages/repo-explorer/index.tsx`.
+- commits-5 again, after commits-7 landed: `docs/testing-manual/repo-explorer/keys/detail.md` and `docs/user-guide.md`.
+- commits-8 again, after commits-7 landed: `docs/testing-manual/repo-explorer/keys/detail.md`, `docs/user-guide.md`, `frontend/src/pages/repo-explorer/index.tsx`.
+- commits-9 again, after commits-7 landed: `frontend/src/pages/repo-explorer/index.tsx`.
+
+### Causes seen so far
+
+- Renaming a page across the code base. repo-explorer-1 renamed the commit explorer to the repo explorer, which touched every file naming the page, so it clashed with whatever landed first.
+- Description text at the top of a file. Smoke test `test.md` files and file header comments sum up everything the test or file does, so every ticket that adds a check rewrites the same paragraph.
+- Shared docs with numbered steps. The layout testing manual and the git commands testing manual are numbered lists, so adding a step renumbers the steps after it.
+- `docs/spec/layout/detail.md` is changed by most tickets that touch the top bar, the sidebar or the breadcrumb trail.
+- Tickets in the same area built side by side (breadcrumb-2 and breadcrumb-3, git-commands-1 and git-commands-2 with changes-1).
+- Branches made before a ticket that changes every smoke test (infra-2) landed.
+- `docs/user-guide.md` and the changes testing manual are changed by most tickets that touch the Commit pane.
+- `frontend/src/pages/repo-explorer/index.tsx` holds every pane of the repo explorer, so every ticket that changes a pane changes it.
+- The keys spec, the keys testing manual and the `commit-keys` smoke test are changed by every ticket that adds a key in the repo explorer. Removing the dependencies between the last tickets put six of them on the same train, and five conflicted with whichever landed first.
+- Fixing several conflicted tickets at once. Main was merged into all of them in parallel, then the first to land (commits-7) put the rest back into conflict. Fixing and landing them one at a time would avoid the second round.
+
+### Ways to avoid them next time
+
+- Do a rename across the code base (such as the repo explorer rename) as its own ticket with nothing else in the batch, or before the batch starts.
+- Keep the description at the top of a smoke test's `test.md` short and general, and put the description of each check next to that check, so tickets adding checks do not rewrite the same paragraph.
+- Split shared docs that every ticket in an area changes (the layout spec, the layout and changes testing manuals, the user guide) into one file per feature, so tickets change different files.
+- In testing manuals, add new steps at the end or use headings instead of numbers, so adding a step does not renumber the others.
+- Merge main into every branch in `in-progress/` as soon as a ticket that changes many files (such as infra-2) lands, before those branches reach review.
+- Weigh chaining tickets in the same area against conflicts: chains avoid conflicts but leave one ticket per round, as `commits-3` to `commits-5` did.

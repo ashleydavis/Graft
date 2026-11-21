@@ -2,71 +2,21 @@
 
 ## Now
 
-- Almost every ticket has merge conflicts because of how some code is laid out (for example the actions list). The conflicts break Playbook's merge train. Restructure the code so parallel tickets rarely touch the same lines.
-    - First this before anything else.
-    - All other tickets are dependent on this one.
-    - Backend:
-        - `backend/src/lib/actions.zig`: split the one action list into a declaration per feature and build the list from them. Move the comment that describes every action to each declaration.
-        - `backend/src/test/actions.test.zig`: check actions by name. Drop the checks of the total and of indexes.
-        - `backend/src/app.zig`: the shared message and task lists. Let each feature declare its own.
-        - `backend/src/lib/menu.zig`: menu items for actions all go in this one file.
-    - Frontend:
-        - `frontend/src/components/app-layout.tsx`: move each action handler into a hook the feature owns (for example `useOpenRepoAction`), so the layout gains one line per feature.
-        - `frontend/src/test/components/app-layout.test.ts`: split the tests to match the feature hooks.
-        - `frontend/src/test/install-app-window.ts`: build the `window.ziggy` fake from one small fake per feature.
-        - `frontend/src/main.tsx`: one route per line, and no single-line `addChildren([...])` list.
-        - `frontend/src/components/left-sidebar.tsx`: the shared list of sidebar links.
-    - Docs:
-        - `docs/architecture.md` and `docs/user-guide.md`: stop listing every shortcut and feature in shared sentences. Link to each feature's own section instead.
-        - `docs/spec/open-repo/detail.md`: remove the shared shortcut text.
-        - `docs/spec/index.md`, `docs/testing-manual/index.md` and `what-changed.yaml`: one entry per line, so additions do not touch neighbouring lines.
-    - Smoke tests:
-        - `smoke-tests/lib/common.sh`: add a helper that starts Graft and waits for the start page, and one that opens a page from the left sidebar.
-        - Change every `smoke-tests/*/test.sh` that waits for `about-page` or `welcome-page` itself to use those helpers.
-- In the project rules, reference the Graft style guide (repo at ../../style-guide). The style guide shows what Graft should look like. Make this note in the project rules: Don't add features to Graft just because they are in the style guide. But for feature you are asked to add or change please make sure they follow the standard set in the style guide.
-    - All other tickets depend on this one because they need to follow the styling laid down in the styl guide.
-- Next big feature:
-    - The Changes pane, including
-        - Stage
-        - Unstage 
-        - Commit section
-    - I want this implemented minimally.
-    - Follow the mockup in the style guide for styllng.
-        - There's no need to add all the buttons and features indicated in the style guide. Do the minimum possible so that I can stage / unstage and commit files (hunks are not necesary right now). Make sure it looks good though, like the style guide.
-    - I want the split staged / unstaged file lists with single file diff pane.
-    - I want this implemented using panes like what we have in the commit explorer. 
-        - When a repo is opened show the repo details.
-        - From the repo details click Commits which opens the Commits paned to the right.
-        - Or click Commit which opens the Commit pane to the right. This contains the UI to stage, unstaged and makes commits.
-    - The commit explorer should probably be renamed "repo explorer" because it now encompasses other aspects of the repo in addition to the commit log.
-- Ctrl+? should open the shortcuts overlay and it should work in text boxes. The text "Ctrl+?: Show hotkeys" should appear somewhere in the app as a visual reminder to the user.
-- Finish the welcome page, about page and help page to a reasonable standard.
-- There is a wierd "About" link next to the Commits title that seems out of place and should be removed. In fact remove the "Commits" title because the page title is already displayed in the breadcrumb trail. We don't need to display redundant page titles.
-- Breadcrumb trail: The page title should slightly bigger and bolder so it looks like the title part of the breaddcrumb trail.
-- Breadcrumb trail: Add current repo name to the trail between "Graft" and "Commits".
-- The first commit in commit log of Graft just seems to have a bunch of badges/chips. 
-    - There is a branch and bunch of tags legitimately there.
-    - In Graft the commit message might be scrolled off scrreen, but when I scroll horizontally I don't see it, like it's been truncated.
-    - The fix: Don't display the badges before the commit message. Have a tight column to the right of the commit message for the badges. Don't sure more badges than can fit. If we truncate the badges show a "..." or similar. Clicking that should show a dropdown with all the badges.
-- Git Command pane: In the right side pane I'd some performance stats displayed. It should show (in human readable format) the duration of the commands (all the commands) that were run to generate the information displayed on the current page.
-- Git Command pane: too many Git commands are shown. It should show one or two, so the user can see what produced the information without being overwhelmed.
-- Commits: only the first page of commits is shown. All pages should be shown and loaded dynamically page by page while the user scrolls. Use TanStack Virtual to make the virtual list of commits.
-- There is no entry for the welcome page in breadcrumb trail. Or in the left side menu. It would be good to have that otherwise it's not possible to find the welcome page after navigating to about or help pages.
-- Commits: Changing rows (up/down arrows) in the commit log should change the Commit pane and it doesn't (without pressing enter, but pressing enter should select the Commit pane).
-- Commits: Changing rows (up/down arrows) in Commit file list should change what is shown in the diff pane (without pressing enter, but pressing enter should select the file diff pane).
-- Breadcrumb trail: It should show all current panes to the righmost. E.g. <repo> => <commits> => <the commit> => <the-file>
-- In the title bar of the diff pane only show the file name and not the full path. 
-- Clicking anywhere in a pane (e.g. in the pane title bar) should seleted the pane.
-- Commits: the highlighted file in the commit file list should always be visible, starting with the first file and while moving between files with the arrow keys.
-- A navbar button that shows the keyboard shortcuts overlay.
-- Animate the panes in the commit explorer as they open and close.
+- Commit needs a progress indicator to show when it's working, for example while the pre-commit hook runs the tests.
+- Commit needs a cancel button to stop a commit in progress that's taking too long (for example running tests).
+- Commit and other operations need a log, for example a bottom panel or drawer, that shows what's happening. It shows earlier commands, the commands running now (with a spinner) and any error. It clears when the repo changes and when the user clicks a clear button, and it is searchable.
+- Show a commit's error in a toast, following the style guide.
+- Breadcrumb trail: it looks good full screen, but in a smaller window when the trail does not fit it wraps, the top part goes off the top of the window and the bottom part overflows the nav bar. Collapse the middle of the trail and truncate long text. Clicking the collapsed part shows a list of the left out items.
+- The "Ctrl+/: Show hotkeys" reminder takes too much screen space. Move it to the Help page.
+- Changing between commits in the Commits pane and between files in the Commit pane causes jerky, flickery horizontal scrolling, because the rightmost pane keeps closing and opening. It should change seamlessly from one item to the next.
+
+- Clicking outside the shortcuts overlay should dismiss it. There should also be a close button if there isn't one already.
+- The Commits pane doesn't have a close button.
+- Changing commits with the arrow keys doesn't change what's shown in the Commit pane.
+- Using the arrow keys to change files in the Commit pane should update what's shown in the diff pane, but it doesn't.
+- Tweak the text on the welcome page.
 
 ## Code Review
-
-- Remove `shown_args` from `GitCommand` in `backend/src/lib/git-interface.zig` and derive the command the help panel shows from `args`, by leaving out `-z` and the `--format` argument with separator characters.
-    - Stop filtering at `--`, so a file path such as `-z` after it is never removed.
-    - Update the spec (`docs/spec/layout/git-commands/detail.md`), which says each wrapper passes both lists, and the tests that check `expected_shown_args`.
-- Remove `GRAFT_TEST_REPO` and `backend/src/lib/ui-query.zig`. Smoke tests that require a repo to be open can click Graft's open repo button and cause the repo to be opened through the normal mechanism.
 
 ## Code Review Later
 
@@ -78,6 +28,8 @@
 - `backend/src/lib/git-interface.zig`: when git is not on PATH the user sees only a bare error name such as `FileNotFound`. Set text with `services.fail_with` saying git was not found on PATH.
 
 ## Later
+
+- Reduce merge conflicts again. infra-1 halved them (about one per two approved tickets on 2026-11-23, from about one per ticket before), but they still happen. The causes are in `docs/reducing-conflicts.md` under "Session of 2026-11-23".
 
 - Commits: I'm seeing the main branch, but possibly other branches are hidden? I can't see the other branches.
 - Make it easy to filter branches. Maybe a branch selector dropdown dialog that we can use to view, and search branches with options to show/hide them. Also an option for each branch to "show only this one". A reset butt to "show all branches" would be good too.
