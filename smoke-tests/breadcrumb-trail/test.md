@@ -1,6 +1,6 @@
 # breadcrumb-trail/test.sh
 
-Smoke test of the breadcrumb trail on each page. It creates a test repo of its own in its temporary directory with `scripts/test/create-test-repo.sh` and starts the real app with remote control on. It opens the repo with the welcome page's Open repo button, through `open_repo_with_button`, then opens the About page with the left sidebar's About link and checks the trail in the top bar there, then follows the left sidebar's links to the commits page and the Help page and checks the trail on each. Every trail starts with the repo's folder name (`repo`) and ends with the page's name.
+Smoke test of the breadcrumb trail on each page. It creates a test repo of its own in its temporary directory with `scripts/test/create-test-repo.sh`. It starts the real app with remote control on and no repo open, and checks the welcome page's trail has no repo step. It then opens the test repo with the welcome page's Open repo button, through `open_repo_with_button`. On the About page, then on the commits and Help pages, each reached with the left sidebar's links, it checks the trail starts with the repo's folder name (`repo`) inside the window and ends with the page's name.
 
 ## How it is invoked
 

@@ -3,13 +3,15 @@
 // tooltip and style of each step, that the page step is the larger, bolder title, that long steps
 // are cut short, that a drop-down lists and selects its pages, that its search box narrows them,
 // says when none match and is cleared on closing and that picking a page opens it while picking
-// the page shown only closes the drop-down.
+// the page shown only closes the drop-down. It also renders the commits page's trail from
+// pageTrail with a repo open and with none, and checks the repo step comes before the page only
+// while a repo is open.
 //
 
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 import { BreadcrumbTrail } from "../../components/breadcrumb-trail";
-import { ITrailStep } from "../../lib/breadcrumb-trail";
+import { ITrailStep, pageTrail } from "../../lib/breadcrumb-trail";
 
 //
 // A trail with a plain repo step with a long name and a drop-down step of two pages, the second
@@ -234,5 +236,21 @@ describe("BreadcrumbTrail", () => {
         openPageMenu();
         expect(screen.getByPlaceholderText("Search pages")).toHaveProperty("value", "");
         expect(elementWithDataId("breadcrumb-option-help")).not.toBeUndefined();
+    });
+});
+
+describe("BreadcrumbTrail with the trail of the commits page", () => {
+    test("with a repo open, shows the repo's name before Commits, with its full path in the tooltip", () => {
+        renderTrail(pageTrail("/commits", "/home/user/projects/graft"));
+        expect(elementWithDataId("breadcrumb-trail")?.textContent).toBe("graftCommits");
+        expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("graft");
+        expect(elementWithDataId("breadcrumb-repo")?.getAttribute("aria-label")).toBe("/home/user/projects/graft");
+        expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("Commits");
+    });
+
+    test("with no repo open, shows Commits alone, with no repo step", () => {
+        renderTrail(pageTrail("/commits", undefined));
+        expect(elementWithDataId("breadcrumb-trail")?.textContent).toBe("Commits");
+        expect(elementWithDataId("breadcrumb-repo")).toBeUndefined();
     });
 });
