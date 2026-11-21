@@ -40,7 +40,7 @@ Graft remembers whether the left sidebar is minimised and whether the right side
 
 ### Opening a repo
 
-Graft starts with no repo open, on its welcome page, which shows Graft's name and an **Open repo** button. Click **Open repo**, choose **File**, then **Open repo**, or press Ctrl+O (Command+O on macOS). Pick the repo's folder in the folder picker. The commits page opens on that repo's commits. Opening another repo the same way shows it in place of the one before. The repo stays open while you move between pages, until Graft closes.
+Graft starts with no repo open, on its welcome page, which shows Graft's mark, its name, a line describing Graft and an **Open repo** button. Click **Open repo**, choose **File**, then **Open repo**, or press Ctrl+O (Command+O on macOS). Pick the repo's folder in the folder picker. The commits page opens on that repo's commits. Opening another repo the same way shows it in place of the one before. The repo stays open while you move between pages, until Graft closes.
 
 ### Opening a new window
 

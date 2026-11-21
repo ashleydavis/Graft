@@ -1,8 +1,8 @@
 //
-// Tests the welcome page: renders it and checks it shows Graft's name and an Open repo button
-// that runs the open-repo action, the one the File menu's "Open repo" item runs. A run that fails
-// is logged. Each test puts a fake made of Jest mocks on window.ziggy, where the page runs the
-// action.
+// Tests the welcome page: renders it and checks it shows Graft's mark, name, what Graft is and an
+// Open repo button that runs the open-repo action, the one the File menu's "Open repo" item runs.
+// A run that fails is logged. Each test puts a fake made of Jest mocks on window.ziggy, where the
+// page runs the action.
 //
 
 import { act, render, screen, waitFor } from "@testing-library/react";
@@ -14,6 +14,31 @@ describe("WelcomePage", () => {
     test("shows Graft's name as its heading", () => {
         render(createElement(WelcomePage));
         expect(screen.getByText("Graft").getAttribute("data-id")).toBe("welcome-heading");
+    });
+
+    test("shows Graft's mark, the branch icon the About page shows", () => {
+        const { container } = render(createElement(WelcomePage));
+        const icon = container.querySelector("[data-id=\"welcome-icon\"]");
+        expect(icon).not.toBeNull();
+        expect(icon?.querySelector("svg[data-icon=\"code-branch\"]")).not.toBeNull();
+    });
+
+    test("shows a line describing Graft and what opening a repo shows", () => {
+        render(createElement(WelcomePage));
+        const description = screen.getByText("A desktop Git client. Open a local Git repo to see its commits.");
+        expect(description.getAttribute("data-id")).toBe("welcome-description");
+    });
+
+    test("shows the mark, then the heading, then the description, then the button", () => {
+        const { container } = render(createElement(WelcomePage));
+        const order = Array.from(container.querySelectorAll("[data-id^=\"welcome-\"]")).map(element => element.getAttribute("data-id"));
+        expect(order).toEqual([
+            "welcome-page",
+            "welcome-icon",
+            "welcome-heading",
+            "welcome-description",
+            "welcome-open-repo-button",
+        ]);
     });
 
     test("shows an Open repo button with the folder icon", () => {

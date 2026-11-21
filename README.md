@@ -2,7 +2,7 @@
 
 An app built on [Ziggy](https://github.com/ashleydavis/ziggy), with JavaScript/TypeScript, HTML and CSS for the frontend and Zig for everything else.
 
-The same code-base builds for Linux, Windows and macOS, using each platform's system web view for the frontend. Its frontend opens on the welcome page with no repo open, which shows Graft's name and an Open repo button. The About page shows Graft's version, links and licence. The welcome page's button or File, Open repo picks a repo's folder and opens it on the commits page, which lists the repo's newest commits. The left sidebar then links to the commits page. The backend reads the commits with `git log` in a background task.
+The same code-base builds for Linux, Windows and macOS, using each platform's system web view for the frontend. Its frontend opens on the welcome page with no repo open, which shows Graft's mark, its name, a line describing Graft and an Open repo button. The About page shows Graft's version, links and licence. The welcome page's button or File, Open repo picks a repo's folder and opens it on the commits page, which lists the repo's newest commits. The left sidebar then links to the commits page. The backend reads the commits with `git log` in a background task.
 
 Check Ziggy's [glossary](https://github.com/ashleydavis/ziggy/blob/main/docs/glossary.md) to understand the jargon.
 
