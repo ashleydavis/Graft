@@ -1,14 +1,14 @@
 //
 // The repo details pane: the first column of the repo explorer, with the open repo's name and
-// path and the links that open the panes about the repo to its right, Commits among them.
+// path and the links that open the panes about the repo to its right: Commits and Commit.
 //
 
-import { faCodeCommit } from "@fortawesome/free-solid-svg-icons";
+import { faCodeCommit, faPenToSquare, IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { List, ListItemButton } from "@mui/material";
 import { JSX } from "react";
 import { repoName } from "../../../lib/breadcrumb-trail";
-import { COMMITS_LINK } from "../../../lib/repo-explorer";
+import { COMMIT_LINK, COMMITS_LINK } from "../../../lib/repo-explorer";
 import { activePaneClass } from "./active-pane-style";
 import { Fact } from "./commit-details-pane";
 import { openRowClass } from "./commit-list";
@@ -38,18 +38,12 @@ export interface IRepoDetailsPaneProps {
 //
 // Shows the repo in a rounded card headed "Repo" and the repo's name: its name and its full path
 // as labelled facts, laid out as the commit details pane lays out a commit's facts, then the
-// Commits link. The card never shrinks, so the panes that open to its right never hide it. The
-// link is a MaterialUI ListItemButton, as the rows of the other panes are, so the keys move to it
-// and open it as they do a commit or a file. The card's border is in the style guide's active pane
-// colour while the pane is active.
+// Commits link, which opens the commit pane, and the Commit link, which opens the changes pane.
+// The card never shrinks, so the panes that open to its right never hide it. The card's border is
+// in the style guide's active pane colour while the pane is active.
 //
 export function RepoDetailsPane({ repoPath, selectedLink, openLink, isActive, onSelectLink }: IRepoDetailsPaneProps): JSX.Element {
     const name = repoName(repoPath);
-    const isCommitsOpen = openLink === COMMITS_LINK;
-    let commitsCurrent: "true" | undefined = undefined;
-    if (isCommitsOpen) {
-        commitsCurrent = "true";
-    }
     const title = (
         <span className="flex items-baseline gap-2">
             Repo
@@ -69,22 +63,66 @@ export function RepoDetailsPane({ repoPath, selectedLink, openLink, isActive, on
                     </Fact>
                 </dl>
                 <List data-id="repo-details-links" disablePadding={true} className="px-1 py-2">
-                    <ListItemButton
-                        component="li"
-                        data-id="repo-details-commits"
-                        aria-label="Commits"
-                        selected={selectedLink === COMMITS_LINK}
-                        aria-current={commitsCurrent}
-                        onClick={() => onSelectLink(COMMITS_LINK)}
-                        className={`flex items-center gap-2 px-2 text-[length:var(--text-md)] ${openRowClass(isCommitsOpen)}`}
-                    >
-                        <span className="flex w-[var(--space-6)] shrink-0 items-center text-[length:var(--icon-md)] text-[var(--color-text-muted)]">
-                            <FontAwesomeIcon icon={faCodeCommit} fixedWidth={true} />
-                        </span>
-                        <span className="min-w-0 flex-1 truncate text-[var(--color-text)]">Commits</span>
-                    </ListItemButton>
+                    <LinkRow link={COMMITS_LINK} label="Commits" icon={faCodeCommit} dataId="repo-details-commits" selectedLink={selectedLink} openLink={openLink} onSelectLink={onSelectLink} />
+                    <LinkRow link={COMMIT_LINK} label="Commit" icon={faPenToSquare} dataId="repo-details-commit" selectedLink={selectedLink} openLink={openLink} onSelectLink={onSelectLink} />
                 </List>
             </div>
         </section>
+    );
+}
+
+//
+// What one link of the repo details pane shows and what it reports.
+//
+export interface ILinkRowProps {
+    // The link's name, as in "commits", which the explorer's state records.
+    link: string;
+
+    // The link's text.
+    label: string;
+
+    // The icon before the text.
+    icon: IconDefinition;
+
+    // The data-id of the row, so a smoke test can click it.
+    dataId: string;
+
+    // The name of the selected link, or undefined.
+    selectedLink: string | undefined;
+
+    // The name of the link whose pane is open, or undefined.
+    openLink: string | undefined;
+
+    // Called with the link's name when the user clicks it.
+    onSelectLink(link: string): void;
+}
+
+//
+// Shows one link as a row with its icon and text. The row is a MaterialUI ListItemButton, as the
+// rows of the other panes are, so the keys move to it and open it as they do a commit or a file:
+// it shows the selected background while selected and a bar at its left edge while its pane is
+// open.
+//
+export function LinkRow({ link, label, icon, dataId, selectedLink, openLink, onSelectLink }: ILinkRowProps): JSX.Element {
+    const isOpen = openLink === link;
+    let current: "true" | undefined = undefined;
+    if (isOpen) {
+        current = "true";
+    }
+    return (
+        <ListItemButton
+            component="li"
+            data-id={dataId}
+            aria-label={label}
+            selected={selectedLink === link}
+            aria-current={current}
+            onClick={() => onSelectLink(link)}
+            className={`flex items-center gap-2 px-2 text-[length:var(--text-md)] ${openRowClass(isOpen)}`}
+        >
+            <span className="flex w-[var(--space-6)] shrink-0 items-center text-[length:var(--icon-md)] text-[var(--color-text-muted)]">
+                <FontAwesomeIcon icon={icon} fixedWidth={true} />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-[var(--color-text)]">{label}</span>
+        </ListItemButton>
     );
 }

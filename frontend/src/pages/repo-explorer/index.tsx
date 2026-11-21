@@ -2,19 +2,25 @@
 // The repo explorer page: shows the open repo in the repo details pane. Clicking its Commits link
 // opens the commit pane to its right with the first page of the repo's commits, clicking a commit
 // opens the commit details pane to its right and clicking a changed file there opens the file pane
-// to its right, like the column view of a file browser. The arrow keys, Enter and Escape move
-// through the panes as in the column view of macOS Finder.
+// to its right, like the column view of a file browser. Its Commit link opens the changes pane in
+// place of the commit pane, with the working tree's unstaged and staged files, and clicking a file
+// there opens its file pane. The arrow keys, Enter and Escape move through the panes as in the
+// column view of macOS Finder.
 //
 
 import { Link } from "@tanstack/react-router";
 import { JSX, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRepo } from "../../components/repo-context";
 import { ICommit, readCommitPage } from "../../lib/commits";
-import { closeCommitDetailsPane, closeFilePane, COMMITS_LINK, explorerStateAfterKey, initialRepoExplorerState, isExplorerKey, isExplorerKeyTarget, selectCommit, selectFile, selectLink } from "../../lib/repo-explorer";
+import { changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, COMMIT_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, initialRepoExplorerState, IRepoExplorerState, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectCommit, selectFile, selectLink } from "../../lib/repo-explorer";
+import { toggleFileStaged } from "../../lib/stage-file";
+import { IWorkingChanges, IWorkingFile, readWorkingChanges } from "../../lib/working-changes";
+import { ChangesPane } from "./components/changes-pane";
 import { CommitDetailsPane } from "./components/commit-details-pane";
 import { CommitPane } from "./components/commit-pane";
 import { FilePane } from "./components/file-pane";
 import { RepoDetailsPane } from "./components/repo-details-pane";
+import { WorkingFilePane } from "./components/working-file-pane";
 
 //
 // The most commits the commit pane lists. It lists the first page only, and this many fills a
@@ -65,17 +71,76 @@ export function RepoExplorerPage(): JSX.Element {
 // work at once after the left sidebar's link or Ctrl+1 opened it, while the focus would otherwise
 // stay on the link outside the page. It takes the focus and sets up the key listener with the items
 // just drawn as React draws them (in layout effects), before the browser paints, so a key pressed
-// as soon as the page or its items show acts on them.
+// as soon as the page or its items show acts on them. It reads the working tree's changes when the
+// Commit link opens the changes pane and again after each stage and unstage, so the lists show
+// what git holds. The changed file's pane is keyed by the number of reads, so its diff is read
+// afresh with the lists.
 //
 export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const [commits, setCommits] = useState<ICommit[] | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
     const [explorer, setExplorer] = useState(initialRepoExplorerState);
     const [filePaths, setFilePaths] = useState<string[]>([]);
+    const [changes, setChanges] = useState<IWorkingChanges | undefined>(undefined);
+    const [changesError, setChangesError] = useState<string | undefined>(undefined);
+    const [stageError, setStageError] = useState<string | undefined>(undefined);
+    const [changesReadCount, setChangesReadCount] = useState(0);
     const pageRef = useRef<HTMLElement>(null);
     const columnsRef = useRef<HTMLDivElement>(null);
     const dateFormat = Intl.DateTimeFormat().resolvedOptions();
     const isCommitsOpen = explorer.openLink === COMMITS_LINK;
+    const isChangesOpen = explorer.openLink === COMMIT_LINK;
+
+    //
+    // Reads the working tree's changes and shows them, then works out the explorer's state from
+    // them with stateAfterRead, so a moved file's row is followed and a row that has gone is
+    // dropped in the same step that draws the new lists.
+    //
+    function readChanges(stateAfterRead: (state: IRepoExplorerState) => IRepoExplorerState): void {
+        readWorkingChanges({
+            taskId: `working-changes-${Date.now()}-${Math.random()}`,
+            repoPath,
+        }, result => {
+            if (!result.ok) {
+                setChangesError(result.error.message);
+                return;
+            }
+            setChanges(result.value);
+            setChangesReadCount(count => count + 1);
+            setExplorer(state => keepListedChanges(stateAfterRead(state), changeKeysOf(result.value)));
+        });
+    }
+
+    //
+    // Stages a file in the unstaged list or unstages a file in the staged list, then reads the
+    // changes again with the file's selection and open pane following it to the other list. When
+    // git refuses, the changes pane shows why.
+    //
+    function onToggleStaged(file: IWorkingFile, isStaged: boolean): void {
+        toggleFileStaged({
+            taskId: `stage-file-${Date.now()}-${Math.random()}`,
+            repoPath,
+            path: file.path,
+            isStaged,
+        }, result => {
+            if (!result.ok) {
+                setStageError(result.error.message);
+                return;
+            }
+            setStageError(undefined);
+            readChanges(state => followMovedChange(state, changeKey(isStaged, file.path), changeKey(!isStaged, file.path)));
+        });
+    }
+
+    useEffect(() => {
+        setChanges(undefined);
+        setChangesError(undefined);
+        setStageError(undefined);
+        if (!isChangesOpen) {
+            return;
+        }
+        readChanges(state => state);
+    }, [repoPath, isChangesOpen]);
 
     useEffect(() => {
         setCommits(undefined);
@@ -111,13 +176,14 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
         if (explorer.openLink) {
             scrollLastPaneIntoView(columnsRef.current);
         }
-    }, [explorer.openLink, explorer.openHash, explorer.openPath]);
+    }, [explorer.openLink, explorer.openHash, explorer.openPath, explorer.openChange]);
 
     useLayoutEffect(() => {
         const items = {
-            links: [COMMITS_LINK],
+            links: [COMMITS_LINK, COMMIT_LINK],
             commitHashes: (commits ?? []).map(commit => commit.hash),
             filePaths,
+            changeKeys: changeKeysOf(changes),
         };
 
         function onKeyDown(event: KeyboardEvent): void {
@@ -139,7 +205,9 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
         return () => document.removeEventListener("keydown", onKeyDown, {
             capture: true,
         });
-    }, [commits, filePaths]);
+    }, [commits, filePaths, changes]);
+
+    const openChange = findChange(changes, explorer.openChange);
 
     return (
         <main ref={pageRef} tabIndex={-1} data-id="repo-explorer-page" className="graft-page-in outline-none flex h-full w-max min-w-full flex-col gap-4 bg-[var(--color-bg)] p-6">
@@ -168,6 +236,21 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                 )}
                 {explorer.openHash !== undefined && explorer.openPath !== undefined && (
                     <FilePane key={`${explorer.openHash} ${explorer.openPath}`} repoPath={repoPath} hash={explorer.openHash} path={explorer.openPath} isActive={explorer.activePaneIndex === 3} onClose={() => setExplorer(closeFilePane)} />
+                )}
+                {isChangesOpen && (
+                    <ChangesPane
+                        changes={changes}
+                        error={changesError}
+                        stageError={stageError}
+                        selectedKey={explorer.selectedChange}
+                        openKey={explorer.openChange}
+                        isActive={explorer.activePaneIndex === 1}
+                        onSelectChange={key => setExplorer(state => selectChange(state, key))}
+                        onToggleStaged={onToggleStaged}
+                    />
+                )}
+                {isChangesOpen && openChange && (
+                    <WorkingFilePane key={`${explorer.openChange} ${changesReadCount}`} repoPath={repoPath} file={openChange.file} isStaged={openChange.isStaged} isActive={explorer.activePaneIndex === 2} onClose={() => setExplorer(closeChangeFilePane)} />
                 )}
             </div>
         </main>

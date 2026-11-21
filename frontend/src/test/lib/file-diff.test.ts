@@ -1,11 +1,11 @@
 //
-// Tests reading a file's diff in the frontend: the file diff task queued through a fake window.ziggy
-// made of Jest mocks and how the task's result is checked and turned into the diff, including
-// every way it can fail.
+// Tests reading a file's diff in the frontend: the file diff task and the working file diff task
+// queued through a fake window.ziggy made of Jest mocks and how the task's result is checked and
+// turned into the diff, including every way it can fail.
 //
 
 import type { ITaskCompletedEvent, ITaskResult } from "ziggy";
-import { fileDiffFromTaskResult, readFileDiff } from "../../lib/file-diff";
+import { fileDiffFromTaskResult, readFileDiff, readWorkingFileDiff } from "../../lib/file-diff";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../fake-ziggy";
 
 //
@@ -62,6 +62,51 @@ describe("readFileDiff", () => {
         expect(onRead).toHaveBeenCalledWith({
             ok: true,
             value: "+The second note.\n",
+        });
+    });
+});
+
+describe("readWorkingFileDiff", () => {
+    test("queues the working file diff task as interactive and gives the diff when it ends", () => {
+        const ziggy = installFakeTaskZiggy();
+        const onRead = jest.fn();
+        readWorkingFileDiff({
+            taskId: "t1",
+            repoPath: "/repo",
+            path: "new.txt",
+            isStaged: false,
+            status: "?",
+        }, onRead);
+        expect(ziggy.addTask).toHaveBeenCalledWith({
+            taskId: "t1",
+            taskType: "working-file-diff",
+            source: "repo-explorer-page",
+            data: {
+                repoPath: "/repo",
+                path: "new.txt",
+                isStaged: false,
+                status: "?",
+            },
+            priority: "interactive",
+        });
+
+        const callback: (event: ITaskCompletedEvent) => void = (ziggy.onTaskCompleted as jest.Mock).mock.calls[0][0];
+        callback({
+            taskId: "other",
+            result: succeededResult(null),
+        });
+        expect(onRead).not.toHaveBeenCalled();
+
+        callback({
+            taskId: "t1",
+            result: succeededResult({
+                diff: "+A new file.\n",
+            }),
+        });
+        expect(ziggy.removeTaskCompletedListener).toHaveBeenCalledWith(callback);
+        expect(onRead).toHaveBeenCalledWith({
+            ok: true,
+            value: "+A new file.\n",
         });
     });
 });

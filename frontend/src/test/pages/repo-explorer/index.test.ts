@@ -10,7 +10,10 @@
 // the active pane, open and close panes, and that they are left alone in a text box, outside the
 // page and with Ctrl held. Dates are checked against the browser's own locale and time zone, which
 // the page passes on. The page reads the open repo from a RepoProvider: it shows when no repo is
-// open and reads another repo afresh when one is opened in its place.
+// open and reads another repo afresh when one is opened in its place. Its Commit link opens the
+// changes pane, which reads the working tree's changes, opens a changed file's pane on a click or
+// on Enter, and stages or unstages a file and reads the changes again, with the file's pane
+// following the file to the other list.
 //
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
@@ -800,5 +803,217 @@ describe("scrollLastPaneIntoView", () => {
         scrollLastPaneIntoView(null);
         scrollLastPaneIntoView(document.createElement("div"));
         expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+});
+
+//
+// The working tree's changes as the working changes task gives them: notes.txt modified and
+// unstaged and old.txt deleted and staged.
+//
+const changesJson = {
+    unstaged: [{
+        status: "M",
+        path: "notes.txt",
+    }],
+    staged: [{
+        status: "D",
+        path: "old.txt",
+    }],
+};
+
+//
+// Reads the task type of window.ziggy's addTask call at the index.
+//
+function taskTypeAt(ziggy: FakeTaskZiggy, index: number): string {
+    return (ziggy.addTask as jest.Mock).mock.calls[index][0].taskType;
+}
+
+//
+// Shows the repo explorer page, clicks its Commit link and ends the working changes task with
+// `changesJson`.
+//
+async function openChanges(ziggy: FakeTaskZiggy): Promise<void> {
+    renderRepoExplorerPage("/repo");
+    fireEvent.click(await screen.findByText("Commit"));
+    await screen.findByText("Loading the changes.");
+    completeTaskAt(ziggy, 0, changesJson);
+    await screen.findByText("Unstaged (1)");
+}
+
+describe("RepoExplorerPage changes pane", () => {
+    test("opens the changes pane to the right of the repo details pane when the Commit link is clicked and reads the changes", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        expect(taskTypeAt(ziggy, 0)).toBe("working-changes");
+        expect((ziggy.addTask as jest.Mock).mock.calls[0][0].data).toEqual({
+            repoPath: "/repo",
+        });
+        const paneIds = Array.from(elementWithDataId("repo-explorer-columns").children).map(pane => pane.getAttribute("data-id"));
+        expect(paneIds).toEqual(["repo-details-pane", "changes-pane"]);
+        expect(elementWithDataId("change-unstaged-notes.txt").textContent).toBe("notes.txt");
+        expect(elementWithDataId("change-staged-old.txt").textContent).toBe("old.txt");
+        expect(scrolledDataIds()).toContain("changes-pane");
+    });
+
+    test("shows why the changes could not be read when the task failed", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        fireEvent.click(await screen.findByText("Commit"));
+        await screen.findByText("Loading the changes.");
+        completeTask(ziggy, {
+            taskId: "",
+            status: "failed",
+            errorMessage: "Running git status failed.",
+            type: "working-changes",
+            inputs: null,
+        });
+        expect((await screen.findByText("Running git status failed.")).getAttribute("data-id")).toBe("changes-error");
+    });
+
+    test("opens a changed file's pane with its unstaged diff when its row is clicked", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        fireEvent.click(elementWithDataId("change-unstaged-notes.txt"));
+        expect(taskTypeAt(ziggy, 1)).toBe("working-file-diff");
+        expect((ziggy.addTask as jest.Mock).mock.calls[1][0].data).toEqual({
+            repoPath: "/repo",
+            path: "notes.txt",
+            isStaged: false,
+            status: "M",
+        });
+        expect(elementWithDataId("file-pane-path").textContent).toBe("notes.txt");
+        expect(activePaneIds()).toEqual(["changes-pane"]);
+        expect(isSelected("change-unstaged-notes.txt")).toBe(true);
+        fireEvent.click(screen.getByLabelText("Close file diff"));
+        expect(document.querySelector("[data-id=\"file-pane\"]")).toBeNull();
+    });
+
+    test("stages a file, reads the changes again and follows the open file to the staged list", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        fireEvent.click(elementWithDataId("change-unstaged-notes.txt"));
+        fireEvent.click(elementWithDataId("stage-notes.txt"));
+        expect(taskTypeAt(ziggy, 2)).toBe("stage-file");
+        expect((ziggy.addTask as jest.Mock).mock.calls[2][0].data).toEqual({
+            repoPath: "/repo",
+            path: "notes.txt",
+        });
+        completeTaskAt(ziggy, 2, {
+            path: "notes.txt",
+        });
+        expect(taskTypeAt(ziggy, 3)).toBe("working-changes");
+        completeTaskAt(ziggy, 3, {
+            unstaged: [],
+            staged: [
+                {
+                    status: "M",
+                    path: "notes.txt",
+                },
+                {
+                    status: "D",
+                    path: "old.txt",
+                },
+            ],
+        });
+        expect(await screen.findByText("Staged (2)")).not.toBeNull();
+        expect(elementWithDataId("changes-unstaged-empty").textContent).toBe("Everything is staged.");
+        expect(isSelected("change-staged-notes.txt")).toBe(true);
+        expect(elementWithDataId("change-staged-notes.txt").getAttribute("aria-current")).toBe("true");
+        expect(taskTypeAt(ziggy, 4)).toBe("working-file-diff");
+        expect((ziggy.addTask as jest.Mock).mock.calls[4][0].data.isStaged).toBe(true);
+    });
+
+    test("unstages a file and closes no pane when another file was open", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        fireEvent.click(elementWithDataId("unstage-old.txt"));
+        expect(taskTypeAt(ziggy, 1)).toBe("unstage-file");
+        completeTaskAt(ziggy, 1, {
+            path: "old.txt",
+        });
+        completeTaskAt(ziggy, 2, {
+            unstaged: [
+                {
+                    status: "M",
+                    path: "notes.txt",
+                },
+                {
+                    status: "D",
+                    path: "old.txt",
+                },
+            ],
+            staged: [],
+        });
+        expect(await screen.findByText("Unstaged (2)")).not.toBeNull();
+        expect(elementWithDataId("changes-staged-empty").textContent).toBe("Nothing staged yet.");
+    });
+
+    test("closes a changed file's pane when its row has gone after the changes are read again", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        fireEvent.click(elementWithDataId("change-staged-old.txt"));
+        fireEvent.click(elementWithDataId("stage-notes.txt"));
+        completeTaskAt(ziggy, 2, {
+            path: "notes.txt",
+        });
+        completeTaskAt(ziggy, 3, {
+            unstaged: [],
+            staged: [{
+                status: "M",
+                path: "notes.txt",
+            }],
+        });
+        await screen.findByText("Staged (1)");
+        expect(document.querySelector("[data-id=\"file-pane\"]")).toBeNull();
+    });
+
+    test("shows why a file was not staged and keeps the lists", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        fireEvent.click(elementWithDataId("stage-notes.txt"));
+        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[1][0];
+        const onTaskCompleted = (ziggy.onTaskCompleted as jest.Mock).mock.calls[1][0];
+        act(() => {
+            onTaskCompleted({
+                taskId: task.taskId,
+                result: {
+                    taskId: task.taskId,
+                    status: "failed",
+                    errorMessage: "Running git add failed.",
+                    type: "stage-file",
+                    inputs: null,
+                },
+            });
+        });
+        expect(elementWithDataId("changes-stage-error").textContent).toBe("Running git add failed.");
+        expect(elementWithDataId("change-unstaged-notes.txt")).not.toBeNull();
+        expect((ziggy.addTask as jest.Mock).mock.calls.length).toBe(2);
+    });
+
+    test("the keys open the changes pane, move through its rows, open a file and close the panes", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        await screen.findByText("Commit");
+        pressKey("ArrowDown");
+        pressKey("ArrowDown");
+        expect(isSelected("repo-details-commit")).toBe(true);
+        pressKey("Enter");
+        expect(activePaneIds()).toEqual(["changes-pane"]);
+        completeTaskAt(ziggy, 0, changesJson);
+        await screen.findByText("Unstaged (1)");
+        pressKey("ArrowDown");
+        pressKey("ArrowDown");
+        expect(isSelected("change-staged-old.txt")).toBe(true);
+        pressKey("Enter");
+        expect(activePaneIds()).toEqual(["file-pane"]);
+        expect((ziggy.addTask as jest.Mock).mock.calls[1][0].data.isStaged).toBe(true);
+        pressKey("ArrowDown");
+        expect(isSelected("change-staged-old.txt")).toBe(true);
+        pressKey("Escape");
+        expect(document.querySelector("[data-id=\"file-pane\"]")).toBeNull();
+        expect(activePaneIds()).toEqual(["changes-pane"]);
+        pressKey("Escape");
+        expect(document.querySelector("[data-id=\"changes-pane\"]")).toBeNull();
+        expect(isSelected("repo-details-commit")).toBe(true);
     });
 });

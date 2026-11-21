@@ -1,8 +1,8 @@
 //
 // Tests Graft's declaration to Ziggy: the app registers every feature's messages and tasks. It
-// checks the pick-repo-folder and zoom messages and the commits, commit-details, file-diff and
-// pick-repo-folder tasks are registered, each found by its name, so a feature that adds a message
-// or a task leaves these tests as they are.
+// checks the pick-repo-folder and zoom messages and the repo explorer's, the changes pane's and
+// open-repo's tasks are registered, each found by its name, so a feature that adds a message or a
+// task leaves these tests as they are.
 //
 
 const std = @import("std");
@@ -42,4 +42,11 @@ test "the app registers the repo explorer's and open-repo's tasks" {
     try std.testing.expect(has_task("commit-details"));
     try std.testing.expect(has_task("file-diff"));
     try std.testing.expect(has_task("pick-repo-folder"));
+}
+
+test "the app registers the changes pane's tasks" {
+    try std.testing.expect(has_task("working-changes"));
+    try std.testing.expect(has_task("working-file-diff"));
+    try std.testing.expect(has_task("stage-file"));
+    try std.testing.expect(has_task("unstage-file"));
 }

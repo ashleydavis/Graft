@@ -1,7 +1,8 @@
 //
 // The file pane: the column that opens to the right of the commit details pane when a changed file
 // is clicked, with the file's diff in the commit, its lines numbered and coloured as the style
-// guide's diff view draws them.
+// guide's diff view draws them. The changes pane opens the same card for a changed file in the
+// working tree.
 //
 
 import { JSX, useEffect, useState } from "react";
@@ -33,13 +34,7 @@ export interface IFilePaneProps {
 }
 
 //
-// Reads the file's diff with the file diff task and shows it in a rounded card headed by the
-// file's icon and path, with a button that closes the pane, as the style guide's file diff card is
-// headed. It shows that it is loading until the task ends and what went wrong when the diff could
-// not be read. The card is 840 pixels wide, or the width of the page's visible area when that is
-// narrower, so the whole diff can be scrolled into view. The card's border is in the style guide's
-// active pane colour while the pane is active. The card has no shadow, as the style guide's file
-// diff card has none. The card fades in as it opens.
+// Reads the file's diff in the commit with the file diff task and shows it in the file diff card.
 //
 export function FilePane({ repoPath, hash, path, isActive, onClose }: IFilePaneProps): JSX.Element {
     const [diff, setDiff] = useState<string | undefined>(undefined);
@@ -61,6 +56,39 @@ export function FilePane({ repoPath, hash, path, isActive, onClose }: IFilePaneP
         });
     }, [repoPath, hash, path]);
 
+    return <FileDiffCard path={path} diff={diff} error={error} isActive={isActive} onClose={onClose} />;
+}
+
+//
+// What the file diff card shows and what it reports.
+//
+export interface IFileDiffCardProps {
+    // The path of the file from the root of the repo.
+    path: string;
+
+    // The file's diff, or undefined until it is read.
+    diff: string | undefined;
+
+    // Why the diff could not be read, or undefined.
+    error: string | undefined;
+
+    // Whether the pane is the repo explorer's active pane, which its border shows.
+    isActive: boolean;
+
+    // Called when the user closes the pane.
+    onClose(): void;
+}
+
+//
+// Shows the diff in a rounded card headed by the file's icon and path, with a button that closes
+// the pane, as the style guide's file diff card is headed, so the file pane and the changes pane's
+// file pane look the same. It shows that the diff is loading until it is read and what went wrong
+// when it could not be. The card is 840 pixels wide, or the width of the page's visible area when
+// that is narrower, so the whole diff can be scrolled into view. The card's border is in the style
+// guide's active pane colour while the pane is active. The card has no shadow, as the style
+// guide's file diff card has none. The card fades in as it opens.
+//
+export function FileDiffCard({ path, diff, error, isActive, onClose }: IFileDiffCardProps): JSX.Element {
     return (
         <section data-id="file-pane" aria-label="File diff" className={`graft-pane-in flex w-[min(840px,calc(100cqw-var(--space-6)*2))] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activeFlatPaneClass(isActive)}`}>
             <div className="flex flex-none items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-panel)] p-2">

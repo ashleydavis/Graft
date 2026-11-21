@@ -4,15 +4,19 @@
 // of macOS Finder. The repo explorer page keeps the state and draws it.
 //
 
+import { IWorkingChanges, IWorkingFile } from "./working-changes";
+
 //
 // The repo explorer's panes and their selections. The open panes are the repo details pane, then
 // the commit pane while the Commits link is open, then the commit details pane while a commit is
-// open, then the file pane while a file is open.
+// open, then the file pane while a file is open. While the Commit link is open the changes pane
+// follows the repo details pane in place of the commit pane, then the file pane while a changed
+// file is open.
 //
 export interface IRepoExplorerState {
     // The position of the active pane among the open panes: 0 for the repo details pane, 1 for
-    // the commit pane, 2 for the commit details pane and 3 for the file pane. The keys act on this
-    // pane.
+    // the commit pane, 2 for the commit details pane and 3 for the file pane, or 1 for the changes
+    // pane and 2 for the file pane while the Commit link is open. The keys act on this pane.
     activePaneIndex: number;
 
     // The name of the selected link in the repo details pane, as in "commits", or undefined before
@@ -34,6 +38,14 @@ export interface IRepoExplorerState {
 
     // The path of the file whose file pane is open, or undefined when it is closed.
     openPath: string | undefined;
+
+    // The key of the selected file in the changes pane, as changeKey makes it, or undefined before
+    // one is selected.
+    selectedChange: string | undefined;
+
+    // The key of the changed file whose file pane is open, as changeKey makes it, or undefined when
+    // it is closed.
+    openChange: string | undefined;
 }
 
 //
@@ -49,6 +61,10 @@ export interface IRepoExplorerItems {
     // The paths of the open commit's changed files, in the order the commit details pane lists
     // them, or none until they are read.
     filePaths: string[];
+
+    // The keys of the files in the changes pane, as changeKey makes them, the unstaged files then
+    // the staged files, as the pane lists them, or none until they are read.
+    changeKeys: string[];
 }
 
 //
@@ -56,6 +72,24 @@ export interface IRepoExplorerItems {
 // the link under this name and the state records it, so both use this one name.
 //
 export const COMMITS_LINK = "commits";
+
+//
+// The name of the repo details pane's Commit link, which opens the changes pane, used by the page
+// and the state as COMMITS_LINK is.
+//
+export const COMMIT_LINK = "commit";
+
+//
+// Makes the key that names one row of the changes pane: the list it is in and the file's path. A
+// file with staged and unstaged changes has a row in each list, so the path alone cannot name the
+// row.
+//
+export function changeKey(isStaged: boolean, path: string): string {
+    if (isStaged) {
+        return `staged:${path}`;
+    }
+    return `unstaged:${path}`;
+}
 
 //
 // The repo explorer as its page first shows it: the repo details pane alone, active, with nothing
@@ -69,6 +103,8 @@ export const initialRepoExplorerState: IRepoExplorerState = {
     openHash: undefined,
     selectedPath: undefined,
     openPath: undefined,
+    selectedChange: undefined,
+    openChange: undefined,
 };
 
 //
@@ -86,6 +122,12 @@ export function isExplorerKey(key: string): boolean {
 export function openPaneCount(state: IRepoExplorerState): number {
     if (state.openLink === undefined) {
         return 1;
+    }
+    if (state.openLink === COMMIT_LINK) {
+        if (state.openChange === undefined) {
+            return 2;
+        }
+        return 3;
     }
     if (state.openHash === undefined) {
         return 2;
@@ -127,7 +169,77 @@ export function selectLink(link: string): IRepoExplorerState {
         openHash: undefined,
         selectedPath: undefined,
         openPath: undefined,
+        selectedChange: undefined,
+        openChange: undefined,
     };
+}
+
+//
+// Selects the changed file and opens its file pane, with the changes pane active, as a click on
+// the file's row does.
+//
+export function selectChange(state: IRepoExplorerState, key: string): IRepoExplorerState {
+    return {
+        ...state,
+        activePaneIndex: 1,
+        selectedChange: key,
+        openChange: key,
+    };
+}
+
+//
+// Closes the file pane of a changed file, as its close button and Escape do, and makes the changes
+// pane active when the file pane was.
+//
+export function closeChangeFilePane(state: IRepoExplorerState): IRepoExplorerState {
+    return {
+        ...state,
+        activePaneIndex: Math.min(state.activePaneIndex, 1),
+        openChange: undefined,
+    };
+}
+
+//
+// Moves the changes pane's selection and open file from the row of a file that was staged or
+// unstaged to its row in the other list, so the user keeps looking at the file they moved. Any
+// other selection stays as it is.
+//
+export function followMovedChange(state: IRepoExplorerState, fromKey: string, toKey: string): IRepoExplorerState {
+    let selectedChange = state.selectedChange;
+    if (selectedChange === fromKey) {
+        selectedChange = toKey;
+    }
+    let openChange = state.openChange;
+    if (openChange === fromKey) {
+        openChange = toKey;
+    }
+    return {
+        ...state,
+        selectedChange,
+        openChange,
+    };
+}
+
+//
+// Drops the changes pane's selection and open file when their rows are no longer listed after the
+// changes are read again, closing the file pane, so the panes never show a row that has gone.
+//
+export function keepListedChanges(state: IRepoExplorerState, changeKeys: string[]): IRepoExplorerState {
+    let next = state;
+    if (next.openChange !== undefined) {
+        if (!changeKeys.includes(next.openChange)) {
+            next = closeChangeFilePane(next);
+        }
+    }
+    if (next.selectedChange !== undefined) {
+        if (!changeKeys.includes(next.selectedChange)) {
+            next = {
+                ...next,
+                selectedChange: undefined,
+            };
+        }
+    }
+    return next;
 }
 
 //
@@ -186,11 +298,11 @@ export function closeCommitDetailsPane(state: IRepoExplorerState): IRepoExplorer
 }
 
 //
-// Closes the commit pane and every pane to its right, as Escape does, and makes the repo details
-// pane active. The Commits link stays selected, and the commit pane opens afresh when it opens
-// again.
+// Closes the pane the open link opened, the commit pane or the changes pane, and every pane to its
+// right, as Escape does, and makes the repo details pane active. The link stays selected, and its
+// pane opens afresh when it opens again.
 //
-export function closeCommitPane(state: IRepoExplorerState): IRepoExplorerState {
+export function closeLinkPane(state: IRepoExplorerState): IRepoExplorerState {
     return {
         ...state,
         activePaneIndex: 0,
@@ -199,6 +311,8 @@ export function closeCommitPane(state: IRepoExplorerState): IRepoExplorerState {
         openHash: undefined,
         selectedPath: undefined,
         openPath: undefined,
+        selectedChange: undefined,
+        openChange: undefined,
     };
 }
 
@@ -212,6 +326,15 @@ export function moveSelection(state: IRepoExplorerState, items: IRepoExplorerIte
             ...state,
             selectedLink: itemAfterMove(items.links, state.selectedLink, step),
         };
+    }
+    if (state.openLink === COMMIT_LINK) {
+        if (state.activePaneIndex === 1) {
+            return {
+                ...state,
+                selectedChange: itemAfterMove(items.changeKeys, state.selectedChange, step),
+            };
+        }
+        return state;
     }
     if (state.activePaneIndex === 1) {
         return {
@@ -230,8 +353,9 @@ export function moveSelection(state: IRepoExplorerState, items: IRepoExplorerIte
 
 //
 // Opens the selected item of the active pane, as Enter does: the selected link opens its pane, the
-// selected commit opens its details pane and the selected file opens its file pane, and the new
-// pane becomes active. With nothing selected, or in the file pane, nothing changes.
+// selected commit opens its details pane and the selected file, in a commit or in the changes
+// pane, opens its file pane, and the new pane becomes active. With no item selected, or in the
+// file pane, the state stays as it is.
 //
 export function openSelection(state: IRepoExplorerState): IRepoExplorerState {
     if (state.activePaneIndex === 0) {
@@ -242,6 +366,18 @@ export function openSelection(state: IRepoExplorerState): IRepoExplorerState {
             ...selectLink(state.selectedLink),
             activePaneIndex: 1,
         };
+    }
+    if (state.openLink === COMMIT_LINK) {
+        if (state.activePaneIndex === 1) {
+            if (state.selectedChange === undefined) {
+                return state;
+            }
+            return {
+                ...selectChange(state, state.selectedChange),
+                activePaneIndex: 2,
+            };
+        }
+        return state;
     }
     if (state.activePaneIndex === 1) {
         if (state.selectedHash === undefined) {
@@ -270,6 +406,14 @@ export function openSelection(state: IRepoExplorerState): IRepoExplorerState {
 //
 export function closeRightmostPane(state: IRepoExplorerState): IRepoExplorerState {
     const paneCount = openPaneCount(state);
+    if (state.openLink === COMMIT_LINK) {
+        if (paneCount === 3) {
+            return {
+                ...closeChangeFilePane(state),
+                activePaneIndex: 1,
+            };
+        }
+    }
     if (paneCount === 4) {
         return {
             ...closeFilePane(state),
@@ -283,7 +427,7 @@ export function closeRightmostPane(state: IRepoExplorerState): IRepoExplorerStat
         };
     }
     if (paneCount === 2) {
-        return closeCommitPane(state);
+        return closeLinkPane(state);
     }
     return state;
 }
@@ -346,4 +490,59 @@ export function isExplorerKeyTarget(target: EventTarget | null, page: Element | 
         return false;
     }
     return target.closest("input, textarea, select, button, a") === null;
+}
+
+//
+// Makes the keys of the changes pane's rows, the unstaged files then the staged files, as the pane
+// lists them, or none before the changes are read, for the keys to move through and to drop a row
+// that has gone.
+//
+export function changeKeysOf(changes: IWorkingChanges | undefined): string[] {
+    if (!changes) {
+        return [];
+    }
+    return [
+        ...changes.unstaged.map(file => changeKey(false, file.path)),
+        ...changes.staged.map(file => changeKey(true, file.path)),
+    ];
+}
+
+//
+// A changed file and the list it is in, as the changes pane's row with a key names it.
+//
+export interface IChangeRow {
+    // The changed file.
+    file: IWorkingFile;
+
+    // Whether the file is in the staged list.
+    isStaged: boolean;
+}
+
+//
+// Searches the changes for the row with the key, so the file pane knows which file to show and
+// from which list. It finds no row for no key, before the changes are read or when the row has
+// gone.
+//
+export function findChange(changes: IWorkingChanges | undefined, key: string | undefined): IChangeRow | undefined {
+    if (!changes) {
+        return undefined;
+    }
+    if (key === undefined) {
+        return undefined;
+    }
+    const unstaged = changes.unstaged.find(file => changeKey(false, file.path) === key);
+    if (unstaged) {
+        return {
+            file: unstaged,
+            isStaged: false,
+        };
+    }
+    const staged = changes.staged.find(file => changeKey(true, file.path) === key);
+    if (staged) {
+        return {
+            file: staged,
+            isStaged: true,
+        };
+    }
+    return undefined;
 }

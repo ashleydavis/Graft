@@ -4,12 +4,18 @@
 //
 
 import {
+    changeKey,
+    changeKeysOf,
+    closeChangeFilePane,
     closeCommitDetailsPane,
-    closeCommitPane,
     closeFilePane,
+    closeLinkPane,
     closeRightmostPane,
+    COMMIT_LINK,
     COMMITS_LINK,
     explorerStateAfterKey,
+    findChange,
+    followMovedChange,
     initialRepoExplorerState,
     IRepoExplorerItems,
     IRepoExplorerState,
@@ -18,19 +24,23 @@ import {
     itemAfterMove,
     moveSelection,
     openPaneCount,
+    keepListedChanges,
     openSelection,
+    selectChange,
     selectCommit,
     selectFile,
     selectLink,
 } from "../../lib/repo-explorer";
 
 //
-// The items the panes list: the Commits link, three commits and two changed files.
+// The items the panes list: the Commits and Commit links, three commits, two changed files in the
+// commit and three rows in the changes pane, notes.txt in both lists.
 //
 const items: IRepoExplorerItems = {
-    links: [COMMITS_LINK],
+    links: [COMMITS_LINK, COMMIT_LINK],
     commitHashes: ["aaa", "bbb", "ccc"],
     filePaths: ["README.md", "notes.txt"],
+    changeKeys: [changeKey(false, "notes.txt"), changeKey(false, "new.txt"), changeKey(true, "notes.txt")],
 };
 
 //
@@ -44,6 +54,29 @@ const commitsOpen: IRepoExplorerState = {
     openHash: undefined,
     selectedPath: undefined,
     openPath: undefined,
+    selectedChange: undefined,
+    openChange: undefined,
+};
+
+//
+// The explorer with the changes pane open and active and no changed file selected.
+//
+const changesOpen: IRepoExplorerState = {
+    ...initialRepoExplorerState,
+    activePaneIndex: 1,
+    selectedLink: COMMIT_LINK,
+    openLink: COMMIT_LINK,
+};
+
+//
+// The explorer with unstaged notes.txt open and selected in the changes pane and its file pane
+// active.
+//
+const changeFileOpen: IRepoExplorerState = {
+    ...changesOpen,
+    activePaneIndex: 2,
+    selectedChange: changeKey(false, "notes.txt"),
+    openChange: changeKey(false, "notes.txt"),
 };
 
 //
@@ -77,6 +110,8 @@ describe("initialRepoExplorerState", () => {
             openHash: undefined,
             selectedPath: undefined,
             openPath: undefined,
+            selectedChange: undefined,
+            openChange: undefined,
         });
     });
 });
@@ -101,6 +136,11 @@ describe("openPaneCount", () => {
         expect(openPaneCount(commitsOpen)).toBe(2);
         expect(openPaneCount(detailsOpen)).toBe(3);
         expect(openPaneCount(allOpen)).toBe(4);
+    });
+
+    test("counts the repo details pane, the changes pane and a changed file's pane that are open", () => {
+        expect(openPaneCount(changesOpen)).toBe(2);
+        expect(openPaneCount(changeFileOpen)).toBe(3);
     });
 });
 
@@ -137,6 +177,8 @@ describe("selectLink", () => {
             openHash: undefined,
             selectedPath: undefined,
             openPath: undefined,
+            selectedChange: undefined,
+            openChange: undefined,
         });
     });
 });
@@ -197,12 +239,87 @@ describe("closeCommitDetailsPane", () => {
     });
 });
 
-describe("closeCommitPane", () => {
+describe("closeLinkPane", () => {
     test("closes the commit pane and every pane to its right, keeping the Commits link selected", () => {
-        expect(closeCommitPane(allOpen)).toEqual({
+        expect(closeLinkPane(allOpen)).toEqual({
             ...initialRepoExplorerState,
             selectedLink: COMMITS_LINK,
         });
+    });
+
+    test("closes the changes pane and its file pane, keeping the Commit link selected", () => {
+        expect(closeLinkPane(changeFileOpen)).toEqual({
+            ...initialRepoExplorerState,
+            selectedLink: COMMIT_LINK,
+        });
+    });
+});
+
+describe("changeKey", () => {
+    test("names a row by its list and path, so a file in both lists has two keys", () => {
+        expect(changeKey(false, "notes.txt")).toBe("unstaged:notes.txt");
+        expect(changeKey(true, "notes.txt")).toBe("staged:notes.txt");
+    });
+});
+
+describe("selectChange", () => {
+    test("selects the changed file and opens its file pane with the changes pane active", () => {
+        expect(selectChange({
+            ...changeFileOpen,
+            activePaneIndex: 0,
+        }, changeKey(true, "notes.txt"))).toEqual({
+            ...changesOpen,
+            selectedChange: changeKey(true, "notes.txt"),
+            openChange: changeKey(true, "notes.txt"),
+        });
+    });
+});
+
+describe("closeChangeFilePane", () => {
+    test("closes the changed file's pane and makes the changes pane active, keeping it selected", () => {
+        expect(closeChangeFilePane(changeFileOpen)).toEqual({
+            ...changeFileOpen,
+            activePaneIndex: 1,
+            openChange: undefined,
+        });
+    });
+
+    test("leaves the repo details pane active when it was", () => {
+        expect(closeChangeFilePane({
+            ...changeFileOpen,
+            activePaneIndex: 0,
+        }).activePaneIndex).toBe(0);
+    });
+});
+
+describe("followMovedChange", () => {
+    test("moves the selection and the open file to the file's row in the other list", () => {
+        expect(followMovedChange(changeFileOpen, changeKey(false, "notes.txt"), changeKey(true, "notes.txt"))).toEqual({
+            ...changeFileOpen,
+            selectedChange: changeKey(true, "notes.txt"),
+            openChange: changeKey(true, "notes.txt"),
+        });
+    });
+
+    test("leaves the selection and the open file alone when another file moved", () => {
+        expect(followMovedChange(changeFileOpen, changeKey(false, "new.txt"), changeKey(true, "new.txt"))).toEqual(changeFileOpen);
+    });
+});
+
+describe("keepListedChanges", () => {
+    test("keeps a selection and an open file that are still listed", () => {
+        expect(keepListedChanges(changeFileOpen, items.changeKeys)).toBe(changeFileOpen);
+    });
+
+    test("drops a selection and an open file whose rows have gone, closing the file pane", () => {
+        expect(keepListedChanges(changeFileOpen, [changeKey(true, "notes.txt")])).toEqual({
+            ...changesOpen,
+            activePaneIndex: 1,
+        });
+    });
+
+    test("changes nothing with nothing selected or open", () => {
+        expect(keepListedChanges(changesOpen, [])).toBe(changesOpen);
     });
 });
 
@@ -222,6 +339,15 @@ describe("moveSelection", () => {
 
     test("changes nothing in the file pane, which lists no items", () => {
         expect(moveSelection(allOpen, items, 1)).toBe(allOpen);
+        expect(moveSelection(changeFileOpen, items, 1)).toBe(changeFileOpen);
+    });
+
+    test("moves through the unstaged rows then the staged rows in the changes pane", () => {
+        expect(moveSelection(changesOpen, items, 1).selectedChange).toBe(changeKey(false, "notes.txt"));
+        expect(moveSelection({
+            ...changesOpen,
+            selectedChange: changeKey(false, "new.txt"),
+        }, items, 1).selectedChange).toBe(changeKey(true, "notes.txt"));
     });
 });
 
@@ -262,6 +388,27 @@ describe("openSelection", () => {
         expect(openSelection(commitsOpen)).toBe(commitsOpen);
         expect(openSelection(detailsOpen)).toBe(detailsOpen);
         expect(openSelection(allOpen)).toBe(allOpen);
+        expect(openSelection(changesOpen)).toBe(changesOpen);
+        expect(openSelection(changeFileOpen)).toBe(changeFileOpen);
+    });
+
+    test("opens the selected Commit link and makes the changes pane active", () => {
+        expect(openSelection({
+            ...initialRepoExplorerState,
+            selectedLink: COMMIT_LINK,
+        })).toEqual(changesOpen);
+    });
+
+    test("opens the selected changed file and makes its file pane active", () => {
+        expect(openSelection({
+            ...changesOpen,
+            selectedChange: changeKey(true, "notes.txt"),
+        })).toEqual({
+            ...changesOpen,
+            activePaneIndex: 2,
+            selectedChange: changeKey(true, "notes.txt"),
+            openChange: changeKey(true, "notes.txt"),
+        });
     });
 });
 
@@ -289,7 +436,22 @@ describe("closeRightmostPane", () => {
     });
 
     test("closes the commit pane and makes the repo details pane active", () => {
-        expect(closeRightmostPane(commitsOpen)).toEqual(closeCommitPane(commitsOpen));
+        expect(closeRightmostPane(commitsOpen)).toEqual(closeLinkPane(commitsOpen));
+    });
+
+    test("closes a changed file's pane and makes the changes pane active", () => {
+        expect(closeRightmostPane({
+            ...changeFileOpen,
+            activePaneIndex: 0,
+        })).toEqual({
+            ...changeFileOpen,
+            activePaneIndex: 1,
+            openChange: undefined,
+        });
+    });
+
+    test("closes the changes pane and makes the repo details pane active", () => {
+        expect(closeRightmostPane(changesOpen)).toEqual(closeLinkPane(changesOpen));
     });
 
     test("changes nothing with only the repo details pane open", () => {
@@ -408,5 +570,43 @@ describe("isExplorerKeyTarget", () => {
         expect(isExplorerKeyTarget(document.body, page, true)).toBe(false);
         expect(isExplorerKeyTarget(null, page, false)).toBe(false);
         expect(isExplorerKeyTarget(document, page, false)).toBe(false);
+    });
+});
+
+//
+// The working tree's changes as the working changes task gives them: notes.txt modified and
+// unstaged and old.txt deleted and staged.
+//
+const changesJson = {
+    unstaged: [{
+        status: "M",
+        path: "notes.txt",
+    }],
+    staged: [{
+        status: "D",
+        path: "old.txt",
+    }],
+};
+
+describe("changeKeysOf", () => {
+    test("lists the unstaged rows then the staged rows, or none before the changes are read", () => {
+        expect(changeKeysOf(changesJson)).toEqual(["unstaged:notes.txt", "staged:old.txt"]);
+        expect(changeKeysOf(undefined)).toEqual([]);
+    });
+});
+
+describe("findChange", () => {
+    test("finds the row with the key in either list and nothing for no key or a row that has gone", () => {
+        expect(findChange(changesJson, "unstaged:notes.txt")).toEqual({
+            file: changesJson.unstaged[0],
+            isStaged: false,
+        });
+        expect(findChange(changesJson, "staged:old.txt")).toEqual({
+            file: changesJson.staged[0],
+            isStaged: true,
+        });
+        expect(findChange(changesJson, "staged:notes.txt")).toBeUndefined();
+        expect(findChange(changesJson, undefined)).toBeUndefined();
+        expect(findChange(undefined, "staged:old.txt")).toBeUndefined();
     });
 });

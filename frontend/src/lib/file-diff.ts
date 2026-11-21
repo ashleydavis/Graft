@@ -1,6 +1,7 @@
 //
-// Reads the diff of one file in a commit for the frontend: queues the backend's file diff task,
-// which runs git diff-tree and turns the task's result into the diff.
+// Reads the diff of one file for the frontend, in a commit or in the working tree: queues the
+// backend's file diff task, which runs git diff-tree, or its working file diff task, which runs
+// git diff, and turns the task's result into the diff.
 //
 
 import type { IAddTask, ITaskCompletedEvent, ITaskResult } from "ziggy";
@@ -76,4 +77,56 @@ export function fileDiffFromTaskResult(result: ITaskResult): Result<string, IRea
         name: "UnexpectedOutput",
         message: "The file diff task gave a result that is not a diff. Graft's backend and frontend may be from different builds, so build Graft again.",
     });
+}
+
+//
+// Which changed file's diff to read from the working tree and the id to queue its task under.
+//
+export interface IWorkingFileDiffRequest {
+    // The id of the working file diff task, which its task-completed event carries.
+    taskId: string;
+
+    // The path of the repo the file is in.
+    repoPath: string;
+
+    // The path of the file from the root of the repo.
+    path: string;
+
+    // Whether the file is in the staged list, so its staged changes are read, or in the unstaged
+    // list, so its unstaged changes are read.
+    isStaged: boolean;
+
+    // The file's one letter status in its list, which marks an untracked file ("?") for the
+    // backend.
+    status: string;
+}
+
+//
+// Reads a changed file's staged or unstaged diff: queues the working file diff task as
+// interactive, because the user is waiting on it, and calls onRead with the diff or with why it
+// could not be read once the task ends. Its result is laid out as the file diff task's.
+//
+export function readWorkingFileDiff(request: IWorkingFileDiffRequest, onRead: (result: Result<string, IReadCommitsError>) => void): void {
+    function onTaskCompleted(event: ITaskCompletedEvent): void {
+        if (event.taskId !== request.taskId) {
+            return;
+        }
+        window.ziggy.removeTaskCompletedListener(onTaskCompleted);
+        onRead(fileDiffFromTaskResult(event.result));
+    }
+
+    window.ziggy.onTaskCompleted(onTaskCompleted);
+    const task: IAddTask = {
+        taskId: request.taskId,
+        taskType: "working-file-diff",
+        source: "repo-explorer-page",
+        data: {
+            repoPath: request.repoPath,
+            path: request.path,
+            isStaged: request.isStaged,
+            status: request.status,
+        },
+        priority: "interactive",
+    };
+    window.ziggy.addTask(task);
 }
