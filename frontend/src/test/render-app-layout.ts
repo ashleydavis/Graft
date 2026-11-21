@@ -52,10 +52,10 @@ export function sendTaskEvent(event: ITaskEvent<unknown>): void {
 }
 
 //
-// The calls of window.ziggy a test may give the layout: AppTheme's, the action calls and the
-// folder picker's invoke.
+// The calls of window.ziggy a test may give the layout: AppTheme's, the action calls, the folder
+// picker's invoke and runAction, which the top bar's keyboard shortcuts button calls.
 //
-export type LayoutZiggy = IFakeThemeZiggy & IFakeActionZiggy & Pick<IZiggyBridge, "invoke" | "newWindow">;
+export type LayoutZiggy = IFakeThemeZiggy & IFakeActionZiggy & Pick<IZiggyBridge, "invoke" | "newWindow" | "runAction">;
 
 //
 // Renders the layout with the repo open, or none for undefined, around mocks of the About page, the

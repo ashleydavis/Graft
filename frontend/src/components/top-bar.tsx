@@ -1,10 +1,10 @@
 //
 // The top bar: the bar across the top of the window with Graft's name, the breadcrumb trail, the
-// reminder of the key that shows the keyboard shortcuts, the theme menu and the buttons that
-// minimise and expand the left sidebar and slide the right sidebar in and out.
+// reminder of the key that shows the keyboard shortcuts, the button that shows them, the theme menu
+// and the buttons that minimise and expand the left sidebar and slide the right sidebar in and out.
 //
 
-import { faBars, faTableColumns } from "@fortawesome/free-solid-svg-icons";
+import { faBars, faKeyboard, faTableColumns } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { IconButton, Tooltip } from "@mui/material";
 import { JSX } from "react";
@@ -12,7 +12,21 @@ import { ITrailStep } from "../lib/breadcrumb-trail";
 import { shortcutsOverlayCtrlKeys } from "../lib/shortcuts";
 import { ThemeSetting } from "../lib/theme";
 import { BreadcrumbTrail } from "./breadcrumb-trail";
+import { shortcutsOverlayAction } from "./shortcuts-overlay";
 import { ThemeMenu } from "./theme-menu";
+
+//
+// The text of the keyboard shortcuts button's label and tooltip, naming what a click does.
+//
+export const shortcutsButtonLabel = "Show keyboard shortcuts";
+
+//
+// Logs that the top bar's keyboard shortcuts button could not run the Keyboard Shortcuts action,
+// with what to look at, because the button has no other way to report it.
+//
+export function reportShortcutsButtonFailure(error: unknown): void {
+    console.error(`Graft could not run the ${shortcutsOverlayAction} action from the top bar's keyboard shortcuts button: ${String(error)}. The keyboard shortcuts overlay did not open, so look at Ziggy's log for why the action failed. ${shortcutsOverlayCtrlKeys} and ? still open it.`);
+}
 
 //
 // What the top bar shows and what its buttons change. The layout owns both sidebars' states, so
@@ -51,10 +65,14 @@ export interface ITopBarProps {
 // button and shows the theme in use. Each button's label and tooltip say what a click does, in the
 // style guide's MaterialUI tooltip.
 // The breadcrumb trail takes the free space between them, set off by a divider, so it says where
-// the user is without moving the buttons. Between the trail and the theme menu's button the bar
-// always shows "Ctrl+/: Show hotkeys", to remind the user of the key that shows the keyboard
-// shortcuts overlay. It is styled as the style guide shows a shortcut beside a command: small,
-// muted and in the code font, kept on one line.
+// the user is without moving the buttons. After the trail the bar always shows "Ctrl+/: Show
+// hotkeys", to remind the user of the key that shows the keyboard shortcuts overlay. It is styled
+// as the style guide shows a shortcut beside a command: small, muted and in the code font, kept on
+// one line. Between the reminder and the theme menu's button sits the keyboard shortcuts button,
+// so the button is beside the reminder of its key. A click runs the Keyboard Shortcuts action, the
+// one `?` runs, whose handler the overlay registers, so the overlay opens the same way from both.
+// Its tooltip names the button's action and Ctrl+/, as the style guide's tooltip with a shortcut
+// does: the shortcut after the label, in the code font and fainter.
 //
 export function TopBar({ isLeftSidebarMinimised, onToggleLeftSidebar, isRightSidebarOpen, onToggleRightSidebar, trail, onNavigate, themeSetting, onChooseThemeSetting }: ITopBarProps): JSX.Element {
     const leftSidebarLabel = isLeftSidebarMinimised ? "Expand the left sidebar" : "Minimise the left sidebar";
@@ -76,6 +94,25 @@ export function TopBar({ isLeftSidebarMinimised, onToggleLeftSidebar, isRightSid
             <span data-id="top-bar-shortcuts-reminder" className="shrink-0 select-none whitespace-nowrap font-[family-name:var(--font-mono)] text-[length:var(--text-sm)] text-[var(--color-text-muted)]">
                 {shortcutsOverlayCtrlKeys}: Show hotkeys
             </span>
+            <Tooltip
+                title={
+                    <span data-id="shortcuts-button-tooltip" className="inline-flex items-baseline gap-[var(--space-2)]">
+                        {shortcutsButtonLabel}
+                        <span className="font-[family-name:var(--font-mono)] opacity-70">{shortcutsOverlayCtrlKeys}</span>
+                    </span>
+                }
+            >
+                <IconButton
+                    data-id="shortcuts-button"
+                    aria-label={shortcutsButtonLabel}
+                    size="small"
+                    onClick={() => {
+                        window.ziggy.runAction(shortcutsOverlayAction).catch(reportShortcutsButtonFailure);
+                    }}
+                >
+                    <FontAwesomeIcon icon={faKeyboard} />
+                </IconButton>
+            </Tooltip>
             <ThemeMenu setting={themeSetting} onChooseSetting={onChooseThemeSetting} />
             <Tooltip title={rightSidebarLabel}>
                 <IconButton data-id="right-sidebar-toggle" aria-label={rightSidebarLabel} size="small" onClick={onToggleRightSidebar}>

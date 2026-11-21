@@ -12,6 +12,7 @@ The keyboard shortcuts overlay is a dialog over Graft's window. It is the place 
 - Ziggy's shortcut syntax refuses `/` as a key. Graft matches Ctrl+/ itself, in the overlay, and the overlay keeps the key from doing anything else.
 - Plain `?` stays as well. It is the quick key outside a text box, and Ctrl+/ is the key that works everywhere.
 - The top bar always shows "Ctrl+/: Show hotkeys" (see [layout](../layout/detail.md)).
+- The top bar's keyboard shortcuts button, just after that reminder, shows the overlay too. A click runs the Keyboard Shortcuts action, the one `?` runs. Its tooltip shows "Show keyboard shortcuts" and names Ctrl+/ (see [layout](../layout/detail.md)).
 - The overlay reads its shortcuts from `window.ziggy.listActions()`, which gives every action of Graft's and every standard item of its menu with its shortcut as the platform shows it (`Ctrl+O` on Linux and Windows, `⌘O` on macOS). The overlay lists each one that has a shortcut, with its label and its keys, in the order Ziggy lists them, so Graft's own actions come first and the list starts with Open repo's `Ctrl+O`. Straight after the Keyboard Shortcuts action's `?`, the overlay lists Ctrl+/ in a row of its own with the same label. Ctrl+/ is the one shortcut the overlay adds itself, because Ziggy's list holds only action shortcuts. Any tooltip that shows a shortcut reads it from the same list.
 - Every action's shortcut is kept clear of the web view's own keys (reload and the developer tools), as `backend/src/test/actions.test.zig` checks. The zoom keys belong to Graft's own zoom actions (see [zoom](../zoom/detail.md)).
 - The shortcuts are listed in one column, which scrolls when it is taller than the overlay leaves room for.
@@ -39,6 +40,8 @@ The keyboard shortcuts overlay is a dialog over Graft's window. It is the place 
 - [x] The text "Ctrl+/: Show hotkeys" shows in the app at all times, styled per the Graft style guide.
 - [x] The overlay lists Ctrl+/.
 - [x] Plain `?` still shows and closes the overlay outside a text box.
+- [x] The top bar has a button, with a tooltip naming Ctrl+/, that opens the overlay.
+- [x] The button follows the Graft style guide.
 
 ## Open questions
 

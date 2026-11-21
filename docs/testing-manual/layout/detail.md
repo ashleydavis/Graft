@@ -25,7 +25,7 @@ bun run macos
 ## Steps
 
 1. Wait for Graft's window to open on the welcome page. Check the left sidebar has no "Repo explorer" link and the breadcrumb trail is empty, because no repo is open. Choose File, then "Open repo", choose `/tmp/graft/test-repo`, then click "About" in the left sidebar.
-2. Check a top bar runs across the top of the window, holding only a menu button and the name "Graft" at its left, two buttons at its right with "Ctrl+/: Show hotkeys" just before them and the breadcrumb trail between: "test-repo", a chevron, then "About" with a drop-down arrow, larger and bolder than "test-repo", like the name "Graft", and still inside the top bar.
+2. Check a top bar runs across the top of the window, holding only a menu button and the name "Graft" at its left, buttons at its right for the keyboard shortcuts, the theme and the right sidebar with "Ctrl+/: Show hotkeys" just before them and the breadcrumb trail between: "test-repo", a chevron, then "About" with a drop-down arrow, larger and bolder than "test-repo", like the name "Graft", and still inside the top bar.
 3. Check the left sidebar runs down the left under the top bar, with a "Repo explorer" link at its top and "Help" and "About" links at its bottom, each with an icon. Check the About link is highlighted.
 4. Check the About page shows in the main content area, to the right of the left sidebar.
 5. Check the right sidebar is closed: the main content area reaches the right edge of the window.
@@ -43,19 +43,20 @@ bun run macos
 17. Press Escape. Check the drop-down closes. Click "Help" in the trail again and check both pages are listed.
 18. Click "Help" in the drop-down. Check the drop-down closes and the Help page still shows.
 19. Click "Help" in the trail, then "About". Check the About page shows and the trail ends with "About".
-20. Hover over the button to the left of the right sidebar's button. Check it shows a half filled circle with a small chevron and its tooltip is "Theme: System. Choose a theme".
-21. Click it. Check a menu opens under it, headed "Theme", with rows for Light, Dark and System, each with its icon and a line saying what it does, and System highlighted.
-22. Press Escape. Check the menu closes and the theme does not change.
-23. Open the menu and choose Light. Check the menu closes, the button shows a sun and Graft is drawn in light colours.
-24. Open the menu and choose Dark. Check the button shows a moon and Graft is drawn in dark colours: a dark background with light text, in the top bar, both sidebars, the main content area and the menu itself.
-25. Open the menu and choose System. Check the button shows the half filled circle and Graft is drawn in the system's theme. Change the system's theme between light and dark and check Graft follows it.
-26. Choose Dark from the menu, then close the window.
-27. Start Graft again. Check the window is dark grey from the start, apart from the white splash screen, and the theme menu's button shows the moon.
-28. Choose System from the menu, and close the window.
-29. Start Graft again. Click the menu button in the top bar to minimise the left sidebar, and click the button at the far right of the top bar to open the right sidebar. Close the window.
-30. Start Graft again. Check the left sidebar is minimised to its strip of icons and the right sidebar is open.
-31. Click the menu button to expand the left sidebar and click the right sidebar's button to close it. Close the window.
-32. Start Graft again. Check the left sidebar is expanded and the right sidebar is closed.
+20. Hover over the keyboard button just after "Ctrl+/: Show hotkeys". Check its tooltip is "Show keyboard shortcuts" followed by "Ctrl+/". Click it. Check the keyboard shortcuts overlay shows over the page. Press Escape to close it.
+21. Hover over the button to the left of the right sidebar's button. Check it shows a half filled circle with a small chevron and its tooltip is "Theme: System. Choose a theme".
+22. Click it. Check a menu opens under it, headed "Theme", with rows for Light, Dark and System, each with its icon and a line saying what it does, and System highlighted.
+23. Press Escape. Check the menu closes and the theme does not change.
+24. Open the menu and choose Light. Check the menu closes, the button shows a sun and Graft is drawn in light colours.
+25. Open the menu and choose Dark. Check the button shows a moon and Graft is drawn in dark colours: a dark background with light text, in the top bar, both sidebars, the main content area and the menu itself.
+26. Open the menu and choose System. Check the button shows the half filled circle and Graft is drawn in the system's theme. Change the system's theme between light and dark and check Graft follows it.
+27. Choose Dark from the menu, then close the window.
+28. Start Graft again. Check the window is dark grey from the start, apart from the white splash screen, and the theme menu's button shows the moon.
+29. Choose System from the menu, and close the window.
+30. Start Graft again. Click the menu button in the top bar to minimise the left sidebar, and click the button at the far right of the top bar to open the right sidebar. Close the window.
+31. Start Graft again. Check the left sidebar is minimised to its strip of icons and the right sidebar is open.
+32. Click the menu button to expand the left sidebar and click the right sidebar's button to close it. Close the window.
+33. Start Graft again. Check the left sidebar is expanded and the right sidebar is closed.
 
 ## Expected result
 
@@ -66,5 +67,7 @@ The top bar's breadcrumb trail names the open repo and the page shown, with the 
 The menu button minimises and expands the left sidebar, and its links work in both states. The button at the far right of the top bar slides the right sidebar in and out.
 
 The theme menu moves Graft between light, dark and the system's theme, highlights the one in use, and Graft starts on the theme last picked.
+
+The keyboard button in the top bar, whose tooltip names Ctrl+/, shows the keyboard shortcuts overlay.
 
 Graft starts with the left sidebar minimised or expanded and the right sidebar open or closed, as they were left when it last closed.

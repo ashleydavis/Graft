@@ -8,8 +8,8 @@
 # Quit. Then `?` typed in the breadcrumb trail drop-down's search box types the character and leaves
 # the overlay closed. Ctrl+/, pressed with the key-down test command, shows the overlay from that
 # search box without typing, stays open while Ctrl+/ repeats, lists Ctrl+/, closes the overlay
-# from its own search box and shows it from the page. The top bar shows "Ctrl+/: Show hotkeys".
-# See test.md.
+# from its own search box and shows it from the page. The top bar shows "Ctrl+/: Show hotkeys", and
+# a click on the top bar's keyboard shortcuts button shows the overlay. See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -183,3 +183,14 @@ wait_for_missing_element shortcuts-overlay 30
 
 # The top bar reminds the user of Ctrl+/.
 wait_for_text top-bar-shortcuts-reminder "Ctrl+/: Show hotkeys" 30
+
+# A click on the top bar's keyboard shortcuts button shows the overlay with an empty search box and
+# every shortcut. Escape closes it.
+click shortcuts-button
+wait_for_element shortcuts-overlay-search 30
+wait_for_text shortcut-open-repo-label "Open repo" 30
+if [ "$(search_value)" != "" ]; then
+    fail "the overlay's search box is not empty after the top bar's button. It holds: $(search_value)"
+fi
+press_key Escape
+wait_for_missing_element shortcuts-overlay 30

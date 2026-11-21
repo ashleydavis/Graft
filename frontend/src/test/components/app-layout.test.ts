@@ -1,9 +1,10 @@
 //
 // Tests the app's layout: renders it as the root of a router with a mock page and checks it
 // lays out the top bar, the left sidebar, the main content area holding the page and the right
-// sidebar, that the Keyboard Shortcuts action shows the keyboard shortcuts overlay over it, that
-// the left sidebar starts expanded and the right sidebar closed, that the top bar's buttons
-// minimise and expand the left sidebar and slide the right sidebar in and out, that both sidebars
+// sidebar, that the Keyboard Shortcuts action and the top bar's keyboard shortcuts button show the
+// keyboard shortcuts overlay over it, that the left sidebar starts expanded and the right sidebar
+// closed, that the top bar's buttons minimise and expand the left sidebar and slide the right
+// sidebar in and out, that both sidebars
 // are saved in Graft's state file and restored from it, that the top bar's breadcrumb trail
 // follows the page shown and its drop-down opens another page and that the right sidebar shows the
 // Git commands the page shown has run. It also checks that with no repo open the trail has no repo
@@ -15,6 +16,7 @@ import { act, cleanup, screen, waitFor } from "@testing-library/react";
 import { leftSidebarMinimisedStateKey, rightSidebarOpenStateKey } from "../../components/app-layout";
 import { shortcutsOverlayAction } from "../../components/shortcuts-overlay";
 import { makeFakeThemeZiggy } from "../fake-theme-ziggy";
+import { makeFakeActionZiggy } from "../fake-action-ziggy";
 import { elementWithDataId, renderAppLayout, renderAppLayoutWithZiggy, renderFakedAppLayout, sendTaskEvent, taskEventListeners } from "../render-app-layout";
 
 describe("AppLayout", () => {
@@ -33,6 +35,23 @@ describe("AppLayout", () => {
         expect(elementWithDataId(document.body, "shortcuts-overlay")).toBeUndefined();
         await act(async () => {
             await ziggy.runRegisteredAction(shortcutsOverlayAction);
+        });
+        expect(elementWithDataId(document.body, "shortcuts-overlay-search")).not.toBeUndefined();
+        expect(elementWithDataId(container, "main-content")).not.toBeUndefined();
+    });
+
+    test("the top bar's keyboard shortcuts button shows the keyboard shortcuts overlay over the layout", async () => {
+        const actionZiggy = makeFakeActionZiggy([]);
+        const { container } = await renderFakedAppLayout({
+            ...makeFakeThemeZiggy({
+                systemTheme: "light",
+            }),
+            ...actionZiggy,
+            runAction: jest.fn((name: string) => actionZiggy.runRegisteredAction(name)),
+        }, "/repos/graft");
+        expect(elementWithDataId(document.body, "shortcuts-overlay")).toBeUndefined();
+        await act(async () => {
+            elementWithDataId(container, "shortcuts-button")?.click();
         });
         expect(elementWithDataId(document.body, "shortcuts-overlay-search")).not.toBeUndefined();
         expect(elementWithDataId(container, "main-content")).not.toBeUndefined();
