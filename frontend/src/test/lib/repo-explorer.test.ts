@@ -4,6 +4,7 @@
 //
 
 import {
+    activatePane,
     changeKey,
     changeKeysOf,
     closeChangeFilePane,
@@ -27,6 +28,7 @@ import {
     openPaneCount,
     keepListedChanges,
     openSelection,
+    targetPaneIndex,
     selectChange,
     selectCommit,
     selectFile,
@@ -253,6 +255,56 @@ describe("closeLinkPane", () => {
             ...initialRepoExplorerState,
             selectedLink: COMMIT_LINK,
         });
+    });
+});
+
+describe("activatePane", () => {
+    test("makes the pane at the index active and leaves the rest of the state as it is", () => {
+        expect(activatePane(allOpen, 0)).toEqual({
+            ...allOpen,
+            activePaneIndex: 0,
+        });
+        expect(activatePane(allOpen, 2)).toEqual({
+            ...allOpen,
+            activePaneIndex: 2,
+        });
+        expect(activatePane(changeFileOpen, 1)).toEqual({
+            ...changeFileOpen,
+            activePaneIndex: 1,
+        });
+    });
+
+    test("makes the rightmost open pane active for an index beyond the open panes", () => {
+        expect(activatePane(commitsOpen, 3)).toEqual({
+            ...commitsOpen,
+            activePaneIndex: 1,
+        });
+        expect(activatePane(initialRepoExplorerState, 1)).toEqual(initialRepoExplorerState);
+    });
+});
+
+describe("targetPaneIndex", () => {
+    test("finds the position of the pane that holds the target, at any depth in the pane", () => {
+        const columns = document.createElement("div");
+        const firstPane = document.createElement("section");
+        const secondPane = document.createElement("section");
+        const titleBar = document.createElement("div");
+        const title = document.createTextNode("Commits");
+        titleBar.append(title);
+        secondPane.append(titleBar);
+        columns.append(firstPane, secondPane);
+        expect(targetPaneIndex(columns, firstPane)).toBe(0);
+        expect(targetPaneIndex(columns, secondPane)).toBe(1);
+        expect(targetPaneIndex(columns, titleBar)).toBe(1);
+        expect(targetPaneIndex(columns, title)).toBe(1);
+    });
+
+    test("finds no pane for the columns themselves, a node outside them or the window", () => {
+        const columns = document.createElement("div");
+        columns.append(document.createElement("section"));
+        expect(targetPaneIndex(columns, columns)).toBeUndefined();
+        expect(targetPaneIndex(columns, document.createElement("section"))).toBeUndefined();
+        expect(targetPaneIndex(columns, window)).toBeUndefined();
     });
 });
 

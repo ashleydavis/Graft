@@ -340,6 +340,34 @@ export function moveCommitSelection(state: IRepoExplorerState, commitHashes: str
 }
 
 //
+// Makes the pane at the index among the open panes active, as a click anywhere in the pane does,
+// so the keys act on the pane the user clicked. An index beyond the open panes makes the rightmost
+// open pane active, so the active pane is never one that has closed.
+//
+export function activatePane(state: IRepoExplorerState, paneIndex: number): IRepoExplorerState {
+    return {
+        ...state,
+        activePaneIndex: Math.min(paneIndex, openPaneCount(state) - 1),
+    };
+}
+
+//
+// Finds the position among the columns' panes of the pane that holds the click's target, so the
+// repo explorer page can make the clicked pane active. A click between the panes, outside every
+// pane, finds none.
+//
+export function targetPaneIndex(columns: Element, target: EventTarget): number | undefined {
+    if (!(target instanceof Node)) {
+        return undefined;
+    }
+    const paneIndex = Array.from(columns.children).findIndex(pane => pane.contains(target));
+    if (paneIndex < 0) {
+        return undefined;
+    }
+    return paneIndex;
+}
+
+//
 // Moves the selection in the active pane one step, up for step -1 and down for step 1. The file
 // pane lists no items, so the selection stays as it is there.
 //

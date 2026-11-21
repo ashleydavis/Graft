@@ -5,14 +5,14 @@
 // to its right, like the column view of a file browser. Its Commit link opens the changes pane in
 // place of the commit pane, with the working tree's unstaged and staged files, and clicking a file
 // there opens its file pane. The arrow keys, Enter and Escape move through the panes as in the
-// column view of macOS Finder.
+// column view of macOS Finder. Clicking anywhere in a pane makes it the active pane.
 //
 
-import { JSX, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { JSX, MouseEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRepo } from "../../components/repo-context";
 import { commitStagedFiles } from "../../lib/commit";
 import { ICommit, readCommitPage } from "../../lib/commits";
-import { changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, COMMIT_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, initialRepoExplorerState, IRepoExplorerState, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectCommit, selectFile, selectLink } from "../../lib/repo-explorer";
+import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, COMMIT_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, initialRepoExplorerState, IRepoExplorerState, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
 import { toggleFileStaged } from "../../lib/stage-file";
 import { IWorkingChanges, IWorkingFile, readWorkingChanges } from "../../lib/working-changes";
 import { ChangesPane } from "./components/changes-pane";
@@ -161,6 +161,19 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
         });
     }
 
+    //
+    // Makes the pane the user clicked in active, wherever in the pane the click landed. It runs in
+    // the capture phase, before the clicked row or button handles the click, so a row that sets the
+    // active pane itself or a close button that moves it to the left has the last word.
+    //
+    function onColumnsClickCapture(event: MouseEvent<HTMLDivElement>): void {
+        const paneIndex = targetPaneIndex(event.currentTarget, event.target);
+        if (paneIndex === undefined) {
+            return;
+        }
+        setExplorer(state => activatePane(state, paneIndex));
+    }
+
     useEffect(() => {
         setChanges(undefined);
         setChangesError(undefined);
@@ -241,7 +254,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
 
     return (
         <main ref={pageRef} tabIndex={-1} data-id="repo-explorer-page" className="graft-page-in outline-none flex h-full w-max min-w-full flex-col gap-4 bg-[var(--color-bg)] p-6">
-            <div ref={columnsRef} data-id="repo-explorer-columns" className="flex min-h-0 flex-1 items-stretch gap-3">
+            <div ref={columnsRef} data-id="repo-explorer-columns" onClickCapture={onColumnsClickCapture} className="flex min-h-0 flex-1 items-stretch gap-3">
                 <RepoDetailsPane repoPath={repoPath} selectedLink={explorer.selectedLink} openLink={explorer.openLink} isActive={explorer.activePaneIndex === 0} onSelectLink={link => setExplorer(selectLink(link))} />
                 {isCommitsOpen && (
                     <CommitPane commits={commits} error={error} selectedHash={explorer.selectedHash} openHash={explorer.openHash} isActive={explorer.activePaneIndex === 1} dateFormat={dateFormat} onSelectCommit={hash => setExplorer(state => selectCommit(state, hash))} />

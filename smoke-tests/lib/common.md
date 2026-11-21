@@ -16,6 +16,7 @@ What every smoke test uses: it starts the app, talks to it through the remote co
 - `type_text <data-id> <text>`: sets the value of the text box with the data-id to the text and sends it an input event, so the page sees the text as typed.
 - `value_of <data-id>`: prints the value of the text box with the data-id.
 - `wait_for_text <data-id> <text> [seconds]`: waits until the element's text contains the text.
+- `wait_for_commit_title <title>`: waits until the commit details pane's title contains the title. It keeps waiting while the pane is drawn afresh and its title is missing, which `wait_for_text` reports as a failure at once.
 - `wait_for_element <data-id> <seconds>`: waits until the element with the data-id is on the page.
 - `wait_for_missing_element <data-id> <seconds>`: waits until the element with the data-id has gone from the page.
 - `wait_for_in_view <data-id> <seconds>`: waits until the element's left and right edges are inside the window, so the user can see it.

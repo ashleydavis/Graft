@@ -1110,3 +1110,63 @@ describe("RepoExplorerPage commit section", () => {
         expect(document.querySelector("[data-id=\"commit-error\"]")).toBeNull();
     });
 });
+
+describe("RepoExplorerPage pane clicks", () => {
+    test("clicking a pane's title bar makes that pane active", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        fireEvent.click(elementWithDataId("file-pane-path"));
+        expect(activePaneIds()).toEqual(["file-pane"]);
+        fireEvent.click(elementWithDataId("commit-pane-heading"));
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        fireEvent.click(elementWithDataId("commit-details-heading"));
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        fireEvent.click(elementWithDataId("repo-details-heading"));
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+    });
+
+    test("clicking a pane's empty space makes that pane active and a click between the panes changes nothing", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        fireEvent.click(elementWithDataId("repo-details-pane"));
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+        fireEvent.click(elementWithDataId("file-pane"));
+        expect(activePaneIds()).toEqual(["file-pane"]);
+        fireEvent.click(elementWithDataId("repo-explorer-columns"));
+        expect(activePaneIds()).toEqual(["file-pane"]);
+    });
+
+    test("a click on a row or a close button still does what it did, with the pane it leaves active", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        fireEvent.click(elementWithDataId("repo-details-heading"));
+        fireEvent.click(elementWithDataId(`commit-${commitJson.hash}`));
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(true);
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        fireEvent.click(elementWithDataId("repo-details-heading"));
+        fireEvent.click(elementWithDataId("file-pane-close"));
+        expect(document.querySelector("[data-id=\"file-pane\"]")).toBeNull();
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        fireEvent.click(elementWithDataId("repo-details-commits"));
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+    });
+
+    test("clicking the changes pane's title bar or its file pane makes that pane active", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        fireEvent.click(elementWithDataId("change-unstaged-notes.txt"));
+        fireEvent.click(elementWithDataId("file-pane-path"));
+        expect(activePaneIds()).toEqual(["file-pane"]);
+        fireEvent.click(elementWithDataId("changes-heading"));
+        expect(activePaneIds()).toEqual(["changes-pane"]);
+        fireEvent.click(elementWithDataId("repo-details-heading"));
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+        fireEvent.click(elementWithDataId("changes-pane"));
+        expect(activePaneIds()).toEqual(["changes-pane"]);
+    });
+});

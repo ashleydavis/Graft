@@ -12,30 +12,6 @@
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
 
-#
-# Waits until the commit details pane shows the commit title, and fails with what it last showed
-# when it never does. Enter on another commit draws the pane afresh, so its title is missing while
-# the commit loads, which wait_for_text reports as a failure at once. Up and Down in the commit pane
-# draw it afresh in the same way. Usage: wait_for_commit_title <title>
-#
-wait_for_commit_title() {
-    local waited=0
-    local result=""
-    while [ "$waited" -lt 30 ]; do
-        result="$(control '{"command":"get-text","dataId":"commit-details-title"}')"
-        if [ "$(printf '%s' "$result" | jq -r '.ok')" = "true" ]; then
-            case "$(printf '%s' "$result" | jq -r '.value')" in
-                *"$1"*)
-                    return 0
-                    ;;
-            esac
-        fi
-        sleep 1
-        waited=$((waited + 1))
-    done
-    fail "commit-details-title never showed \"$1\". The last result was: $result"
-}
-
 repo="$ZIGGY_TEST_DIR/repo"
 "$ZIGGY_SMOKE_APP_DIR/scripts/test/create-test-repo.sh" "$repo" || fail "could not create the test repo at $repo"
 
