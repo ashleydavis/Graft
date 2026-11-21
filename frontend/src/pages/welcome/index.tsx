@@ -37,7 +37,7 @@ export function WelcomePage(): JSX.Element {
                     Graft
                 </h1>
                 <p data-id="welcome-description" className="max-w-md text-[var(--color-text-muted)]">
-                    A desktop Git client. Open a local Git repo to see its commits.
+                    A desktop Git client. Open a local Git repo to start working with it.
                 </p>
             </div>
             <Button

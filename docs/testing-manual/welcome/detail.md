@@ -25,7 +25,7 @@ bun run macos
 ## Steps
 
 1. Wait for Graft's window to open.
-2. Check the main content area shows the welcome page, centred: Graft's branch mark, under it the heading "Graft", under that the line "A desktop Git client. Open a local Git repo to see its commits." and under that an "Open repo" button with a folder icon.
+2. Check the main content area shows the welcome page, centred: Graft's branch mark, under it the heading "Graft", under that the line "A desktop Git client. Open a local Git repo to start working with it." and under that an "Open repo" button with a folder icon.
 3. Check the left sidebar has no "Commits" link and the breadcrumb trail is empty.
 4. Click "Open repo". Check the system folder picker opens, titled "Open repo".
 5. Cancel the picker. Check Graft still shows the welcome page with no repo open.

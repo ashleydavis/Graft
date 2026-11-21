@@ -23,9 +23,9 @@ describe("WelcomePage", () => {
         expect(icon?.querySelector("svg[data-icon=\"code-branch\"]")).not.toBeNull();
     });
 
-    test("shows a line describing Graft and what opening a repo shows", () => {
+    test("shows a line describing Graft and inviting the user to open a repo to work with it", () => {
         render(createElement(WelcomePage));
-        const description = screen.getByText("A desktop Git client. Open a local Git repo to see its commits.");
+        const description = screen.getByText("A desktop Git client. Open a local Git repo to start working with it.");
         expect(description.getAttribute("data-id")).toBe("welcome-description");
     });
 

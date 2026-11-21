@@ -15,7 +15,7 @@ repo="$ZIGGY_TEST_DIR/welcome-repo"
 start_app_on_start_page
 wait_for_element welcome-icon 30
 wait_for_text welcome-heading "Graft" 30
-wait_for_text welcome-description "A desktop Git client. Open a local Git repo to see its commits." 30
+wait_for_text welcome-description "A desktop Git client. Open a local Git repo to start working with it." 30
 wait_for_text welcome-open-repo-button "Open repo" 30
 wait_for_missing_element left-sidebar-commits-link 30
 wait_for_missing_element breadcrumb-repo 30
