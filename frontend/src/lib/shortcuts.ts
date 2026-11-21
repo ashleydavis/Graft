@@ -69,3 +69,72 @@ export function shortcutKeyNames(keys: string): string[] {
     }
     return keys.split("+");
 }
+
+//
+// The keys of the second shortcut that shows and closes the keyboard shortcuts overlay, as Graft
+// writes them on every platform. Ziggy's shortcut syntax refuses a modifier on `?`, so Graft
+// matches this one itself, and the overlay and the top bar's reminder show it from here.
+//
+export const shortcutsOverlayCtrlKeys = "Ctrl+?";
+
+//
+// The parts of a key press that decide whether it is Ctrl+?.
+//
+export interface IKeyPress {
+    // The character the key gives, such as "?".
+    key: string;
+
+    // Whether Control is held.
+    ctrlKey: boolean;
+
+    // Whether Alt (Option on macOS) is held.
+    altKey: boolean;
+
+    // Whether Command on macOS, or the Windows or Super key elsewhere, is held.
+    metaKey: boolean;
+
+    // Whether the press is the key repeating while it is held down.
+    repeat: boolean;
+}
+
+//
+// Whether a key press is Ctrl+?: the key gives `?` with Control held and neither Alt nor Command.
+// Shift may be up or down, because whether `?` needs Shift depends on the keyboard layout. Only
+// the first press counts and its repeats are left alone, so holding the keys opens or closes the
+// overlay once.
+//
+export function isShortcutsOverlayCtrlKey(press: IKeyPress): boolean {
+    if (press.key === "?") {
+        if (press.ctrlKey) {
+            if (press.altKey) {
+                return false;
+            }
+            if (press.metaKey) {
+                return false;
+            }
+            return !press.repeat;
+        }
+    }
+    return false;
+}
+
+//
+// Works out the shortcuts the overlay lists: the shortcuts given, with Ctrl+? in a row of its own
+// straight after the row of the action it runs, with that row's label. Its name is the action's
+// name with "-ctrl" added, so the row has a data-id of its own. A list without the action comes
+// back with the same rows.
+//
+export function overlayShortcuts(shortcuts: IShortcut[], actionName: string): IShortcut[] {
+    const result: IShortcut[] = [];
+    for (const shortcut of shortcuts) {
+        result.push(shortcut);
+        if (shortcut.name === actionName) {
+            result.push({
+                name: `${actionName}-ctrl`,
+                label: shortcut.label,
+                keys: shortcutsOverlayCtrlKeys,
+            });
+        }
+    }
+    return result;
+}

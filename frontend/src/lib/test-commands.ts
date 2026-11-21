@@ -10,8 +10,8 @@ import type { IJsonObject } from "ziggy";
 // A command from the remote control connection.
 //
 export interface ITestCommand {
-    // What to do: ready, click, type, get-value, get-text, exists, in-view, insert, viewport or
-    // drop-file.
+    // What to do: ready, click, type, key-down, get-value, get-text, exists, in-view, insert,
+    // viewport or drop-file.
     command: string;
 
     // The data-id of the element to act on.
@@ -19,6 +19,12 @@ export interface ITestCommand {
 
     // The text to type, for the type command.
     text?: string;
+
+    // The character of the key to press, for the key-down command, such as "?".
+    key?: string;
+
+    // Whether Control is held, for the key-down command.
+    ctrl?: boolean;
 
     // The name of the file to drop, for the drop-file command.
     fileName?: string;
@@ -128,6 +134,9 @@ export function performTestCommand(finder: IElementFinder, command: ITestCommand
         element.dispatchEvent(new Event("input", { bubbles: true }));
         return { ok: true };
     }
+    if (command.command === "key-down") {
+        return keyDownResult(element, command);
+    }
     if (command.command === "get-value") {
         return { ok: true, value: element.value ?? "" };
     }
@@ -173,5 +182,38 @@ export function elementInViewResult(bounds: IHorizontalBounds, windowWidth: numb
     return {
         ok: false,
         error: `The element with the data-id ${dataId} is outside the window: its left edge is at ${left}, its right edge is at ${right} and the window is ${windowWidth} wide.`,
+    };
+}
+
+//
+// Performs the key-down command: dispatches a keydown event for the key, with Control held when
+// the command's ctrl field is true, on the element, from where it bubbles up to the window as a
+// real key press does. The native app's press-key takes only Ziggy's shortcut syntax, which refuses
+// a modifier on `?`, so the smoke tests press Ctrl+? this way. The value is "prevented" when a
+// listener kept the key from doing anything else, as Graft does with a key it handles, and
+// "not prevented" when the key went on to its default.
+//
+export function keyDownResult(element: IFoundElement, command: ITestCommand): ITestResult {
+    if (!command.key) {
+        return {
+            ok: false,
+            error: "The key-down command needs a key.",
+        };
+    }
+    const event = new KeyboardEvent("keydown", {
+        key: command.key,
+        ctrlKey: command.ctrl === true,
+        bubbles: true,
+        cancelable: true,
+    });
+    if (element.dispatchEvent(event)) {
+        return {
+            ok: true,
+            value: "not prevented",
+        };
+    }
+    return {
+        ok: true,
+        value: "prevented",
     };
 }

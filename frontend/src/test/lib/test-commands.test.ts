@@ -167,6 +167,65 @@ describe("performTestCommand", () => {
         expect(element.events).toEqual([]);
     });
 
+    test("key-down dispatches a bubbling keydown of the key with Control held and reports it was not prevented", () => {
+        const element = makeElement("", "");
+        expect(performTestCommand(makeFinder(element), {
+            command: "key-down",
+            dataId: "target",
+            key: "?",
+            ctrl: true,
+        })).toEqual({
+            ok: true,
+            value: "not prevented",
+        });
+        expect(element.events.length).toBe(1);
+        const event = element.events[0] as KeyboardEvent;
+        expect(event.type).toBe("keydown");
+        expect(event.key).toBe("?");
+        expect(event.ctrlKey).toBe(true);
+        expect(event.bubbles).toBe(true);
+        expect(event.cancelable).toBe(true);
+    });
+
+    test("key-down without ctrl dispatches the key with Control up", () => {
+        const element = makeElement("", "");
+        performTestCommand(makeFinder(element), {
+            command: "key-down",
+            dataId: "target",
+            key: "?",
+        });
+        expect((element.events[0] as KeyboardEvent).ctrlKey).toBe(false);
+    });
+
+    test("key-down reports a key a listener kept from doing anything else as prevented", () => {
+        const element = makeElement("", "");
+        element.dispatchEvent = (event: Event): boolean => {
+            element.events.push(event);
+            return false;
+        };
+        expect(performTestCommand(makeFinder(element), {
+            command: "key-down",
+            dataId: "target",
+            key: "?",
+            ctrl: true,
+        })).toEqual({
+            ok: true,
+            value: "prevented",
+        });
+    });
+
+    test("key-down with no key fails and dispatches nothing", () => {
+        const element = makeElement("", "");
+        expect(performTestCommand(makeFinder(element), {
+            command: "key-down",
+            dataId: "target",
+        })).toEqual({
+            ok: false,
+            error: "The key-down command needs a key.",
+        });
+        expect(element.events).toEqual([]);
+    });
+
     test("get-value reads the value, or an empty string when there is none", () => {
         expect(performTestCommand(makeFinder(makeElement("", "a value")), {
             command: "get-value",

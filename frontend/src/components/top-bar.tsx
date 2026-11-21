@@ -1,7 +1,7 @@
 //
 // The top bar: the bar across the top of the window with Graft's name, the breadcrumb trail, the
-// theme menu and the buttons that minimise and expand the left sidebar and slide the right
-// sidebar in and out.
+// reminder of the key that shows the keyboard shortcuts, the theme menu and the buttons that
+// minimise and expand the left sidebar and slide the right sidebar in and out.
 //
 
 import { faBars, faTableColumns } from "@fortawesome/free-solid-svg-icons";
@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { IconButton, Tooltip } from "@mui/material";
 import { JSX } from "react";
 import { ITrailStep } from "../lib/breadcrumb-trail";
+import { shortcutsOverlayCtrlKeys } from "../lib/shortcuts";
 import { ThemeSetting } from "../lib/theme";
 import { BreadcrumbTrail } from "./breadcrumb-trail";
 import { ThemeMenu } from "./theme-menu";
@@ -50,7 +51,10 @@ export interface ITopBarProps {
 // button and shows the theme in use. Each button's label and tooltip say what a click does, in the
 // style guide's MaterialUI tooltip.
 // The breadcrumb trail takes the free space between them, set off by a divider, so it says where
-// the user is without moving the buttons.
+// the user is without moving the buttons. Between the trail and the theme menu's button the bar
+// always shows "Ctrl+?: Show hotkeys", to remind the user of the key that shows the keyboard
+// shortcuts overlay. It is styled as the style guide shows a shortcut beside a command: small,
+// muted and in the code font, kept on one line.
 //
 export function TopBar({ isLeftSidebarMinimised, onToggleLeftSidebar, isRightSidebarOpen, onToggleRightSidebar, trail, onNavigate, themeSetting, onChooseThemeSetting }: ITopBarProps): JSX.Element {
     const leftSidebarLabel = isLeftSidebarMinimised ? "Expand the left sidebar" : "Minimise the left sidebar";
@@ -69,6 +73,9 @@ export function TopBar({ isLeftSidebarMinimised, onToggleLeftSidebar, isRightSid
             <div data-id="top-bar-trail" className="mx-[var(--space-2)] flex min-w-0 flex-1 items-center self-stretch border-l border-[var(--color-border)] my-[var(--space-2)] pl-[var(--space-4)]">
                 <BreadcrumbTrail steps={trail} onNavigate={onNavigate} />
             </div>
+            <span data-id="top-bar-shortcuts-reminder" className="shrink-0 select-none whitespace-nowrap font-[family-name:var(--font-mono)] text-[length:var(--text-sm)] text-[var(--color-text-muted)]">
+                {shortcutsOverlayCtrlKeys}: Show hotkeys
+            </span>
             <ThemeMenu setting={themeSetting} onChooseSetting={onChooseThemeSetting} />
             <Tooltip title={rightSidebarLabel}>
                 <IconButton data-id="right-sidebar-toggle" aria-label={rightSidebarLabel} size="small" onClick={onToggleRightSidebar}>

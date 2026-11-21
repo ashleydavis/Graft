@@ -157,6 +157,9 @@ export function TrailStepMenu({ step, isLast, onNavigate }: ITrailStepProps): JS
                         value={searchText}
                         onChange={event => setSearchText(event.target.value)}
                         slotProps={{
+                            htmlInput: {
+                                "data-id": `${step.dataId}-search`,
+                            },
                             input: {
                                 startAdornment: (
                                     <InputAdornment position="start" className="text-[length:var(--icon-md)] text-[var(--color-text-muted)]">

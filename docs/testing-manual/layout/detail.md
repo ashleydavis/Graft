@@ -25,7 +25,7 @@ bun run macos
 ## Steps
 
 1. Wait for Graft's window to open on the welcome page. Check the left sidebar has no "Repo explorer" link and the breadcrumb trail is empty, because no repo is open. Choose File, then "Open repo", choose `/tmp/graft/test-repo`, then click "About" in the left sidebar.
-2. Check a top bar runs across the top of the window, holding only a menu button and the name "Graft" at its left, two buttons at its right and the breadcrumb trail between them: "test-repo", a chevron, then "About" with a drop-down arrow, larger and bolder than "test-repo", like the name "Graft", and still inside the top bar.
+2. Check a top bar runs across the top of the window, holding only a menu button and the name "Graft" at its left, two buttons at its right with "Ctrl+?: Show hotkeys" just before them and the breadcrumb trail between: "test-repo", a chevron, then "About" with a drop-down arrow, larger and bolder than "test-repo", like the name "Graft", and still inside the top bar.
 3. Check the left sidebar runs down the left under the top bar, with a "Repo explorer" link at its top and "Help" and "About" links at its bottom, each with an icon. Check the About link is highlighted.
 4. Check the About page shows in the main content area, to the right of the left sidebar.
 5. Check the right sidebar is closed: the main content area reaches the right edge of the window.

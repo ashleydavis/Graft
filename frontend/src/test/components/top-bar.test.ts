@@ -1,8 +1,8 @@
 //
 // Tests the top bar: renders it with each state of the two sidebars and each theme setting and
 // checks it shows Graft's name, that each button's label says what a click does next, that a click
-// asks for the change, that the theme menu's choice is passed on and that it shows the breadcrumb
-// trail it is given between the buttons.
+// asks for the change, that the theme menu's choice is passed on, that it shows the breadcrumb
+// trail it is given between the buttons and that it shows the Ctrl+? reminder.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
@@ -116,23 +116,45 @@ describe("TopBar", () => {
         expect(props.onToggleRightSidebar).not.toHaveBeenCalled();
     });
 
-    test("puts the theme menu's button between the breadcrumb trail and the right sidebar's button", () => {
+    test("shows the reminder of the key that shows the keyboard shortcuts", () => {
+        const { container } = render(createElement(TopBar, {
+            isLeftSidebarMinimised: true,
+            onToggleLeftSidebar: jest.fn(),
+            isRightSidebarOpen: true,
+            onToggleRightSidebar: jest.fn(),
+            trail: [],
+            onNavigate: jest.fn(),
+            themeSetting: "dark",
+            onChooseThemeSetting: jest.fn(),
+        }));
+        expect(container.querySelector("[data-id=\"top-bar-shortcuts-reminder\"]")?.textContent).toBe("Ctrl+?: Show hotkeys");
+    });
+
+    test("puts the reminder between the breadcrumb trail and the theme menu's button", () => {
+        renderTopBar(false, false);
+        const reminder = screen.getByText("Ctrl+?: Show hotkeys");
+        expect(reminder.getAttribute("data-id")).toBe("top-bar-shortcuts-reminder");
+        expect(reminder.previousElementSibling?.getAttribute("data-id")).toBe("top-bar-trail");
+        expect(reminder.nextElementSibling?.getAttribute("data-id")).toBe("theme-button");
+    });
+
+    test("puts the theme menu's button between the reminder and the right sidebar's button", () => {
         renderTopBar(false, false);
         const themeButton = screen.getByLabelText("Theme: System. Choose a theme");
-        expect(themeButton.previousElementSibling?.getAttribute("data-id")).toBe("top-bar-trail");
+        expect(themeButton.previousElementSibling?.getAttribute("data-id")).toBe("top-bar-shortcuts-reminder");
         expect(themeButton.nextElementSibling?.getAttribute("data-id")).toBe("right-sidebar-toggle");
     });
 
-    test("shows the breadcrumb trail between Graft's name and the theme menu's button", () => {
+    test("shows the breadcrumb trail between Graft's name and the reminder", () => {
         renderTopBar(false, false);
         const trailArea = screen.getByText("Repo explorer").closest("[data-id=\"top-bar-trail\"]");
         expect(trailArea).not.toBeNull();
         expect(trailArea?.textContent).toBe("graftRepo explorer");
         expect(trailArea?.previousElementSibling?.getAttribute("data-id")).toBe("top-bar-name");
-        expect(trailArea?.nextElementSibling?.getAttribute("data-id")).toBe("theme-button");
+        expect(trailArea?.nextElementSibling?.getAttribute("data-id")).toBe("top-bar-shortcuts-reminder");
     });
 
-    test("holds only Graft's name, the breadcrumb trail, the theme menu's button and the two sidebar buttons", () => {
+    test("holds only Graft's name, the breadcrumb trail, the reminder, the theme menu's button and the two sidebar buttons", () => {
         const { container } = render(createElement(TopBar, {
             isLeftSidebarMinimised: false,
             onToggleLeftSidebar: jest.fn(),
@@ -146,6 +168,6 @@ describe("TopBar", () => {
         const topBar = container.querySelector("[data-id=\"top-bar\"]");
         expect(topBar?.querySelectorAll("button").length).toBe(3);
         expect(topBar?.querySelectorAll("a").length).toBe(0);
-        expect(topBar?.textContent).toBe("GraftgraftRepo explorer");
+        expect(topBar?.textContent).toBe("GraftgraftRepo explorerCtrl+?: Show hotkeys");
     });
 });

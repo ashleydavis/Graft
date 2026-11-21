@@ -167,6 +167,12 @@ describe("BreadcrumbTrail", () => {
         expect(screen.getByPlaceholderText("Search pages")).not.toBeNull();
     });
 
+    test("gives the drop-down's search box a data-id made from the step's", () => {
+        renderTrail(trail);
+        openPageMenu();
+        expect(elementWithDataId("breadcrumb-page-search")).toBe(screen.getByPlaceholderText("Search pages"));
+    });
+
     test("picking another page opens it and closes the drop-down", async () => {
         const onNavigate = renderTrail(trail);
         openPageMenu();

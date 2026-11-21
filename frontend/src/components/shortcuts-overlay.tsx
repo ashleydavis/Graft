@@ -7,12 +7,13 @@ import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Dialog, DialogTitle } from "@mui/material";
 import { Fragment, JSX, useEffect, useState } from "react";
-import { actionShortcuts, IShortcut, matchingShortcuts, shortcutKeyNames } from "../lib/shortcuts";
+import { actionShortcuts, isShortcutsOverlayCtrlKey, IShortcut, matchingShortcuts, overlayShortcuts, shortcutKeyNames } from "../lib/shortcuts";
 
 //
 // The name of the backend's Keyboard Shortcuts action (backend/src/features/shortcuts-overlay.zig),
 // whose shortcut is `?`. The overlay registers its handler under this name and removes it under
-// the same name.
+// the same name. Ctrl+? is matched by the overlay itself and listed under this name with "-ctrl"
+// added.
 //
 export const shortcutsOverlayAction = "toggle-shortcuts-overlay";
 
@@ -63,6 +64,11 @@ export function KeyCaps({ keys, dataId }: IKeyCapsProps): JSX.Element {
 // mark. Escape closes the overlay. A click outside the overlay leaves it open. The search is
 // cleared each time the overlay closes. The handler is removed when the overlay goes, so a later
 // overlay can register it again. When the list cannot be read, the overlay shows why in its place.
+// Ctrl+? also opens and closes the overlay, from anywhere in the window and from a text box too.
+// Ziggy's shortcut syntax refuses a modifier on `?`, so the overlay listens for Ctrl+? itself, on
+// the window in the capture phase so it hears the key before any element does, and keeps the key
+// from doing anything else, so a text box with the focus keeps its text. The list shows Ctrl+? in
+// a row of its own after the Keyboard Shortcuts action's `?`.
 //
 export function ShortcutsOverlay(): JSX.Element {
     const [isOpen, setOpen] = useState(false);
@@ -73,7 +79,7 @@ export function ShortcutsOverlay(): JSX.Element {
     useEffect(() => {
         window.ziggy.listActions()
             .then(actions => {
-                setShortcuts(actionShortcuts(actions));
+                setShortcuts(overlayShortcuts(actionShortcuts(actions), shortcutsOverlayAction));
             })
             .catch(error => {
                 setListError(String(error));
@@ -86,6 +92,20 @@ export function ShortcutsOverlay(): JSX.Element {
         });
         return () => {
             window.ziggy.removeAction(shortcutsOverlayAction);
+        };
+    }, []);
+
+    useEffect(() => {
+        function onKeyDown(event: KeyboardEvent): void {
+            if (isShortcutsOverlayCtrlKey(event)) {
+                event.preventDefault();
+                setOpen(wasOpen => !wasOpen);
+            }
+        }
+
+        window.addEventListener("keydown", onKeyDown, true);
+        return () => {
+            window.removeEventListener("keydown", onKeyDown, true);
         };
     }, []);
 
