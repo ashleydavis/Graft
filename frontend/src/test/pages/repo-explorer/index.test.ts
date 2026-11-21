@@ -1119,6 +1119,10 @@ describe("RepoExplorerPage commit pages", () => {
         pressKey("ArrowDown");
         pressKey("ArrowDown");
         expect(isSelected(`commit-${commitPageJson(52, 1)[0].hash}`)).toBe(true);
+    });
+});
+
+//
 // Finds the column the page draws the pane with the data-id in, failing the test when the page
 // does not show the pane.
 //
