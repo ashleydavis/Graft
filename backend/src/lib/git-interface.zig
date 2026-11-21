@@ -1,7 +1,8 @@
 //
 // The Git interface: the one function that starts `git`. Every Git operation in Graft goes through
 // it, so a test can give the code above it a mock in its place, and it sends the frontend an
-// event naming the command it starts, so the help panel shows every Git command Graft runs.
+// event naming each command it ran and how long it took, so the help panel shows every Git command
+// Graft runs.
 //
 
 const std = @import("std");
@@ -58,7 +59,7 @@ pub const GitCommand = struct {
 };
 
 //
-// The event `run_git` sends the frontend for each command it starts. The field names are camelCase
+// The event `run_git` sends the frontend for each command it ran. The field names are camelCase
 // because Ziggy turns the struct into the JSON the frontend reads.
 //
 pub const GitCommandEvent = struct {
@@ -76,12 +77,18 @@ pub const GitCommandEvent = struct {
     // The Git command as the help panel shows it, quoted for a shell.
     //
     command: []const u8,
+
+    //
+    // How long `git` ran, from just before it started to just after it ended, in whole
+    // milliseconds, so the help panel shows what each command cost the page.
+    //
+    durationMs: u64,
 };
 
 //
-// The type of the Git interface function: sends the frontend the command, starts `git` and
-// reports how it ended. A plain function pointer, so the code that runs Git takes `run_git` itself
-// as an argument, and a unit test passes a mock instead.
+// The type of the Git interface function: starts `git`, sends the frontend the command and how
+// long it took, and reports how it ended. A plain function pointer, so the code that runs Git
+// takes `run_git` itself as an argument, and a unit test passes a mock instead.
 //
 pub const RunGit = *const fn (
     io: std.Io,
@@ -91,9 +98,12 @@ pub const RunGit = *const fn (
 ) anyerror!GitResult;
 
 //
-// The Git interface function. Sends the task's event naming the command as the help panel shows
-// it, then starts `git -C <repo>` with the command's arguments through `start_git`. Everything it
-// allocates for the event is freed before it starts git.
+// The Git interface function. Starts `git -C <repo>` with the command's arguments through
+// `start_git`, timing it on the awake clock, which never jumps when the system time is changed.
+// Then it sends the task's event naming the command as the help panel shows it, with how long git
+// ran, so the event is sent once the duration is known. Everything it allocates for the event is
+// freed before it returns. When the event cannot be sent, it frees git's output and returns the
+// error.
 //
 pub fn run_git(
     io: std.Io,
@@ -105,7 +115,6 @@ pub fn run_git(
     assert(command.args.len > 0);
     assert(command.shown_args.len > 0);
 
-    try send_git_command_event(io, services, allocator, command);
     const argv = try allocator.alloc([]const u8, command.args.len + 2);
     defer allocator.free(argv);
 
@@ -113,33 +122,85 @@ pub fn run_git(
     argv[1] = command.repo_path;
     @memcpy(argv[2..], command.args);
     assert(argv.len == command.args.len + 2);
-    return try start_git(io, allocator, argv);
+    const started = std.Io.Clock.awake.now(io);
+
+    const result = try start_git(io, allocator, argv);
+    errdefer allocator.free(result.stdout);
+    errdefer allocator.free(result.stderr);
+
+    const ended = std.Io.Clock.awake.now(io);
+    try send_git_command_event(
+        io,
+        services,
+        allocator,
+        command,
+        elapsed_milliseconds(.{
+            .start = started,
+            .end = ended,
+        }),
+    );
+    return result;
 }
 
 //
-// Sends the event naming the command, so the help panel shows the `cd` into the repo and the
-// command a user can paste into a terminal there.
+// Two readings of the awake clock, taken just before `git` starts and just after it ends. They are
+// named fields, so each call says which reading is the start and which is the end.
+//
+pub const ClockReadings = struct {
+    //
+    // The reading taken just before `git` starts.
+    //
+    start: std.Io.Timestamp,
+
+    //
+    // The reading taken just after `git` ends, never earlier than `start`.
+    //
+    end: std.Io.Timestamp,
+};
+
+//
+// Works out the whole milliseconds from the start reading to the end reading, rounded down, for
+// the duration `run_git` sends with each command. Both come from the awake clock, which never goes
+// backwards.
+//
+pub fn elapsed_milliseconds(readings: ClockReadings) u64 {
+    assert(readings.end.nanoseconds >= readings.start.nanoseconds);
+
+    const nanoseconds = readings.start.durationTo(readings.end).nanoseconds;
+    assert(nanoseconds >= 0);
+    return @intCast(@divFloor(nanoseconds, std.time.ns_per_ms));
+}
+
+//
+// Sends the event naming the command and how long it ran, so the help panel shows the `cd` into
+// the repo, the command a user can paste into a terminal there and its duration.
 //
 pub fn send_git_command_event(
     io: std.Io,
     services: TaskServices,
     allocator: std.mem.Allocator,
     command: GitCommand,
+    duration_ms: u64,
 ) !void {
     var arena_state = std.heap.ArenaAllocator.init(allocator);
     defer arena_state.deinit();
 
     const arena = arena_state.allocator();
-    const event = try git_command_event(arena, command);
+    const event = try git_command_event(arena, command, duration_ms);
+    assert(event.durationMs == duration_ms);
     assert(std.mem.startsWith(u8, event.command, "git "));
     try services.sendEvent(io, arena, event);
 }
 
 //
 // Builds the event for the command: `cd <repo>` and `git <shown arguments>`, each quoted for a
-// shell, allocated with the allocator.
+// shell and allocated with the allocator, and how long git ran.
 //
-pub fn git_command_event(allocator: std.mem.Allocator, command: GitCommand) !GitCommandEvent {
+pub fn git_command_event(
+    allocator: std.mem.Allocator,
+    command: GitCommand,
+    duration_ms: u64,
+) !GitCommandEvent {
     assert(command.repo_path.len > 0);
     assert(command.shown_args.len > 0);
 
@@ -153,6 +214,7 @@ pub fn git_command_event(allocator: std.mem.Allocator, command: GitCommand) !Git
             command.repo_path,
         }),
         .command = try format_command_line(allocator, shown_words),
+        .durationMs = duration_ms,
     };
 }
 

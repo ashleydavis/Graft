@@ -32,7 +32,7 @@ A top bar runs across the top, with Graft's name and the breadcrumb trail, which
 
 The left sidebar has a link to each page. Each page's section below gives where its link is. The menu button at the left of the top bar minimises the left sidebar to a strip of icons and expands it again.
 
-The button at the far right of the top bar slides the right sidebar in and out. The right sidebar shows the Git commands the page you are on has run, the most recent first, under the `cd` that moves a terminal into the repo. Click the copy button beside one to copy it, then paste it into a terminal to run it yourself.
+The button at the far right of the top bar slides the right sidebar in and out. The right sidebar shows the Git commands the page you are on has run, the most recent first, under the `cd` that moves a terminal into the repo. Under each command is how long it took, and under the `cd` is the total time of them all. Click the copy button beside one to copy it, then paste it into a terminal to run it yourself.
 
 The button next to it, which shows the current theme's icon, opens the theme menu, where you pick Graft's colours: **Light**, **Dark** or **System**, which follows your system's light or dark theme. Graft starts on **System** and remembers your choice the next time it opens. The setting is `theme` in Graft's config file, `~/.config/graft/config.toml` on Linux and macOS and `%APPDATA%\Graft\config.toml` on Windows.
 

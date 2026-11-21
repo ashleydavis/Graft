@@ -281,6 +281,7 @@ describe("AppLayout's Git commands", () => {
                 type: "git-command",
                 directoryCommand: "cd /repos/graft",
                 command,
+                durationMs: 4,
             },
         });
     }

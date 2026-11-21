@@ -1,12 +1,12 @@
 //
 // The Git commands panel: the help panel in the right sidebar that shows the Git commands the open
-// page has run.
+// page has run and how long they took.
 //
 
 import { faTerminal } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { JSX } from "react";
-import { IPageGitCommands } from "../lib/git-commands";
+import { formatDuration, IPageGitCommands, totalDurationMs } from "../lib/git-commands";
 import { CopyButton } from "./copy-button";
 
 //
@@ -69,8 +69,10 @@ export function CommandBlock({ command, textDataId, copyDataId }: ICommandBlockP
 //
 // Shows a heading with a line on what the panel is for, then the `cd` into the repo above the
 // page's Git commands, the most recent first, each with a button that copies it, so a user can run
-// what Graft ran in a terminal. For a page that has run no commands it shows the line "This page
-// has run no Git commands." in a dashed box with a terminal icon.
+// what Graft ran in a terminal. Under each command is how long it took, and above the commands is
+// the total time of them all, so a user sees what the page's Git work cost. For a page that has
+// run no commands it shows the line "This page has run no Git commands." in a dashed box with a
+// terminal icon.
 //
 export function GitCommandsPanel({ pageCommands }: IGitCommandsPanelProps): JSX.Element {
     return (
@@ -97,10 +99,16 @@ export function GitCommandsPanel({ pageCommands }: IGitCommandsPanelProps): JSX.
             {pageCommands !== undefined && (
                 <>
                     <CommandBlock command={pageCommands.directoryCommand} textDataId="git-commands-directory" copyDataId="git-commands-directory-copy" />
+                    <p className="text-[length:var(--text-sm)] text-[var(--color-text-muted)]">
+                        Total time: <span data-id="git-commands-total" className="text-[var(--color-text)]">{formatDuration(totalDurationMs(pageCommands))}</span>
+                    </p>
                     <ol data-id="git-commands-list" className="flex flex-col gap-[var(--space-2)]">
-                        {pageCommands.commands.map((command, index) => (
-                            <li key={command} data-id={`git-command-${index}`} className="flex flex-col">
-                                <CommandBlock command={command} textDataId={`git-command-${index}-text`} copyDataId={`git-command-${index}-copy`} />
+                        {pageCommands.commands.map((run, index) => (
+                            <li key={run.command} data-id={`git-command-${index}`} className="flex flex-col gap-[var(--space-1)]">
+                                <CommandBlock command={run.command} textDataId={`git-command-${index}-text`} copyDataId={`git-command-${index}-copy`} />
+                                <p className="pl-[var(--space-3)] text-[length:var(--text-xs)] text-[var(--color-text-muted)]">
+                                    Took <span data-id={`git-command-${index}-duration`}>{formatDuration(run.durationMs)}</span>
+                                </p>
                             </li>
                         ))}
                     </ol>

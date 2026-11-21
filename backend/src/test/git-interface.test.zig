@@ -3,7 +3,7 @@
 // test makes its own repo in a uniquely named directory under the project's `tmp/`, so the tests
 // can run in parallel with themselves, and checks only that the function starts git with the
 // arguments, reports its exit code, standard output and standard error and sends the event that
-// names the command, and how that command is written for a shell.
+// names the command with how long it ran, and how that command is written for a shell.
 //
 
 const std = @import("std");
@@ -228,7 +228,7 @@ fn log_task_handler(
     };
 }
 
-test "run_git sends the command as the help panel shows it and runs git in the repo" {
+test "run_git sends the shown command with its duration and runs git in the repo" {
     var directory: TestDirectory = undefined;
     try make_test_directory(&directory);
     defer delete_test_directory(&directory);
@@ -267,7 +267,7 @@ test "run_git sends the command as the help panel shows it and runs git in the r
     const expected_event = try std.fmt.allocPrint(
         std.testing.allocator,
         "{{\"type\":\"git-command\",\"directoryCommand\":\"cd {s}\"," ++
-            "\"command\":\"git log --format=%s\"}}",
+            "\"command\":\"git log --format=%s\",\"durationMs\":",
         .{directory.path()},
     );
     defer std.testing.allocator.free(expected_event);
@@ -279,6 +279,103 @@ test "run_git sends the command as the help panel shows it and runs git in the r
         std.testing.allocator,
         "\"status\":\"succeeded\",\"outputs\":{\"stdout\":" ++
             "\"The second commit\\nThe first commit\\n\"}",
+    );
+}
+
+//
+// Runs `git log --format=%s` in the repo through `run_git` with the allocator and frees what git
+// wrote, for the allocation failure test.
+//
+fn run_git_log(
+    allocator: std.mem.Allocator,
+    io_task: std.Io,
+    services: TaskServices,
+    repo_path: []const u8,
+) !void {
+    const result = try git_interface.run_git(io_task, services, allocator, .{
+        .repo_path = repo_path,
+        .args = &.{
+            "log",
+            "--format=%s",
+        },
+        .shown_args = &.{
+            "log",
+            "--format=%s",
+        },
+    });
+    allocator.free(result.stdout);
+    allocator.free(result.stderr);
+}
+
+//
+// A task that runs `git log` through `run_git` once for each allocation it makes, failing that
+// allocation, so the test checks `run_git` frees git's output when the event cannot be sent.
+//
+fn log_allocation_failures_task_handler(
+    services: TaskServices,
+    timers: Timers,
+    io_task: std.Io,
+    allocator: std.mem.Allocator,
+    context: TaskContext,
+    payload: LogTaskRequest,
+) anyerror!LogTaskResult {
+    _ = timers;
+    _ = context;
+    _ = allocator;
+    try std.testing.checkAllAllocationFailures(
+        std.testing.allocator,
+        run_git_log,
+        .{
+            io_task,
+            services,
+            payload.repoPath,
+        },
+    );
+    return .{
+        .stdout = "checked",
+    };
+}
+
+test "run_git frees everything when an allocation fails" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    try init_repo(&directory);
+    try commit(&directory, "The first commit");
+
+    var native_app: FakeNativeApp = undefined;
+    native_app.init();
+    const directories = try test_environment.useTestEnvironment(
+        std.testing.allocator,
+        native_app.data_tmp,
+    );
+    defer test_environment.freeTestEnvironment(std.testing.allocator, directories);
+    defer native_app.deinit(io, std.testing.allocator);
+
+    try native_app.start(io, std.testing.allocator, native_app.config(2, 2), ziggy.core.App(.{
+        .messages = .{},
+        .tasks = .{
+            .log = log_allocation_failures_task_handler,
+        },
+        .menu = &.{},
+        .ui_files = &.{},
+    }));
+    defer native_app.stop(io, std.testing.allocator);
+
+    const message = try std.fmt.allocPrint(
+        std.testing.allocator,
+        "{{\"kind\":\"system\",\"name\":\"add-task\",\"data\":{{\"taskId\":\"t1\"," ++
+            "\"taskType\":\"log\",\"source\":\"test\",\"data\":{{\"repoPath\":\"{s}\"}}}}}}",
+        .{directory.path()},
+    );
+    defer std.testing.allocator.free(message);
+
+    try native_app.send(io, std.testing.allocator, message);
+    try native_app.expectMessageContaining(
+        io,
+        std.testing.allocator,
+        "\"status\":\"succeeded\",\"outputs\":{\"stdout\":\"checked\"}",
     );
 }
 
@@ -299,13 +396,14 @@ test "git_command_event writes the cd into the repo and the shown command for a 
             "--",
             "it's here.txt",
         },
-    });
+    }, 1432);
     try std.testing.expectEqualStrings("git-command", event.type);
     try std.testing.expectEqualStrings("cd '/home/ada/my repo'", event.directoryCommand);
     try std.testing.expectEqualStrings(
         "git diff-tree abc123 -- 'it'\\''s here.txt'",
         event.command,
     );
+    try std.testing.expectEqual(@as(u64, 1432), event.durationMs);
 }
 
 //
@@ -325,7 +423,7 @@ fn build_quoted_git_command_event(allocator: std.mem.Allocator) !void {
         .shown_args = &.{
             "log",
         },
-    });
+    }, 7);
     try std.testing.expectEqualStrings("git log", event.command);
 }
 
@@ -334,6 +432,37 @@ test "git_command_event frees everything when an allocation fails" {
         std.testing.allocator,
         build_quoted_git_command_event,
         .{},
+    );
+}
+
+//
+// Works out the milliseconds `elapsed_milliseconds` gives for an end reading the duration after
+// the start reading, so each check in the test below names only the duration.
+//
+fn measured_milliseconds(start: std.Io.Timestamp, duration: std.Io.Duration) u64 {
+    return git_interface.elapsed_milliseconds(.{
+        .start = start,
+        .end = start.addDuration(duration),
+    });
+}
+
+test "elapsed_milliseconds gives the whole milliseconds between two readings of a clock" {
+    const start = std.Io.Timestamp.fromNanoseconds(5 * std.time.ns_per_s);
+    try std.testing.expectEqual(
+        @as(u64, 0),
+        measured_milliseconds(start, .fromNanoseconds(0)),
+    );
+    try std.testing.expectEqual(
+        @as(u64, 0),
+        measured_milliseconds(start, .fromMicroseconds(999)),
+    );
+    try std.testing.expectEqual(
+        @as(u64, 12),
+        measured_milliseconds(start, .fromMicroseconds(12_700)),
+    );
+    try std.testing.expectEqual(
+        @as(u64, 1_400),
+        measured_milliseconds(start, .fromMilliseconds(1_400)),
     );
 }
 

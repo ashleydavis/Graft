@@ -1,12 +1,23 @@
 //
 // Tests the Git commands panel: what it says when the page has run no commands, and that it shows
 // the cd into the repo above the page's commands, the most recent first, each with a copy button
-// that copies it.
+// that copies it and how long it took, with the total time of them all.
 //
 
 import { act, render } from "@testing-library/react";
 import { createElement } from "react";
 import { COMMAND_WORD_LENGTH_UNBROKEN_MAX, GitCommandsPanel } from "../../components/git-commands-panel";
+import { IGitCommandRun } from "../../lib/git-commands";
+
+//
+// Makes the runs of the commands, each taking 3 ms, for a test that does not look at durations.
+//
+function commandRuns(commands: string[]): IGitCommandRun[] {
+    return commands.map(command => ({
+        command,
+        durationMs: 3,
+    }));
+}
 
 //
 // The element with the data-id in the container.
@@ -30,7 +41,7 @@ describe("GitCommandsPanel", () => {
         const { container } = render(createElement(GitCommandsPanel, {
             pageCommands: {
                 directoryCommand: "cd /repo",
-                commands: ["git diff-tree abc", "git log --max-count=50"],
+                commands: commandRuns(["git diff-tree abc", "git log --max-count=50"]),
             },
         }));
         expect(elementWithDataId(container, "git-commands-empty")).toBeUndefined();
@@ -46,6 +57,29 @@ describe("GitCommandsPanel", () => {
         }
     });
 
+    test("shows how long each command took and the total time of them all", () => {
+        const { container } = render(createElement(GitCommandsPanel, {
+            pageCommands: {
+                directoryCommand: "cd /repo",
+                commands: [
+                    {
+                        command: "git diff-tree abc",
+                        durationMs: 12,
+                    },
+                    {
+                        command: "git log --max-count=50",
+                        durationMs: 1388,
+                    },
+                ],
+            },
+        }));
+        expect(elementWithDataId(container, "git-command-0-duration")?.textContent).toBe("12 ms");
+        expect(elementWithDataId(container, "git-command-1-duration")?.textContent).toBe("1.3 s");
+        expect(elementWithDataId(container, "git-commands-total")?.textContent).toBe("1.4 s");
+        expect(elementWithDataId(container, "git-commands-total")?.parentElement?.textContent).toBe("Total time: 1.4 s");
+        expect(elementWithDataId(container, "git-command-0-duration")?.parentElement?.textContent).toBe("Took 12 ms");
+    });
+
     test("copies the cd and each command with its own button", async () => {
         const writeText = jest.fn().mockResolvedValue(undefined);
         Object.defineProperty(navigator, "clipboard", {
@@ -57,7 +91,7 @@ describe("GitCommandsPanel", () => {
         const { container } = render(createElement(GitCommandsPanel, {
             pageCommands: {
                 directoryCommand: "cd /repo",
-                commands: ["git diff-tree abc", "git log --max-count=50"],
+                commands: commandRuns(["git diff-tree abc", "git log --max-count=50"]),
             },
         }));
         await act(async () => {
@@ -74,7 +108,7 @@ describe("GitCommandsPanel", () => {
         const { container } = render(createElement(GitCommandsPanel, {
             pageCommands: {
                 directoryCommand: "cd /repo",
-                commands: [`git ${shortWord} ${longWord}`],
+                commands: commandRuns([`git ${shortWord} ${longWord}`]),
             },
         }));
         const words = Array.from(elementWithDataId(container, "git-command-0-text")?.querySelectorAll(":scope > span > span") ?? []);
@@ -87,7 +121,7 @@ describe("GitCommandsPanel", () => {
         const { container } = render(createElement(GitCommandsPanel, {
             pageCommands: {
                 directoryCommand: "cd /repo",
-                commands: ["git log"],
+                commands: commandRuns(["git log"]),
             },
         }));
         const prompt = elementWithDataId(container, "git-command-0-text")?.previousElementSibling;

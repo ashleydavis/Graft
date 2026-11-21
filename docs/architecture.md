@@ -28,7 +28,7 @@ flowchart LR
 - Lives in `frontend/`. TypeScript, React, TanStack, MaterialUI, Tailwind and Font Awesome icons, bundled by Vite and embedded in the app.
 - Owns everything the user sees: the pages, the layout and the state of the window. The open repo's path is part of that state, kept in `RepoContext` above the router so it stays loaded while the user moves between pages.
 - Keeps its logic in plain functions under `src/lib/`, so the UI is a thin layer over unit tested code.
-- The layout listens for every task's `git-command` event and keeps each page's commands by the source its tasks are queued under, for as long as the app runs, so the right sidebar's Git commands panel shows the commands of the page that is open.
+- The layout listens for every task's `git-command` event and keeps each page's commands and their durations by the source its tasks are queued under, for as long as the app runs, so the right sidebar's Git commands panel shows the commands of the page that is open, how long each took and their total time.
 - Each feature whose action works on every page registers the action's handler in a hook of its own, such as `useOpenRepoAction`, and the layout calls one hook per feature.
 - Must not reach Git, the file system or the computer. It asks the backend through `window.ziggy`.
 
@@ -37,7 +37,7 @@ flowchart LR
 - Lives in `backend/`. Zig, declared to Ziggy in `backend/src/app.zig`. Each feature declares its actions, menu items, messages and tasks in its own file under `backend/src/features/`, and `app.zig`, `lib/actions.zig` and `lib/menu.zig` build Graft's lists from them, so a new feature adds a file and one line per list, and features added side by side rarely change the same lines.
 - Owns every call to `git`, every file read and write and anything else that reaches the computer.
 - Message handlers run on the backend's main thread and answer quickly. Anything slow is a task on a worker thread.
-- Starts `git` through one Git interface function, `run_git` in `backend/src/lib/git-interface.zig`. It takes the task's services and a Git command: the repo, the arguments Graft runs and the arguments the help panel shows. It sends a `git-command` task event with `cd <repo>` and `git <shown arguments>`, each quoted for a POSIX shell, then starts `git -C <repo>` with the arguments and reports the exit code, standard output and standard error. Every other piece of backend code that needs Git calls it.
+- Starts `git` through one Git interface function, `run_git` in `backend/src/lib/git-interface.zig`. It takes the task's services and a Git command: the repo, the arguments Graft runs and the arguments the help panel shows. It starts `git -C <repo>` with the arguments and times it on the awake clock, which never jumps when the system time is changed. Then it sends a `git-command` task event with `cd <repo>` and `git <shown arguments>`, each quoted for a POSIX shell, and the duration in milliseconds, and reports the exit code, standard output and standard error. The event is sent after `git` ends because the duration is known only then. Every other piece of backend code that needs Git calls it.
 - Wraps each Git command in a function that builds its arguments and parses its output, such as the `log` wrapper in `backend/src/lib/git-log.zig`. Beside the arguments it runs, each wrapper decides the arguments the help panel shows, which leave out what only Graft's parsing needs (`-z` and a `--format` with separator characters), so the command shown works pasted into a terminal in the repo. A wrapper takes the Git interface function as an argument, so its unit tests pass a mock.
 - The `log` wrapper reads one page of commits at a time with `git log -z`, its fields split by the unit separator (0x1f). A later page starts from the last commit of the previous page and skips it, so a new commit on top does not shift the pages.
 - The `log` wrapper also reads one commit by its hash, for the commit details pane. The `diff-tree` wrapper in `backend/src/lib/git-diff-tree.zig` reads what one commit changed with `git diff-tree`: its changed files with their line counts and the diff of one of them. Both refuse a hash that is not hexadecimal, so git reads text from the frontend only as a commit.
@@ -80,7 +80,7 @@ A user action that needs data from Git:
 
 1. The frontend queues a task as `interactive` and shows that it is loading.
 2. The native app passes the `add-task` message to the backend, which queues the task.
-3. A worker thread runs the task. It calls the Git interface function, which sends the frontend a `git-command` task event naming the command, then starts `git` in the repo's folder and reads its output.
+3. A worker thread runs the task. It calls the Git interface function, which starts `git` in the repo's folder and reads its output, then sends the frontend a `git-command` task event naming the command and how long it took.
 4. The task parses the output and returns it as its result.
 5. The native app delivers the `task-completed` event to the frontend, which renders the result.
 6. If `git` fails, the task fails with an error that says what went wrong. The frontend shows it.

@@ -4,10 +4,11 @@
 # Creates a test repo of the smoke test's own, starts the real app with remote control on, opens the
 # repo with the welcome page's Open repo button and checks the right sidebar shows the Git commands
 # the commits page runs: git log when the page opens, then git log and git diff-tree when a commit
-# opens and git diff-tree for a file's diff. It checks the commands stay when a pane closes and when
-# the sidebar closes and that the About page shows none. It runs every command the sidebar shows in
-# a terminal's shell, after the cd it shows, so a command that does not work fails the test. See
-# test.md.
+# opens and git diff-tree for a file's diff. It checks every command the commits page ran shows how
+# long it took and the panel shows their total time. It checks the commands stay when a pane closes
+# and when the sidebar closes and that the About page shows none. It runs every command the sidebar
+# shows in a terminal's shell, after the cd it shows, so a command that does not work fails the
+# test. See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -24,6 +25,37 @@ head_hash="$(git -C "$repo" rev-parse HEAD)" || fail "could not read the test re
 # The most commands the sidebar can show for one page, the limit the frontend keeps.
 #
 MAX_COMMANDS=20
+
+#
+# Fails unless the duration the element with the data-id shows is written as the panel writes one:
+# whole milliseconds ("12 ms"), seconds to one decimal place ("1.4 s") or minutes and seconds
+# ("1 min 5 s").
+#
+check_duration_text() {
+    local data_id="$1"
+    local duration
+    duration="$(text_of "$data_id")"
+    if [[ ! "$duration" =~ ^([0-9]+\ ms|[0-9]+\.[0-9]\ s|[0-9]+\ min\ [0-9]+\ s)$ ]]; then
+        fail "$data_id showed \"$duration\", which is not a duration"
+    fi
+}
+
+#
+# Checks every command the commits page ran shows its duration and the panel shows the total time
+# of them all.
+#
+check_durations() {
+    local index=0
+    while [ "$index" -lt "$MAX_COMMANDS" ]; do
+        if [ "$(control "{\"command\":\"exists\",\"dataId\":\"git-command-$index\"}" | jq -r '.ok')" != "true" ]; then
+            break
+        fi
+        check_duration_text "git-command-$index-duration"
+        index=$((index + 1))
+    done
+    [ "$index" -gt 0 ] || fail "the sidebar showed no Git commands"
+    check_duration_text git-commands-total
+}
 
 #
 # Runs every command the sidebar shows, each after the cd it shows, in a shell of its own started
@@ -88,6 +120,7 @@ click commit-details-close
 wait_for_missing_element commit-details-pane 30
 wait_for_text git-command-0-text "git diff-tree -r -p --root --no-commit-id $head_hash -- notes.txt" 30
 wait_for_text git-command-4-text "git log --max-count=50" 30
+check_durations
 
 click right-sidebar-toggle
 wait_for_missing_element git-commands-panel 30
