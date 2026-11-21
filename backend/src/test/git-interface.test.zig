@@ -217,10 +217,6 @@ fn log_task_handler(
             "log",
             "--format=%s",
         },
-        .shown_args = &.{
-            "log",
-            "--format=%s",
-        },
     });
     try std.testing.expectEqual(@as(?u8, 0), result.exit_code);
     return .{
@@ -295,10 +291,6 @@ fn run_git_log(
     const result = try git_interface.run_git(io_task, services, allocator, .{
         .repo_path = repo_path,
         .args = &.{
-            "log",
-            "--format=%s",
-        },
-        .shown_args = &.{
             "log",
             "--format=%s",
         },
@@ -389,10 +381,6 @@ test "git_command_event writes the cd into the repo and the shown command for a 
             "diff-tree",
             "-z",
             "abc123",
-        },
-        .shown_args = &.{
-            "diff-tree",
-            "abc123",
             "--",
             "it's here.txt",
         },
@@ -420,9 +408,6 @@ fn build_quoted_git_command_event(allocator: std.mem.Allocator) !void {
             "log",
             "-z",
         },
-        .shown_args = &.{
-            "log",
-        },
     }, 7);
     try std.testing.expectEqualStrings("git log", event.command);
 }
@@ -433,6 +418,123 @@ test "git_command_event frees everything when an allocation fails" {
         build_quoted_git_command_event,
         .{},
     );
+}
+
+//
+// Derives the shown arguments from the arguments with the allocator and checks them against the
+// expected ones, freeing the list, so each test below names only the two lists.
+//
+fn expect_shown_args(
+    allocator: std.mem.Allocator,
+    args: []const []const u8,
+    expected_shown_args: []const []const u8,
+) !void {
+    const shown = try git_interface.shown_args(allocator, args);
+    defer allocator.free(shown);
+
+    try std.testing.expectEqual(expected_shown_args.len, shown.len);
+    for (expected_shown_args, shown) |expected_arg, shown_arg| {
+        try std.testing.expectEqualStrings(expected_arg, shown_arg);
+    }
+}
+
+test "shown_args leaves out -z" {
+    try expect_shown_args(std.testing.allocator, &.{
+        "status",
+        "--porcelain=v1",
+        "-z",
+        "--untracked-files=all",
+    }, &.{
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all",
+    });
+}
+
+test "shown_args leaves out a --format with separator characters" {
+    try expect_shown_args(std.testing.allocator, &.{
+        "log",
+        "-z",
+        "--max-count=50",
+        "--format=%H%x1f%P%x1f%s",
+    }, &.{
+        "log",
+        "--max-count=50",
+    });
+}
+
+test "shown_args keeps a --format with no separator characters" {
+    try expect_shown_args(std.testing.allocator, &.{
+        "log",
+        "--format=%s",
+    }, &.{
+        "log",
+        "--format=%s",
+    });
+}
+
+test "shown_args keeps every argument after --, even -z and a --format" {
+    try expect_shown_args(std.testing.allocator, &.{
+        "diff-tree",
+        "-z",
+        "abc123",
+        "--",
+        "-z",
+        "--format=%x1f",
+    }, &.{
+        "diff-tree",
+        "abc123",
+        "--",
+        "-z",
+        "--format=%x1f",
+    });
+}
+
+test "shown_args keeps every argument when Graft adds none to read the output" {
+    try expect_shown_args(std.testing.allocator, &.{
+        "add",
+        "--",
+        "notes.txt",
+    }, &.{
+        "add",
+        "--",
+        "notes.txt",
+    });
+}
+
+//
+// Derives the shown arguments of a command with a `-z` before `--` and one after it with the
+// allocator, for the allocation failure test.
+//
+fn derive_shown_args_with_path(allocator: std.mem.Allocator) !void {
+    try expect_shown_args(allocator, &.{
+        "diff",
+        "-z",
+        "--",
+        "-z",
+    }, &.{
+        "diff",
+        "--",
+        "-z",
+    });
+}
+
+test "shown_args frees everything when an allocation fails" {
+    try std.testing.checkAllAllocationFailures(
+        std.testing.allocator,
+        derive_shown_args_with_path,
+        .{},
+    );
+}
+
+test "is_parser_arg picks out -z and a --format with separator characters only" {
+    try std.testing.expect(git_interface.is_parser_arg("-z"));
+    try std.testing.expect(git_interface.is_parser_arg("--format=%H%x1f%s"));
+    try std.testing.expect(git_interface.is_parser_arg("--format=%s%x00"));
+    try std.testing.expect(!git_interface.is_parser_arg("--format=%s"));
+    try std.testing.expect(!git_interface.is_parser_arg("-zz"));
+    try std.testing.expect(!git_interface.is_parser_arg("--max-count=1"));
+    try std.testing.expect(!git_interface.is_parser_arg("%x1f"));
 }
 
 //

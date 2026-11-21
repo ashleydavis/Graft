@@ -131,14 +131,6 @@ pub fn read_changed_files(
             "--name-status",
             request.hash,
         },
-        .shown_args = &.{
-            "diff-tree",
-            "-r",
-            "--root",
-            "--no-commit-id",
-            "--name-status",
-            request.hash,
-        },
     });
     const files = parse_name_status_output(allocator, name_status) catch |err| {
         if (err == error.UnexpectedGitDiffTreeOutput) {
@@ -152,14 +144,6 @@ pub fn read_changed_files(
             "diff-tree",
             "-r",
             "-z",
-            "--root",
-            "--no-commit-id",
-            "--numstat",
-            request.hash,
-        },
-        .shown_args = &.{
-            "diff-tree",
-            "-r",
             "--root",
             "--no-commit-id",
             "--numstat",
@@ -249,7 +233,6 @@ pub fn read_file_diff(
     const result = try run_git(io, services, allocator, .{
         .repo_path = request.repo_path,
         .args = args,
-        .shown_args = args,
     });
     if (result.exit_code != 0) {
         services.log.tool("git", .{

@@ -227,11 +227,6 @@ pub fn read_commit(
             log_format,
             request.hash,
         },
-        .shown_args = &.{
-            "log",
-            "--max-count=1",
-            request.hash,
-        },
     });
     if (result.exit_code != 0) {
         services.log.tool("git", .{
@@ -292,10 +287,6 @@ pub fn read_log_page_command(
         max_count,
         log_format,
     };
-    const first_page_shown_args = [_][]const u8{
-        "log",
-        max_count,
-    };
     if (request.after_hash) |hash| {
         const later_page_args = [_][]const u8{
             "--skip=1",
@@ -304,16 +295,11 @@ pub fn read_log_page_command(
         return .{
             .repo_path = request.repo_path,
             .args = try allocator.dupe([]const u8, &(first_page_args ++ later_page_args)),
-            .shown_args = try allocator.dupe(
-                []const u8,
-                &(first_page_shown_args ++ later_page_args),
-            ),
         };
     } else {
         return .{
             .repo_path = request.repo_path,
             .args = try allocator.dupe([]const u8, &first_page_args),
-            .shown_args = try allocator.dupe([]const u8, &first_page_shown_args),
         };
     }
 }

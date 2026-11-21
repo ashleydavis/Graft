@@ -105,7 +105,6 @@ pub fn read_working_file_diff(
     const result = try run_git(io, services, allocator, .{
         .repo_path = request.repo_path,
         .args = args,
-        .shown_args = args,
     });
     if (!is_diff_success(request.side, result.exit_code)) {
         services.log.tool("git", .{

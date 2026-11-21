@@ -285,6 +285,25 @@ test "read_log_page fails with GitLogFailed when git ends without exiting" {
     );
 }
 
+test "read_log_page refuses output that does not end with a commit's NUL" {
+    var task = git_mock.mock_task();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    try std.testing.expectError(error.UnexpectedGitLogOutput, git_log.read_log_page(
+        io,
+        git_mock.mock_services(&task),
+        arena.allocator(),
+        comptime mock_first_page("not a commit"),
+        first_page_request,
+    ));
+    try std.testing.expectEqualStrings(
+        "Git log wrote output Graft could not read, so the commits could not be read. Check " ++
+            "that the git on PATH is a standard git.",
+        task.failure.?,
+    );
+}
+
 test "read_log_page passes up the error when git cannot be started" {
     var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);

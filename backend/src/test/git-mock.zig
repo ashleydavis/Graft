@@ -56,8 +56,9 @@ pub const MockGitOptions = struct {
     expected_args: []const []const u8,
 
     //
-    // The arguments the code under test must give the help panel to show. Any others fail the call
-    // with error.UnexpectedGitArguments, so a test fails when the code shows the wrong command.
+    // The arguments after `git` the help panel must show, as `shown_args` in the Git interface
+    // derives them from the arguments git is started with. Any others fail the call with
+    // error.UnexpectedGitArguments, so a test fails when the panel would show the wrong command.
     //
     expected_shown_args: []const []const u8,
 
@@ -109,8 +110,12 @@ pub fn mock_git(comptime options: MockGitOptions) git_interface.RunGit {
                 std.debug.print("git was started with arguments the test does not expect\n", .{});
                 return error.UnexpectedGitArguments;
             }
-            if (!is_same_args(command.shown_args, options.expected_shown_args)) {
-                std.debug.print("the help panel was given a command no test expects\n", .{});
+
+            const shown_args = try git_interface.shown_args(std.testing.allocator, command.args);
+            defer std.testing.allocator.free(shown_args);
+
+            if (!is_same_args(shown_args, options.expected_shown_args)) {
+                std.debug.print("the help panel would show a command no test expects\n", .{});
                 return error.UnexpectedGitArguments;
             }
 

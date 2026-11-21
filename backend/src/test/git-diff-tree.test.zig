@@ -316,6 +316,33 @@ test "read_changed_files fails with GitDiffTreeFailed when git exits with an err
     );
 }
 
+test "read_changed_files refuses a changed file git listed with no path" {
+    var task = git_mock.mock_task();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = changed_files_args,
+        .expected_shown_args = changed_files_shown_args,
+        .exit_code = 0,
+        .stdout = "M\x00",
+        .stderr = "",
+        .start_error = null,
+    });
+    try std.testing.expectError(error.UnexpectedGitDiffTreeOutput, git_diff_tree.read_changed_files(
+        io,
+        git_mock.mock_services(&task),
+        arena.allocator(),
+        mock,
+        changed_files_request,
+    ));
+    try std.testing.expectEqualStrings(
+        "Git diff-tree wrote output Graft could not read, so the commit's changed files could " ++
+            "not be read. Check that the git on PATH is a standard git.",
+        task.failure.?,
+    );
+}
+
 test "read_changed_files refuses line counts that are not for the files git listed" {
     var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);

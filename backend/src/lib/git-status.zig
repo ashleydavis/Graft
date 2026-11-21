@@ -72,12 +72,6 @@ pub fn read_working_changes(
             "--untracked-files=all",
             "--no-renames",
         },
-        .shown_args = &.{
-            "status",
-            "--porcelain=v1",
-            "--untracked-files=all",
-            "--no-renames",
-        },
     });
     if (result.exit_code != 0) {
         services.log.tool("git", .{

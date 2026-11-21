@@ -34,10 +34,9 @@ pub const GitResult = struct {
 };
 
 //
-// One Git command a wrapper runs: the repo it runs in, the arguments Graft starts git with and
-// the arguments the help panel shows. Each wrapper decides both lists beside each other, because
-// the arguments Graft needs to parse git's output (`-z`, a `--format` with separator characters)
-// are for Graft's parser, while a user in a terminal reads git's own output.
+// One Git command a wrapper runs: the repo it runs in and the arguments Graft starts git with. The
+// help panel shows the command `shown_args` derives from the arguments, so each wrapper writes its
+// arguments once.
 //
 pub const GitCommand = struct {
     //
@@ -50,12 +49,6 @@ pub const GitCommand = struct {
     // The arguments after `git -C <repo>` that Graft starts git with.
     //
     args: []const []const u8,
-
-    //
-    // The arguments after `git` that the help panel shows, which do the same work as `args` when
-    // they are pasted into a terminal in the repo.
-    //
-    shown_args: []const []const u8,
 };
 
 //
@@ -113,7 +106,6 @@ pub fn run_git(
 ) anyerror!GitResult {
     assert(command.repo_path.len > 0);
     assert(command.args.len > 0);
-    assert(command.shown_args.len > 0);
 
     const argv = try allocator.alloc([]const u8, command.args.len + 2);
     defer allocator.free(argv);
@@ -202,11 +194,16 @@ pub fn git_command_event(
     duration_ms: u64,
 ) !GitCommandEvent {
     assert(command.repo_path.len > 0);
-    assert(command.shown_args.len > 0);
+    assert(command.args.len > 0);
 
-    const shown_words = try allocator.alloc([]const u8, command.shown_args.len + 1);
+    const shown = try shown_args(allocator, command.args);
+    defer allocator.free(shown);
+
+    const shown_words = try allocator.alloc([]const u8, shown.len + 1);
+    defer allocator.free(shown_words);
+
     shown_words[0] = "git";
-    @memcpy(shown_words[1..], command.shown_args);
+    @memcpy(shown_words[1..], shown);
     return .{
         .type = "git-command",
         .directoryCommand = try format_command_line(allocator, &.{
@@ -216,6 +213,61 @@ pub fn git_command_event(
         .command = try format_command_line(allocator, shown_words),
         .durationMs = duration_ms,
     };
+}
+
+//
+// Works out the arguments the help panel shows after `git` from the arguments Graft runs: the
+// same arguments without `-z` and without a `--format` that writes bytes by their hex code (`%x`),
+// which Graft adds only to read git's output, so the command shown prints git's own output when
+// pasted into a terminal. The arguments from `--` on are paths, so they are all shown, even one
+// named `-z`. The list is allocated with the allocator, and its words point into `args`.
+//
+pub fn shown_args(allocator: std.mem.Allocator, args: []const []const u8) ![]const []const u8 {
+    assert(args.len > 0);
+
+    var path_index: u32 = @intCast(args.len);
+    var parser_count: u32 = 0;
+    for (args, 0..) |arg, index| {
+        if (std.mem.eql(u8, arg, "--")) {
+            path_index = @intCast(index);
+            break;
+        }
+        if (is_parser_arg(arg)) {
+            parser_count += 1;
+        }
+    }
+    assert(parser_count < path_index);
+
+    const shown = try allocator.alloc([]const u8, args.len - parser_count);
+    var shown_count: u32 = 0;
+    for (args[0..path_index]) |arg| {
+        if (!is_parser_arg(arg)) {
+            shown[shown_count] = arg;
+            shown_count += 1;
+        }
+    }
+    @memcpy(shown[shown_count..], args[path_index..]);
+    assert(shown_count == path_index - parser_count);
+    assert(shown.len > 0);
+    return shown;
+}
+
+//
+// Checks whether the argument is one Graft adds only so it can read git's output: `-z`, or a
+// `--format` that writes bytes by their hex code (`%x`), which is how Graft writes the separator
+// characters between fields. `shown_args` calls it to leave those arguments out of the command
+// the help panel shows.
+//
+pub fn is_parser_arg(arg: []const u8) bool {
+    assert(arg.len > 0);
+
+    if (std.mem.eql(u8, arg, "-z")) {
+        return true;
+    }
+    if (std.mem.startsWith(u8, arg, "--format=")) {
+        return std.mem.indexOf(u8, arg, "%x") != null;
+    }
+    return false;
 }
 
 //

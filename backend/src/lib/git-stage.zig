@@ -51,7 +51,6 @@ pub fn stage_file(
     const result = try run_git(io, services, allocator, .{
         .repo_path = request.repo_path,
         .args = args,
-        .shown_args = args,
     });
     if (result.exit_code != 0) {
         services.log.tool("git", .{
@@ -91,7 +90,6 @@ pub fn unstage_file(
     const result = try run_git(io, services, allocator, .{
         .repo_path = request.repo_path,
         .args = args,
-        .shown_args = args,
     });
     if (result.exit_code != 0) {
         services.log.tool("git", .{
