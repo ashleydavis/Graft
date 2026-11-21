@@ -179,12 +179,13 @@ describe("performTestCommand", () => {
             value: "not prevented",
         });
         expect(element.events.length).toBe(1);
-        const event = element.events[0] as KeyboardEvent;
-        expect(event.type).toBe("keydown");
-        expect(event.key).toBe("?");
-        expect(event.ctrlKey).toBe(true);
-        expect(event.bubbles).toBe(true);
-        expect(event.cancelable).toBe(true);
+        const event = element.events[0];
+        expect(event).toBeInstanceOf(KeyboardEvent);
+        expect(event).toHaveProperty("type", "keydown");
+        expect(event).toHaveProperty("key", "?");
+        expect(event).toHaveProperty("ctrlKey", true);
+        expect(event).toHaveProperty("bubbles", true);
+        expect(event).toHaveProperty("cancelable", true);
     });
 
     test("key-down without ctrl dispatches the key with Control up", () => {
@@ -194,7 +195,7 @@ describe("performTestCommand", () => {
             dataId: "target",
             key: "?",
         });
-        expect((element.events[0] as KeyboardEvent).ctrlKey).toBe(false);
+        expect(element.events[0]).toHaveProperty("ctrlKey", false);
     });
 
     test("key-down reports a key a listener kept from doing anything else as prevented", () => {

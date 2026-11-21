@@ -35,9 +35,10 @@ bun run macos
 9. Clear the search box, then press Ctrl+? (Ctrl+Shift+/ on most layouts, Ctrl and the `?` key on macOS too). Check the overlay shows and the drop-down's search box is still empty. Check the overlay lists "Keyboard Shortcuts" twice, straight after each other: once with `?` and once with Ctrl and `?`.
 10. Press Ctrl+? again, with the focus in the overlay's search box. Check the overlay closes and its search box text is unchanged.
 11. Press Escape to close the drop-down. Press Ctrl+? and check the overlay shows, then press Ctrl+? and check it closes.
-12. Pick Dark from the theme menu in the top bar. Check "Ctrl+?: Show hotkeys" shows in dark colours. Press `?` and check the overlay and its shortcuts show in dark colours. Press Escape to close it.
-13. Close the window.
+12. Hold Ctrl+Shift+/ down for two seconds, so the key repeats, then let go. Check the overlay shows and stays open. Hold the keys down for two seconds again and check the overlay closes and stays closed.
+13. Pick Dark from the theme menu in the top bar. Check "Ctrl+?: Show hotkeys" shows in dark colours. Press `?` and check the overlay and its shortcuts show in dark colours. Press Escape to close it.
+14. Close the window.
 
 ## Expected result
 
-`?` shows the keyboard shortcuts overlay, which lists every shortcut of Ziggy's action list in one column, starting with Open repo's Ctrl+O. Its search box filters them by label or keys and types `?` without closing the overlay. Escape closes it, a click outside leaves it open and `?` typed in another text box types the character and leaves the overlay closed. Ctrl+? shows and closes the overlay from anywhere, a text box included, leaving the box's text as it was, the overlay lists it and the top bar always shows "Ctrl+?: Show hotkeys".
+`?` shows the keyboard shortcuts overlay, which lists every shortcut of Ziggy's action list in one column, starting with Open repo's Ctrl+O. Its search box filters them by label or keys and types `?` without closing the overlay. Escape closes it, a click outside leaves it open and `?` typed in another text box types the character and leaves the overlay closed. Ctrl+? shows and closes the overlay from anywhere, a text box included, and leaves the box's text as it was. It shows or closes the overlay once each time Control is held, so holding the keys leaves the overlay as the first press left it. The overlay lists Ctrl+?. The top bar always shows "Ctrl+?: Show hotkeys".

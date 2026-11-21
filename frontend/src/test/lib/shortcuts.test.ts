@@ -1,11 +1,12 @@
 //
 // Tests what the keyboard shortcuts overlay lists: the actions with a shortcut picked from Ziggy's
 // action list, the Ctrl+? row added after the Keyboard Shortcuts action and the shortcuts a search
-// matches by label or keys. Also tests which key presses are Ctrl+?.
+// matches by label or keys. Also tests which key presses are Ctrl+? and which key events show
+// Control released.
 //
 
 import type { IActionInfo } from "ziggy";
-import { actionShortcuts, IKeyPress, isShortcutsOverlayCtrlKey, IShortcut, matchingShortcuts, overlayShortcuts, shortcutKeyNames, shortcutsOverlayCtrlKeys } from "../../lib/shortcuts";
+import { actionShortcuts, IKeyPress, isControlReleased, isShortcutsOverlayCtrlKey, IShortcut, matchingShortcuts, overlayShortcuts, shortcutKeyNames, shortcutsOverlayCtrlKeys } from "../../lib/shortcuts";
 
 //
 // Makes a shortcut with the name, label and keys, so a test writes each on one line.
@@ -157,6 +158,29 @@ describe("isShortcutsOverlayCtrlKey", () => {
         expect(isShortcutsOverlayCtrlKey({
             ...makeCtrlPress("?"),
             repeat: true,
+        })).toBe(false);
+    });
+});
+
+describe("isControlReleased", () => {
+    test("the keyup of Control releases Control, though the event has Control held", () => {
+        expect(isControlReleased({
+            key: "Control",
+            ctrlKey: true,
+        })).toBe(true);
+    });
+
+    test("a key event with Control up shows Control released", () => {
+        expect(isControlReleased({
+            key: "a",
+            ctrlKey: false,
+        })).toBe(true);
+    });
+
+    test("a keyup or keydown of ? with Control held, as a repeat of a held Ctrl+? gives, leaves Control held", () => {
+        expect(isControlReleased({
+            key: "?",
+            ctrlKey: true,
         })).toBe(false);
     });
 });

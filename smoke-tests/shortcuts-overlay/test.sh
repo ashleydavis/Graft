@@ -7,8 +7,9 @@
 # leaves the overlay open. Escape closes it. Typing "quit" in the search box filters the list to
 # Quit. Then `?` typed in the breadcrumb trail drop-down's search box types the character and leaves
 # the overlay closed. Ctrl+?, pressed with the key-down test command, shows the overlay from that
-# search box without typing, lists Ctrl+?, closes the overlay from its own search box and shows it
-# from the page. The top bar shows "Ctrl+?: Show hotkeys". See test.md.
+# search box without typing, stays open while Ctrl+? repeats, lists Ctrl+?, closes the overlay
+# from its own search box and shows it from the page. The top bar shows "Ctrl+?: Show hotkeys".
+# See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -53,12 +54,11 @@ search_value() {
 }
 
 #
-# Presses Ctrl+? on the element with the data-id, with the key-down test command, because the
-# native app's press-key takes only Ziggy's shortcut syntax, which refuses a modifier on `?`. Fails
-# unless Graft kept the key from doing anything else.
-# Usage: press_ctrl_question_mark <data-id>
+# Sends a keydown of `?` with Control held to the element with the data-id, with the key-down test
+# command, as a held Ctrl+? repeats, and fails unless Graft kept the key from doing anything else.
+# Usage: repeat_ctrl_question_mark <data-id>
 #
-press_ctrl_question_mark() {
+repeat_ctrl_question_mark() {
     local answer
     answer="$(control "{\"command\":\"key-down\",\"dataId\":\"$1\",\"key\":\"?\",\"ctrl\":true}")"
     if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
@@ -67,6 +67,23 @@ press_ctrl_question_mark() {
     if [ "$(printf '%s' "$answer" | jq -r '.value')" != "prevented" ]; then
         fail "Graft did not handle Ctrl+? pressed on $1: $answer"
     fi
+}
+
+#
+# Presses Ctrl+? on the element with the data-id, with the key-down test command, because the
+# native app's press-key takes only Ziggy's shortcut syntax, which refuses a modifier on `?`. It
+# sends a keydown of Control first, as a user presses Control before `?`, because Graft opens or
+# closes the overlay once per press of Control. Fails unless Graft kept the key from doing anything
+# else.
+# Usage: press_ctrl_question_mark <data-id>
+#
+press_ctrl_question_mark() {
+    local answer
+    answer="$(control "{\"command\":\"key-down\",\"dataId\":\"$1\",\"key\":\"Control\",\"ctrl\":true}")"
+    if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
+        fail "pressing Control on $1 failed: $answer"
+    fi
+    repeat_ctrl_question_mark "$1"
 }
 
 start_app_on_start_page
@@ -139,6 +156,12 @@ wait_for_element shortcuts-overlay-search 30
 if [ "$(value_of breadcrumb-page-search)" != "" ]; then
     fail "Ctrl+? typed into the drop-down's search box. It holds: $(value_of breadcrumb-page-search)"
 fi
+
+# A held Ctrl+? repeats as another keydown of `?` with Control held. It leaves the overlay open.
+# The wait is longer than the overlay's closing transition, so an overlay it closed has gone.
+repeat_ctrl_question_mark shortcuts-overlay-search
+sleep 1
+wait_for_element shortcuts-overlay-search 30
 
 # The overlay lists Ctrl+? straight after `?`, under the Keyboard Shortcuts action's label.
 wait_for_text shortcut-toggle-shortcuts-overlay-ctrl-label "Keyboard Shortcuts" 30

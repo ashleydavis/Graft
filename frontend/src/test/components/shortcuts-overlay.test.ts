@@ -5,8 +5,11 @@
 // overlay shows and when it has gone. It checks the overlay lists the shortcuts of the action list
 // in one column, that its search box has the focus and filters them and that a list Ziggy cannot
 // read is reported. It presses Ctrl+? on the page, in a text box and in the search box and checks
-// it opens and closes the overlay without typing. It also checks the handler and the Ctrl+?
-// listener are removed when the overlay goes.
+// it opens and closes the overlay without typing. It holds Ctrl+? with its repeats reported as
+// keyups and keydowns with `repeat` false, as WebKitGTK reports them on Linux under Xephyr, and
+// checks the overlay opens once and stays open, and that releasing Control, a key with Control up
+// or the window losing the focus allow the next Ctrl+?. It also checks the handler and the Ctrl+?
+// listeners are removed when the overlay goes.
 //
 
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
@@ -132,6 +135,33 @@ function pressCtrlQuestionMark(target: Element): boolean {
         });
     });
     return !wasNotPrevented;
+}
+
+//
+// Releases the question mark key with Control and Shift still held, as WebKitGTK reports each
+// repeat of a held Ctrl+? on Linux under Xephyr: a keyup of `?`, then a keydown like a new press.
+//
+function releaseQuestionMarkKey(target: Element): void {
+    act(() => {
+        fireEvent.keyUp(target, {
+            key: "?",
+            ctrlKey: true,
+            shiftKey: true,
+        });
+    });
+}
+
+//
+// Releases Control, which ends one press of Ctrl+?. The keyup of Control still has Control held,
+// as WebKitGTK reports it.
+//
+function releaseControl(target: Element): void {
+    act(() => {
+        fireEvent.keyUp(target, {
+            key: "Control",
+            ctrlKey: true,
+        });
+    });
 }
 
 //
@@ -291,9 +321,52 @@ describe("ShortcutsOverlay", () => {
         expect(overlayElement("shortcuts-overlay-search")).not.toBeUndefined();
     });
 
-    test("Ctrl+? again closes the overlay", async () => {
+    test("Ctrl+? again, after Control is released, closes the overlay", async () => {
         await renderShortcutsOverlay();
         pressCtrlQuestionMark(document.body);
+        releaseQuestionMarkKey(document.body);
+        releaseControl(document.body);
+        pressCtrlQuestionMark(document.body);
+        await waitForClosedOverlay();
+    });
+
+    test("a held Ctrl+? whose repeats come as keyups and keydowns with repeat false opens the overlay once and leaves it open", async () => {
+        await renderShortcutsOverlay();
+        expect(pressCtrlQuestionMark(document.body)).toBe(true);
+        for (let repeatIndex = 0; repeatIndex < 5; repeatIndex += 1) {
+            releaseQuestionMarkKey(document.body);
+            expect(pressCtrlQuestionMark(document.body)).toBe(true);
+        }
+        releaseQuestionMarkKey(document.body);
+        releaseControl(document.body);
+        //
+        // A closed overlay stays on the page until MaterialUI's closing transition ends, so the
+        // test waits longer than that transition before it checks the overlay is still there.
+        //
+        await act(async () => {
+            await new Promise(resolve => setTimeout(resolve, 500));
+        });
+        expect(overlayElement("shortcuts-overlay-search")).not.toBeUndefined();
+    });
+
+    test("a key pressed with Control up allows the next Ctrl+? to close the overlay", async () => {
+        await renderShortcutsOverlay();
+        pressCtrlQuestionMark(document.body);
+        act(() => {
+            fireEvent.keyDown(document.body, {
+                key: "a",
+            });
+        });
+        pressCtrlQuestionMark(document.body);
+        await waitForClosedOverlay();
+    });
+
+    test("the window losing the focus allows the next Ctrl+? to close the overlay", async () => {
+        await renderShortcutsOverlay();
+        pressCtrlQuestionMark(document.body);
+        act(() => {
+            fireEvent.blur(window);
+        });
         pressCtrlQuestionMark(document.body);
         await waitForClosedOverlay();
     });
@@ -318,7 +391,7 @@ describe("ShortcutsOverlay", () => {
         const search = overlayElement("shortcuts-overlay-search");
         expect(search).not.toBeUndefined();
         expect(pressCtrlQuestionMark(search ?? document.body)).toBe(true);
-        expect((search as HTMLInputElement | undefined)?.value).toBe("open");
+        expect(search).toHaveProperty("value", "open");
         await waitForClosedOverlay();
     });
 

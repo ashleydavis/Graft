@@ -119,6 +119,32 @@ export function isShortcutsOverlayCtrlKey(press: IKeyPress): boolean {
 }
 
 //
+// The parts of a key event that decide whether it ends a hold of Control.
+//
+export interface IControlKeyEvent {
+    // The character or name of the key, such as "?" or "Control".
+    key: string;
+
+    // Whether Control is held.
+    ctrlKey: boolean;
+}
+
+//
+// Works out whether a keydown or keyup shows that Control has been released since the last
+// Ctrl+?: a keydown or keyup of Control itself, or any key event with Control up. The shortcuts
+// overlay uses it to open or close once per hold of Control, because a held `?` repeats and on
+// some Linux desktops each repeat reaches the page as a keyup and a keydown with `repeat` false,
+// the same as a new press. Control sends one keydown when it goes down and one keyup when it comes
+// up, so its events mark where one press of Ctrl+? ends and the next begins.
+//
+export function isControlReleased(event: IControlKeyEvent): boolean {
+    if (event.key === "Control") {
+        return true;
+    }
+    return !event.ctrlKey;
+}
+
+//
 // Works out the shortcuts the overlay lists: the shortcuts given, with Ctrl+? in a row of its own
 // straight after the row of the action it runs, with that row's label. Its name is the action's
 // name with "-ctrl" added, so the row has a data-id of its own. A list without the action comes

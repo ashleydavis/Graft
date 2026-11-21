@@ -7,7 +7,7 @@ import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Dialog, DialogTitle } from "@mui/material";
 import { Fragment, JSX, useEffect, useState } from "react";
-import { actionShortcuts, isShortcutsOverlayCtrlKey, IShortcut, matchingShortcuts, overlayShortcuts, shortcutKeyNames } from "../lib/shortcuts";
+import { actionShortcuts, isControlReleased, isShortcutsOverlayCtrlKey, IShortcut, matchingShortcuts, overlayShortcuts, shortcutKeyNames } from "../lib/shortcuts";
 
 //
 // The name of the backend's Keyboard Shortcuts action (backend/src/features/shortcuts-overlay.zig),
@@ -67,8 +67,10 @@ export function KeyCaps({ keys, dataId }: IKeyCapsProps): JSX.Element {
 // Ctrl+? also opens and closes the overlay, from anywhere in the window and from a text box too.
 // Ziggy's shortcut syntax refuses a modifier on `?`, so the overlay listens for Ctrl+? itself, on
 // the window in the capture phase so it hears the key before any element does, and keeps the key
-// from doing anything else, so a text box with the focus keeps its text. The list shows Ctrl+? in
-// a row of its own after the Keyboard Shortcuts action's `?`.
+// from doing anything else, so a text box with the focus keeps its text. Ctrl+? opens or closes the
+// overlay once each time Control is held, so holding the keys long enough to repeat leaves the
+// overlay as the first press left it. The list shows Ctrl+? in a row of its own after the Keyboard
+// Shortcuts action's `?`.
 //
 export function ShortcutsOverlay(): JSX.Element {
     const [isOpen, setOpen] = useState(false);
@@ -96,16 +98,47 @@ export function ShortcutsOverlay(): JSX.Element {
     }, []);
 
     useEffect(() => {
+        //
+        // Whether the next Ctrl+? opens or closes the overlay: true until Ctrl+? does, then false
+        // until Control is released (isControlReleased), so a held Ctrl+? whose repeats look like
+        // new presses opens or closes the overlay once.
+        //
+        let isToggleAllowed = true;
+
         function onKeyDown(event: KeyboardEvent): void {
+            if (isControlReleased(event)) {
+                isToggleAllowed = true;
+            }
             if (isShortcutsOverlayCtrlKey(event)) {
                 event.preventDefault();
-                setOpen(wasOpen => !wasOpen);
+                if (isToggleAllowed) {
+                    isToggleAllowed = false;
+                    setOpen(wasOpen => !wasOpen);
+                }
             }
         }
 
+        function onKeyUp(event: KeyboardEvent): void {
+            if (isControlReleased(event)) {
+                isToggleAllowed = true;
+            }
+        }
+
+        //
+        // Allows the next Ctrl+? when the window loses the focus, because Control released in
+        // another window sends this window no keyup.
+        //
+        function onBlur(): void {
+            isToggleAllowed = true;
+        }
+
         window.addEventListener("keydown", onKeyDown, true);
+        window.addEventListener("keyup", onKeyUp, true);
+        window.addEventListener("blur", onBlur);
         return () => {
             window.removeEventListener("keydown", onKeyDown, true);
+            window.removeEventListener("keyup", onKeyUp, true);
+            window.removeEventListener("blur", onBlur);
         };
     }, []);
 
