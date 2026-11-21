@@ -59,7 +59,7 @@ export function AboutPage(): JSX.Element {
                 </div>
             </header>
             <p data-id="about-description">
-                Graft is a desktop Git client with a simple, intuitive UI that supports your own process instead of getting in the way.
+                Graft is a simple intuitive Git user-interface to streamline your process instead of getting in your way
             </p>
             <section data-id="about-links-section" className="flex flex-col gap-[var(--space-2)]">
                 <h2 data-id="about-links-heading" className="text-[length:var(--text-xl)] font-[var(--weight-bold)] leading-[var(--leading-tight)] text-[var(--color-text)]">

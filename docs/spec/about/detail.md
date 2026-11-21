@@ -10,7 +10,7 @@ The About page shows a user which app they are in, which version it is, what it 
 - The page opens with a header: Graft's icon on the left and beside it the heading "About Graft" with Graft's version under it.
 - Graft's icon is a code branch on a square of the style guide's accent colour (violet) with rounded corners. The code branch is white in the light theme and dark violet in the dark theme.
 - The version reads "Version dev", in the monospace font and the muted text colour. It comes from `frontend/src/lib/version.ts`, the one file that gives it.
-- Under the header it shows what Graft is: "Graft is a desktop Git client with a simple, intuitive UI that supports your own process instead of getting in the way."
+- Under the header it shows what Graft is: "Graft is a simple intuitive Git user-interface to streamline your process instead of getting in your way".
 - Under the description it shows the heading "Find out more" and under that a list of links, each opening in the system's web browser:
   - "Graft on GitHub": https://github.com/ashleydavis/Graft
   - "Playbook on GitHub": https://github.com/ashleydavis/playbook

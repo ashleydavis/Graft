@@ -13,7 +13,7 @@ start_app_on_start_page
 open_sidebar_page about
 wait_for_text about-heading "About Graft" 30
 wait_for_text about-version "Version dev" 30
-wait_for_text about-description "Graft is a desktop Git client" 30
+wait_for_text about-description "Graft is a simple intuitive Git user-interface to streamline your process instead of getting in your way" 30
 wait_for_element about-icon 30
 wait_for_text about-links-heading "Find out more" 30
 wait_for_text about-graft-link "Graft on GitHub" 30

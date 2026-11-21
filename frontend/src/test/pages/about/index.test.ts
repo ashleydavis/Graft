@@ -35,7 +35,7 @@ describe("AboutPage", () => {
 
     test("says what Graft is", () => {
         render(createElement(AboutPage));
-        expect(screen.getByText(/Graft is a desktop Git client/).getAttribute("data-id")).toBe("about-description");
+        expect(screen.getByText("Graft is a simple intuitive Git user-interface to streamline your process instead of getting in your way").getAttribute("data-id")).toBe("about-description");
     });
 
     test("shows the Font Awesome icon in a MaterialUI Avatar, which the style guide theme colours", () => {
