@@ -15,7 +15,7 @@ Puts the built app in place once for the platform, then runs each `test.sh`, one
 
 ## Smoke tests
 
-- `welcome-page`: the app opens on the welcome page, whose Open repo button opens a repo on the repo explorer page.
+- `welcome-page`: the app opens on the welcome page, whose Open repo button opens a repo on the repo explorer page. The left sidebar's Welcome link opens it again from the Help and About pages.
 - `about-page`: the About page, opened from the left sidebar, shows its heading, what Graft is and its icon.
 - `help-page`: the Help page, opened from the left sidebar with a repo open, shows its heading, Graft's pages and the ways to move between them.
 - `new-window`: the File menu's New window item and Ctrl+N each open another window of Graft as a process of its own, on the welcome page. Closing one leaves the others running.

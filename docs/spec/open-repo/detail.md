@@ -13,7 +13,7 @@ A user opens a local repo by choosing its folder. Graft starts with no repo open
 - Choosing a folder opens it in the repo explorer: the repo explorer page shows the folder in its repo details pane, whose Commits link lists the folder's commits. The folder is opened in place of any repo open before. Graft opens any folder chosen. When the folder is outside a Git repo, the commit pane shows why git could not read it.
 - Cancelling the picker leaves the page and the open repo as they were.
 - The open repo's path is kept in `RepoContext` in `frontend/src/components/repo-context.tsx`, with its provider `RepoProvider` and hook `useRepo`, provided at the root of the app above the router's pages. The layout and the pages read it, so the repo stays loaded while the user moves between pages. The path lasts as long as the window, so each run of Graft starts with no repo open.
-- While no repo is open, the left sidebar's "Repo explorer" link is hidden and the breadcrumb trail starts with the page. On the welcome page the trail is empty.
+- While no repo is open, the left sidebar's "Repo explorer" link is hidden and the breadcrumb trail starts with the page. On the welcome page the trail is "Welcome" alone.
 - A smoke test that needs an open repo opens its own test repo the way a user does: it gives the folder picker the repo's path with remote control's `pick-answer` command and clicks the welcome page's "Open repo" button, through `open_repo_with_button` in `smoke-tests/lib/common.sh`.
 
 ## Acceptance criteria

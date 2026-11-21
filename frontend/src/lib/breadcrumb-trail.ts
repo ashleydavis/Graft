@@ -71,6 +71,32 @@ const APP_GROUP_PAGES: IGroupPage[] = [
 ];
 
 //
+// A page of the left sidebar with no sibling to switch to.
+//
+interface ISinglePage {
+    // The page's name, which is its step's text.
+    label: string;
+
+    // The path of the page on the router.
+    path: string;
+}
+
+//
+// The pages whose trail step is plain text, because each has no sibling page in the left
+// sidebar: the welcome page Graft opens on and the repo explorer, the only page about the repo.
+//
+const SINGLE_PAGES: ISinglePage[] = [
+    {
+        label: "Welcome",
+        path: "/",
+    },
+    {
+        label: "Repo explorer",
+        path: "/repo-explorer",
+    },
+];
+
+//
 // The most characters a step shows. The rules for the trail cut a longer step to this length with
 // an ellipsis, so a long name cannot push the rest of the top bar aside.
 //
@@ -86,9 +112,9 @@ export const PAGE_STEP_DATA_ID = "breadcrumb-page";
 // Works out the trail for the page at the path. While a repo is open every trail starts with it, by
 // its folder's name with its full path in the tooltip. Graft has one repo open at a time, so the
 // repo step has no sibling to switch to and is plain text. While no repo is open the trail starts
-// with the page. The repo explorer page is the only page of the repo's group, so its step is plain
-// text too. The Help and About pages share the app's group, so their step is a drop-down of both.
-// Any other path, the welcome page's among them, gets the repo step only.
+// with the page. The welcome page and the repo explorer page each have no sibling to switch to,
+// so their step is plain text too. The Help and About pages share the app's group, so their step
+// is a drop-down of both. Any other path gets the repo step only.
 //
 export function pageTrail(pathname: string, repoPath: string | undefined): ITrailStep[] {
     const repoSteps: ITrailStep[] = [];
@@ -117,12 +143,13 @@ export function pageTrail(pathname: string, repoPath: string | undefined): ITrai
             },
         ];
     }
-    if (pathname === "/repo-explorer") {
+    const singlePage = SINGLE_PAGES.find(page => page.path === pathname);
+    if (singlePage) {
         return [
             ...repoSteps,
             {
-                label: "Repo explorer",
-                tooltip: "Repo explorer",
+                label: singlePage.label,
+                tooltip: singlePage.label,
                 dataId: PAGE_STEP_DATA_ID,
                 options: [],
             },

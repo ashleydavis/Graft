@@ -4,6 +4,9 @@
 # Starts the real app with remote control on and no repo open, checks it opens on the welcome page
 # with Graft's mark, name, what Graft is and its Open repo button, cancels the button's folder
 # picker, then opens a test repo of its own with the button and checks the repo explorer shows it.
+# Last it opens the Help page and the About page from the left sidebar and from each goes back to
+# the welcome page with the sidebar's Welcome link, checking the trail shows the welcome page's
+# step.
 # See test.md.
 #
 
@@ -19,6 +22,8 @@ wait_for_text welcome-description "A desktop Git client. Open a local Git repo t
 wait_for_text welcome-open-repo-button "Open repo" 30
 wait_for_missing_element left-sidebar-repo-explorer-link 30
 wait_for_missing_element breadcrumb-repo 30
+wait_for_text breadcrumb-page "Welcome" 30
+wait_for_text left-sidebar-welcome-link-label "Welcome" 30
 
 answer_picker
 click welcome-open-repo-button
@@ -35,3 +40,16 @@ wait_for_text breadcrumb-repo "welcome-repo" 30
 wait_for_text breadcrumb-page "Repo explorer" 30
 wait_for_element left-sidebar-repo-explorer-link 30
 wait_for_missing_element welcome-page 30
+
+open_sidebar_page help
+open_sidebar_page welcome
+wait_for_text welcome-heading "Graft" 30
+wait_for_text breadcrumb-repo "welcome-repo" 30
+wait_for_text breadcrumb-page "Welcome" 30
+wait_for_missing_element help-page 30
+
+open_sidebar_page about
+open_sidebar_page welcome
+wait_for_text welcome-heading "Graft" 30
+wait_for_text breadcrumb-page "Welcome" 30
+wait_for_missing_element about-page 30

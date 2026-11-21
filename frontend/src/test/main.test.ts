@@ -4,10 +4,11 @@
 // page's Open repo button runs the open-repo action, which opens a repo on the repo explorer page.
 // The open-repo action opens another repo in its place and the links then change between the About
 // page and the repo explorer page. The Help page is on the router, with the trail following each
-// page and its drop-down opening the About page again. The smoke tests' commands are performed only
-// in test mode. The splash screen covers the page until the native app reports the page is in
-// sight. Each test puts a fake made of Jest mocks on window.ziggy, where the frontend reaches the
-// backend.
+// page and its drop-down opening the About page again. The left sidebar's Welcome link opens the
+// welcome page from the Help page before its About link opens the About page again. The smoke
+// tests' commands are performed only in test mode. The splash screen covers the page until the
+// native app reports the page is in sight. Each test puts a fake made of Jest mocks on
+// window.ziggy, where the frontend reaches the backend.
 //
 
 import { act, screen, waitFor } from "@testing-library/react";
@@ -92,13 +93,13 @@ describe("main", () => {
         expect(elementWithDataId("app-layout")?.contains(elementWithDataId("main-content") ?? null)).toBe(true);
     });
 
-    test("the app starts with no repo open: the trail is empty and the left sidebar has no Repo explorer link", async () => {
+    test("the app starts with no repo open: the trail is Welcome alone and the left sidebar has no Repo explorer link", async () => {
         await screen.findByText("Graft", {
             selector: "h1",
         });
         expect(document.querySelector("[data-id=\"left-sidebar-repo-explorer-link\"]")).toBeNull();
         expect(document.querySelector("[data-id=\"breadcrumb-repo\"]")).toBeNull();
-        expect(document.querySelector("[data-id=\"breadcrumb-page\"]")).toBeNull();
+        expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("Welcome");
     });
 
     test("the welcome page's Open repo button runs the open-repo action, which opens the folder picked on the repo explorer page", async () => {
@@ -184,7 +185,7 @@ describe("main", () => {
         expect((await screen.findByText("About Graft")).getAttribute("data-id")).toBe("about-heading");
     });
 
-    test("the Help page is on the router and the trail names each page", async () => {
+    test("the Help page is on the router, the trail names each page and the Welcome link opens the welcome page", async () => {
         await screen.findByText("About Graft");
         expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("About");
         act(() => {
@@ -203,6 +204,24 @@ describe("main", () => {
         });
         expect((await screen.findByText("About Graft")).getAttribute("data-id")).toBe("about-heading");
         expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("About");
+        act(() => {
+            elementWithDataId("left-sidebar-help-link")?.click();
+        });
+        await screen.findByText("Help", {
+            selector: "h1",
+        });
+        act(() => {
+            elementWithDataId("left-sidebar-welcome-link")?.click();
+        });
+        expect((await screen.findByText("Graft", {
+            selector: "h1",
+        })).getAttribute("data-id")).toBe("welcome-heading");
+        expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("Welcome");
+        expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("graft");
+        act(() => {
+            elementWithDataId("left-sidebar-about-link")?.click();
+        });
+        expect((await screen.findByText("About Graft")).getAttribute("data-id")).toBe("about-heading");
     });
 });
 

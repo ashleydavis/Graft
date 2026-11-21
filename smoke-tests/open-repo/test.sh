@@ -24,7 +24,7 @@ start_app_on_start_page
 wait_for_element left-sidebar-about-link 30
 wait_for_missing_element left-sidebar-repo-explorer-link 30
 wait_for_missing_element breadcrumb-repo 30
-wait_for_missing_element breadcrumb-page 30
+wait_for_text breadcrumb-page "Welcome" 30
 
 answer_picker
 choose_menu_item open-repo

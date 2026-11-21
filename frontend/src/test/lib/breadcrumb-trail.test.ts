@@ -88,7 +88,7 @@ describe("pageTrail", () => {
         ]);
     });
 
-    test("the welcome page's trail is the repo step only, and has no steps while no repo is open", () => {
+    test("the welcome page's trail is the repo, then Welcome as plain text, because it has no sibling", () => {
         expect(pageTrail("/", "/repos/graft")).toEqual([
             {
                 label: "graft",
@@ -96,8 +96,24 @@ describe("pageTrail", () => {
                 dataId: "breadcrumb-repo",
                 options: [],
             },
+            {
+                label: "Welcome",
+                tooltip: "Welcome",
+                dataId: "breadcrumb-page",
+                options: [],
+            },
         ]);
-        expect(pageTrail("/", undefined)).toEqual([]);
+    });
+
+    test("the welcome page's trail is Welcome alone while no repo is open", () => {
+        expect(pageTrail("/", undefined)).toEqual([
+            {
+                label: "Welcome",
+                tooltip: "Welcome",
+                dataId: "breadcrumb-page",
+                options: [],
+            },
+        ]);
     });
 
     test("any other path has no steps while no repo is open", () => {

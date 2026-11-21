@@ -4,8 +4,8 @@
 # Starts the real app with remote control on and opens a test repo of its own with the welcome
 # page's Open repo button. It checks the left sidebar starts expanded, minimises it and expands it
 # again with the top bar's menu button, checking the names of its links show only while it is
-# expanded, and follows its links to the repo explorer page, the Help page and the About page in
-# each state. See test.md.
+# expanded, and follows its links to the welcome page, the repo explorer page, the Help page and the
+# About page in each state. See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -16,27 +16,33 @@ repo="$ZIGGY_TEST_DIR/repo"
 start_app_on_start_page
 open_repo_with_button "$repo"
 wait_for_element left-sidebar 30
+wait_for_text left-sidebar-welcome-link-label "Welcome" 30
 wait_for_text left-sidebar-repo-explorer-link-label "Repo explorer" 30
 wait_for_text left-sidebar-help-link-label "Help" 30
 wait_for_text left-sidebar-about-link-label "About" 30
 
+open_sidebar_page welcome
 open_sidebar_page repo-explorer
 open_sidebar_page help
 open_sidebar_page about
 
 click left-sidebar-toggle
+wait_for_missing_element left-sidebar-welcome-link-label 30
 wait_for_missing_element left-sidebar-repo-explorer-link-label 30
 wait_for_missing_element left-sidebar-help-link-label 30
 wait_for_missing_element left-sidebar-about-link-label 30
+wait_for_element left-sidebar-welcome-link 30
 wait_for_element left-sidebar-repo-explorer-link 30
 wait_for_element left-sidebar-help-link 30
 wait_for_element left-sidebar-about-link 30
 
+open_sidebar_page welcome
 open_sidebar_page repo-explorer
 open_sidebar_page help
 open_sidebar_page about
 
 click left-sidebar-toggle
+wait_for_text left-sidebar-welcome-link-label "Welcome" 30
 wait_for_text left-sidebar-repo-explorer-link-label "Repo explorer" 30
 wait_for_text left-sidebar-help-link-label "Help" 30
 wait_for_text left-sidebar-about-link-label "About" 30

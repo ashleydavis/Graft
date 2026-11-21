@@ -4,7 +4,7 @@
 //
 
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faCircleInfo, faCircleQuestion, faCodeCommit } from "@fortawesome/free-solid-svg-icons";
+import { faCircleInfo, faCircleQuestion, faCodeCommit, faHouse } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Tooltip } from "@mui/material";
 import { Link } from "@tanstack/react-router";
@@ -75,9 +75,10 @@ export function SidebarLink({ to, icon, label, dataId, isMinimised }: ISidebarLi
 }
 
 //
-// Shows the links to Graft's pages: Repo explorer at the top with the pages about the repo. Help
-// and About sit at the bottom, apart from them, because they are about the app itself. The Repo
-// explorer link shows only while a repo is open, so the repo explorer is reached by opening a repo.
+// Shows the links to Graft's pages: Welcome at the top, so the page Graft opens on is one click
+// away from every page, then Repo explorer with the pages about the repo. Help and About sit at
+// the bottom, apart from them, because they are about the app itself. The Repo explorer link shows
+// only while a repo is open, so the repo explorer is reached by opening a repo.
 // Expanded, each link shows its icon and name. Minimised, the sidebar narrows to a strip of icons,
 // which leaves more of the window to the page while every link stays one click away.
 //
@@ -88,6 +89,7 @@ export function LeftSidebar({ isMinimised, isRepoOpen }: ILeftSidebarProps): JSX
             className={`flex shrink-0 flex-col justify-between overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-panel)] p-[var(--space-2)] transition-[width] duration-[var(--duration-normal)] ease-[var(--ease-standard)] ${isMinimised ? "w-16" : "w-[260px]"}`}
         >
             <nav className="flex flex-col">
+                <SidebarLink to="/" icon={faHouse} label="Welcome" dataId="left-sidebar-welcome-link" isMinimised={isMinimised} />
                 {isRepoOpen && (
                     <SidebarLink to="/repo-explorer" icon={faCodeCommit} label="Repo explorer" dataId="left-sidebar-repo-explorer-link" isMinimised={isMinimised} />
                 )}
