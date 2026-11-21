@@ -18,7 +18,7 @@ export interface ILeftSidebarProps {
     // Whether the sidebar shows only its icons.
     isMinimised: boolean;
 
-    // Whether a repo is open, which shows the link to the commits page.
+    // Whether a repo is open, which shows the link to the repo explorer page.
     isRepoOpen: boolean;
 }
 
@@ -75,11 +75,11 @@ export function SidebarLink({ to, icon, label, dataId, isMinimised }: ISidebarLi
 }
 
 //
-// Shows the links to Graft's pages: Commits at the top with the pages about the repo. Help and
-// About sit at the bottom, apart from them, because they are about the app itself. The Commits link
-// shows only while a repo is open, so the commit explorer is reached by opening a repo. Expanded,
-// each link shows its icon and name. Minimised, the sidebar narrows to a strip of icons, which
-// leaves more of the window to the page while every link stays one click away.
+// Shows the links to Graft's pages: Repo explorer at the top with the pages about the repo. Help
+// and About sit at the bottom, apart from them, because they are about the app itself. The Repo
+// explorer link shows only while a repo is open, so the repo explorer is reached by opening a repo.
+// Expanded, each link shows its icon and name. Minimised, the sidebar narrows to a strip of icons,
+// which leaves more of the window to the page while every link stays one click away.
 //
 export function LeftSidebar({ isMinimised, isRepoOpen }: ILeftSidebarProps): JSX.Element {
     return (
@@ -89,7 +89,7 @@ export function LeftSidebar({ isMinimised, isRepoOpen }: ILeftSidebarProps): JSX
         >
             <nav className="flex flex-col">
                 {isRepoOpen && (
-                    <SidebarLink to="/commits" icon={faCodeCommit} label="Commits" dataId="left-sidebar-commits-link" isMinimised={isMinimised} />
+                    <SidebarLink to="/repo-explorer" icon={faCodeCommit} label="Repo explorer" dataId="left-sidebar-repo-explorer-link" isMinimised={isMinimised} />
                 )}
             </nav>
             <nav className="flex flex-col">

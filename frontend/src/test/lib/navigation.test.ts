@@ -9,9 +9,9 @@ import { navigationFailureReporter, openPage } from "../../lib/navigation";
 describe("openPage", () => {
     test("calls the router's navigate with the page's path", () => {
         const navigate = jest.fn().mockResolvedValue(undefined);
-        openPage(navigate, "/commits");
+        openPage(navigate, "/repo-explorer");
         expect(navigate).toHaveBeenCalledWith({
-            to: "/commits",
+            to: "/repo-explorer",
         });
     });
 

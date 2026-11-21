@@ -2,7 +2,7 @@
 
 #
 # Starts the real app with remote control on and no repo open, presses Open repo's shortcut
-# CmdOrCtrl+O as a user does and checks the commit explorer shows the test repo given to the folder
+# CmdOrCtrl+O as a user does and checks the repo explorer shows the test repo given to the folder
 # picker. Then `?` shows the keyboard shortcuts overlay and the test checks it lists Open repo with
 # its shortcut. See test.md.
 #
@@ -27,7 +27,8 @@ wait_for_missing_element breadcrumb-repo 30
 answer_picker "$repo"
 
 press_key CmdOrCtrl+O
-wait_for_element commits-page 30
+wait_for_element repo-explorer-page 30
+open_commit_pane
 wait_for_text commit-list "Add the readme" 30
 wait_for_text breadcrumb-repo "shortcut-repo" 30
 

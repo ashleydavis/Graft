@@ -90,10 +90,10 @@ describe("AboutPage", () => {
         expect(screen.getByText("Graft is released under the MIT licence.").getAttribute("data-id")).toBe("about-licence");
     });
 
-    test("has no link to the commits page", () => {
+    test("has no link to the repo explorer page", () => {
         const { container } = render(createElement(AboutPage));
-        expect(screen.queryByText("Commits")).toBeNull();
-        expect(container.querySelector("[data-id=\"about-commits-link\"]")).toBeNull();
+        expect(screen.queryByText("Repo explorer")).toBeNull();
+        expect(container.querySelector("[data-id=\"about-repo-explorer-link\"]")).toBeNull();
     });
 });
 

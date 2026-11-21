@@ -58,8 +58,8 @@ export function sendTaskEvent(event: ITaskEvent<unknown>): void {
 export type LayoutZiggy = IFakeThemeZiggy & IFakeActionZiggy & Pick<IZiggyBridge, "invoke" | "newWindow">;
 
 //
-// Renders the layout with the repo open, or none for undefined, around mocks of the About page,
-// the commits page and the Help page, because the layout shows the router's current page and its
+// Renders the layout with the repo open, or none for undefined, around mocks of the About page, the
+// repo explorer page and the Help page, because the layout shows the router's current page and its
 // trail follows it. The layout is inside the open repo's context and the app's theme, as it is in
 // the app, with no saved theme setting, a system theme that is light and an empty state file, and
 // listens for task events on the fake window.ziggy. window.ziggy also keeps the action handlers the
@@ -109,13 +109,13 @@ export async function renderFakedAppLayout(fake: Partial<LayoutZiggy>, repoPath:
         path: "/help",
         component: () => createElement("p", null, "The Help page"),
     });
-    const commitsRoute = createRoute({
+    const repoExplorerRoute = createRoute({
         getParentRoute: () => rootRoute,
-        path: "/commits",
-        component: () => createElement("p", null, "The commits page"),
+        path: "/repo-explorer",
+        component: () => createElement("p", null, "The repo explorer page"),
     });
     const router = createRouter({
-        routeTree: rootRoute.addChildren([pageRoute, helpRoute, commitsRoute]),
+        routeTree: rootRoute.addChildren([pageRoute, helpRoute, repoExplorerRoute]),
         history: createMemoryHistory({
             initialEntries: ["/about"],
         }),

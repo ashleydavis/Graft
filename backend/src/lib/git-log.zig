@@ -37,7 +37,7 @@ pub const invalid_commit_hash_text = "A commit was asked for by a hash that is n
 
 //
 // The text the frontend is sent when git log writes output Graft cannot read, which both the
-// commits page and the commit details can meet.
+// commit pane and the commit details can meet.
 //
 const unexpected_log_output_text = "Git log wrote output Graft could not read, so the commits " ++
     "could not be read. Check that the git on PATH is a standard git.";
@@ -52,7 +52,7 @@ comptime {
 }
 
 //
-// One commit, as the commits page receives it. The field names are camelCase because the struct is
+// One commit, as the commit pane receives it. The field names are camelCase because the struct is
 // turned into the JSON the frontend reads, and the frontend's names are camelCase.
 //
 pub const Commit = struct {

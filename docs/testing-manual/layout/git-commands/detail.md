@@ -26,7 +26,7 @@ bun run macos
 
 1. Wait for Graft's window to open on the welcome page. Choose File, then "Open repo", choose `/tmp/graft/test-repo`, then click "About" in the left sidebar.
 2. Click the button at the far right of the top bar. Check the right sidebar slides in with the heading "Git commands" and shows "This page has run no Git commands."
-3. Click "Commits" in the left sidebar. Check the sidebar shows `cd /tmp/graft/test-repo` and under it `git log --max-count=50`.
+3. Click "Repo explorer" in the left sidebar. Check the sidebar still shows "This page has run no Git commands." while only the repo details pane is open. Click the repo details pane's "Commits" link. Check the sidebar shows `cd /tmp/graft/test-repo` and under it `git log --max-count=50`.
 4. Click the newest commit, "Change the note". Check `git diff-tree -r --root --no-commit-id --numstat <hash>` is now at the top, with `git diff-tree -r --root --no-commit-id --name-status <hash>` under it, then `git log --max-count=1 <hash>` and `git log --max-count=50` last.
 5. Click notes.txt. Check `git diff-tree -r -p --root --no-commit-id <hash> -- notes.txt` is now at the top.
 6. Check each command has "Took" and a duration under it, such as "Took 12 ms", and the line under the `cd` reads "Total time:" with a duration no shorter than any one command's, because it adds them all up. A duration under a second is in milliseconds, one under a minute in seconds to one decimal place ("1.4 s") and a longer one in minutes and seconds.
@@ -34,7 +34,7 @@ bun run macos
 8. Click the copy button beside the `cd` line, paste it into a terminal and run it. Then do the same for each command. Check each runs without an error: `git log` lists the commits and `git diff-tree` lists the changed files or shows the diff.
 9. Click the button at the far right of the top bar twice, to close and open the sidebar. Check every command is still listed.
 10. Click "Help" in the left sidebar. Check the sidebar shows "This page has run no Git commands."
-11. Click "Commits" in the left sidebar. Check the commands are listed again, with `git log --max-count=50` at the top, because the page ran it again.
+11. Click "Repo explorer" in the left sidebar, then the repo details pane's "Commits" link. Check the commands are listed again, with `git log --max-count=50` at the top, because the page ran it again.
 
 ## Expected result
 

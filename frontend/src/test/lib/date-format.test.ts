@@ -1,6 +1,6 @@
 //
-// Tests the date formats of the commits page: formats fixed dates in fixed locales and time zones
-// and checks the text, so the tests give the same result on every machine.
+// Tests the date formats of the repo explorer page: formats fixed dates in fixed locales and time
+// zones and checks the text, so the tests give the same result on every machine.
 //
 
 import { formatDate, formatDateTime } from "../../lib/date-format";

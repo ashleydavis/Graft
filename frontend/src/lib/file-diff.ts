@@ -42,7 +42,7 @@ export function readFileDiff(request: IFileDiffRequest, onRead: (result: Result<
     const task: IAddTask = {
         taskId: request.taskId,
         taskType: "file-diff",
-        source: "commits-page",
+        source: "repo-explorer-page",
         data: {
             repoPath: request.repoPath,
             hash: request.hash,

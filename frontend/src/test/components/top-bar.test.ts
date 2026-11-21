@@ -12,7 +12,7 @@ import { ITrailStep } from "../../lib/breadcrumb-trail";
 import { ThemeSetting } from "../../lib/theme";
 
 //
-// A trail of two plain steps, as the commits page has.
+// A trail of two plain steps, as the repo explorer page has.
 //
 const trail: ITrailStep[] = [
     {
@@ -22,8 +22,8 @@ const trail: ITrailStep[] = [
         options: [],
     },
     {
-        label: "Commits",
-        tooltip: "Commits",
+        label: "Repo explorer",
+        tooltip: "Repo explorer",
         dataId: "breadcrumb-page",
         options: [],
     },
@@ -125,9 +125,9 @@ describe("TopBar", () => {
 
     test("shows the breadcrumb trail between Graft's name and the theme menu's button", () => {
         renderTopBar(false, false);
-        const trailArea = screen.getByText("Commits").closest("[data-id=\"top-bar-trail\"]");
+        const trailArea = screen.getByText("Repo explorer").closest("[data-id=\"top-bar-trail\"]");
         expect(trailArea).not.toBeNull();
-        expect(trailArea?.textContent).toBe("graftCommits");
+        expect(trailArea?.textContent).toBe("graftRepo explorer");
         expect(trailArea?.previousElementSibling?.getAttribute("data-id")).toBe("top-bar-name");
         expect(trailArea?.nextElementSibling?.getAttribute("data-id")).toBe("theme-button");
     });
@@ -146,6 +146,6 @@ describe("TopBar", () => {
         const topBar = container.querySelector("[data-id=\"top-bar\"]");
         expect(topBar?.querySelectorAll("button").length).toBe(3);
         expect(topBar?.querySelectorAll("a").length).toBe(0);
-        expect(topBar?.textContent).toBe("GraftgraftCommits");
+        expect(topBar?.textContent).toBe("GraftgraftRepo explorer");
     });
 });

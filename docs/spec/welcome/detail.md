@@ -11,7 +11,7 @@ The welcome page is the page Graft opens on. Graft starts with no repo open, so 
 - Under the mark it shows the heading "Graft", and under the heading the line "A desktop Git client. Open a local Git repo to start working with it." in the muted text colour.
 - Under that line it shows an "Open repo" button with a folder icon.
 - The mark, heading, line and button sit one under another, centred in the main content area, in the style guide's type sizes, colours and spacing in the light and the dark theme.
-- The button runs the `open-repo` action, the same action the File menu's "Open repo" item runs (see [open-repo](../open-repo/detail.md)). It shows the system folder picker and opens the folder chosen on the commits page. Cancelling the picker leaves Graft on the welcome page.
+- The button runs the `open-repo` action, the same action the File menu's "Open repo" item runs (see [open-repo](../open-repo/detail.md)). It shows the system folder picker and opens the folder chosen on the repo explorer page. Cancelling the picker leaves Graft on the welcome page.
 - A failed run of the action is written to the log.
 - The breadcrumb trail of the welcome page holds only the repo step, so it is empty while no repo is open.
 

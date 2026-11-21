@@ -7,8 +7,8 @@
 // are saved in Graft's state file and restored from it, that the top bar's breadcrumb trail
 // follows the page shown and its drop-down opens another page and that the right sidebar shows the
 // Git commands the page shown has run. It also checks that with no repo open the trail has no repo
-// step and the Commits link is hidden. The actions of the feature hooks the layout calls are tested
-// beside each hook.
+// step and the Repo explorer link is hidden. The actions of the feature hooks the layout calls are
+// tested beside each hook.
 //
 
 import { act, cleanup, screen, waitFor } from "@testing-library/react";
@@ -45,7 +45,7 @@ describe("AppLayout", () => {
 
     test("starts with the left sidebar expanded and the right sidebar closed", async () => {
         const container = await renderAppLayout("/repos/graft");
-        expect(elementWithDataId(container, "left-sidebar-commits-link-label")).not.toBeUndefined();
+        expect(elementWithDataId(container, "left-sidebar-repo-explorer-link-label")).not.toBeUndefined();
         expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
     });
 
@@ -55,13 +55,13 @@ describe("AppLayout", () => {
             elementWithDataId(container, "left-sidebar-toggle")?.click();
         });
         expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-16")).toBe(true);
-        expect(elementWithDataId(container, "left-sidebar-commits-link-label")).toBeUndefined();
+        expect(elementWithDataId(container, "left-sidebar-repo-explorer-link-label")).toBeUndefined();
         expect(elementWithDataId(container, "left-sidebar-toggle")?.getAttribute("aria-label")).toBe("Expand the left sidebar");
         act(() => {
             elementWithDataId(container, "left-sidebar-toggle")?.click();
         });
         expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-[260px]")).toBe(true);
-        expect(elementWithDataId(container, "left-sidebar-commits-link-label")).not.toBeUndefined();
+        expect(elementWithDataId(container, "left-sidebar-repo-explorer-link-label")).not.toBeUndefined();
         expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
     });
 
@@ -76,7 +76,7 @@ describe("AppLayout", () => {
             elementWithDataId(container, "right-sidebar-toggle")?.click();
         });
         expect(elementWithDataId(container, "right-sidebar-content")).toBeUndefined();
-        expect(elementWithDataId(container, "left-sidebar-commits-link-label")).not.toBeUndefined();
+        expect(elementWithDataId(container, "left-sidebar-repo-explorer-link-label")).not.toBeUndefined();
     });
 
     test("saves each click of the sidebar buttons in Graft's state file", async () => {
@@ -120,7 +120,7 @@ describe("AppLayout", () => {
         await waitFor(() => {
             expect(elementWithDataId(container, "left-sidebar")?.classList.contains("w-16")).toBe(true);
         });
-        expect(elementWithDataId(container, "left-sidebar-commits-link-label")).toBeUndefined();
+        expect(elementWithDataId(container, "left-sidebar-repo-explorer-link-label")).toBeUndefined();
         expect(elementWithDataId(container, "right-sidebar-content")).not.toBeUndefined();
         expect(elementWithDataId(container, "left-sidebar-toggle")?.getAttribute("aria-label")).toBe("Expand the left sidebar");
         expect(elementWithDataId(container, "right-sidebar-toggle")?.getAttribute("aria-label")).toBe("Close the right sidebar");
@@ -240,9 +240,9 @@ describe("AppLayout", () => {
 });
 
 describe("AppLayout with no repo open", () => {
-    test("hides the left sidebar's Commits link and starts the trail with the page", async () => {
+    test("hides the left sidebar's Repo explorer link and starts the trail with the page", async () => {
         const container = await renderAppLayout(undefined);
-        expect(elementWithDataId(container, "left-sidebar-commits-link")).toBeUndefined();
+        expect(elementWithDataId(container, "left-sidebar-repo-explorer-link")).toBeUndefined();
         expect(elementWithDataId(container, "left-sidebar-about-link")).not.toBeUndefined();
         expect(elementWithDataId(container, "breadcrumb-repo")).toBeUndefined();
         expect(elementWithDataId(container, "breadcrumb-page")?.textContent).toBe("About");
@@ -271,12 +271,12 @@ describe("AppLayout's Git commands", () => {
 
     //
     // Sends the event the Git interface function sends for the command, from a task of the
-    // commits page.
+    // repo explorer page.
     //
-    function sendCommitsPageCommand(command: string): void {
+    function sendRepoExplorerPageCommand(command: string): void {
         sendTaskEvent({
             taskId: "t1",
-            source: "commits-page",
+            source: "repo-explorer-page",
             data: {
                 type: "git-command",
                 directoryCommand: "cd /repos/graft",
@@ -292,21 +292,21 @@ describe("AppLayout's Git commands", () => {
         expect(elementWithDataId(container, "git-commands-empty")).not.toBeUndefined();
     });
 
-    test("the right sidebar shows the commits page's commands, kept while the sidebar is closed and while another page is open", async () => {
+    test("the right sidebar shows the repo explorer page's commands, kept while the sidebar is closed and while another page is open", async () => {
         const container = await renderAppLayout("/repos/graft");
-        sendCommitsPageCommand("git log --max-count=50");
-        await openPage(container, "commits", "The commits page");
+        sendRepoExplorerPageCommand("git log --max-count=50");
+        await openPage(container, "repo-explorer", "The repo explorer page");
         openRightSidebar(container);
         expect(elementWithDataId(container, "git-commands-directory")?.textContent).toBe("cd /repos/graft");
         expect(elementWithDataId(container, "git-command-0-text")?.textContent).toBe("git log --max-count=50");
 
         openRightSidebar(container);
-        sendCommitsPageCommand("git diff-tree abc");
+        sendRepoExplorerPageCommand("git diff-tree abc");
         await openPage(container, "help", "The Help page");
         openRightSidebar(container);
         expect(elementWithDataId(container, "git-commands-empty")).not.toBeUndefined();
 
-        await openPage(container, "commits", "The commits page");
+        await openPage(container, "repo-explorer", "The repo explorer page");
         expect(elementWithDataId(container, "git-command-0-text")?.textContent).toBe("git diff-tree abc");
         expect(elementWithDataId(container, "git-command-1-text")?.textContent).toBe("git log --max-count=50");
     });
@@ -315,12 +315,12 @@ describe("AppLayout's Git commands", () => {
         const container = await renderAppLayout("/repos/graft");
         sendTaskEvent({
             taskId: "t1",
-            source: "commits-page",
+            source: "repo-explorer-page",
             data: {
                 type: "output",
             },
         });
-        await openPage(container, "commits", "The commits page");
+        await openPage(container, "repo-explorer", "The repo explorer page");
         openRightSidebar(container);
         expect(elementWithDataId(container, "git-commands-empty")).not.toBeUndefined();
     });

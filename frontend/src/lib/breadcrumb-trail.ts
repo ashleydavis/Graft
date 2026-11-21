@@ -83,12 +83,12 @@ const STEP_LABEL_LENGTH_MAX = 18;
 export const PAGE_STEP_DATA_ID = "breadcrumb-page";
 
 //
-// Works out the trail for the page at the path. While a repo is open every trail starts with it,
-// by its folder's name with its full path in the tooltip. Graft has one repo open at a time, so the
+// Works out the trail for the page at the path. While a repo is open every trail starts with it, by
+// its folder's name with its full path in the tooltip. Graft has one repo open at a time, so the
 // repo step has no sibling to switch to and is plain text. While no repo is open the trail starts
-// with the page. The commits page is the only page of the repo's group, so its step is plain text
-// too. The Help and About pages share the app's group, so their step is a drop-down of both. Any
-// other path, the welcome page's among them, gets the repo step only.
+// with the page. The repo explorer page is the only page of the repo's group, so its step is plain
+// text too. The Help and About pages share the app's group, so their step is a drop-down of both.
+// Any other path, the welcome page's among them, gets the repo step only.
 //
 export function pageTrail(pathname: string, repoPath: string | undefined): ITrailStep[] {
     const repoSteps: ITrailStep[] = [];
@@ -117,12 +117,12 @@ export function pageTrail(pathname: string, repoPath: string | undefined): ITrai
             },
         ];
     }
-    if (pathname === "/commits") {
+    if (pathname === "/repo-explorer") {
         return [
             ...repoSteps,
             {
-                label: "Commits",
-                tooltip: "Commits",
+                label: "Repo explorer",
+                tooltip: "Repo explorer",
                 dataId: PAGE_STEP_DATA_ID,
                 options: [],
             },

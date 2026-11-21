@@ -4,9 +4,9 @@
 # Creates a test repo of the smoke test's own, starts the real app with remote control on, opens
 # that repo with the welcome page's Open repo button, opens the About page from the left sidebar and
 # presses keys as a user does: Left in the breadcrumb trail drop-down's search box moves its cursor,
-# Ctrl+1 opens the commit explorer, the arrow keys and Enter open a commit and one of its files,
-# Escape closes the panes one at a time and Ctrl+1 returns to the commit explorer from the Help
-# page. See test.md.
+# Ctrl+1 opens the repo explorer, the arrow keys and Enter open the commit pane from the repo
+# details pane's Commits link, then a commit and one of its files, Escape closes the panes one at a
+# time and Ctrl+1 returns to the repo explorer from the Help page. See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -52,9 +52,15 @@ wait_for_text breadcrumb-page-no-match "No page matches \"ba\"." 30
 press_key Escape
 wait_for_missing_element breadcrumb-page-menu 30
 
-# Ctrl+1 (Cmd+1 on macOS) opens the commit explorer.
+# Ctrl+1 (Cmd+1 on macOS) opens the repo explorer.
 press_key CmdOrCtrl+1
-wait_for_element commits-page 30
+wait_for_element repo-explorer-page 30
+wait_for_element repo-details-pane 30
+wait_for_missing_element commit-pane 5
+
+# Down selects the repo details pane's Commits link and Enter opens the commit pane.
+press_key Down
+press_key Enter
 wait_for_text commit-list "Add the readme" 30
 
 # Down twice selects the second commit, "Add the notes", and Enter opens its details.
@@ -78,17 +84,23 @@ wait_for_element file-pane 30
 wait_for_text file-pane-path "notes.txt" 30
 wait_for_text file-diff "+The second note." 30
 
-# Escape closes the file pane, then the commit details pane, then leaves the commit pane open.
+# Escape closes the file pane, then the commit details pane, then the commit pane, then leaves the
+# repo details pane open.
 press_key Escape
 wait_for_missing_element file-pane 30
 wait_for_element commit-details-pane 5
 press_key Escape
 wait_for_missing_element commit-details-pane 30
-press_key Escape
 wait_for_element commit-pane 5
+press_key Escape
+wait_for_missing_element commit-pane 30
+press_key Escape
+wait_for_element repo-details-pane 5
 
-# Ctrl+1 returns to the commit explorer from the Help page.
+# Ctrl+1 returns to the repo explorer from the Help page.
 open_sidebar_page help
 press_key CmdOrCtrl+1
-wait_for_element commits-page 30
+wait_for_element repo-explorer-page 30
+press_key Down
+press_key Enter
 wait_for_text commit-list "Change the note" 30

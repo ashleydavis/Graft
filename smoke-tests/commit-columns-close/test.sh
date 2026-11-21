@@ -3,8 +3,8 @@
 #
 # Creates a test repo of the smoke test's own, starts the real app with remote control on, opens
 # that repo with the welcome page's Open repo button, opens the commit details pane and the file
-# pane on the commits page, then closes the file pane and the commit details pane and checks each
-# has gone. See test.md.
+# pane on the repo explorer page, then closes the file pane and the commit details pane and checks
+# each has gone. See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -19,7 +19,8 @@ root_hash="$(git -C "$repo" rev-list --max-parents=0 HEAD)" || fail "could not r
 
 start_app_on_start_page
 open_repo_with_button "$repo"
-open_sidebar_page commits
+open_sidebar_page repo-explorer
+open_commit_pane
 wait_for_element "commit-$root_hash" 30
 click "commit-$root_hash"
 wait_for_element changed-files 30

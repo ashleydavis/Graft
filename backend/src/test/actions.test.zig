@@ -1,9 +1,9 @@
 //
 // Tests Graft's actions, each found by its name. It checks Open repo is declared with the shortcut
-// CmdOrCtrl+O, the Keyboard Shortcuts action with the shortcut `?`, the Commit Explorer action with
+// CmdOrCtrl+O, the Keyboard Shortcuts action with the shortcut `?`, the Repo Explorer action with
 // the shortcut `CmdOrCtrl+1`, Zoom In, Zoom Out and Actual Size with the usual zoom keys and New
 // window with the shortcut CmdOrCtrl+N. It checks every action's shortcut is clear of the web
-// view's own keys. It checks running Keyboard Shortcuts and Commit Explorer, as their shortcuts and
+// view's own keys. It checks running Keyboard Shortcuts and Repo Explorer, as their shortcuts and
 // the frontend do, sends the frontend the action event naming each, and that the File menu's New
 // window item and its shortcut send the frontend New window's action event. Each running test
 // starts the backend with Ziggy's fake native app and sends the system message the native app or
@@ -59,11 +59,11 @@ const shortcuts_overlay_event = "{\"kind\":\"system\",\"name\":\"action\"," ++
     "\"data\":{\"action\":\"toggle-shortcuts-overlay\"}}";
 
 //
-// The action event that names the Commit Explorer action, which the frontend is sent when the
+// The action event that names the Repo Explorer action, which the frontend is sent when the
 // action runs.
 //
-const commit_explorer_event = "{\"kind\":\"system\",\"name\":\"action\"," ++
-    "\"data\":{\"action\":\"open-commit-explorer\"}}";
+const repo_explorer_event = "{\"kind\":\"system\",\"name\":\"action\"," ++
+    "\"data\":{\"action\":\"open-repo-explorer\"}}";
 
 //
 // The action event that names the New window action, which the frontend is sent when the action
@@ -172,10 +172,10 @@ test "no action's shortcut is one of the web view's own keys" {
     }
 }
 
-test "Commit Explorer is an action with the shortcut CmdOrCtrl+1" {
+test "Repo Explorer is an action with the shortcut CmdOrCtrl+1" {
     try expect_action(.{
-        .name = "open-commit-explorer",
-        .label = "Commit Explorer",
+        .name = "open-repo-explorer",
+        .label = "Repo Explorer",
         .shortcut = "CmdOrCtrl+1",
     });
 }
@@ -200,19 +200,19 @@ test "the frontend running Keyboard Shortcuts sends it the action event naming i
     });
 }
 
-test "the shortcut of Commit Explorer sends the frontend the action event naming it" {
+test "the shortcut of Repo Explorer sends the frontend the action event naming it" {
     try expect_action_event(.{
         .message = "{\"kind\":\"system\",\"id\":1,\"name\":\"menu-action\"," ++
-            "\"data\":{\"action\":\"open-commit-explorer\"}}",
-        .event = commit_explorer_event,
+            "\"data\":{\"action\":\"open-repo-explorer\"}}",
+        .event = repo_explorer_event,
     });
 }
 
-test "the frontend running Commit Explorer sends it the action event naming it" {
+test "the frontend running Repo Explorer sends it the action event naming it" {
     try expect_action_event(.{
         .message = "{\"kind\":\"system\",\"id\":1,\"name\":\"run-action\"," ++
-            "\"data\":{\"action\":\"open-commit-explorer\"}}",
-        .event = commit_explorer_event,
+            "\"data\":{\"action\":\"open-repo-explorer\"}}",
+        .event = repo_explorer_event,
     });
 }
 

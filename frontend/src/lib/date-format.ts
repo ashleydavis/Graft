@@ -1,6 +1,6 @@
 //
-// Formats the dates of commits for the commits page: a short date for each commit in the commit
-// pane and the date and time in the commit details pane.
+// Formats the dates of commits for the repo explorer page: a short date for each commit in the
+// commit pane and the date and time in the commit details pane.
 //
 
 //

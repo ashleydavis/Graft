@@ -71,7 +71,7 @@ export function readCommitDetails(request: ICommitDetailsRequest, onRead: (resul
     const task: IAddTask = {
         taskId: request.taskId,
         taskType: "commit-details",
-        source: "commits-page",
+        source: "repo-explorer-page",
         data: {
             repoPath: request.repoPath,
             hash: request.hash,

@@ -1,6 +1,6 @@
 //
 // The commits task: the background task that reads a page of a repo's commits with the `log`
-// wrapper for the commits page.
+// wrapper for the repo explorer's commit pane.
 //
 
 const std = @import("std");

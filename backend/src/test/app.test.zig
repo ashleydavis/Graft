@@ -37,7 +37,7 @@ test "the app registers the open-repo and zoom messages" {
     try std.testing.expect(has_message("zoom"));
 }
 
-test "the app registers the commit explorer's and open-repo's tasks" {
+test "the app registers the repo explorer's and open-repo's tasks" {
     try std.testing.expect(has_task("commits"));
     try std.testing.expect(has_task("commit-details"));
     try std.testing.expect(has_task("file-diff"));

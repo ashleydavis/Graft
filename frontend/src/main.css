@@ -61,8 +61,8 @@
 }
 
 /*
- * A pane that opens to the right of the commits page fades in over the normal duration. It fades
- * without moving, because the commits page scrolls the new pane into view as it opens and a moving
+ * A pane that opens to the right of the repo explorer page fades in over the normal duration. It fades
+ * without moving, because the repo explorer page scrolls the new pane into view as it opens and a moving
  * pane would be scrolled to where it starts instead of where it ends.
  */
 @keyframes graft-pane-in {

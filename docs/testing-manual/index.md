@@ -4,7 +4,7 @@ The manual test steps for every top-level feature of Graft. See [README.md](READ
 
 - [welcome](welcome/index.md): the welcome page, which Graft opens on while no repo is open, with Graft's mark, its name, a line describing Graft and an Open repo button.
 - [about](about/index.md): the About page, which shows what Graft is.
-- [commits](commits/index.md): the commits page, which lists the first page of the repo's commits.
+- [repo-explorer](repo-explorer/index.md): the repo explorer page, which opens on the repo details pane, whose Commits link opens the commit pane listing the first page of the repo's commits.
 - [help](help/index.md): the Help page, which says how to move between Graft's pages.
 - [open-repo](open-repo/index.md): opening a repo from the File menu and with Ctrl+O.
 - [new-window](new-window/index.md): opening a new window from the File menu and with Ctrl+N.

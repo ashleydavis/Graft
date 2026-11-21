@@ -3,12 +3,12 @@
 #
 # Creates a test repo of the smoke test's own, starts the real app with remote control on, opens the
 # repo with the welcome page's Open repo button and checks the right sidebar shows the Git commands
-# the commits page runs: git log when the page opens, then git log and git diff-tree when a commit
-# opens and git diff-tree for a file's diff. It checks every command the commits page ran shows how
-# long it took and the panel shows their total time. It checks the commands stay when a pane closes
-# and when the sidebar closes and that the About page shows none. It runs every command the sidebar
-# shows in a terminal's shell, after the cd it shows, so a command that does not work fails the
-# test. See test.md.
+# the repo explorer page runs: none while the repo details pane is alone, git log when the commit
+# pane opens, then git log and git diff-tree when a commit opens and git diff-tree for a file's
+# diff. It checks every command the repo explorer page ran shows how long it took and the panel
+# shows their total time. It checks the commands stay when a pane closes and when the sidebar closes
+# and that the About page shows none. It runs every command the sidebar shows in a terminal's shell,
+# after the cd it shows, so a command that does not work fails the test. See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -41,7 +41,7 @@ check_duration_text() {
 }
 
 #
-# Checks every command the commits page ran shows its duration and the panel shows the total time
+# Checks every command the repo explorer page ran shows its duration and the panel shows the total time
 # of them all.
 #
 check_durations() {
@@ -100,7 +100,8 @@ wait_for_element git-commands-panel 30
 wait_for_text git-commands-empty "This page has run no Git commands." 30
 
 open_repo_with_button "$repo"
-wait_for_element commit-pane 30
+wait_for_text git-commands-empty "This page has run no Git commands." 30
+open_commit_pane
 wait_for_text git-command-0-text "git log --max-count=50" 30
 wait_for_text git-commands-directory "cd $repo" 30
 
@@ -129,6 +130,6 @@ wait_for_text git-command-0-text "git diff-tree -r -p --root --no-commit-id $hea
 
 run_shown_commands
 
-click commits-about-link
+click repo-explorer-about-link
 wait_for_element about-page 30
 wait_for_text git-commands-empty "This page has run no Git commands." 30

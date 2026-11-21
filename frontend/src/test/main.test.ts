@@ -1,12 +1,13 @@
 //
 // Tests how the frontend starts: loading main.tsx draws the app into the test's document, where the
 // router opens on the welcome page in the layout's main content area with no repo open. The welcome
-// page's Open repo button runs the open-repo action, which opens a repo on the commits page. The
-// open-repo action opens another repo in its place and the links then change between the About
-// page and the commits page. The Help page is on the router, with the trail following each page
-// and its drop-down opening the About page again. The smoke tests' commands are performed only in
-// test mode. The splash screen covers the page until the native app reports the page is in sight.
-// Each test puts a fake made of Jest mocks on window.ziggy, where the frontend reaches the backend.
+// page's Open repo button runs the open-repo action, which opens a repo on the repo explorer page.
+// The open-repo action opens another repo in its place and the links then change between the About
+// page and the repo explorer page. The Help page is on the router, with the trail following each
+// page and its drop-down opening the About page again. The smoke tests' commands are performed only
+// in test mode. The splash screen covers the page until the native app reports the page is in
+// sight. Each test puts a fake made of Jest mocks on window.ziggy, where the frontend reaches the
+// backend.
 //
 
 import { act, screen, waitFor } from "@testing-library/react";
@@ -22,6 +23,12 @@ import type { ITestCommandEvent, IZiggyBridge } from "ziggy";
 //
 jest.spyOn(window, "scrollTo").mockImplementation(() => {
 });
+
+//
+// The repo explorer page scrolls the commit pane into view when the Commits link opens it. jsdom
+// leaves scrollIntoView undefined, because it lays nothing out, so the tests give elements a mock.
+//
+Element.prototype.scrollIntoView = jest.fn();
 
 //
 // The element with the data-id. The page links are found by data-id, because the left sidebar
@@ -85,16 +92,16 @@ describe("main", () => {
         expect(elementWithDataId("app-layout")?.contains(elementWithDataId("main-content") ?? null)).toBe(true);
     });
 
-    test("the app starts with no repo open: the trail is empty and the left sidebar has no Commits link", async () => {
+    test("the app starts with no repo open: the trail is empty and the left sidebar has no Repo explorer link", async () => {
         await screen.findByText("Graft", {
             selector: "h1",
         });
-        expect(document.querySelector("[data-id=\"left-sidebar-commits-link\"]")).toBeNull();
+        expect(document.querySelector("[data-id=\"left-sidebar-repo-explorer-link\"]")).toBeNull();
         expect(document.querySelector("[data-id=\"breadcrumb-repo\"]")).toBeNull();
         expect(document.querySelector("[data-id=\"breadcrumb-page\"]")).toBeNull();
     });
 
-    test("the welcome page's Open repo button runs the open-repo action, which opens the folder picked on the commits page", async () => {
+    test("the welcome page's Open repo button runs the open-repo action, which opens the folder picked on the repo explorer page", async () => {
         await screen.findByText("Graft", {
             selector: "h1",
         });
@@ -114,8 +121,12 @@ describe("main", () => {
         });
         expect(ziggy.runAction).toHaveBeenCalledWith("open-repo");
         expect(ziggy.invoke).toHaveBeenCalledWith("pick-repo-folder", null);
-        expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
+        expect((await screen.findByText("/repos/welcome")).closest("[data-id=\"repo-details-path\"]")).not.toBeNull();
         expect(document.querySelector("[data-id=\"welcome-page\"]")).toBeNull();
+        act(() => {
+            elementWithDataId("repo-details-commits")?.click();
+        });
+        expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
         expect(ziggy.addTask).toHaveBeenCalledWith(expect.objectContaining({
             taskType: "commits",
             data: {
@@ -126,7 +137,7 @@ describe("main", () => {
         expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("welcome");
     });
 
-    test("the open-repo action opens the folder picked on the commits page, and the links change back to the About page and on again", async () => {
+    test("the open-repo action opens the folder picked on the repo explorer page, and the links change back to the About page and on again", async () => {
         expect(installedZiggy.hasRegisteredAction("open-repo")).toBe(true);
         const ziggy = {
             invoke: jest.fn().mockResolvedValue("/repos/graft"),
@@ -142,8 +153,12 @@ describe("main", () => {
             await installedZiggy.runRegisteredAction("open-repo");
         });
         expect(ziggy.invoke).toHaveBeenCalledWith("pick-repo-folder", null);
+        expect((await screen.findByText("/repos/graft")).closest("[data-id=\"repo-details-path\"]")).not.toBeNull();
+        expect(elementWithDataId("main-content")?.contains(elementWithDataId("repo-explorer-page") ?? null)).toBe(true);
+        act(() => {
+            elementWithDataId("repo-details-commits")?.click();
+        });
         expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
-        expect(elementWithDataId("main-content")?.contains(elementWithDataId("commits-page") ?? null)).toBe(true);
         expect(ziggy.addTask).toHaveBeenCalledWith(expect.objectContaining({
             taskType: "commits",
             data: {
@@ -154,16 +169,16 @@ describe("main", () => {
         expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("graft");
         expect(elementWithDataId("breadcrumb-repo")?.getAttribute("aria-label")).toBe("/repos/graft");
         act(() => {
-            elementWithDataId("commits-about-link")?.click();
+            elementWithDataId("repo-explorer-about-link")?.click();
         });
         expect((await screen.findByText("About Graft")).getAttribute("data-id")).toBe("about-heading");
         expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("graft");
         act(() => {
-            elementWithDataId("left-sidebar-commits-link")?.click();
+            elementWithDataId("left-sidebar-repo-explorer-link")?.click();
         });
-        expect((await screen.findByText("Commits", {
+        expect((await screen.findByText("Repo explorer", {
             selector: "h1",
-        })).getAttribute("data-id")).toBe("commits-heading");
+        })).getAttribute("data-id")).toBe("repo-explorer-heading");
         act(() => {
             elementWithDataId("left-sidebar-about-link")?.click();
         });

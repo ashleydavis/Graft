@@ -43,7 +43,7 @@ flowchart LR
 - The `log` wrapper also reads one commit by its hash, for the commit details pane. The `diff-tree` wrapper in `backend/src/lib/git-diff-tree.zig` reads what one commit changed with `git diff-tree`: its changed files with their line counts and the diff of one of them. Both refuse a hash that is not hexadecimal, so git reads text from the frontend only as a commit.
 - File, Open repo runs the `open-repo` action, whose handler is in the frontend. It sends the `pick-repo-folder` message, whose response comes from a task of that name, because the system folder picker it shows waits for the user.
 - The zoom actions' handlers send the backend's `zoom` message, which has the native app zoom through Ziggy's handler services. Graft can only step the native app's zoom, so Graft keeps the zoom level itself to save it in the state file.
-- The commits page queues one task per pane: the commits task for the commit pane, the commit details task (the commit and its changed files) for the commit details pane and the file diff task for the file pane.
+- The repo explorer page queues one task per pane: the commits task for the commit pane, the commit details task (the commit and its changed files) for the commit details pane and the file diff task for the file pane.
 - Must not share state between threads or use locks.
 
 ### Native apps
@@ -63,7 +63,7 @@ flowchart LR
 - The native app passes each message to the backend through Ziggy's C interface. The backend's main thread finds the handler registered for its name and sends back what it returns.
 - A message handler can have a task give its response, so a slow answer still reaches the frontend as one message response.
 - The backend sends the frontend events of its own with `sendEvent`. The native app sends a menu item the frontend runs as a menu event.
-- The backend declares Graft's actions, each in the file of the feature that owns it, and the frontend registers each one's handler with `window.ziggy.registerAction`, in a hook the feature owns. Ziggy runs an action's keyboard shortcut in the frontend. Each feature's section of the [spec](spec/index.md) describes what its actions and their shortcuts do. Ziggy's action list, which `window.ziggy.listActions()` gives, is the one list of shortcuts: the overlay is built from it, so a shortcut is written only where its action is declared. The commits page handles its own keys (the arrow keys, Enter and Escape) itself while it is shown, because they mean something only there.
+- The backend declares Graft's actions, each in the file of the feature that owns it, and the frontend registers each one's handler with `window.ziggy.registerAction`, in a hook the feature owns. Ziggy runs an action's keyboard shortcut in the frontend. Each feature's section of the [spec](spec/index.md) describes what its actions and their shortcuts do. Ziggy's action list, which `window.ziggy.listActions()` gives, is the one list of shortcuts: the overlay is built from it, so a shortcut is written only where its action is declared. The repo explorer page handles its own keys (the arrow keys, Enter and Escape) itself while it is shown, because they mean something only there.
 - Every message, response and event is the JSON text of one object.
 
 ## Where work runs

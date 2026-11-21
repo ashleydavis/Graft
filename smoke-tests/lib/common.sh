@@ -251,14 +251,25 @@ answer_picker() {
 
 #
 # Opens the repo at the path from the welcome page, as a user does: gives the folder picker the
-# path, clicks the welcome page's Open repo button and waits until the commits page shows. Every
-# smoke test that needs an open repo opens it with this, through Graft's normal way of opening a
-# repo. Usage: open_repo_with_button <path>
+# path, clicks the welcome page's Open repo button and waits until the repo explorer page shows its
+# repo details pane. Every smoke test that needs an open repo opens it with this, through Graft's
+# normal way of opening a repo. Usage: open_repo_with_button <path>
 #
 open_repo_with_button() {
     answer_picker "$1"
     click welcome-open-repo-button
-    wait_for_element commits-page 30
+    wait_for_element repo-explorer-page 30
+    wait_for_element repo-details-pane 30
+}
+
+#
+# Opens the commit pane of the repo explorer page that shows, as a user does: clicks the repo
+# details pane's Commits link and waits until the commit pane shows, so a change to how the commit
+# pane opens is one edit here. Usage: open_commit_pane
+#
+open_commit_pane() {
+    click repo-details-commits
+    wait_for_element commit-pane 30
 }
 
 #

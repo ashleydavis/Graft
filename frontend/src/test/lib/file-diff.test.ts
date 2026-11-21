@@ -34,7 +34,7 @@ describe("readFileDiff", () => {
         expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t1",
             taskType: "file-diff",
-            source: "commits-page",
+            source: "repo-explorer-page",
             data: {
                 repoPath: "/repo",
                 hash: "abc123",

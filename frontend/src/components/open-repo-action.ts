@@ -1,6 +1,6 @@
 //
 // The open-repo action's handler, which opens the directory the user picks and shows it in the
-// commit explorer, registered by the hook the layout calls.
+// repo explorer, registered by the hook the layout calls.
 //
 
 import { useNavigate } from "@tanstack/react-router";
@@ -22,7 +22,7 @@ export function useOpenRepoAction(): void {
     useEffect(() => {
         window.ziggy.registerAction(openRepoActionName, () => openPickedRepo(pickedRepoPath => {
             openRepo(pickedRepoPath);
-            openPage(navigate, "/commits");
+            openPage(navigate, "/repo-explorer");
         }));
         return () => {
             window.ziggy.removeAction(openRepoActionName);

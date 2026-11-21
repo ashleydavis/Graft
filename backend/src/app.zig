@@ -6,7 +6,7 @@
 //
 
 const ziggy = @import("ziggy");
-const commit_explorer = @import("features/commit-explorer.zig");
+const repo_explorer = @import("features/repo-explorer.zig");
 const open_repo = @import("features/open-repo.zig");
 const zoom = @import("features/zoom.zig");
 const actions = @import("lib/actions.zig");
@@ -26,7 +26,7 @@ pub const app = ziggy.core.App(.{
         zoom.messages,
     }),
     .tasks = merge_fields.merge_fields(.{
-        commit_explorer.tasks,
+        repo_explorer.tasks,
         open_repo.tasks,
     }),
     .menu = menu.menu,

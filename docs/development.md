@@ -39,7 +39,7 @@ Dev mode starts Vite's dev server, builds the dev backend and opens the frontend
 
 ```
 frontend/            The frontend: index.html and the TypeScript and React code under src/, which runs in the system web view.
-  src/main.tsx       Starts the frontend: the router and the answers to the smoke tests' commands. The router opens on the welcome page and holds the About, commits and Help pages.
+  src/main.tsx       Starts the frontend: the router and the answers to the smoke tests' commands. The router opens on the welcome page and holds the About, repo explorer and Help pages.
   src/main.css       The style guide's tokens and fonts and Tailwind's styles, with MaterialUI's styles in a CSS layer before Tailwind's classes.
   src/graft.css      The style guide's design tokens as CSS variables, copied from the style guide. The dark class on the page picks their dark values.
   src/pages/         One directory per page, each with its index.tsx.
@@ -88,7 +88,7 @@ bash smoke-tests/run-desktop.sh about-page        # One smoke test, by its direc
 
 The runner builds the app, then runs each `test.sh` in a hidden window, with its own temporary directory and a timeout.
 
-A smoke test that reads a repo creates its own with `scripts/test/create-test-repo.sh "$ZIGGY_TEST_DIR/repo"`, so each smoke test running in parallel reads a repo of its own. It opens the repo the way a user does, with `open_repo_with_button` from `smoke-tests/lib/common.sh`: the helper gives the folder picker the repo's path with remote control's `pick-answer` command (`answer_picker`), clicks the welcome page's Open repo button and waits for the commits page. A smoke test of the File menu or the shortcut gives the picker its path with `answer_picker` and opens the repo that way. Graft always starts with no repo open. `./scripts/test/create-test-repo.sh` creates a test repo at `/tmp/graft/test-repo` to open with File, Open repo.
+A smoke test that reads a repo creates its own with `scripts/test/create-test-repo.sh "$ZIGGY_TEST_DIR/repo"`, so each smoke test running in parallel reads a repo of its own. It opens the repo the way a user does, with `open_repo_with_button` from `smoke-tests/lib/common.sh`: the helper gives the folder picker the repo's path with remote control's `pick-answer` command (`answer_picker`), clicks the welcome page's Open repo button and waits for the repo explorer page. A smoke test of the File menu or the shortcut gives the picker its path with `answer_picker` and opens the repo that way. Graft always starts with no repo open. `./scripts/test/create-test-repo.sh` creates a test repo at `/tmp/graft/test-repo` to open with File, Open repo.
 
 ### Git in the unit tests
 

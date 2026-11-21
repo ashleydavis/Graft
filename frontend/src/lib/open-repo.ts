@@ -25,7 +25,7 @@ export async function pickRepoFolder(): Promise<string | undefined> {
 
 //
 // Runs the open-repo action: shows the folder picker and calls onOpen with the folder chosen, so
-// the caller opens it in the commit explorer. A cancelled picker opens nothing. It rejects when the
+// the caller opens it in the repo explorer. A cancelled picker opens nothing. It rejects when the
 // picker could not be shown, and Ziggy writes the rejection, named for the open-repo action, to the
 // backend's log.
 //

@@ -9,7 +9,7 @@ const pick_repo_folder = @import("../lib/pick-repo-folder.zig");
 
 //
 // Open repo, on the File menu. Its frontend handler shows the folder picker and opens the folder
-// chosen in the commit explorer. Its shortcut is CmdOrCtrl+O, the usual key for opening in desktop
+// chosen in the repo explorer. Its shortcut is CmdOrCtrl+O, the usual key for opening in desktop
 // apps, kept clear of the web view's own keys (reload and the developer tools), as
 // actions.test.zig checks.
 //

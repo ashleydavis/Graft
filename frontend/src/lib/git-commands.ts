@@ -15,7 +15,7 @@ export const MAX_COMMANDS_PER_PAGE = 20;
 // commands of the page that is open. Only the pages listed here run Git commands.
 //
 const PAGE_TASK_SOURCES: Record<string, string> = {
-    "/commits": "commits-page",
+    "/repo-explorer": "repo-explorer-page",
 };
 
 //

@@ -23,8 +23,8 @@ export function reportOpenRepoFailure(error: unknown): void {
 // About page shows, so both pages show Graft the same way. The content sits in the middle of the
 // main content area, because it is all the page holds. The button runs the open-repo action, the
 // one the File menu's "Open repo" item runs, so both open a repo the same way: the action's
-// handler, which the layout registers, shows the directory picker and opens the directory chosen
-// on the commits page.
+// handler, which the layout registers, shows the directory picker and opens the directory chosen on
+// the repo explorer page.
 //
 export function WelcomePage(): JSX.Element {
     return (

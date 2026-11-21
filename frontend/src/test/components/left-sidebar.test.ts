@@ -1,7 +1,7 @@
 //
 // Tests the left sidebar: renders it expanded and minimised, with a repo open or none, in a router
-// with an About page, a commits page and a Help page and checks its width, which links it shows
-// with which labels, where they go and which one is highlighted.
+// with an About page, a repo explorer page and a Help page and checks its width, which links it
+// shows with which labels, where they go and which one is highlighted.
 //
 
 import { act, render, screen } from "@testing-library/react";
@@ -38,10 +38,10 @@ async function renderLeftSidebar(isMinimised: boolean, isRepoOpen: boolean): Pro
         path: "/about",
         component: () => createElement("p", null, "The About page"),
     });
-    const commitsRoute = createRoute({
+    const repoExplorerRoute = createRoute({
         getParentRoute: () => rootRoute,
-        path: "/commits",
-        component: () => createElement("p", null, "The commits page"),
+        path: "/repo-explorer",
+        component: () => createElement("p", null, "The repo explorer page"),
     });
     const helpRoute = createRoute({
         getParentRoute: () => rootRoute,
@@ -49,7 +49,7 @@ async function renderLeftSidebar(isMinimised: boolean, isRepoOpen: boolean): Pro
         component: () => createElement("p", null, "The Help page"),
     });
     const router = createRouter({
-        routeTree: rootRoute.addChildren([aboutRoute, commitsRoute, helpRoute]),
+        routeTree: rootRoute.addChildren([aboutRoute, repoExplorerRoute, helpRoute]),
         history: createMemoryHistory({
             initialEntries: ["/about"],
         }),
@@ -74,7 +74,7 @@ describe("LeftSidebar", () => {
         const sidebar = elementWithDataId(container, "left-sidebar");
         expect(sidebar?.classList.contains("w-[260px]")).toBe(true);
         expect(sidebar?.classList.contains("w-16")).toBe(false);
-        expect(elementWithDataId(container, "left-sidebar-commits-link-label")?.textContent).toBe("Commits");
+        expect(elementWithDataId(container, "left-sidebar-repo-explorer-link-label")?.textContent).toBe("Repo explorer");
         expect(elementWithDataId(container, "left-sidebar-help-link-label")?.textContent).toBe("Help");
         expect(elementWithDataId(container, "left-sidebar-about-link-label")?.textContent).toBe("About");
     });
@@ -84,10 +84,10 @@ describe("LeftSidebar", () => {
         const sidebar = elementWithDataId(container, "left-sidebar");
         expect(sidebar?.classList.contains("w-16")).toBe(true);
         expect(sidebar?.classList.contains("w-[260px]")).toBe(false);
-        expect(elementWithDataId(container, "left-sidebar-commits-link-label")).toBeUndefined();
+        expect(elementWithDataId(container, "left-sidebar-repo-explorer-link-label")).toBeUndefined();
         expect(elementWithDataId(container, "left-sidebar-about-link-label")).toBeUndefined();
         expect(elementWithDataId(container, "left-sidebar-help-link-label")).toBeUndefined();
-        expect(elementWithDataId(container, "left-sidebar-commits-link")?.querySelector("svg[data-icon=\"code-commit\"]")).not.toBeNull();
+        expect(elementWithDataId(container, "left-sidebar-repo-explorer-link")?.querySelector("svg[data-icon=\"code-commit\"]")).not.toBeNull();
         expect(elementWithDataId(container, "left-sidebar-help-link")?.querySelector("svg[data-icon=\"circle-question\"]")).not.toBeNull();
         expect(elementWithDataId(container, "left-sidebar-about-link")?.querySelector("svg[data-icon=\"circle-info\"]")).not.toBeNull();
         expect(sidebar?.textContent).toBe("");
@@ -95,17 +95,17 @@ describe("LeftSidebar", () => {
 
     test("names each link in its label and tooltip, whether expanded or minimised", async () => {
         const container = await renderLeftSidebar(true, true);
-        expect(elementWithDataId(container, "left-sidebar-commits-link")?.getAttribute("aria-label")).toBe("Commits");
-        expect(elementWithDataId(container, "left-sidebar-commits-link")?.getAttribute("aria-label")).toBe("Commits");
+        expect(elementWithDataId(container, "left-sidebar-repo-explorer-link")?.getAttribute("aria-label")).toBe("Repo explorer");
+        expect(elementWithDataId(container, "left-sidebar-repo-explorer-link")?.getAttribute("aria-label")).toBe("Repo explorer");
         expect(elementWithDataId(container, "left-sidebar-about-link")?.getAttribute("aria-label")).toBe("About");
         expect(elementWithDataId(container, "left-sidebar-about-link")?.getAttribute("aria-label")).toBe("About");
         expect(elementWithDataId(container, "left-sidebar-help-link")?.getAttribute("aria-label")).toBe("Help");
         expect(elementWithDataId(container, "left-sidebar-help-link")?.getAttribute("aria-label")).toBe("Help");
     });
 
-    test("links to the commits page, the Help page and the About page", async () => {
+    test("links to the repo explorer page, the Help page and the About page", async () => {
         const container = await renderLeftSidebar(false, true);
-        expect(elementWithDataId(container, "left-sidebar-commits-link")?.getAttribute("href")).toBe("/commits");
+        expect(elementWithDataId(container, "left-sidebar-repo-explorer-link")?.getAttribute("href")).toBe("/repo-explorer");
         expect(elementWithDataId(container, "left-sidebar-help-link")?.getAttribute("href")).toBe("/help");
         expect(elementWithDataId(container, "left-sidebar-about-link")?.getAttribute("href")).toBe("/about");
     });
@@ -117,15 +117,15 @@ describe("LeftSidebar", () => {
         expect(sidebar?.querySelectorAll("button").length).toBe(0);
     });
 
-    test("hides the link to the commits page while no repo is open, expanded or minimised", async () => {
+    test("hides the link to the repo explorer page while no repo is open, expanded or minimised", async () => {
         const expanded = await renderLeftSidebar(false, false);
-        expect(elementWithDataId(expanded, "left-sidebar-commits-link")).toBeUndefined();
+        expect(elementWithDataId(expanded, "left-sidebar-repo-explorer-link")).toBeUndefined();
         expect(elementWithDataId(expanded, "left-sidebar-help-link")).not.toBeUndefined();
         expect(elementWithDataId(expanded, "left-sidebar-about-link")).not.toBeUndefined();
         expect(elementWithDataId(expanded, "left-sidebar")?.querySelectorAll("a").length).toBe(2);
         expanded.remove();
         const minimised = await renderLeftSidebar(true, false);
-        expect(elementWithDataId(minimised, "left-sidebar-commits-link")).toBeUndefined();
+        expect(elementWithDataId(minimised, "left-sidebar-repo-explorer-link")).toBeUndefined();
         expect(elementWithDataId(minimised, "left-sidebar")?.querySelectorAll("a").length).toBe(2);
     });
 
@@ -134,18 +134,18 @@ describe("LeftSidebar", () => {
         const helpLink = elementWithDataId(container, "left-sidebar-help-link");
         expect(helpLink?.parentElement).toBe(elementWithDataId(container, "left-sidebar-about-link")?.parentElement);
         expect(helpLink?.nextElementSibling).toBe(elementWithDataId(container, "left-sidebar-about-link"));
-        expect(helpLink?.parentElement).not.toBe(elementWithDataId(container, "left-sidebar-commits-link")?.parentElement);
+        expect(helpLink?.parentElement).not.toBe(elementWithDataId(container, "left-sidebar-repo-explorer-link")?.parentElement);
     });
 
     test("highlights the link to the page being shown, and only that one", async () => {
         const container = await renderLeftSidebar(false, true);
         expect(elementWithDataId(container, "left-sidebar-about-link")?.classList.contains("bg-[var(--color-selected)]")).toBe(true);
-        expect(elementWithDataId(container, "left-sidebar-commits-link")?.classList.contains("bg-[var(--color-selected)]")).toBe(false);
+        expect(elementWithDataId(container, "left-sidebar-repo-explorer-link")?.classList.contains("bg-[var(--color-selected)]")).toBe(false);
         act(() => {
-            elementWithDataId(container, "left-sidebar-commits-link")?.click();
+            elementWithDataId(container, "left-sidebar-repo-explorer-link")?.click();
         });
-        await screen.findByText("The commits page");
-        expect(elementWithDataId(container, "left-sidebar-commits-link")?.classList.contains("bg-[var(--color-selected)]")).toBe(true);
+        await screen.findByText("The repo explorer page");
+        expect(elementWithDataId(container, "left-sidebar-repo-explorer-link")?.classList.contains("bg-[var(--color-selected)]")).toBe(true);
         expect(elementWithDataId(container, "left-sidebar-about-link")?.classList.contains("bg-[var(--color-selected)]")).toBe(false);
     });
 });

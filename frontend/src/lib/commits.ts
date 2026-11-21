@@ -133,7 +133,7 @@ export function readCommitPage(request: ICommitPageRequest, onRead: (result: Res
     const task: IAddTask = {
         taskId: request.taskId,
         taskType: "commits",
-        source: "commits-page",
+        source: "repo-explorer-page",
         data: {
             repoPath: request.repoPath,
             pageSize: request.pageSize,

@@ -26,7 +26,7 @@ bun run macos
 
 1. Wait for Graft's window to open on the welcome page. Choose File, then "Open repo", choose `/tmp/graft/test-repo`, then click "About" in the left sidebar.
 2. Click "Help" at the bottom of the left sidebar. Check the Help page shows in the main content area and the Help link is highlighted.
-3. Check the page shows the heading "Help" and under it "The left sidebar and the breadcrumb trail in the top bar move between Graft's pages. File, then Open repo, opens a repo, and Commits lists its commits. About says what Graft is."
+3. Check the page shows the heading "Help" and under it "The left sidebar and the breadcrumb trail in the top bar move between Graft's pages. File, then Open repo, opens a repo, and Repo explorer shows it and lists its commits. About says what Graft is."
 4. Check the page shows only the heading and that text.
 5. Check the breadcrumb trail in the top bar reads "test-repo" then "Help".
 6. Click "About" in the left sidebar, then click "About" in the trail and pick "Help". Check the Help page shows.

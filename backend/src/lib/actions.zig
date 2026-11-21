@@ -6,7 +6,7 @@
 //
 
 const ziggy = @import("ziggy");
-const commit_explorer = @import("../features/commit-explorer.zig");
+const repo_explorer = @import("../features/repo-explorer.zig");
 const new_window = @import("../features/new-window.zig");
 const open_repo = @import("../features/open-repo.zig");
 const shortcuts_overlay = @import("../features/shortcuts-overlay.zig");
@@ -19,6 +19,6 @@ const zoom = @import("../features/zoom.zig");
 pub const actions: []const ziggy.action.Action =
     open_repo.actions ++
     shortcuts_overlay.actions ++
-    commit_explorer.actions ++
+    repo_explorer.actions ++
     zoom.actions ++
     new_window.actions;

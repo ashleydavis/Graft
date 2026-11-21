@@ -14,7 +14,7 @@ import { RepoProvider } from "./components/repo-context";
 import { IDocumentLike, installSplashScreen } from "./lib/splash";
 import { ITestCommand, performTestCommand, testResultToJson } from "./lib/test-commands";
 import { AboutPage } from "./pages/about";
-import { CommitsPage } from "./pages/commits";
+import { RepoExplorerPage } from "./pages/repo-explorer";
 import { HelpPage } from "./pages/help";
 import { WelcomePage } from "./pages/welcome";
 
@@ -26,8 +26,8 @@ const splashBackground = "#14171A";
 //
 // Makes the router that picks the page to show. Every page shows in the main content area of the
 // app's layout. The app opens on the welcome page, which is shown while no repo is open and opens
-// one. The About page, the commits page and the Help page sit beside it. The history is kept in
-// memory, because the web view loads the frontend from the app's own address, whose path is the
+// one. The About page, the repo explorer page and the Help page sit beside it. The history is kept
+// in memory, because the web view loads the frontend from the app's own address, whose path is the
 // file index.html and not a page of Graft's. The layout and the pages read the open repo from
 // RepoProvider, which startApp puts around the router.
 //
@@ -45,10 +45,10 @@ export function createAppRouter(): AnyRouter {
         path: "/about",
         component: AboutPage,
     });
-    const commitsRoute = createRoute({
+    const repoExplorerRoute = createRoute({
         getParentRoute: () => rootRoute,
-        path: "/commits",
-        component: CommitsPage,
+        path: "/repo-explorer",
+        component: RepoExplorerPage,
     });
     const helpRoute = createRoute({
         getParentRoute: () => rootRoute,
@@ -59,7 +59,7 @@ export function createAppRouter(): AnyRouter {
         routeTree: rootRoute.addChildren([
             welcomeRoute,
             aboutRoute,
-            commitsRoute,
+            repoExplorerRoute,
             helpRoute,
         ]),
         history: createMemoryHistory({

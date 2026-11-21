@@ -1,0 +1,804 @@
+//
+// Tests the repo explorer page: renders it in a router with a fake window.ziggy made of Jest mocks,
+// and checks that it opens on the repo details pane with the repo's name and path, and that its
+// Commits link opens the commit pane, which queues the commits task for the repo, shows that it is
+// loading, then lists the commits or says why they could not be read. It also checks the columns:
+// clicking a commit opens the commit details pane and highlights the commit, clicking a changed
+// file opens the file pane and highlights the file and each pane closes, and that the page scrolls
+// each pane that opens into view.
+// It presses the repo explorer's keys on the page and checks how they move the selection, change
+// the active pane, open and close panes, and that they are left alone in a text box, outside the
+// page and with Ctrl held. Dates are checked against the browser's own locale and time zone, which
+// the page passes on. The page reads the open repo from a RepoProvider: it shows when no repo is
+// open and reads another repo afresh when one is opened in its place.
+//
+
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
+import { createElement, JSX } from "react";
+import type { IAddTask, ITaskCompletedEvent } from "ziggy";
+import { RepoProvider, useRepo } from "../../../components/repo-context";
+import { ICommit } from "../../../lib/commits";
+import { formatDate, formatDateTime } from "../../../lib/date-format";
+import { RepoExplorerPage, scrollLastPaneIntoView } from "../../../pages/repo-explorer";
+import { activeFlatPaneClasses, activePaneClasses } from "../../../pages/repo-explorer/components/active-pane-style";
+import { openRowClasses } from "../../../pages/repo-explorer/components/commit-list";
+import { FakeTaskZiggy, installFakeTaskZiggy } from "../../fake-ziggy";
+import { RepoOpener } from "../../repo-opener";
+
+//
+// The router scrolls the window to the top when it shows a page. jsdom reports window.scrollTo as
+// an error, so the tests replace it with a function that returns at once.
+//
+jest.spyOn(window, "scrollTo").mockImplementation(() => {
+});
+
+//
+// The page scrolls each pane that opens into view. jsdom leaves scrollIntoView undefined, because
+// it lays out no page, so the tests put a Jest mock on every element that records which element it
+// was called on.
+//
+const scrollIntoView = jest.fn();
+Element.prototype.scrollIntoView = scrollIntoView;
+
+beforeEach(() => {
+    scrollIntoView.mockClear();
+});
+
+//
+// Reads the data-ids of the elements the page scrolled into view, in the order it scrolled them.
+//
+function scrolledDataIds(): (string | null)[] {
+    return scrollIntoView.mock.contexts.map(element => {
+        //
+        // The cast is safe because the mock is only ever called as a method of an element, and a
+        // type guard cannot narrow it because Jest types each context as unknown.
+        //
+        return (element as Element).getAttribute("data-id");
+    });
+}
+
+//
+// Shows a button that opens the repo at "/other-repo", as the open-repo action does, so a test can
+// open another repo while the repo explorer page shows.
+//
+function OpenOtherRepoButton(): JSX.Element {
+    const { openRepo } = useRepo();
+    return createElement("button", {
+        onClick: () => openRepo("/other-repo"),
+    }, "Open the other repo");
+}
+
+//
+// Shows the repo explorer page as the only page of a router, as the app does, inside a RepoProvider
+// with the repo the test gives open, or none for undefined, beside a button that opens another
+// repo.
+//
+function renderRepoExplorerPage(repoPath: string | undefined): void {
+    const rootRoute = createRootRoute();
+    const pageRoute = createRoute({
+        getParentRoute: () => rootRoute,
+        path: "/",
+        component: (): JSX.Element => createElement("div", null,
+            createElement(OpenOtherRepoButton),
+            createElement(RepoExplorerPage),
+        ),
+    });
+    const router = createRouter({
+        routeTree: rootRoute.addChildren([pageRoute]),
+        history: createMemoryHistory({
+            initialEntries: ["/"],
+        }),
+    });
+    render(createElement(RepoProvider, {
+        children: [
+            createElement(RepoOpener, {
+                key: "repo-opener",
+                repoPath,
+            }),
+            createElement(RouterProvider, {
+                key: "router",
+                router,
+            }),
+        ],
+    }));
+}
+
+//
+// Waits for the repo details pane's Commits link, which the router draws after the first render,
+// and clicks it, as a user does, which opens the commit pane.
+//
+async function clickCommitsLink(): Promise<void> {
+    fireEvent.click(await screen.findByText("Commits"));
+}
+
+//
+// Ends the commits task the page queued, as the backend does, with the result.
+//
+function completeTask(ziggy: FakeTaskZiggy, result: ITaskCompletedEvent["result"]): void {
+    const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[0][0];
+    const onTaskCompleted = (ziggy.onTaskCompleted as jest.Mock).mock.calls[0][0];
+    act(() => {
+        onTaskCompleted({
+            taskId: task.taskId,
+            result: {
+                ...result,
+                taskId: task.taskId,
+            },
+        });
+    });
+}
+
+//
+// Ends the task the page queued at the index of window.ziggy's addTask calls, as the backend does,
+// with the outputs. Each task registers its own listener, at the same index.
+//
+function completeTaskAt(ziggy: FakeTaskZiggy, index: number, outputs: ITaskCompletedEvent["result"]["outputs"]): void {
+    const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[index][0];
+    const onTaskCompleted = (ziggy.onTaskCompleted as jest.Mock).mock.calls[index][0];
+    act(() => {
+        onTaskCompleted({
+            taskId: task.taskId,
+            result: {
+                taskId: task.taskId,
+                status: "succeeded",
+                outputs,
+                type: task.taskType,
+                inputs: null,
+            },
+        });
+    });
+}
+
+//
+// Finds the element with the data-id, failing the test when the page does not show it.
+//
+function elementWithDataId(dataId: string): Element {
+    const element = document.querySelector(`[data-id="${dataId}"]`);
+    expect(element).not.toBeNull();
+
+    //
+    // The cast is safe because the expect above fails the test on null, and a type guard cannot
+    // narrow it because Jest's expect does not narrow the type.
+    //
+    return element as Element;
+}
+
+//
+// The commit as the commits and commit details tasks give it.
+//
+const commitJson = {
+    hash: "1111111111111111111111111111111111111111",
+    parentHashes: [],
+    refs: ["HEAD -> main"],
+    authorName: "Ada Author",
+    authorEmail: "ada@example.com",
+    authorDate: "2026-01-01T00:00:00Z",
+    committerName: "Ada Author",
+    committerEmail: "ada@example.com",
+    committerDate: "2026-01-01T00:00:00Z",
+    title: "The first commit",
+    description: "",
+};
+
+//
+// Shows the repo explorer page, clicks its Commits link, lists the commit, clicks it and ends its
+// commit details task with README.md as its one changed file.
+//
+async function openCommitDetails(ziggy: FakeTaskZiggy): Promise<void> {
+    renderRepoExplorerPage("/repo");
+    await clickCommitsLink();
+    await screen.findByText("Loading the commits.");
+    completeTaskAt(ziggy, 0, {
+        commits: [commitJson],
+    });
+    fireEvent.click(await screen.findByText("The first commit"));
+    completeTaskAt(ziggy, 1, {
+        commit: commitJson,
+        changedFiles: [{
+            status: "A",
+            path: "README.md",
+            linesAdded: 1,
+            linesDeleted: 0,
+            isBinary: false,
+        }],
+    });
+}
+
+//
+// A commit to list.
+//
+const commit: ICommit = {
+    hash: "1111111111111111111111111111111111111111",
+    parentHashes: [],
+    refs: ["HEAD -> main"],
+    authorName: "Ada Author",
+    authorEmail: "ada@example.com",
+    authorDate: new Date("2026-01-01T00:00:00Z"),
+    committerName: "Ada Author",
+    committerEmail: "ada@example.com",
+    committerDate: new Date("2026-01-01T00:00:00Z"),
+    title: "The first commit",
+    description: "",
+};
+
+//
+// A second commit to list, below the first.
+//
+const secondCommitJson = {
+    ...commitJson,
+    hash: "2222222222222222222222222222222222222222",
+    refs: [],
+    title: "The second commit",
+};
+
+//
+// Shows the repo explorer page, opens the commit pane with the keys, Down and Enter on the Commits
+// link, and lists both commits, with the commit pane active and no commit selected or open.
+//
+async function listTwoCommits(ziggy: FakeTaskZiggy): Promise<void> {
+    renderRepoExplorerPage("/repo");
+    await screen.findByText("Commits");
+    pressKey("ArrowDown");
+    pressKey("Enter");
+    await screen.findByText("Loading the commits.");
+    completeTaskAt(ziggy, 0, {
+        commits: [commitJson, secondCommitJson],
+    });
+    await screen.findByText("The second commit");
+}
+
+//
+// Ends the commit details task the page queued at the index of window.ziggy's addTask calls, with
+// README.md and notes.txt as the commit's changed files.
+//
+function completeCommitDetails(ziggy: FakeTaskZiggy, index: number): void {
+    completeTaskAt(ziggy, index, {
+        commit: commitJson,
+        changedFiles: [
+            {
+                status: "A",
+                path: "README.md",
+                linesAdded: 1,
+                linesDeleted: 0,
+                isBinary: false,
+            },
+            {
+                status: "M",
+                path: "notes.txt",
+                linesAdded: 1,
+                linesDeleted: 1,
+                isBinary: false,
+            },
+        ],
+    });
+}
+
+//
+// Presses the key with the focus where it is, on the repo explorer page once it has opened, as a
+// user does.
+//
+function pressKey(key: string): void {
+    act(() => {
+        fireEvent.keyDown(document.activeElement ?? document.body, {
+            key,
+        });
+    });
+}
+
+//
+// Returns true when the element with the data-id is drawn with MaterialUI's selection styling.
+//
+function isSelected(dataId: string): boolean {
+    return elementWithDataId(dataId).className.includes("Mui-selected");
+}
+
+//
+// Returns the data-ids of the open panes whose border is in the style guide's active pane colour,
+// graft.css's --color-select-pane, so a test reads which pane is active. The file pane marks it
+// with the classes of activeFlatPaneClass.
+//
+function activePaneIds(): (string | null)[] {
+    return Array.from(elementWithDataId("repo-explorer-columns").children)
+        .filter(pane => pane instanceof HTMLElement && (pane.className.includes(activePaneClasses) || pane.className.includes(activeFlatPaneClasses)))
+        .map(pane => pane.getAttribute("data-id"));
+}
+
+describe("RepoExplorerPage", () => {
+    test("shows that no repo is open and queues no task while no repo is open", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage(undefined);
+        expect((await screen.findByText(/No repo is open/)).getAttribute("data-id")).toBe("repo-explorer-no-repo");
+        expect(elementWithDataId("repo-explorer-heading").textContent).toBe("Repo explorer");
+        expect(ziggy.addTask).not.toHaveBeenCalled();
+    });
+
+    test("opens on the repo details pane alone, with the repo's name and path and the Commits link, and queues no task", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage("/repos/graft");
+        expect((await screen.findByText("/repos/graft")).closest("[data-id=\"repo-details-path\"]")).not.toBeNull();
+        expect(elementWithDataId("repo-details-name").textContent).toBe("graft");
+        expect(elementWithDataId("repo-details-heading").textContent).toBe("Repograft");
+        expect(elementWithDataId("repo-details-commits").textContent).toBe("Commits");
+        const paneIds = Array.from(elementWithDataId("repo-explorer-columns").children).map(pane => pane.getAttribute("data-id"));
+        expect(paneIds).toEqual(["repo-details-pane"]);
+        expect(ziggy.addTask).not.toHaveBeenCalled();
+    });
+
+    test("opens the commit pane to the right of the repo details pane when the Commits link is clicked", async () => {
+        installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        await clickCommitsLink();
+        await screen.findByText("Loading the commits.");
+        const paneIds = Array.from(elementWithDataId("repo-explorer-columns").children).map(pane => pane.getAttribute("data-id"));
+        expect(paneIds).toEqual(["repo-details-pane", "commit-pane"]);
+        expect(elementWithDataId("repo-details-commits").className).toContain(openRowClasses);
+        expect(isSelected("repo-details-commits")).toBe(true);
+        expect(elementWithDataId("repo-details-commits").getAttribute("aria-current")).toBe("true");
+        expect(scrolledDataIds()).toEqual(["commit-pane"]);
+    });
+
+    test("reads the repo opened in place of the one shown, with only the repo details pane open", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        expect(elementWithDataId("changed-file-README.md").textContent).toContain("README.md");
+        fireEvent.click(screen.getByText("Open the other repo"));
+        expect((await screen.findByText("/other-repo")).closest("[data-id=\"repo-details-path\"]")).not.toBeNull();
+        expect(document.querySelector("[data-id=\"commit-pane\"]")).toBeNull();
+        expect(document.querySelector("[data-id=\"changed-file-README.md\"]")).toBeNull();
+        await clickCommitsLink();
+        expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
+        const calls = (ziggy.addTask as jest.Mock).mock.calls;
+        const task: IAddTask = calls[calls.length - 1][0];
+        expect(task.taskType).toBe("commits");
+        expect(task.data).toEqual({
+            repoPath: "/other-repo",
+            pageSize: 50,
+        });
+    });
+
+    test("queues the commits task for the repo's first page and shows that it is loading", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        await clickCommitsLink();
+        expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
+        expect(elementWithDataId("repo-explorer-heading").textContent).toBe("Repo explorer");
+        expect(screen.getByText("About").getAttribute("data-id")).toBe("repo-explorer-about-link");
+        expect(screen.getByText("About").getAttribute("href")).toBe("/about");
+        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[0][0];
+        expect(task.taskType).toBe("commits");
+        expect(task.data).toEqual({
+            repoPath: "/repo",
+            pageSize: 50,
+        });
+    });
+
+    test("lists the commits once the task has read them", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        await clickCommitsLink();
+        await screen.findByText("Loading the commits.");
+        completeTask(ziggy, {
+            taskId: "",
+            status: "succeeded",
+            outputs: {
+                commits: [{
+                    hash: commit.hash,
+                    parentHashes: [],
+                    refs: ["HEAD -> main"],
+                    authorName: "Ada Author",
+                    authorEmail: "ada@example.com",
+                    authorDate: "2026-01-01T00:00:00Z",
+                    committerName: "Ada Author",
+                    committerEmail: "ada@example.com",
+                    committerDate: "2026-01-01T00:00:00Z",
+                    title: "The first commit",
+                    description: "",
+                }],
+            },
+            type: "commits",
+            inputs: null,
+        });
+        expect((await screen.findByText("The first commit")).closest("li")?.getAttribute("data-id")).toBe(`commit-${commit.hash}`);
+        expect(elementWithDataId(`commit-${commit.hash}`).textContent).toBe(`The first commitmainAda Author${formatDate(commit.authorDate, Intl.DateTimeFormat().resolvedOptions())}1111111`);
+    });
+
+    test("says why the commits could not be read when the task failed", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        await clickCommitsLink();
+        await screen.findByText("Loading the commits.");
+        completeTask(ziggy, {
+            taskId: "",
+            status: "failed",
+            errorMessage: "Running git log failed.",
+            type: "commits",
+            inputs: null,
+        });
+        expect((await screen.findByText("Running git log failed.")).getAttribute("data-id")).toBe("commits-error");
+    });
+
+    test("opens the commit details pane to the right of the commit pane when a commit is clicked", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[1][0];
+        expect(task.taskType).toBe("commit-details");
+        const paneIds = Array.from(elementWithDataId("repo-explorer-columns").children).map(pane => pane.getAttribute("data-id"));
+        expect(paneIds).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane"]);
+        expect(elementWithDataId(`commit-${commitJson.hash}`).className).toContain(openRowClasses);
+        expect(elementWithDataId(`commit-${commitJson.hash}`).className).toContain("Mui-selected");
+        expect(elementWithDataId("commit-details-author").textContent).toContain(formatDateTime(commit.authorDate, Intl.DateTimeFormat().resolvedOptions()));
+    });
+
+    test("opens the file pane to the right of the commit details pane when a changed file is clicked", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[2][0];
+        expect(task.taskType).toBe("file-diff");
+        expect(task.data).toEqual({
+            repoPath: "/repo",
+            hash: commitJson.hash,
+            path: "README.md",
+        });
+        completeTaskAt(ziggy, 2, {
+            diff: "+# Test repo\n",
+        });
+        expect(elementWithDataId("file-diff").textContent).toContain("# Test repo");
+        const paneIds = Array.from(elementWithDataId("repo-explorer-columns").children).map(pane => pane.getAttribute("data-id"));
+        expect(paneIds).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane"]);
+        expect(elementWithDataId("changed-file-README.md").className).toContain("Mui-selected");
+    });
+
+    test("scrolls the commit pane into view when it opens, then the commit details pane, then the file pane", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        expect(scrolledDataIds()).toEqual(["commit-pane", "commit-details-pane"]);
+        expect(scrollIntoView).toHaveBeenCalledWith({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "nearest",
+        });
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        expect(scrolledDataIds()).toEqual(["commit-pane", "commit-details-pane", "file-pane"]);
+    });
+
+    test("scrolls nothing while only the repo details pane is open", async () => {
+        installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        await screen.findByText("/repo");
+        expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    test("closes the file pane, then the commit details pane", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        fireEvent.click(elementWithDataId("file-pane-close"));
+        expect(document.querySelector("[data-id=\"file-pane\"]")).toBeNull();
+        fireEvent.click(elementWithDataId("commit-details-close"));
+        expect(document.querySelector("[data-id=\"commit-details-pane\"]")).toBeNull();
+        expect(elementWithDataId(`commit-${commitJson.hash}`).textContent).toContain("The first commit");
+    });
+
+    test("closes the file pane with the commit details pane", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        expect(screen.getByText("Loading the diff.").getAttribute("data-id")).toBe("file-diff-loading");
+        fireEvent.click(elementWithDataId("commit-details-close"));
+        expect(screen.queryByText("Loading the diff.")).toBeNull();
+        expect(document.querySelector("[data-id=\"changed-file-README.md\"]")).toBeNull();
+    });
+
+    test("closes the file pane when a commit is clicked, so it opens without a file", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        expect(screen.getByText("Loading the diff.").getAttribute("data-id")).toBe("file-diff-loading");
+        fireEvent.click(elementWithDataId(`commit-${commitJson.hash}`));
+        expect(screen.queryByText("Loading the diff.")).toBeNull();
+        expect(elementWithDataId("changed-file-README.md").className).not.toContain("Mui-selected");
+    });
+});
+
+describe("RepoExplorerPage keys", () => {
+    test("takes the focus when it opens, so the keys work at once", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        expect(document.activeElement).toBe(elementWithDataId("repo-explorer-page"));
+    });
+
+    test("handles the keys with the focus on the page's body", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        act(() => {
+            document.querySelector<HTMLElement>("[data-id=\"repo-explorer-page\"]")?.blur();
+        });
+        expect(document.activeElement).toBe(document.body);
+        pressKey("ArrowDown");
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(true);
+    });
+
+    test("starts with the repo details pane active and nothing selected", async () => {
+        installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        await screen.findByText("/repo");
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+        expect(isSelected("repo-details-commits")).toBe(false);
+    });
+
+    test("Down selects the Commits link and Enter opens the commit pane and makes it active", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        await screen.findByText("/repo");
+        pressKey("Enter");
+        expect(document.querySelector("[data-id=\"commit-pane\"]")).toBeNull();
+        pressKey("ArrowDown");
+        expect(isSelected("repo-details-commits")).toBe(true);
+        pressKey("Enter");
+        expect((ziggy.addTask as jest.Mock).mock.calls[0][0].taskType).toBe("commits");
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+    });
+
+    test("opens the commit pane with the commit pane active and no commit selected", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(false);
+        expect(isSelected(`commit-${secondCommitJson.hash}`)).toBe(false);
+    });
+
+    test("Down and Up move the selection through the commits", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("ArrowDown");
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(true);
+        pressKey("ArrowDown");
+        expect(isSelected(`commit-${secondCommitJson.hash}`)).toBe(true);
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(false);
+        pressKey("ArrowUp");
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(true);
+        expect(document.querySelector("[data-id=\"commit-details-pane\"]")).toBeNull();
+    });
+
+    test("Enter opens the selected commit's details pane and makes it active", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("ArrowDown");
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[1][0];
+        expect(task.taskType).toBe("commit-details");
+        expect(task.data).toEqual({
+            repoPath: "/repo",
+            hash: secondCommitJson.hash,
+        });
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+    });
+
+    test("Enter with nothing selected opens nothing", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("Enter");
+        expect(document.querySelector("[data-id=\"commit-details-pane\"]")).toBeNull();
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+    });
+
+    test("Down, Up and Enter in the commit details pane select and open a changed file", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        completeCommitDetails(ziggy, 1);
+        pressKey("ArrowDown");
+        expect(isSelected("changed-file-README.md")).toBe(true);
+        pressKey("ArrowDown");
+        expect(isSelected("changed-file-notes.txt")).toBe(true);
+        pressKey("ArrowUp");
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[2][0];
+        expect(task.taskType).toBe("file-diff");
+        expect(task.data).toEqual({
+            repoPath: "/repo",
+            hash: commitJson.hash,
+            path: "notes.txt",
+        });
+        expect(activePaneIds()).toEqual(["file-pane"]);
+    });
+
+    test("Down in the commit details pane selects nothing until its files are read", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        pressKey("ArrowDown");
+        completeCommitDetails(ziggy, 1);
+        expect(isSelected("changed-file-README.md")).toBe(false);
+    });
+
+    test("Left and Right move between the open panes and stop at the ends", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("ArrowRight");
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        completeCommitDetails(ziggy, 1);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        pressKey("ArrowRight");
+        expect(activePaneIds()).toEqual(["file-pane"]);
+        pressKey("ArrowLeft");
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        pressKey("ArrowLeft");
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        pressKey("ArrowLeft");
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+        pressKey("ArrowLeft");
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+        pressKey("ArrowRight");
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+    });
+
+    test("Up and Down in the file pane change nothing", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        completeCommitDetails(ziggy, 1);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        pressKey("ArrowDown");
+        expect(isSelected("changed-file-README.md")).toBe(true);
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(true);
+    });
+
+    test("Escape closes the rightmost pane and makes the pane to its left active, until only the repo details pane is left", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        completeCommitDetails(ziggy, 1);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        pressKey("Escape");
+        expect(document.querySelector("[data-id=\"file-pane\"]")).toBeNull();
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        pressKey("Escape");
+        expect(document.querySelector("[data-id=\"commit-details-pane\"]")).toBeNull();
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(true);
+        pressKey("Escape");
+        expect(document.querySelector("[data-id=\"commit-pane\"]")).toBeNull();
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+        expect(isSelected("repo-details-commits")).toBe(true);
+        pressKey("Escape");
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+    });
+
+    test("Enter on the Commits link after Escape closed the commit pane opens it again and reads the commits afresh", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("Escape");
+        expect(document.querySelector("[data-id=\"commit-pane\"]")).toBeNull();
+        pressKey("Enter");
+        expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
+        expect((ziggy.addTask as jest.Mock).mock.calls[1][0].taskType).toBe("commits");
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+    });
+
+    test("keeps each key it handles from the rest of the page", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        const event = new KeyboardEvent("keydown", {
+            key: "ArrowDown",
+            bubbles: true,
+            cancelable: true,
+        });
+        act(() => {
+            document.body.dispatchEvent(event);
+        });
+        expect(event.defaultPrevented).toBe(true);
+    });
+
+    test("leaves other keys alone", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        const event = new KeyboardEvent("keydown", {
+            key: "a",
+            bubbles: true,
+            cancelable: true,
+        });
+        act(() => {
+            document.body.dispatchEvent(event);
+        });
+        expect(event.defaultPrevented).toBe(false);
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(false);
+    });
+
+    test("ignores the keys while a text box has the focus", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        const textBox = document.createElement("input");
+        elementWithDataId("repo-explorer-page").appendChild(textBox);
+        act(() => {
+            fireEvent.keyDown(textBox, {
+                key: "ArrowDown",
+            });
+        });
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(false);
+        textBox.remove();
+    });
+
+    test("ignores the keys with Ctrl held", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        act(() => {
+            fireEvent.keyDown(document.body, {
+                key: "ArrowDown",
+                ctrlKey: true,
+            });
+        });
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(false);
+    });
+
+    test("Enter on a focused commit row opens it once, with the commit details pane active", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        fireEvent.click(elementWithDataId(`commit-${commitJson.hash}`));
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        act(() => {
+            fireEvent.keyDown(elementWithDataId(`commit-${commitJson.hash}`), {
+                key: "Enter",
+            });
+        });
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        expect((ziggy.addTask as jest.Mock).mock.calls.length).toBe(2);
+    });
+
+    test("clicking a changed file selects it and makes the commit details pane active", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        completeCommitDetails(ziggy, 1);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        fireEvent.click(elementWithDataId("changed-file-notes.txt"));
+        expect(isSelected("changed-file-notes.txt")).toBe(true);
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        fireEvent.click(elementWithDataId(`commit-${secondCommitJson.hash}`));
+        expect(isSelected(`commit-${secondCommitJson.hash}`)).toBe(true);
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+    });
+
+    test("stops handling the keys once the page has gone", async () => {
+        const ziggy = installFakeTaskZiggy();
+        const removeEventListener = jest.spyOn(document, "removeEventListener");
+        await listTwoCommits(ziggy);
+        cleanup();
+        expect(removeEventListener).toHaveBeenCalledWith("keydown", expect.any(Function), {
+            capture: true,
+        });
+        removeEventListener.mockRestore();
+    });
+});
+
+describe("scrollLastPaneIntoView", () => {
+    test("scrolls the last pane in the columns into view", () => {
+        const columns = document.createElement("div");
+        const firstPane = document.createElement("section");
+        const lastPane = document.createElement("section");
+        columns.append(firstPane, lastPane);
+        scrollLastPaneIntoView(columns);
+        expect(scrollIntoView.mock.contexts).toEqual([lastPane]);
+    });
+
+    test("scrolls nothing when the columns are not drawn or hold no pane", () => {
+        scrollLastPaneIntoView(null);
+        scrollLastPaneIntoView(document.createElement("div"));
+        expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+});

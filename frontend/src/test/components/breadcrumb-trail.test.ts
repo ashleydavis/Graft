@@ -3,7 +3,7 @@
 // tooltip and style of each step, that the page step is the larger, bolder title, that long steps
 // are cut short, that a drop-down lists and selects its pages, that its search box narrows them,
 // says when none match and is cleared on closing and that picking a page opens it while picking
-// the page shown only closes the drop-down. It also renders the commits page's trail from
+// the page shown only closes the drop-down. It also renders the repo explorer page's trail from
 // pageTrail with a repo open and with none, and checks the repo step comes before the page only
 // while a repo is open.
 //
@@ -123,8 +123,8 @@ describe("BreadcrumbTrail", () => {
         renderTrail([
             trail[0],
             {
-                label: "Commits",
-                tooltip: "Commits",
+                label: "Repo explorer",
+                tooltip: "Repo explorer",
                 dataId: "breadcrumb-page",
                 options: [],
             },
@@ -239,18 +239,18 @@ describe("BreadcrumbTrail", () => {
     });
 });
 
-describe("BreadcrumbTrail with the trail of the commits page", () => {
-    test("with a repo open, shows the repo's name before Commits, with its full path in the tooltip", () => {
-        renderTrail(pageTrail("/commits", "/home/user/projects/graft"));
-        expect(elementWithDataId("breadcrumb-trail")?.textContent).toBe("graftCommits");
+describe("BreadcrumbTrail with the trail of the repo explorer page", () => {
+    test("with a repo open, shows the repo's name before Repo explorer, with its full path in the tooltip", () => {
+        renderTrail(pageTrail("/repo-explorer", "/home/user/projects/graft"));
+        expect(elementWithDataId("breadcrumb-trail")?.textContent).toBe("graftRepo explorer");
         expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("graft");
         expect(elementWithDataId("breadcrumb-repo")?.getAttribute("aria-label")).toBe("/home/user/projects/graft");
-        expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("Commits");
+        expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("Repo explorer");
     });
 
-    test("with no repo open, shows Commits alone, with no repo step", () => {
-        renderTrail(pageTrail("/commits", undefined));
-        expect(elementWithDataId("breadcrumb-trail")?.textContent).toBe("Commits");
+    test("with no repo open, shows Repo explorer alone, with no repo step", () => {
+        renderTrail(pageTrail("/repo-explorer", undefined));
+        expect(elementWithDataId("breadcrumb-trail")?.textContent).toBe("Repo explorer");
         expect(elementWithDataId("breadcrumb-repo")).toBeUndefined();
     });
 });

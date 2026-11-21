@@ -46,8 +46,8 @@ describe("pageTrail", () => {
         expect(trail[1].options.map(option => option.isSelected)).toEqual([true, false]);
     });
 
-    test("the commits page's trail is the repo, then Commits as plain text, because it has no sibling", () => {
-        expect(pageTrail("/commits", "/repos/graft")).toEqual([
+    test("the repo explorer page's trail is the repo, then Repo explorer as plain text, because it has no sibling", () => {
+        expect(pageTrail("/repo-explorer", "/repos/graft")).toEqual([
             {
                 label: "graft",
                 tooltip: "/repos/graft",
@@ -55,8 +55,8 @@ describe("pageTrail", () => {
                 options: [],
             },
             {
-                label: "Commits",
-                tooltip: "Commits",
+                label: "Repo explorer",
+                tooltip: "Repo explorer",
                 dataId: "breadcrumb-page",
                 options: [],
             },
@@ -78,10 +78,10 @@ describe("pageTrail", () => {
         const trail = pageTrail("/about", undefined);
         expect(trail.map(step => step.dataId)).toEqual(["breadcrumb-page"]);
         expect(trail[0].label).toBe("About");
-        expect(pageTrail("/commits", undefined)).toEqual([
+        expect(pageTrail("/repo-explorer", undefined)).toEqual([
             {
-                label: "Commits",
-                tooltip: "Commits",
+                label: "Repo explorer",
+                tooltip: "Repo explorer",
                 dataId: "breadcrumb-page",
                 options: [],
             },

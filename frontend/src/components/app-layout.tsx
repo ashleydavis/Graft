@@ -9,7 +9,7 @@ import type { ITaskEvent } from "ziggy";
 import { pageTrail } from "../lib/breadcrumb-trail";
 import { addGitCommand, IPageGitCommands, isGitCommandEvent, pageGitCommands } from "../lib/git-commands";
 import { openPage } from "../lib/navigation";
-import { useCommitExplorerAction } from "./commit-explorer-action";
+import { useRepoExplorerAction } from "./repo-explorer-action";
 import { GitCommandsPanel } from "./git-commands-panel";
 import { LeftSidebar } from "./left-sidebar";
 import { useNewWindowAction } from "./new-window-action";
@@ -90,7 +90,7 @@ export function AppLayout(): JSX.Element {
     const [gitCommandHistory, setGitCommandHistory] = useState<ReadonlyMap<string, IPageGitCommands>>(new Map());
     usePageZoom();
     useOpenRepoAction();
-    useCommitExplorerAction();
+    useRepoExplorerAction();
     useNewWindowAction();
 
     useEffect(() => {

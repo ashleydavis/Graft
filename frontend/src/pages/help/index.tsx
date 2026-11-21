@@ -15,7 +15,7 @@ export function HelpPage(): JSX.Element {
                 Help
             </h1>
             <p data-id="help-description">
-                The left sidebar and the breadcrumb trail in the top bar move between Graft's pages. File, then Open repo, opens a repo, and Commits lists its commits. About says what Graft is.
+                The left sidebar and the breadcrumb trail in the top bar move between Graft's pages. File, then Open repo, opens a repo, and Repo explorer shows it and lists its commits. About says what Graft is.
             </p>
         </main>
     );
