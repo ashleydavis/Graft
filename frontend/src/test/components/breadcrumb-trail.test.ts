@@ -1,8 +1,9 @@
 //
-// Tests the breadcrumb trail: renders it with plain and drop-down steps and checks the text and
-// tooltip of each step, that long steps are cut short, that a drop-down lists and selects its
-// pages, that its search box narrows them, says when none match and is cleared on closing and that
-// picking a page opens it while picking the page shown only closes the drop-down.
+// Tests the breadcrumb trail: renders it with plain and drop-down steps and checks the text,
+// tooltip and style of each step, that the page step is the larger, bolder title, that long steps
+// are cut short, that a drop-down lists and selects its pages, that its search box narrows them,
+// says when none match and is cleared on closing and that picking a page opens it while picking
+// the page shown only closes the drop-down.
 //
 
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -88,25 +89,67 @@ describe("BreadcrumbTrail", () => {
         expect(repoStep?.classList.contains("text-[var(--color-text-muted)]")).toBe(true);
     });
 
-    test("shows the last step in the medium weight, whether plain text or a drop-down", () => {
+    test("shows a last step that is not the page in the medium weight at the normal size", () => {
         renderTrail([trail[0]]);
-        expect(elementWithDataId("breadcrumb-repo")?.classList.contains("font-[var(--weight-medium)]")).toBe(true);
+        const repoStep = elementWithDataId("breadcrumb-repo");
+        expect(repoStep?.classList.contains("font-[var(--weight-medium)]")).toBe(true);
+        expect(repoStep?.classList.contains("text-[length:var(--text-md)]")).toBe(true);
+        expect(repoStep?.classList.contains("font-[var(--weight-bold)]")).toBe(false);
+        expect(repoStep?.classList.contains("text-[length:var(--text-lg)]")).toBe(false);
     });
 
-    test("shows a step with options as a button with a drop-down arrow, in the medium weight when it is last", () => {
+    test("shows a step with options as a button with a drop-down arrow", () => {
         renderTrail(trail);
         const pageStep = elementWithDataId("breadcrumb-page");
         expect(pageStep?.tagName).toBe("BUTTON");
         expect(pageStep?.textContent).toBe("About");
         expect(pageStep?.getAttribute("aria-label")).toBe("About");
         expect(pageStep?.querySelector("svg[data-icon=\"chevron-down\"]")).not.toBeNull();
-        expect(pageStep?.classList.contains("font-[var(--weight-medium)]")).toBe(true);
     });
 
-    test("shows a drop-down step before the last one in the muted text colour", () => {
+    test("shows the page step as the page's title, larger and bolder, as a drop-down", () => {
+        renderTrail(trail);
+        const pageStep = elementWithDataId("breadcrumb-page");
+        expect(pageStep?.classList.contains("text-[length:var(--text-lg)]")).toBe(true);
+        expect(pageStep?.classList.contains("font-[var(--weight-bold)]")).toBe(true);
+        expect(pageStep?.classList.contains("text-[var(--color-text)]")).toBe(true);
+        expect(pageStep?.classList.contains("text-[length:var(--text-md)]")).toBe(false);
+        expect(pageStep?.classList.contains("font-[var(--weight-medium)]")).toBe(false);
+    });
+
+    test("shows the page step as the page's title, larger and bolder, as plain text", () => {
+        renderTrail([
+            trail[0],
+            {
+                label: "Commits",
+                tooltip: "Commits",
+                dataId: "breadcrumb-page",
+                options: [],
+            },
+        ]);
+        const pageStep = elementWithDataId("breadcrumb-page");
+        expect(pageStep?.tagName).toBe("SPAN");
+        expect(pageStep?.classList.contains("text-[length:var(--text-lg)]")).toBe(true);
+        expect(pageStep?.classList.contains("font-[var(--weight-bold)]")).toBe(true);
+        expect(pageStep?.classList.contains("text-[var(--color-text)]")).toBe(true);
+    });
+
+    test("keeps the steps before the page at the normal size and weight", () => {
+        renderTrail(trail);
+        const repoStep = elementWithDataId("breadcrumb-repo");
+        expect(repoStep?.classList.contains("text-[length:var(--text-md)]")).toBe(true);
+        expect(repoStep?.classList.contains("text-[length:var(--text-lg)]")).toBe(false);
+        expect(repoStep?.classList.contains("font-[var(--weight-bold)]")).toBe(false);
+        expect(repoStep?.classList.contains("font-[var(--weight-medium)]")).toBe(false);
+    });
+
+    test("shows a drop-down step before the last one in the muted text colour at the normal size", () => {
         renderTrail([trail[1], trail[0]]);
-        expect(elementWithDataId("breadcrumb-page")?.classList.contains("font-[var(--weight-medium)]")).toBe(false);
-        expect(elementWithDataId("breadcrumb-page")?.classList.contains("text-[var(--color-text-muted)]")).toBe(true);
+        const pageStep = elementWithDataId("breadcrumb-page");
+        expect(pageStep?.classList.contains("font-[var(--weight-medium)]")).toBe(false);
+        expect(pageStep?.classList.contains("font-[var(--weight-bold)]")).toBe(false);
+        expect(pageStep?.classList.contains("text-[length:var(--text-md)]")).toBe(true);
+        expect(pageStep?.classList.contains("text-[var(--color-text-muted)]")).toBe(true);
     });
 
     test("opens a drop-down that lists the step's pages and selects the one shown, with no tick", () => {

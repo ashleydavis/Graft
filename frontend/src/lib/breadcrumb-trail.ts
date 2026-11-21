@@ -77,6 +77,12 @@ const APP_GROUP_PAGES: IGroupPage[] = [
 const STEP_LABEL_LENGTH_MAX = 18;
 
 //
+// The data-id of the step for the page being shown, which the trail draws as the page's title. The
+// smoke tests find that step by this data-id.
+//
+export const PAGE_STEP_DATA_ID = "breadcrumb-page";
+
+//
 // Works out the trail for the page at the path. While a repo is open every trail starts with it,
 // by its folder's name with its full path in the tooltip. Graft has one repo open at a time, so the
 // repo step has no sibling to switch to and is plain text. While no repo is open the trail starts
@@ -101,7 +107,7 @@ export function pageTrail(pathname: string, repoPath: string | undefined): ITrai
             {
                 label: appPage.label,
                 tooltip: appPage.label,
-                dataId: "breadcrumb-page",
+                dataId: PAGE_STEP_DATA_ID,
                 options: APP_GROUP_PAGES.map(page => ({
                     label: page.label,
                     path: page.path,
@@ -117,7 +123,7 @@ export function pageTrail(pathname: string, repoPath: string | undefined): ITrai
             {
                 label: "Commits",
                 tooltip: "Commits",
-                dataId: "breadcrumb-page",
+                dataId: PAGE_STEP_DATA_ID,
                 options: [],
             },
         ];

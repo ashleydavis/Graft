@@ -7,7 +7,7 @@ Every page of Graft shows in the same layout, so a user always finds the same th
 ## Behaviour
 
 - The top bar runs across the top of the window. At its left is a menu button and next to it the name "Graft". At its right is the theme menu's button and then the button for the right sidebar. Between them, set off by a divider, is the breadcrumb trail. It holds only these.
-- The breadcrumb trail says where the user is. Every page has one. While a repo is open it starts with that repo, shown by its folder's name with the repo's full path in its tooltip. While no repo is open it starts with the page. It ends with the page being shown, in the medium weight. A chevron separates the steps.
+- The breadcrumb trail says where the user is. Every page has one. While a repo is open it starts with that repo, shown by its folder's name with the repo's full path in its tooltip. While no repo is open it starts with the page. It ends with the page being shown, which is the page's title: one size larger (`--text-lg`) and bolder (`--weight-bold`) than the other steps, in the main text colour, like the name "Graft". The steps before it are in the muted text colour at the normal size (`--text-md`). On a page with no step of its own the trail ends with the repo, in the medium weight. A chevron separates the steps.
 - A step with sibling pages to switch to is a drop-down: a click opens a list of its siblings with a search box that narrows them by name and says "No page matches" when none does. The list marks the page being shown with the selected colour. Picking another page opens it. Picking the page being shown only closes the list. A step with no page to switch to is plain text.
 - Graft has one repo open at a time, so the repo step is plain text. The commits page is the only page about the repo, so its trail is the repo, then "Commits", both plain text. The Help and About pages are the pages about the app, so the trail of each is the repo, then a drop-down of Help and About. The welcome page's trail is the repo alone, so it is empty while no repo is open.
 - A step longer than 18 characters is cut to 17 and an ellipsis. Its tooltip holds its full text.
@@ -30,6 +30,7 @@ Every page of Graft shows in the same layout, so a user always finds the same th
 - [x] The top bar and sidebars hold no menu items or buttons for features Graft does not have.
 - [x] The top bar shows the breadcrumb trail of every page, starting with the open repo, when there is one, and ending with the page shown.
 - [x] The About and Help pages' trails end with a drop-down of Help and About that opens the page picked. The commits page's trail is plain text.
+- [x] The page step of the trail is the page's title, a size larger and bolder than the other steps, and the trail still fits the top bar.
 - [x] The top bar's theme menu starts on System and offers Light, Dark and System, each with its icon and what it does, marks the one in use and draws Graft in light or dark colours to match the choice, and on System follows the system's theme.
 - [x] The theme setting is saved in Graft's config file, and Graft starts on the saved setting.
 - [x] Whether the left sidebar is minimised and whether the right sidebar is open are saved in Graft's state file, and Graft starts with both as they were left.
