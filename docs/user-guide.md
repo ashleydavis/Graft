@@ -56,7 +56,7 @@ Press Ctrl+Plus or Ctrl+= to make everything in the window bigger, Ctrl+Minus to
 
 ### About page
 
-Click **About** at the bottom of the left sidebar to open the About page, which shows Graft's name, its icon, its version and what Graft is. It links to Graft, Playbook and Ziggy on GitHub and to the Graft video series on YouTube, which open in your web browser. It names Graft's licence, the MIT licence.
+Click **About** at the bottom of the left sidebar to open the About page, which shows Graft's name, its icon, its version and what Graft is. Under "Find out more" it links to Graft, Playbook and Ziggy on GitHub and to the Graft video series on YouTube, which open in your web browser. It names Graft's licence, the MIT licence.
 
 ### Help page
 

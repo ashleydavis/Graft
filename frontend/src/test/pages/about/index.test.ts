@@ -1,8 +1,8 @@
 //
 // Tests the About page: renders it and checks it shows Graft's name, version and what Graft is,
-// its icon (a Font Awesome icon inside a MaterialUI Avatar that carries the Tailwind class), its
-// links to Graft, Playbook and Ziggy on GitHub and to the Graft video series on YouTube and
-// Graft's licence.
+// its icon (a Font Awesome icon inside a MaterialUI Avatar) in a header beside the name and
+// version, its links to Graft, Playbook and Ziggy on GitHub and to the Graft video series on
+// YouTube under the "Find out more" heading and Graft's licence.
 //
 
 import { render, screen } from "@testing-library/react";
@@ -44,6 +44,25 @@ describe("AboutPage", () => {
         expect(avatar).not.toBeNull();
         expect(avatar?.classList.contains("MuiAvatar-root")).toBe(true);
         expect(avatar?.querySelector("svg[data-icon=\"code-branch\"]")).not.toBeNull();
+    });
+
+    test("shows the icon, the heading and the version together in the header", () => {
+        const { container } = render(createElement(AboutPage));
+        const header = container.querySelector("[data-id=\"about-header\"]");
+        expect(header?.tagName).toBe("HEADER");
+        expect(header?.querySelector("[data-id=\"about-icon\"]")).not.toBeNull();
+        expect(header?.querySelector("[data-id=\"about-heading\"]")?.tagName).toBe("H1");
+        expect(header?.querySelector("[data-id=\"about-version\"]")).not.toBeNull();
+    });
+
+    test("puts the links under the Find out more heading", () => {
+        const { container } = render(createElement(AboutPage));
+        const section = container.querySelector("[data-id=\"about-links-section\"]");
+        const heading = screen.getByText("Find out more");
+        expect(heading.tagName).toBe("H2");
+        expect(heading.getAttribute("data-id")).toBe("about-links-heading");
+        expect(section?.contains(heading)).toBe(true);
+        expect(section?.querySelector("[data-id=\"about-links\"]")?.querySelectorAll("a")).toHaveLength(4);
     });
 
     test("links to Graft on GitHub", () => {

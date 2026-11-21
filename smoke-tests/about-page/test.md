@@ -1,6 +1,6 @@
 # about-page/test.sh
 
-Smoke test of the About page. It starts the real app with remote control on, waits for the welcome page Graft starts on and opens the About page with the left sidebar's About link. The page, its heading "About Graft", Graft's version "Version dev", the sentence that says what Graft is, its icon and the sentence that names the MIT licence all show. So do its links to Graft, Playbook and Ziggy on GitHub and to the Graft video series on YouTube.
+Smoke test of the About page. It starts the real app with remote control on, waits for the welcome page Graft starts on and opens the About page with the left sidebar's About link. The page, its heading "About Graft", Graft's version "Version dev", the sentence that describes Graft, its icon and the sentence that names the MIT licence all show. So do the "Find out more" heading and under it the links to Graft, Playbook and Ziggy on GitHub and to the Graft video series on YouTube.
 
 ## How it is invoked
 
