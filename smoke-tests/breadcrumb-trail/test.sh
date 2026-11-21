@@ -3,8 +3,9 @@
 #
 # Starts the real app with remote control on and no repo open, checks the welcome page's breadcrumb
 # trail is "Welcome" with no repo step, opens a test repo of its own with the welcome page's Open
-# repo button, then goes to the About, repo explorer, Help and welcome pages and checks the trail in
-# the top bar on each starts with the repo's name and ends with the page's. See test.md.
+# repo button, then goes to the About, repo explorer and Help pages and checks the trail in the top
+# bar on each starts with the repo's name and ends with the page's. Last it goes to the welcome page
+# and checks its trail is "Welcome" alone with the repo open. See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -35,6 +36,5 @@ wait_for_in_view breadcrumb-repo 30
 wait_for_text breadcrumb-page "Help" 30
 
 open_sidebar_page welcome
-wait_for_text breadcrumb-repo "repo" 30
-wait_for_in_view breadcrumb-repo 30
 wait_for_text breadcrumb-page "Welcome" 30
+wait_for_missing_element breadcrumb-repo 30

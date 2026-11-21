@@ -79,20 +79,26 @@ interface ISinglePage {
 
     // The path of the page on the router.
     path: string;
+
+    // Whether the page belongs to the open repo, so its trail starts with the repo step.
+    isRepoPage: boolean;
 }
 
 //
 // The pages whose trail step is plain text, because each has no sibling page in the left
-// sidebar: the welcome page Graft opens on and the repo explorer, the only page about the repo.
+// sidebar. The welcome page is the page of the app Graft opens on. The repo explorer is the only
+// page about the repo.
 //
 const SINGLE_PAGES: ISinglePage[] = [
     {
         label: "Welcome",
         path: "/",
+        isRepoPage: false,
     },
     {
         label: "Repo explorer",
         path: "/repo-explorer",
+        isRepoPage: true,
     },
 ];
 
@@ -109,12 +115,14 @@ const STEP_LABEL_LENGTH_MAX = 18;
 export const PAGE_STEP_DATA_ID = "breadcrumb-page";
 
 //
-// Works out the trail for the page at the path. While a repo is open every trail starts with it, by
-// its folder's name with its full path in the tooltip. Graft has one repo open at a time, so the
-// repo step has no sibling to switch to and is plain text. While no repo is open the trail starts
-// with the page. The welcome page and the repo explorer page each have no sibling to switch to,
-// so their step is plain text too. The Help and About pages share the app's group, so their step
-// is a drop-down of both. Any other path gets the repo step only.
+// Works out the trail for the page at the path. While a repo is open every trail but the welcome
+// page's starts with it, by its folder's name with its full path in the tooltip. Graft has one
+// repo open at a time, so the repo step has no sibling to switch to and is plain text. While no
+// repo is open the trail starts with the page. The welcome page is Graft's start page, the same
+// whichever repo is open, so its trail is its own step alone and reads as a page of the app. The
+// welcome page and the repo explorer page each have no sibling to switch to, so their step is
+// plain text too. The Help and About pages share the app's group, so their step is a drop-down of
+// both. Any other path gets the repo step only.
 //
 export function pageTrail(pathname: string, repoPath: string | undefined): ITrailStep[] {
     const repoSteps: ITrailStep[] = [];
@@ -145,15 +153,23 @@ export function pageTrail(pathname: string, repoPath: string | undefined): ITrai
     }
     const singlePage = SINGLE_PAGES.find(page => page.path === pathname);
     if (singlePage) {
-        return [
-            ...repoSteps,
-            {
-                label: singlePage.label,
-                tooltip: singlePage.label,
-                dataId: PAGE_STEP_DATA_ID,
-                options: [],
-            },
-        ];
+        const pageStep: ITrailStep = {
+            label: singlePage.label,
+            tooltip: singlePage.label,
+            dataId: PAGE_STEP_DATA_ID,
+            options: [],
+        };
+        if (singlePage.isRepoPage) {
+            return [
+                ...repoSteps,
+                pageStep,
+            ];
+        }
+        else {
+            return [
+                pageStep,
+            ];
+        }
     }
     return repoSteps;
 }

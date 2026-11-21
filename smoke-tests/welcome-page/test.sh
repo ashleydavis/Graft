@@ -6,7 +6,7 @@
 # picker, then opens a test repo of its own with the button and checks the repo explorer shows it.
 # Last it opens the Help page and the About page from the left sidebar and from each goes back to
 # the welcome page with the sidebar's Welcome link, checking the trail shows the welcome page's
-# step.
+# step alone, with no repo step, while the repo is open.
 # See test.md.
 #
 
@@ -44,12 +44,14 @@ wait_for_missing_element welcome-page 30
 open_sidebar_page help
 open_sidebar_page welcome
 wait_for_text welcome-heading "Graft" 30
-wait_for_text breadcrumb-repo "welcome-repo" 30
 wait_for_text breadcrumb-page "Welcome" 30
+wait_for_missing_element breadcrumb-repo 30
 wait_for_missing_element help-page 30
 
 open_sidebar_page about
+wait_for_text breadcrumb-repo "welcome-repo" 30
 open_sidebar_page welcome
 wait_for_text welcome-heading "Graft" 30
 wait_for_text breadcrumb-page "Welcome" 30
+wait_for_missing_element breadcrumb-repo 30
 wait_for_missing_element about-page 30

@@ -185,7 +185,7 @@ describe("main", () => {
         expect((await screen.findByText("About Graft")).getAttribute("data-id")).toBe("about-heading");
     });
 
-    test("the Help page is on the router, the trail names each page and the Welcome link opens the welcome page", async () => {
+    test("the Help page is on the router, the trail names each page and the Welcome link opens the welcome page with no repo step", async () => {
         await screen.findByText("About Graft");
         expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("About");
         act(() => {
@@ -217,11 +217,12 @@ describe("main", () => {
             selector: "h1",
         })).getAttribute("data-id")).toBe("welcome-heading");
         expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("Welcome");
-        expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("graft");
+        expect(document.querySelector("[data-id=\"breadcrumb-repo\"]")).toBeNull();
         act(() => {
             elementWithDataId("left-sidebar-about-link")?.click();
         });
         expect((await screen.findByText("About Graft")).getAttribute("data-id")).toBe("about-heading");
+        expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("graft");
     });
 });
 

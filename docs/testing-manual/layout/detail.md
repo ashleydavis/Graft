@@ -43,7 +43,7 @@ bun run macos
 17. Press Escape. Check the drop-down closes. Click "Help" in the trail again and check both pages are listed.
 18. Click "Help" in the drop-down. Check the drop-down closes and the Help page still shows.
 19. Click "Help" in the trail, then "About". Check the About page shows and the trail ends with "About".
-20. Click "Welcome" in the left sidebar. Check the welcome page shows, the Welcome link is highlighted and the trail reads "test-repo" then "Welcome", both plain text, with "Welcome" larger and bolder. Click "Help" in the left sidebar, then "Welcome" again. Check the welcome page shows again.
+20. Click "Welcome" in the left sidebar. Check the welcome page shows, the Welcome link is highlighted and the trail reads "Welcome" alone, plain text, larger and bolder, with no "test-repo" step even though the repo is open. Click "Help" in the left sidebar and check the trail starts with "test-repo" again, then click "Welcome" again. Check the welcome page shows again with the trail "Welcome" alone.
 21. Hover over the keyboard button just after "Ctrl+/: Show hotkeys". Check its tooltip is "Show keyboard shortcuts" followed by "Ctrl+/". Click it. Check the keyboard shortcuts overlay shows over the page. Press Escape to close it.
 22. Hover over the button to the left of the right sidebar's button. Check it shows a half filled circle with a small chevron and its tooltip is "Theme: System. Choose a theme".
 23. Click it. Check a menu opens under it, headed "Theme", with rows for Light, Dark and System, each with its icon and a line saying what it does, and System highlighted.

@@ -1,6 +1,6 @@
 # breadcrumb-trail/test.sh
 
-Smoke test of the breadcrumb trail on each page. It creates a test repo of its own in its temporary directory with `scripts/test/create-test-repo.sh`. It starts the real app with remote control on and no repo open, and checks the welcome page's trail is "Welcome" with no repo step. It then opens the test repo with the welcome page's Open repo button, through `open_repo_with_button`. On the About page, then on the repo explorer, Help and welcome pages, each reached with the left sidebar's links, it checks the trail starts with the repo's folder name (`repo`) inside the window and ends with the page's name.
+Smoke test of the breadcrumb trail on each page. It creates a test repo of its own in its temporary directory with `scripts/test/create-test-repo.sh`. It starts the real app with remote control on and no repo open, and checks the welcome page's trail is "Welcome" with no repo step. It then opens the test repo with the welcome page's Open repo button, through `open_repo_with_button`. On the About page, then on the repo explorer and Help pages, each reached with the left sidebar's links, it checks the trail starts with the repo's folder name (`repo`) inside the window and ends with the page's name. Last it opens the welcome page with the left sidebar's Welcome link and checks its trail is "Welcome" with no repo step, because the welcome page is Graft's start page, the same whichever repo is open.
 
 ## How it is invoked
 

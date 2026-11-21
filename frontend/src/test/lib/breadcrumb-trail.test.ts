@@ -88,14 +88,8 @@ describe("pageTrail", () => {
         ]);
     });
 
-    test("the welcome page's trail is the repo, then Welcome as plain text, because it has no sibling", () => {
+    test("the welcome page's trail is Welcome alone while a repo is open, because it is the app's start page", () => {
         expect(pageTrail("/", "/repos/graft")).toEqual([
-            {
-                label: "graft",
-                tooltip: "/repos/graft",
-                dataId: "breadcrumb-repo",
-                options: [],
-            },
             {
                 label: "Welcome",
                 tooltip: "Welcome",
