@@ -1,8 +1,10 @@
 //
 // Works out the breadcrumb trail the top bar shows for each of Graft's pages: the steps from the
 // repo to the page being shown, which of them are drop-downs of their siblings and how each step's
-// text is shortened.
+// text is shortened, with a step for each pane open in the repo explorer.
 //
+
+import { COMMIT_LINK, COMMITS_LINK, IRepoExplorerState } from "./repo-explorer";
 
 //
 // One page a drop-down step can switch to.
@@ -121,10 +123,12 @@ export const PAGE_STEP_DATA_ID = "breadcrumb-page";
 // repo is open the trail starts with the page. The welcome page is Graft's start page, the same
 // whichever repo is open, so its trail is its own step alone and reads as a page of the app. The
 // welcome page and the repo explorer page each have no sibling to switch to, so their step is
-// plain text too. The Help and About pages share the app's group, so their step is a drop-down of
-// both. Any other path gets the repo step only.
+// plain text too. The repo explorer page's step stands for its repo details pane, and the pane
+// steps the page gives, one for each pane open to the right of it, follow it, so the trail ends
+// with the rightmost pane. The Help and About pages share the app's group, so their step is a
+// drop-down of both. Any other path gets the repo step only.
 //
-export function pageTrail(pathname: string, repoPath: string | undefined): ITrailStep[] {
+export function pageTrail(pathname: string, repoPath: string | undefined, paneSteps: ITrailStep[]): ITrailStep[] {
     const repoSteps: ITrailStep[] = [];
     if (repoPath) {
         repoSteps.push({
@@ -163,6 +167,7 @@ export function pageTrail(pathname: string, repoPath: string | undefined): ITrai
             return [
                 ...repoSteps,
                 pageStep,
+                ...paneSteps,
             ];
         }
         else {
@@ -172,6 +177,64 @@ export function pageTrail(pathname: string, repoPath: string | undefined): ITrai
         }
     }
     return repoSteps;
+}
+
+//
+// Works out the steps for the panes open in the repo explorer to the right of its repo details
+// pane, in the order the page shows them, for pageTrail to put after the repo explorer page's step.
+// The commit pane's step is "Commits" and the changes pane's is "Commit", as the repo details
+// pane's links name them. The commit details pane's step is the commit's short hash, as the commit
+// pane shows it, with the full hash in its tooltip. A file pane's step is the file's name, with
+// its path in the tooltip. The changes pane's file pane shows only while its file is listed, so
+// the page gives that file's path, or undefined while the pane is closed.
+//
+export function explorerPaneSteps(state: IRepoExplorerState, changedFilePath: string | undefined): ITrailStep[] {
+    const steps: ITrailStep[] = [];
+    if (state.openLink === COMMITS_LINK) {
+        steps.push({
+            label: "Commits",
+            tooltip: "Commits",
+            dataId: "breadcrumb-pane-commits",
+            options: [],
+        });
+    }
+    if (state.openHash !== undefined) {
+        steps.push({
+            label: state.openHash.slice(0, 7),
+            tooltip: state.openHash,
+            dataId: "breadcrumb-pane-commit",
+            options: [],
+        });
+        if (state.openPath !== undefined) {
+            steps.push(fileStep(state.openPath));
+        }
+    }
+    if (state.openLink === COMMIT_LINK) {
+        steps.push({
+            label: "Commit",
+            tooltip: "Commit",
+            dataId: "breadcrumb-pane-changes",
+            options: [],
+        });
+        if (changedFilePath !== undefined) {
+            steps.push(fileStep(changedFilePath));
+        }
+    }
+    return steps;
+}
+
+//
+// Makes the step for a file pane, for explorerPaneSteps: the file's name, as the file pane's title
+// shows it, with its path in the tooltip so a file in a directory can be told apart. Git separates
+// the directories of a path with "/" on every platform, so the name is what follows the last one.
+//
+export function fileStep(path: string): ITrailStep {
+    return {
+        label: path.slice(path.lastIndexOf("/") + 1),
+        tooltip: path,
+        dataId: "breadcrumb-pane-file",
+        options: [],
+    };
 }
 
 //

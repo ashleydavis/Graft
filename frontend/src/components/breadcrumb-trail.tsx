@@ -1,6 +1,6 @@
 //
-// The breadcrumb trail: the steps in the top bar from the repo to the page being shown, each one
-// plain text or a drop-down of the pages it can switch to.
+// The breadcrumb trail: the steps in the top bar from the repo to the page being shown and its open
+// panes, each one plain text or a drop-down of the pages it can switch to.
 //
 
 import { faChevronDown, faChevronRight, faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
@@ -14,7 +14,8 @@ import { clipStepLabel, ITrailOption, ITrailStep, PAGE_STEP_DATA_ID, searchMatch
 // owns the router, so the trail is given its steps and asks the layout to open a page.
 //
 export interface IBreadcrumbTrailProps {
-    // The steps, from the repo to the page being shown.
+    // The steps, from the repo to the page being shown and, on the repo explorer page, its open
+    // panes.
     steps: ITrailStep[];
 
     // Opens the page at the path.
@@ -28,7 +29,8 @@ export interface ITrailStepProps {
     // The step.
     step: ITrailStep;
 
-    // Whether it is the last step, the page being shown, which stands out from the steps before it.
+    // Whether it is the last step, the page being shown or its rightmost pane, which stands out from
+    // the steps before it.
     isLast: boolean;
 
     // Opens the page at the path.
@@ -56,21 +58,22 @@ export function BreadcrumbTrail({ steps, onNavigate }: IBreadcrumbTrailProps): J
 
 //
 // Picks the classes for the size, weight and colour of a step's text, for TrailStep and
-// TrailStepMenu. The page being shown is the page's title, so it is a size larger and bolder than
-// the other steps. Any other last step, the repo on a page with no step of its own, has the medium
-// weight. The steps before the last are muted.
+// TrailStepMenu. The page's step is the page's title, so it is a size larger and bolder than the
+// other steps wherever it is, even with the repo explorer's pane steps after it. Any other last
+// step, the rightmost pane or the repo on a page with no step of its own, has the medium weight.
+// The other steps are muted.
 //
 export function stepTextClasses(step: ITrailStep, isLast: boolean): string {
-    if (isLast) {
-        if (step.dataId === PAGE_STEP_DATA_ID) {
-            return "text-[length:var(--text-lg)] font-[var(--weight-bold)] text-[var(--color-text)]";
-        }
-        else {
-            return "text-[length:var(--text-md)] font-[var(--weight-medium)] text-[var(--color-text)]";
-        }
+    if (step.dataId === PAGE_STEP_DATA_ID) {
+        return "text-[length:var(--text-lg)] font-[var(--weight-bold)] text-[var(--color-text)]";
     }
     else {
-        return "text-[length:var(--text-md)] text-[var(--color-text-muted)]";
+        if (isLast) {
+            return "text-[length:var(--text-md)] font-[var(--weight-medium)] text-[var(--color-text)]";
+        }
+        else {
+            return "text-[length:var(--text-md)] text-[var(--color-text-muted)]";
+        }
     }
 }
 

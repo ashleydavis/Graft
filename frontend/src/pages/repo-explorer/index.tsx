@@ -9,7 +9,9 @@
 //
 
 import { JSX, MouseEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { usePaneTrail } from "../../components/pane-trail";
 import { useRepo } from "../../components/repo-context";
+import { explorerPaneSteps } from "../../lib/breadcrumb-trail";
 import { commitStagedFiles } from "../../lib/commit";
 import { ICommit, readCommitPage } from "../../lib/commits";
 import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, COMMIT_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, initialRepoExplorerState, IRepoExplorerState, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
@@ -77,7 +79,9 @@ export function RepoExplorerPage(): JSX.Element {
 // keyed by the number of reads, so its diff is read afresh with the lists. The Commit button commits
 // the staged files with the message in the commit section, then clears the message and reads the
 // changes again, so the staged list empties. The commit pane shows the new commit because it reads
-// the commits afresh each time it opens.
+// the commits afresh each time it opens. It puts a step for each open pane in the breadcrumb trail
+// each time a pane opens or closes, and takes them out when the page closes, so the trail always
+// ends with the rightmost pane.
 //
 export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const [commits, setCommits] = useState<ICommit[] | undefined>(undefined);
@@ -96,6 +100,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const dateFormat = Intl.DateTimeFormat().resolvedOptions();
     const isCommitsOpen = explorer.openLink === COMMITS_LINK;
     const isChangesOpen = explorer.openLink === COMMIT_LINK;
+    const { setPaneSteps } = usePaneTrail();
 
     //
     // Reads the working tree's changes and shows them, then works out the explorer's state from
@@ -251,6 +256,12 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     }, [commits, filePaths, changes]);
 
     const openChange = findChange(changes, explorer.openChange);
+    const changedFilePath = openChange?.file.path;
+
+    useEffect(() => {
+        setPaneSteps(explorerPaneSteps(explorer, changedFilePath));
+        return () => setPaneSteps([]);
+    }, [explorer.openLink, explorer.openHash, explorer.openPath, changedFilePath]);
 
     return (
         <main ref={pageRef} tabIndex={-1} data-id="repo-explorer-page" className="graft-page-in outline-none flex h-full w-max min-w-full flex-col gap-4 bg-[var(--color-bg)] p-6">

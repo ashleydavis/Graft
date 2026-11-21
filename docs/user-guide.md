@@ -28,7 +28,7 @@ Graft shows a splash screen with its icon while it starts.
 
 Every page shows in the main content area in the middle of the window.
 
-A top bar runs across the top, with Graft's name and the breadcrumb trail, which names the open repo and the page you are on. The welcome page is Graft's start page, the same whichever repo is open, so its trail names only the page. On the Help and About pages, click the page's name in the trail to switch between them.
+A top bar runs across the top, with Graft's name and the breadcrumb trail, which names the open repo and the page you are on. On the repo explorer it also names each open pane, up to the rightmost, such as the commit and the file you opened. The welcome page is Graft's start page, the same whichever repo is open, so its trail names only the page. On the Help and About pages, click the page's name in the trail to switch between them.
 
 The left sidebar has a link to each page. Each page's section below gives where its link is. The menu button at the left of the top bar minimises the left sidebar to a strip of icons and expands it again.
 

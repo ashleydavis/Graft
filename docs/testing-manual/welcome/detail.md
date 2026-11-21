@@ -30,7 +30,7 @@ bun run macos
 4. Click "Open repo". Check the system folder picker opens, titled "Open repo".
 5. Cancel the picker. Check Graft still shows the welcome page with no repo open.
 6. Click "Open repo" again and choose `/tmp/graft/test-repo`.
-7. Check the repo explorer page shows the test repo in its repo details pane. Click its "Commits" link and check the commit pane shows the test repo's commits: "Change the note", "Add the notes" and "Add the readme". Check the trail reads "test-repo" then "Repo explorer" and the left sidebar has a "Repo explorer" link.
+7. Check the repo explorer page shows the test repo in its repo details pane. Click its "Commits" link and check the commit pane shows the test repo's commits: "Change the note", "Add the notes" and "Add the readme". Check the trail reads "test-repo", "Repo explorer", then "Commits" and the left sidebar has a "Repo explorer" link.
 8. Click "Help" in the left sidebar, then "Welcome" in the left sidebar. Check the welcome page shows, the Welcome link is highlighted and the trail reads "Welcome" alone, with no "test-repo" step, even though the repo is open.
 9. Click "About" in the left sidebar and check the trail reads "test-repo" then "About". Click "Welcome". Check the welcome page shows again with the trail "Welcome" alone.
 10. Switch the theme to Dark with the top bar's theme menu, close the window and start Graft again. Check the welcome page shows in dark colours, with the mark, heading, line and button all readable.

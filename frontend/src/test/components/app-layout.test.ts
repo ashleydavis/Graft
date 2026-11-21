@@ -7,7 +7,8 @@
 // sidebar in and out, that both sidebars
 // are saved in Graft's state file and restored from it, that the top bar's breadcrumb trail
 // follows the page shown and its drop-down opens another page and that the right sidebar shows the
-// Git commands the page shown has run. It also checks that with no repo open the trail has no repo
+// Git commands the page shown has run. It checks the trail ends with the pane steps the repo
+// explorer page sets. It also checks that with no repo open the trail has no repo
 // step and the Repo explorer link is hidden. The actions of the feature hooks the layout calls are
 // tested beside each hook.
 //
@@ -255,6 +256,22 @@ describe("AppLayout", () => {
         });
         await screen.findByText("The Help page");
         expect(elementWithDataId(container, "breadcrumb-page")?.textContent).toBe("Help");
+    });
+});
+
+describe("AppLayout's pane steps", () => {
+    test("the trail ends with the pane steps the repo explorer page sets, after its own step", async () => {
+        const container = await renderAppLayout("/repos/graft");
+        act(() => {
+            elementWithDataId(container, "left-sidebar-repo-explorer-link")?.click();
+        });
+        await screen.findByText("The repo explorer page");
+        expect(elementWithDataId(container, "breadcrumb-trail")?.textContent).toBe("graftRepo explorer");
+        act(() => {
+            elementWithDataId(container, "mock-open-pane")?.click();
+        });
+        expect(elementWithDataId(container, "breadcrumb-trail")?.textContent).toBe("graftRepo explorerCommits");
+        expect(elementWithDataId(container, "breadcrumb-pane-commits")?.textContent).toBe("Commits");
     });
 });
 

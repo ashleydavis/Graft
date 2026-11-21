@@ -1,14 +1,40 @@
 //
 // Tests the breadcrumb trail's rules: works out the trail for each of Graft's pages and for any
-// other path. Checks which steps are drop-downs, which option is ticked, how the repo's name is
-// read from its path, how long steps are cut short and how the search narrows options.
+// other path, with the repo explorer's pane steps after its page step. Works out the pane steps for
+// each combination of open panes. Checks which steps are drop-downs, which option is ticked, how
+// the repo's name is read from its path, how long steps are cut short and how the search narrows
+// options.
 //
 
-import { clipStepLabel, ITrailOption, pageTrail, repoName, searchMatches } from "../../lib/breadcrumb-trail";
+import { clipStepLabel, explorerPaneSteps, fileStep, ITrailOption, ITrailStep, pageTrail, repoName, searchMatches } from "../../lib/breadcrumb-trail";
+import { initialRepoExplorerState } from "../../lib/repo-explorer";
+
+//
+// The hash of the commit the pane step tests open, long like a real one so its step is cut short.
+//
+const HASH = "0123456789abcdef0123456789abcdef01234567";
+
+//
+// The steps of the commit pane and an open commit, for the pageTrail tests of the repo explorer.
+//
+const commitPaneSteps: ITrailStep[] = [
+    {
+        label: "Commits",
+        tooltip: "Commits",
+        dataId: "breadcrumb-pane-commits",
+        options: [],
+    },
+    {
+        label: "0123456",
+        tooltip: HASH,
+        dataId: "breadcrumb-pane-commit",
+        options: [],
+    },
+];
 
 describe("pageTrail", () => {
     test("the About page's trail is the repo, then About as a drop-down of the app's pages with About ticked", () => {
-        expect(pageTrail("/about", "/repos/graft")).toEqual([
+        expect(pageTrail("/about", "/repos/graft", [])).toEqual([
             {
                 label: "graft",
                 tooltip: "/repos/graft",
@@ -38,7 +64,7 @@ describe("pageTrail", () => {
     });
 
     test("the Help page's trail is the repo, then Help as a drop-down of the app's pages with Help ticked", () => {
-        const trail = pageTrail("/help", "/repos/graft");
+        const trail = pageTrail("/help", "/repos/graft", []);
         expect(trail.length).toBe(2);
         expect(trail[0].label).toBe("graft");
         expect(trail[1].label).toBe("Help");
@@ -47,7 +73,7 @@ describe("pageTrail", () => {
     });
 
     test("the repo explorer page's trail is the repo, then Repo explorer as plain text, because it has no sibling", () => {
-        expect(pageTrail("/repo-explorer", "/repos/graft")).toEqual([
+        expect(pageTrail("/repo-explorer", "/repos/graft", [])).toEqual([
             {
                 label: "graft",
                 tooltip: "/repos/graft",
@@ -63,8 +89,28 @@ describe("pageTrail", () => {
         ]);
     });
 
+    test("the repo explorer page's trail ends with the pane steps the page gives, after its own step", () => {
+        expect(pageTrail("/repo-explorer", "/repos/graft", commitPaneSteps).map(step => step.dataId)).toEqual([
+            "breadcrumb-repo",
+            "breadcrumb-page",
+            "breadcrumb-pane-commits",
+            "breadcrumb-pane-commit",
+        ]);
+        expect(pageTrail("/repo-explorer", undefined, commitPaneSteps).map(step => step.dataId)).toEqual([
+            "breadcrumb-page",
+            "breadcrumb-pane-commits",
+            "breadcrumb-pane-commit",
+        ]);
+    });
+
+    test("pane steps are left out of the trail of every page but the repo explorer", () => {
+        expect(pageTrail("/about", "/repos/graft", commitPaneSteps).map(step => step.dataId)).toEqual(["breadcrumb-repo", "breadcrumb-page"]);
+        expect(pageTrail("/", "/repos/graft", commitPaneSteps).map(step => step.dataId)).toEqual(["breadcrumb-page"]);
+        expect(pageTrail("/missing", "/repos/graft", commitPaneSteps).map(step => step.dataId)).toEqual(["breadcrumb-repo"]);
+    });
+
     test("any other path gets the repo step only", () => {
-        expect(pageTrail("/missing", "/repos/graft")).toEqual([
+        expect(pageTrail("/missing", "/repos/graft", [])).toEqual([
             {
                 label: "graft",
                 tooltip: "/repos/graft",
@@ -75,10 +121,10 @@ describe("pageTrail", () => {
     });
 
     test("starts with the page while no repo is open", () => {
-        const trail = pageTrail("/about", undefined);
+        const trail = pageTrail("/about", undefined, []);
         expect(trail.map(step => step.dataId)).toEqual(["breadcrumb-page"]);
         expect(trail[0].label).toBe("About");
-        expect(pageTrail("/repo-explorer", undefined)).toEqual([
+        expect(pageTrail("/repo-explorer", undefined, [])).toEqual([
             {
                 label: "Repo explorer",
                 tooltip: "Repo explorer",
@@ -89,7 +135,7 @@ describe("pageTrail", () => {
     });
 
     test("the welcome page's trail is Welcome alone while a repo is open, because it is the app's start page", () => {
-        expect(pageTrail("/", "/repos/graft")).toEqual([
+        expect(pageTrail("/", "/repos/graft", [])).toEqual([
             {
                 label: "Welcome",
                 tooltip: "Welcome",
@@ -100,7 +146,7 @@ describe("pageTrail", () => {
     });
 
     test("the welcome page's trail is Welcome alone while no repo is open", () => {
-        expect(pageTrail("/", undefined)).toEqual([
+        expect(pageTrail("/", undefined, [])).toEqual([
             {
                 label: "Welcome",
                 tooltip: "Welcome",
@@ -111,7 +157,105 @@ describe("pageTrail", () => {
     });
 
     test("any other path has no steps while no repo is open", () => {
-        expect(pageTrail("/missing", undefined)).toEqual([]);
+        expect(pageTrail("/missing", undefined, [])).toEqual([]);
+    });
+});
+
+describe("explorerPaneSteps", () => {
+    test("has no steps while the repo details pane is alone", () => {
+        expect(explorerPaneSteps(initialRepoExplorerState, undefined)).toEqual([]);
+    });
+
+    test("has no steps while a link is only selected", () => {
+        expect(explorerPaneSteps({
+            ...initialRepoExplorerState,
+            selectedLink: "commits",
+        }, undefined)).toEqual([]);
+    });
+
+    test("has the Commits step while the commit pane is open", () => {
+        expect(explorerPaneSteps({
+            ...initialRepoExplorerState,
+            openLink: "commits",
+            selectedHash: HASH,
+        }, undefined)).toEqual([commitPaneSteps[0]]);
+    });
+
+    test("adds the commit's short hash, with its full hash in the tooltip, while the commit is open", () => {
+        expect(explorerPaneSteps({
+            ...initialRepoExplorerState,
+            openLink: "commits",
+            openHash: HASH,
+            selectedPath: "src/main.ts",
+        }, undefined)).toEqual(commitPaneSteps);
+    });
+
+    test("adds the file's name, with its path in the tooltip, while the commit's file is open", () => {
+        expect(explorerPaneSteps({
+            ...initialRepoExplorerState,
+            openLink: "commits",
+            openHash: HASH,
+            openPath: "src/main.ts",
+        }, undefined)).toEqual([
+            ...commitPaneSteps,
+            {
+                label: "main.ts",
+                tooltip: "src/main.ts",
+                dataId: "breadcrumb-pane-file",
+                options: [],
+            },
+        ]);
+    });
+
+    test("has the Commit step while the changes pane is open with no file open", () => {
+        expect(explorerPaneSteps({
+            ...initialRepoExplorerState,
+            openLink: "commit",
+            selectedChange: "unstaged:notes.txt",
+        }, undefined)).toEqual([
+            {
+                label: "Commit",
+                tooltip: "Commit",
+                dataId: "breadcrumb-pane-changes",
+                options: [],
+            },
+        ]);
+    });
+
+    test("adds the changed file's name, with its path in the tooltip, while its file pane is open", () => {
+        expect(explorerPaneSteps({
+            ...initialRepoExplorerState,
+            openLink: "commit",
+            openChange: "staged:docs/new.txt",
+        }, "docs/new.txt")).toEqual([
+            {
+                label: "Commit",
+                tooltip: "Commit",
+                dataId: "breadcrumb-pane-changes",
+                options: [],
+            },
+            {
+                label: "new.txt",
+                tooltip: "docs/new.txt",
+                dataId: "breadcrumb-pane-file",
+                options: [],
+            },
+        ]);
+    });
+});
+
+describe("fileStep", () => {
+    test("names a file at the top of the repo by its path", () => {
+        expect(fileStep("README.md")).toEqual({
+            label: "README.md",
+            tooltip: "README.md",
+            dataId: "breadcrumb-pane-file",
+            options: [],
+        });
+    });
+
+    test("names a file in a directory by the part after the last slash", () => {
+        expect(fileStep("a/b/c.txt").label).toBe("c.txt");
     });
 });
 

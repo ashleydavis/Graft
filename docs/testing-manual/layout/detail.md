@@ -29,7 +29,7 @@ bun run macos
 3. Check the left sidebar runs down the left under the top bar, with "Welcome" and "Repo explorer" links at its top in that order and "Help" and "About" links at its bottom, each with an icon. Check the About link is highlighted.
 4. Check the About page shows in the main content area, to the right of the left sidebar.
 5. Check the right sidebar is closed: the main content area reaches the right edge of the window.
-6. Click the "Repo explorer" link in the left sidebar. Check the repo explorer page shows in the main content area, the Repo explorer link is highlighted and the trail reads "test-repo" then "Repo explorer", both plain text, with "Repo explorer" larger and bolder than "test-repo", so the top bar reads "Graft", "test-repo", then "Repo explorer".
+6. Click the "Repo explorer" link in the left sidebar. Check the repo explorer page shows in the main content area, the Repo explorer link is highlighted and the trail reads "test-repo" then "Repo explorer", both plain text, with "Repo explorer" larger and bolder than "test-repo", so the top bar reads "Graft", "test-repo", then "Repo explorer". Click the repo details pane's "Commits" link and check the trail gains a "Commits" step after "Repo explorer". Click the commit "Change the note" and check the trail gains its first seven hash characters, with the full hash in the step's tooltip. Click "notes.txt" in the commit details pane and check the trail ends with "notes.txt", in the main text colour, and "Repo explorer" stays larger and bolder. Close the file pane and check the "notes.txt" step goes. Change `/tmp/graft/test-repo/notes.txt` in a text editor and save it, then click the repo details pane's "Commit" link. Check the trail reads "test-repo", "Repo explorer", "Commit". Click "notes.txt" in the changes pane and check the trail ends with "notes.txt".
 7. Click the menu button in the top bar. Check the left sidebar slides narrower to a strip that shows only the icons.
 8. Hover over each icon in the strip. Check its tooltip names it.
 9. Click the About icon. Check the About page shows in the main content area.
@@ -63,7 +63,7 @@ bun run macos
 
 Every page shows in the main content area, between the left sidebar and the right sidebar, under the top bar.
 
-The top bar's breadcrumb trail names the open repo and the page shown, with the page's step larger and bolder as its title. On the Help and About pages its drop-down switches between them.
+The top bar's breadcrumb trail names the open repo and the page shown, with the page's step larger and bolder as its title. On the repo explorer page it has a step for each open pane after the page's step, up to the rightmost. On the Help and About pages its drop-down switches between them.
 
 The left sidebar's Welcome link opens the welcome page from every page. The menu button minimises and expands the left sidebar, and its links work in both states. The button at the far right of the top bar slides the right sidebar in and out.
 

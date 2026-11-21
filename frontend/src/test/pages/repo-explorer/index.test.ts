@@ -16,14 +16,17 @@
 // file's pane on a click or on Enter, and stages or unstages a file and reads the changes again,
 // with the file's pane following the file to the other list. The commit section commits the
 // staged files with the typed message, clears it and reads the changes again, or shows git's error
-// text and keeps it.
+// text and keeps it. It checks the page puts a step in the breadcrumb trail for each open pane as
+// panes open and close, and takes them out when it closes.
 //
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { createElement, JSX } from "react";
 import type { IAddTask, ITaskCompletedEvent } from "ziggy";
+import { PaneTrailContext } from "../../../components/pane-trail";
 import { RepoProvider, useRepo } from "../../../components/repo-context";
+import { ITrailStep } from "../../../lib/breadcrumb-trail";
 import { ICommit } from "../../../lib/commits";
 import { formatDate, formatDateTime } from "../../../lib/date-format";
 import { RepoExplorerPage, scrollLastPaneIntoView } from "../../../pages/repo-explorer";
@@ -47,9 +50,25 @@ jest.spyOn(window, "scrollTo").mockImplementation(() => {
 const scrollIntoView = jest.fn();
 Element.prototype.scrollIntoView = scrollIntoView;
 
+//
+// Records the pane steps the page puts in the breadcrumb trail, in place of the layout that draws
+// the trail.
+//
+const setPaneSteps = jest.fn();
+
 beforeEach(() => {
     scrollIntoView.mockClear();
+    setPaneSteps.mockClear();
 });
+
+//
+// Reads the data-ids of the pane steps the page last put in the breadcrumb trail.
+//
+function lastPaneStepIds(): string[] {
+    const calls = setPaneSteps.mock.calls;
+    const steps: ITrailStep[] = calls[calls.length - 1][0];
+    return steps.map(step => step.dataId);
+}
 
 //
 // Reads the data-ids of the elements the page scrolled into view, in the order it scrolled them.
@@ -78,7 +97,7 @@ function OpenOtherRepoButton(): JSX.Element {
 //
 // Shows the repo explorer page as the only page of a router, as the app does, inside a RepoProvider
 // with the repo the test gives open, or none for undefined, beside a button that opens another
-// repo.
+// repo. The layout's PaneTrailContext around the router gives the page the setPaneSteps mock.
 //
 function renderRepoExplorerPage(repoPath: string | undefined): void {
     const rootRoute = createRootRoute();
@@ -102,9 +121,14 @@ function renderRepoExplorerPage(repoPath: string | undefined): void {
                 key: "repo-opener",
                 repoPath,
             }),
-            createElement(RouterProvider, {
-                key: "router",
-                router,
+            createElement(PaneTrailContext.Provider, {
+                key: "pane-trail",
+                value: {
+                    setPaneSteps,
+                },
+                children: createElement(RouterProvider, {
+                    router,
+                }),
             }),
         ],
     }));
@@ -525,6 +549,72 @@ describe("RepoExplorerPage", () => {
         fireEvent.click(elementWithDataId(`commit-${commitJson.hash}`));
         expect(screen.queryByText("Loading the diff.")).toBeNull();
         expect(elementWithDataId("changed-file-README.md").className).not.toContain("Mui-selected");
+    });
+});
+
+describe("RepoExplorerPage breadcrumb trail", () => {
+    test("puts a step in the trail for each pane as the commit pane, a commit and a file open and close", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        await screen.findByText("Commits");
+        expect(lastPaneStepIds()).toEqual([]);
+        await clickCommitsLink();
+        expect(lastPaneStepIds()).toEqual(["breadcrumb-pane-commits"]);
+        completeTaskAt(ziggy, 0, {
+            commits: [commitJson],
+        });
+        fireEvent.click(await screen.findByText("The first commit"));
+        expect(lastPaneStepIds()).toEqual(["breadcrumb-pane-commits", "breadcrumb-pane-commit"]);
+        completeTaskAt(ziggy, 1, {
+            commit: commitJson,
+            changedFiles: [{
+                status: "A",
+                path: "docs/README.md",
+                linesAdded: 1,
+                linesDeleted: 0,
+                isBinary: false,
+            }],
+        });
+        fireEvent.click(await screen.findByText("README.md"));
+        const calls = setPaneSteps.mock.calls;
+        expect(calls[calls.length - 1][0]).toEqual([
+            {
+                label: "Commits",
+                tooltip: "Commits",
+                dataId: "breadcrumb-pane-commits",
+                options: [],
+            },
+            {
+                label: "1111111",
+                tooltip: "1111111111111111111111111111111111111111",
+                dataId: "breadcrumb-pane-commit",
+                options: [],
+            },
+            {
+                label: "README.md",
+                tooltip: "docs/README.md",
+                dataId: "breadcrumb-pane-file",
+                options: [],
+            },
+        ]);
+        fireEvent.click(screen.getByLabelText("Close file diff"));
+        expect(lastPaneStepIds()).toEqual(["breadcrumb-pane-commits", "breadcrumb-pane-commit"]);
+    });
+
+    test("puts the changes pane and its open file in the trail", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        expect(lastPaneStepIds()).toEqual(["breadcrumb-pane-changes"]);
+        fireEvent.click(elementWithDataId("change-unstaged-notes.txt"));
+        expect(lastPaneStepIds()).toEqual(["breadcrumb-pane-changes", "breadcrumb-pane-file"]);
+    });
+
+    test("takes its pane steps out of the trail when the page closes", async () => {
+        renderRepoExplorerPage("/repo");
+        await clickCommitsLink();
+        expect(lastPaneStepIds()).toEqual(["breadcrumb-pane-commits"]);
+        cleanup();
+        expect(lastPaneStepIds()).toEqual([]);
     });
 });
 

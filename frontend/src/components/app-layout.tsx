@@ -6,7 +6,7 @@
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { JSX, useEffect, useState } from "react";
 import type { ITaskEvent } from "ziggy";
-import { pageTrail } from "../lib/breadcrumb-trail";
+import { ITrailStep, pageTrail } from "../lib/breadcrumb-trail";
 import { addGitCommand, IPageGitCommands, isGitCommandEvent, pageGitCommands } from "../lib/git-commands";
 import { openPage } from "../lib/navigation";
 import { useRepoExplorerAction } from "./repo-explorer-action";
@@ -14,6 +14,7 @@ import { GitCommandsPanel } from "./git-commands-panel";
 import { LeftSidebar } from "./left-sidebar";
 import { useNewWindowAction } from "./new-window-action";
 import { useOpenRepoAction } from "./open-repo-action";
+import { PaneTrailContext } from "./pane-trail";
 import { usePageZoom } from "./page-zoom";
 import { useRepo } from "./repo-context";
 import { RightSidebar } from "./right-sidebar";
@@ -72,13 +73,14 @@ export function useSavedSwitch(stateKey: string, description: string): [boolean,
 // sidebar is open, because the top bar's buttons change them and the sidebars show them. Both are
 // kept in Graft's state file, so Graft starts with the sidebars as they were left. With nothing
 // saved, the left sidebar starts expanded and the right sidebar starts closed. It works out the
-// breadcrumb trail from the page the router shows and the open repo, so every page gets its trail
-// without drawing it itself. It keeps the Git commands every page has run for as long as the app
-// runs, listening whether the right sidebar is open or not, so closing a pane or the sidebar or
-// moving to another page loses none, and the right sidebar shows the commands of the page that is
-// open. It holds the keyboard shortcuts overlay, so `?` shows it over every page. It calls the hook
-// of each feature whose action works on every page, one line per feature, because the layout is
-// inside both the router and the open repo's context for as long as the window is open.
+// breadcrumb trail from the page the router shows, the open repo and the pane steps the page sets
+// through PaneTrailContext, so every page gets its trail without drawing it itself. It keeps the
+// Git commands every page has run for as long as the app runs, listening whether the right sidebar
+// is open or not, so closing a pane or the sidebar or moving to another page loses none, and the
+// right sidebar shows the commands of the page that is open. It holds the keyboard shortcuts
+// overlay, so `?` shows it over every page. It calls the hook of each feature whose action works on
+// every page, one line per feature, because the layout is inside both the router and the open
+// repo's context for as long as the window is open.
 //
 export function AppLayout(): JSX.Element {
     const [isLeftSidebarMinimised, toggleLeftSidebar] = useSavedSwitch(leftSidebarMinimisedStateKey, "whether the left sidebar is minimised");
@@ -88,6 +90,7 @@ export function AppLayout(): JSX.Element {
     const theme = useThemeSetting();
     const { repoPath } = useRepo();
     const [gitCommandHistory, setGitCommandHistory] = useState<ReadonlyMap<string, IPageGitCommands>>(new Map());
+    const [paneSteps, setPaneSteps] = useState<ITrailStep[]>([]);
     usePageZoom();
     useOpenRepoAction();
     useRepoExplorerAction();
@@ -112,7 +115,7 @@ export function AppLayout(): JSX.Element {
                 onToggleLeftSidebar={toggleLeftSidebar}
                 isRightSidebarOpen={isRightSidebarOpen}
                 onToggleRightSidebar={toggleRightSidebar}
-                trail={pageTrail(location.pathname, repoPath)}
+                trail={pageTrail(location.pathname, repoPath, paneSteps)}
                 onNavigate={path => openPage(navigate, path)}
                 themeSetting={theme.setting}
                 onChooseThemeSetting={theme.onChooseSetting}
@@ -120,7 +123,11 @@ export function AppLayout(): JSX.Element {
             <div className="flex min-h-0 flex-1">
                 <LeftSidebar isMinimised={isLeftSidebarMinimised} isRepoOpen={Boolean(repoPath)} />
                 <div data-id="main-content" className="@container min-w-0 flex-1 overflow-auto">
-                    <Outlet />
+                    <PaneTrailContext.Provider value={{
+                        setPaneSteps,
+                    }}>
+                        <Outlet />
+                    </PaneTrailContext.Provider>
                 </div>
                 <RightSidebar isOpen={isRightSidebarOpen}>
                     <GitCommandsPanel pageCommands={pageGitCommands(gitCommandHistory, location.pathname)} />

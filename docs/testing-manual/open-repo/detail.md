@@ -34,7 +34,7 @@ bun run macos
 4. Choose "Open repo". Check the system folder picker opens, titled "Open repo".
 5. Cancel the picker. Check Graft still shows the welcome page with no repo open.
 6. Choose File, then "Open repo" again, and choose `/tmp/graft/test-repo`.
-7. Check the repo explorer page shows the repo details pane with the name "test-repo" and the path `/tmp/graft/test-repo`. Click its "Commits" link and check the commit pane shows the test repo's commits: "Change the note", "Add the notes" and "Add the readme". Check the trail reads "test-repo" then "Repo explorer" and the left sidebar has a "Repo explorer" link again.
+7. Check the repo explorer page shows the repo details pane with the name "test-repo" and the path `/tmp/graft/test-repo`. Click its "Commits" link and check the commit pane shows the test repo's commits: "Change the note", "Add the notes" and "Add the readme". Check the trail reads "test-repo", "Repo explorer", then "Commits" and the left sidebar has a "Repo explorer" link again.
 8. Click "About" in the left sidebar, then "Repo explorer", then the repo details pane's "Commits" link. Check the same commits show without choosing the repo again.
 9. Choose File, then "Open repo", and choose `/tmp/graft/other-repo`. Check the trail reads "other-repo" then "Repo explorer", the repo details pane shows "other-repo" and, after a click on its "Commits" link, the commit pane lists that repo's commits.
 10. Choose File, then "Open repo", and choose a folder outside a Git repo, such as `/tmp`. Click the repo details pane's "Commits" link and check the commit pane shows why git could not read it.

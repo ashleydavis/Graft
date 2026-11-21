@@ -5,13 +5,14 @@
 // says when none match and is cleared on closing and that picking a page opens it while picking
 // the page shown only closes the drop-down. It also renders the repo explorer page's trail from
 // pageTrail with a repo open and with none, and checks the repo step comes before the page only
-// while a repo is open.
+// while a repo is open, and with its panes open, and checks a step follows the page for each.
 //
 
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 import { BreadcrumbTrail } from "../../components/breadcrumb-trail";
-import { ITrailStep, pageTrail } from "../../lib/breadcrumb-trail";
+import { explorerPaneSteps, ITrailStep, pageTrail } from "../../lib/breadcrumb-trail";
+import { initialRepoExplorerState } from "../../lib/repo-explorer";
 
 //
 // A trail with a plain repo step with a long name and a drop-down step of two pages, the second
@@ -146,12 +147,29 @@ describe("BreadcrumbTrail", () => {
     });
 
     test("shows a drop-down step before the last one in the muted text colour at the normal size", () => {
-        renderTrail([trail[1], trail[0]]);
+        renderTrail([
+            {
+                ...trail[1],
+                dataId: "breadcrumb-other",
+            },
+            trail[0],
+        ]);
+        const otherStep = elementWithDataId("breadcrumb-other");
+        expect(otherStep?.tagName).toBe("BUTTON");
+        expect(otherStep?.classList.contains("font-[var(--weight-medium)]")).toBe(false);
+        expect(otherStep?.classList.contains("font-[var(--weight-bold)]")).toBe(false);
+        expect(otherStep?.classList.contains("text-[length:var(--text-md)]")).toBe(true);
+        expect(otherStep?.classList.contains("text-[var(--color-text-muted)]")).toBe(true);
+    });
+
+    test("keeps the page step as the page's title when pane steps follow it", () => {
+        renderTrail(pageTrail("/repo-explorer", "/repos/graft", explorerPaneSteps({
+            ...initialRepoExplorerState,
+            openLink: "commits",
+        }, undefined)));
         const pageStep = elementWithDataId("breadcrumb-page");
-        expect(pageStep?.classList.contains("font-[var(--weight-medium)]")).toBe(false);
-        expect(pageStep?.classList.contains("font-[var(--weight-bold)]")).toBe(false);
-        expect(pageStep?.classList.contains("text-[length:var(--text-md)]")).toBe(true);
-        expect(pageStep?.classList.contains("text-[var(--color-text-muted)]")).toBe(true);
+        expect(pageStep?.classList.contains("text-[length:var(--text-lg)]")).toBe(true);
+        expect(pageStep?.classList.contains("font-[var(--weight-bold)]")).toBe(true);
     });
 
     test("opens a drop-down that lists the step's pages and selects the one shown, with no tick", () => {
@@ -247,15 +265,39 @@ describe("BreadcrumbTrail", () => {
 
 describe("BreadcrumbTrail with the trail of the repo explorer page", () => {
     test("with a repo open, shows the repo's name before Repo explorer, with its full path in the tooltip", () => {
-        renderTrail(pageTrail("/repo-explorer", "/home/user/projects/graft"));
+        renderTrail(pageTrail("/repo-explorer", "/home/user/projects/graft", []));
         expect(elementWithDataId("breadcrumb-trail")?.textContent).toBe("graftRepo explorer");
         expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("graft");
         expect(elementWithDataId("breadcrumb-repo")?.getAttribute("aria-label")).toBe("/home/user/projects/graft");
         expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("Repo explorer");
     });
 
+    test("with every pane open, shows a step per pane after Repo explorer, the commit's short hash and the file's name with their full text in the tooltip", () => {
+        renderTrail(pageTrail("/repo-explorer", "/home/user/projects/graft", explorerPaneSteps({
+            ...initialRepoExplorerState,
+            openLink: "commits",
+            openHash: "0123456789abcdef0123456789abcdef01234567",
+            openPath: "src/a-file-with-a-long-name.ts",
+        }, undefined)));
+        expect(elementWithDataId("breadcrumb-trail")?.textContent).toBe("graftRepo explorerCommits0123456a-file-with-a-lon…");
+        expect(elementWithDataId("breadcrumb-pane-commit")?.getAttribute("aria-label")).toBe("0123456789abcdef0123456789abcdef01234567");
+        expect(elementWithDataId("breadcrumb-pane-file")?.getAttribute("aria-label")).toBe("src/a-file-with-a-long-name.ts");
+        expect(elementWithDataId("breadcrumb-pane-file")?.classList.contains("font-[var(--weight-medium)]")).toBe(true);
+        expect(elementWithDataId("breadcrumb-pane-commits")?.classList.contains("text-[var(--color-text-muted)]")).toBe(true);
+        expect(elementWithDataId("breadcrumb-pane-commit")?.classList.contains("text-[var(--color-text-muted)]")).toBe(true);
+    });
+
+    test("with the changes pane and a file open, shows Commit then the file's name after Repo explorer", () => {
+        renderTrail(pageTrail("/repo-explorer", "/home/user/projects/graft", explorerPaneSteps({
+            ...initialRepoExplorerState,
+            openLink: "commit",
+            openChange: "unstaged:notes.txt",
+        }, "notes.txt")));
+        expect(elementWithDataId("breadcrumb-trail")?.textContent).toBe("graftRepo explorerCommitnotes.txt");
+    });
+
     test("with no repo open, shows Repo explorer alone, with no repo step", () => {
-        renderTrail(pageTrail("/repo-explorer", undefined));
+        renderTrail(pageTrail("/repo-explorer", undefined, []));
         expect(elementWithDataId("breadcrumb-trail")?.textContent).toBe("Repo explorer");
         expect(elementWithDataId("breadcrumb-repo")).toBeUndefined();
     });

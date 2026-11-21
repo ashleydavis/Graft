@@ -7,10 +7,11 @@
 
 import { act, render, RenderResult, screen } from "@testing-library/react";
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
-import { createElement } from "react";
+import { createElement, JSX } from "react";
 import type { ITaskEvent, IZiggyBridge } from "ziggy";
 import { AppLayout } from "../components/app-layout";
 import { AppTheme, systemDarkQuery } from "../components/app-theme";
+import { usePaneTrail } from "../components/pane-trail";
 import { RepoProvider } from "../components/repo-context";
 import { IFakeActionZiggy, makeFakeActionZiggy } from "./fake-action-ziggy";
 import { makeFakeMediaQuery } from "./fake-media-query";
@@ -52,6 +53,29 @@ export function sendTaskEvent(event: ITaskEvent<unknown>): void {
 }
 
 //
+// A mock of the repo explorer page, with a button that puts the commit pane's step in the
+// breadcrumb trail as the page does when the commit pane opens, so a test can check the layout
+// draws the pane steps a page sets.
+//
+export function MockRepoExplorerPage(): JSX.Element {
+    const { setPaneSteps } = usePaneTrail();
+    return createElement("div", null,
+        createElement("p", null, "The repo explorer page"),
+        createElement("button", {
+            "data-id": "mock-open-pane",
+            onClick: () => setPaneSteps([
+                {
+                    label: "Commits",
+                    tooltip: "Commits",
+                    dataId: "breadcrumb-pane-commits",
+                    options: [],
+                },
+            ]),
+        }, "Open a pane"),
+    );
+}
+
+//
 // The calls of window.ziggy a test may give the layout: AppTheme's, the action calls, the folder
 // picker's invoke and runAction, which the top bar's keyboard shortcuts button calls.
 //
@@ -59,12 +83,12 @@ export type LayoutZiggy = IFakeThemeZiggy & IFakeActionZiggy & Pick<IZiggyBridge
 
 //
 // Renders the layout with the repo open, or none for undefined, around mocks of the About page, the
-// repo explorer page and the Help page, because the layout shows the router's current page and its
-// trail follows it. The layout is inside the open repo's context and the app's theme, as it is in
-// the app, with no saved theme setting, a system theme that is light and an empty state file, and
-// listens for task events on the fake window.ziggy. window.ziggy also keeps the action handlers the
-// layout registers, which the test reaches through the fake it returns with the container, and
-// returns the folder picker's choice from the invoke given.
+// repo explorer page (MockRepoExplorerPage) and the Help page, because the layout shows the
+// router's current page and its trail follows it. The layout is inside the open repo's context and
+// the app's theme, as it is in the app, with no saved theme setting, a system theme that is light
+// and an empty state file, and listens for task events on the fake window.ziggy. window.ziggy also
+// keeps the action handlers the layout registers, which the test reaches through the fake it
+// returns with the container, and returns the folder picker's choice from the invoke given.
 //
 export async function renderAppLayoutWithZiggy(repoPath: string | undefined, invoke: jest.Mock = jest.fn()): Promise<[HTMLElement, IFakeActionZiggy]> {
     const ziggy = makeFakeActionZiggy([]);
@@ -112,7 +136,7 @@ export async function renderFakedAppLayout(fake: Partial<LayoutZiggy>, repoPath:
     const repoExplorerRoute = createRoute({
         getParentRoute: () => rootRoute,
         path: "/repo-explorer",
-        component: () => createElement("p", null, "The repo explorer page"),
+        component: MockRepoExplorerPage,
     });
     const router = createRouter({
         routeTree: rootRoute.addChildren([pageRoute, helpRoute, repoExplorerRoute]),

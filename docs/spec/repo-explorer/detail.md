@@ -7,7 +7,7 @@ The repo explorer page shows the open repo (see [open-repo](../open-repo/index.m
 ## Behaviour
 
 - While a repo is open, the left sidebar's "Repo explorer" link opens the repo explorer page.
-- The breadcrumb trail shows the page's title, "Repo explorer", so the page starts with its panes, or with the message that no repo is open.
+- The breadcrumb trail shows the page's title, "Repo explorer", so the page starts with its panes, or with the message that no repo is open. After the title it has a step for each open pane, up to the rightmost, as [layout](../layout/detail.md) describes.
 - The page reads the open repo. Opening another repo shows that repo in its place, with only the repo details pane open. While no repo is open the page shows "No repo is open. Choose File, then Open repo, to open one."
 - A smoke test opens its own test repo with the welcome page's "Open repo" button, as [open-repo](../open-repo/detail.md) describes.
 - `scripts/test/create-test-repo.sh` creates a test repo in a known state with a few commits, at `/tmp/graft/test-repo` or at the path given as its argument.
