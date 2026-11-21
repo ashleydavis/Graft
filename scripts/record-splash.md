@@ -20,7 +20,7 @@ What it needs and does on each platform:
   naming Xvfb when it does not.
 - **Windows**: `ffmpeg`. Records the whole desktop with `ffmpeg`'s gdigrab. The `Splash videos` workflow sets the runner's screen to
   1920x1080 first, as at its 1024x768 the window's title bar and menu bar were above the screen.
-- **macOS**: records the main display with `screencapture`, which needs the screen recording permission. If `screencapture` is still recording a minute after its time is up, the script prints the running processes and any crash reports and fails.
+- **macOS**: `ffmpeg`. Records the main display with `ffmpeg`'s AVFoundation input, which needs the screen recording permission, and starts the app with its window's content at 800x560, 112 across and 60 down, keeping only that area so the title bar, the Dock and the rest of the desktop are not in the video. `screencapture` hung on CI's runners waiting for replayd, the system's screen recording service, and wrote no recording.
 - **iOS**: `xcrun` and `jq`. Installs the app on the simulator `ZIGGY_IOS_SIMULATOR` names, else one already booted, else the first
   available iPhone, and records it with `simctl io recordVideo`.
 - **Android**: `adb`. Installs the app on the device `ANDROID_SERIAL` names (else adb's only device) and records it with

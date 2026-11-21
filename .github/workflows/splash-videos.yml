@@ -158,6 +158,13 @@ jobs:
         with:
           run: bun install
 
+      # record-splash.sh records macOS with ffmpeg: screencapture hung waiting on replayd, the system's screen recording service.
+      - name: Install the recorder (macOS)
+        uses: ./.github/actions/retry-install
+        with:
+          run: brew install ffmpeg
+          verify: ffmpeg
+
       - name: Build
         shell: bash
         run: bun run build:macos --configuration Release --native-dir "$PWD/splash-build/native" --build-dir "$PWD/splash-build/xcode"
