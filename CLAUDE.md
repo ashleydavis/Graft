@@ -68,7 +68,7 @@ Never run `scripts/test-everything.sh` with `--force`. Always run it without the
 
 ## Rules
 
-The enforced rule set is in `docs/rules/` (coding style, testing, documentation, Git, Zig and any others). Every change must follow it.
+The enforced rule set is in `docs/rules/` (coding style, the style guide, testing, documentation, Git, Zig and any others). Every change must follow it.
 
 ## Communication style
 
