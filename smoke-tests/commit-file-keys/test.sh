@@ -31,8 +31,8 @@ wait_for_text commit-details-title "Change two files" 30
 wait_for_text changed-file-README.md "README.md" 30
 wait_for_text changed-file-notes.txt "notes.txt" 30
 
-# Down selects README.md and Enter opens its diff, then Left makes the file list active again.
-press_key Down
+# README.md is selected as the file list opens, so Enter opens its diff, then Left makes the file
+# list active again.
 press_key Enter
 wait_for_element file-pane 30
 wait_for_text file-pane-path "README.md" 30
