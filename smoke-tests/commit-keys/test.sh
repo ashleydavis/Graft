@@ -5,8 +5,9 @@
 # that repo with the welcome page's Open repo button, opens the About page from the left sidebar and
 # presses keys as a user does: Left in the breadcrumb trail drop-down's search box moves its cursor,
 # Ctrl+1 opens the repo explorer, the arrow keys and Enter open the commit pane from the repo
-# details pane's Commits link, then a commit and one of its files, Escape closes the panes one at a
-# time and Ctrl+1 returns to the repo explorer from the Help page. See test.md.
+# details pane's Commits link, then a commit, Up and Down show another commit's details at once,
+# Enter opens one of its files, Escape closes the panes one at a time and Ctrl+1 returns to the
+# repo explorer from the Help page. See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -14,7 +15,8 @@ source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
 #
 # Waits until the commit details pane shows the commit title, and fails with what it last showed
 # when it never does. Enter on another commit draws the pane afresh, so its title is missing while
-# the commit loads, which wait_for_text reports as a failure at once. Usage: wait_for_commit_title <title>
+# the commit loads, which wait_for_text reports as a failure at once. Up and Down in the commit pane
+# draw it afresh in the same way. Usage: wait_for_commit_title <title>
 #
 wait_for_commit_title() {
     local waited=0
@@ -70,9 +72,17 @@ press_key Enter
 wait_for_element commit-details 30
 wait_for_text commit-details-title "Add the notes" 30
 
-# Left returns to the commit pane, Up selects the newest commit and Enter opens it.
+# Left returns to the commit pane. Up selects the newest commit and the commit details pane shows
+# it at once, then Down and Up move the details back and forth.
 press_key Left
 press_key Up
+wait_for_commit_title "Change the note"
+press_key Down
+wait_for_commit_title "Add the notes"
+press_key Up
+wait_for_commit_title "Change the note"
+
+# Enter makes the commit details pane active, so Down below moves through its files.
 press_key Enter
 wait_for_commit_title "Change the note"
 wait_for_text changed-file-notes.txt "notes.txt" 30

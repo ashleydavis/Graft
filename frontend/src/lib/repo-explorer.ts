@@ -317,6 +317,29 @@ export function closeLinkPane(state: IRepoExplorerState): IRepoExplorerState {
 }
 
 //
+// Moves the selected commit in the commit pane one step, up for step -1 and down for step 1. While
+// a commit's details are open they follow the selection, so the commit details pane shows the newly
+// selected commit at once, with the commit pane still active. At the first or last commit the
+// selection and the open details stay as they are.
+//
+export function moveCommitSelection(state: IRepoExplorerState, commitHashes: string[], step: number): IRepoExplorerState {
+    const selectedHash = itemAfterMove(commitHashes, state.selectedHash, step);
+    if (state.openHash === undefined) {
+        return {
+            ...state,
+            selectedHash,
+        };
+    }
+    if (selectedHash === undefined) {
+        return state;
+    }
+    if (selectedHash === state.openHash) {
+        return state;
+    }
+    return selectCommit(state, selectedHash);
+}
+
+//
 // Moves the selection in the active pane one step, up for step -1 and down for step 1. The file
 // pane lists no items, so the selection stays as it is there.
 //
@@ -337,10 +360,7 @@ export function moveSelection(state: IRepoExplorerState, items: IRepoExplorerIte
         return state;
     }
     if (state.activePaneIndex === 1) {
-        return {
-            ...state,
-            selectedHash: itemAfterMove(items.commitHashes, state.selectedHash, step),
-        };
+        return moveCommitSelection(state, items.commitHashes, step);
     }
     if (state.activePaneIndex === 2) {
         return {

@@ -22,6 +22,7 @@ import {
     isExplorerKey,
     isExplorerKeyTarget,
     itemAfterMove,
+    moveCommitSelection,
     moveSelection,
     openPaneCount,
     keepListedChanges,
@@ -323,6 +324,57 @@ describe("keepListedChanges", () => {
     });
 });
 
+describe("moveCommitSelection", () => {
+    test("moves only the selection while no commit's details are open", () => {
+        expect(moveCommitSelection(commitsOpen, items.commitHashes, 1)).toEqual({
+            ...commitsOpen,
+            selectedHash: "aaa",
+        });
+    });
+
+    test("opens the newly selected commit's details at once, keeping the commit pane active", () => {
+        const state: IRepoExplorerState = {
+            ...allOpen,
+            activePaneIndex: 1,
+        };
+        expect(moveCommitSelection(state, items.commitHashes, 1)).toEqual({
+            ...commitsOpen,
+            selectedHash: "ccc",
+            openHash: "ccc",
+        });
+        expect(moveCommitSelection(state, items.commitHashes, -1)).toEqual({
+            ...commitsOpen,
+            selectedHash: "aaa",
+            openHash: "aaa",
+        });
+    });
+
+    test("keeps the open details and their file pane at the first or last commit", () => {
+        const first: IRepoExplorerState = {
+            ...allOpen,
+            activePaneIndex: 1,
+            selectedHash: "aaa",
+            openHash: "aaa",
+        };
+        expect(moveCommitSelection(first, items.commitHashes, -1)).toBe(first);
+        const last: IRepoExplorerState = {
+            ...allOpen,
+            activePaneIndex: 1,
+            selectedHash: "ccc",
+            openHash: "ccc",
+        };
+        expect(moveCommitSelection(last, items.commitHashes, 1)).toBe(last);
+    });
+
+    test("keeps the open details when there are no commits to move through", () => {
+        const state: IRepoExplorerState = {
+            ...detailsOpen,
+            activePaneIndex: 1,
+        };
+        expect(moveCommitSelection(state, [], 1)).toBe(state);
+    });
+});
+
 describe("moveSelection", () => {
     test("moves the selected link in the repo details pane", () => {
         expect(moveSelection(initialRepoExplorerState, items, 1).selectedLink).toBe(COMMITS_LINK);
@@ -481,6 +533,32 @@ describe("explorerStateAfterKey", () => {
         }, "ArrowRight", items).activePaneIndex).toBe(3);
         expect(explorerStateAfterKey(allOpen, "ArrowRight", items).activePaneIndex).toBe(3);
         expect(explorerStateAfterKey(initialRepoExplorerState, "ArrowRight", items).activePaneIndex).toBe(0);
+    });
+
+    test("Down and Up in the commit pane open the newly selected commit while its details are open", () => {
+        const state: IRepoExplorerState = {
+            ...detailsOpen,
+            activePaneIndex: 1,
+        };
+        const afterDown = explorerStateAfterKey(state, "ArrowDown", items);
+        expect(afterDown.selectedHash).toBe("ccc");
+        expect(afterDown.openHash).toBe("ccc");
+        expect(afterDown.activePaneIndex).toBe(1);
+        const afterUp = explorerStateAfterKey(state, "ArrowUp", items);
+        expect(afterUp.selectedHash).toBe("aaa");
+        expect(afterUp.openHash).toBe("aaa");
+    });
+
+    test("Enter on the commit whose details are open makes the commit details pane active", () => {
+        const afterDown = explorerStateAfterKey({
+            ...detailsOpen,
+            activePaneIndex: 1,
+        }, "ArrowDown", items);
+        expect(explorerStateAfterKey(afterDown, "Enter", items)).toEqual({
+            ...detailsOpen,
+            selectedHash: "ccc",
+            openHash: "ccc",
+        });
     });
 
     test("Enter opens the selected item", () => {
