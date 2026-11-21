@@ -60,7 +60,7 @@ Click **About** at the bottom of the left sidebar to open the About page, which 
 
 ### Help page
 
-Click **Help** at the bottom of the left sidebar to open the Help page, which explains how to move between Graft's pages.
+Click **Help** at the bottom of the left sidebar to open the Help page. Under "Pages" it lists what each of Graft's pages is for: the welcome page, the repo explorer, Help and About. Under "Moving between pages" it explains the left sidebar, the breadcrumb trail, the **File** menu's **Open repo** and **New window** items and the `?` key, which lists Graft's keyboard shortcuts.
 
 ### Repo explorer page
 
