@@ -133,6 +133,5 @@ wait_for_text git-command-0-text "git diff-tree -r -p --root --no-commit-id $hea
 
 run_shown_commands
 
-click repo-explorer-about-link
-wait_for_element about-page 30
+open_sidebar_page about
 wait_for_text git-commands-empty "This page has run no Git commands." 30

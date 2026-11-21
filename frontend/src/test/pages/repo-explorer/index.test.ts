@@ -10,10 +10,11 @@
 // the active pane, open and close panes, and that they are left alone in a text box, outside the
 // page and with Ctrl held. Dates are checked against the browser's own locale and time zone, which
 // the page passes on. The page reads the open repo from a RepoProvider: it shows when no repo is
-// open and reads another repo afresh when one is opened in its place. Its Commit link opens the
-// changes pane, which reads the working tree's changes, opens a changed file's pane on a click or
-// on Enter, and stages or unstages a file and reads the changes again, with the file's pane
-// following the file to the other list.
+// open and reads another repo afresh when one is opened in its place. It checks the page starts
+// with its panes, or with the message that no repo is open, because the breadcrumb trail names it.
+// Its Commit link opens the changes pane, which reads the working tree's changes, opens a changed
+// file's pane on a click or on Enter, and stages or unstages a file and reads the changes again,
+// with the file's pane following the file to the other list.
 //
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
@@ -312,8 +313,28 @@ describe("RepoExplorerPage", () => {
         const ziggy = installFakeTaskZiggy();
         renderRepoExplorerPage(undefined);
         expect((await screen.findByText(/No repo is open/)).getAttribute("data-id")).toBe("repo-explorer-no-repo");
-        expect(elementWithDataId("repo-explorer-heading").textContent).toBe("Repo explorer");
         expect(ziggy.addTask).not.toHaveBeenCalled();
+    });
+
+    test("shows no page heading and no About link while no repo is open, because the breadcrumb trail names the page", async () => {
+        installFakeTaskZiggy();
+        renderRepoExplorerPage(undefined);
+        await screen.findByText(/No repo is open/);
+        expect(elementWithDataId("repo-explorer-page").querySelector("h1")).toBeNull();
+        expect(elementWithDataId("repo-explorer-page").querySelector("a")).toBeNull();
+        expect(screen.queryByText("Repo explorer")).toBeNull();
+        expect(screen.queryByText("About")).toBeNull();
+    });
+
+    test("shows no page heading and no About link while a repo is open, because the breadcrumb trail names the page", async () => {
+        installFakeTaskZiggy();
+        renderRepoExplorerPage("/repos/graft");
+        await screen.findByText("/repos/graft");
+        expect(elementWithDataId("repo-explorer-page").querySelector("h1")).toBeNull();
+        expect(elementWithDataId("repo-explorer-page").querySelector("a[href=\"/about\"]")).toBeNull();
+        expect(screen.queryByText("Repo explorer")).toBeNull();
+        expect(screen.queryByText("About")).toBeNull();
+        expect(elementWithDataId("repo-explorer-page").firstElementChild).toBe(elementWithDataId("repo-explorer-columns"));
     });
 
     test("opens on the repo details pane alone, with the repo's name and path and the Commits link, and queues no task", async () => {
@@ -365,9 +386,6 @@ describe("RepoExplorerPage", () => {
         renderRepoExplorerPage("/repo");
         await clickCommitsLink();
         expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
-        expect(elementWithDataId("repo-explorer-heading").textContent).toBe("Repo explorer");
-        expect(screen.getByText("About").getAttribute("data-id")).toBe("repo-explorer-about-link");
-        expect(screen.getByText("About").getAttribute("href")).toBe("/about");
         const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[0][0];
         expect(task.taskType).toBe("commits");
         expect(task.data).toEqual({

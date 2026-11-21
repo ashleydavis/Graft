@@ -8,7 +8,6 @@
 // column view of macOS Finder.
 //
 
-import { Link } from "@tanstack/react-router";
 import { JSX, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRepo } from "../../components/repo-context";
 import { ICommit, readCommitPage } from "../../lib/commits";
@@ -39,14 +38,14 @@ export interface IRepoExplorerProps {
 //
 // Shows the repo explorer of the open repo. Opening another repo shows its explorer afresh, with
 // only the repo details pane open, because the explorer is keyed by the repo's path. While no repo
-// is open it shows that no repo is open, because the repo explorer has no repo to show.
+// is open it shows only that no repo is open, because the repo explorer has no repo to show and the
+// breadcrumb trail already names the page.
 //
 export function RepoExplorerPage(): JSX.Element {
     const { repoPath } = useRepo();
     if (!repoPath) {
         return (
             <main data-id="repo-explorer-page" className="graft-page-in flex flex-col gap-4 p-6">
-                <h1 data-id="repo-explorer-heading" className="text-[length:var(--text-2xl)] font-[var(--weight-bold)] text-[var(--color-text)]">Repo explorer</h1>
                 <p data-id="repo-explorer-no-repo" className="text-[var(--color-text-muted)]">No repo is open. Choose File, then Open repo, to open one.</p>
             </main>
         );
@@ -55,26 +54,26 @@ export function RepoExplorerPage(): JSX.Element {
 }
 
 //
-// Shows the repo details pane, then the panes the user opens from it, with a link back to the
-// About page. It reads the first page of the repo's commits, newest first, when the Commits link
-// opens the commit pane, and reads them afresh each time the pane opens. The commit pane shows that
-// it is loading until the commits task ends, and what went wrong when the commits could not be
-// read. It owns the repo explorer's state (lib/repo-explorer.ts): which pane is active, which link,
-// commit and file are selected and which are open, because each pane opens the next: a newly
-// clicked commit closes the file pane and closing a pane closes the panes to its right. Dates are
-// shown in the browser's own locale and time zone. When a pane opens, the page scrolls sideways to
-// bring it into view, because the newest pane is the one the user wants to read and it can open
-// beyond the right edge of the window. While the page is shown it handles the arrow keys, Enter
-// and Escape itself, on the document in the capture phase, so the key reaches it before a focused
-// row's own Enter handling and the page does not also scroll. It leaves the keys to a text box,
-// link, button, menu or dialog that has the focus. It takes the focus when it opens, so the keys
-// work at once after the left sidebar's link or Ctrl+1 opened it, while the focus would otherwise
-// stay on the link outside the page. It takes the focus and sets up the key listener with the items
-// just drawn as React draws them (in layout effects), before the browser paints, so a key pressed
-// as soon as the page or its items show acts on them. It reads the working tree's changes when the
-// Commit link opens the changes pane and again after each stage and unstage, so the lists show
-// what git holds. The changed file's pane is keyed by the number of reads, so its diff is read
-// afresh with the lists.
+// Shows the repo details pane, then the panes the user opens from it, starting at the top of the
+// page because the breadcrumb trail already names the page. It reads the first page of the repo's
+// commits, newest first, when the Commits link opens the commit pane, and reads them afresh each
+// time the pane opens. The commit pane shows that it is loading until the commits task ends, and
+// what went wrong when the commits could not be read. It owns the repo explorer's state
+// (lib/repo-explorer.ts): which pane is active, which link, commit and file are selected and which
+// are open, because each pane opens the next: a newly clicked commit closes the file pane and
+// closing a pane closes the panes to its right. Dates are shown in the browser's own locale and
+// time zone. When a pane opens, the page scrolls sideways to bring it into view, because the newest
+// pane is the one the user wants to read and it can open beyond the right edge of the window. While
+// the page is shown it handles the arrow keys, Enter and Escape itself, on the document in the
+// capture phase, so the key reaches it before a focused row's own Enter handling and the page does
+// not also scroll. It leaves the keys to a text box, link, button, menu or dialog that has the
+// focus. It takes the focus when it opens, so the keys work at once after the left sidebar's link
+// or Ctrl+1 opened it, while the focus would otherwise stay on the link outside the page. It takes
+// the focus and sets up the key listener with the items just drawn as React draws them (in layout
+// effects), before the browser paints, so a key pressed as soon as the page or its items show acts
+// on them. It reads the working tree's changes when the Commit link opens the changes pane and
+// again after each stage and unstage, so the lists show what git holds. The changed file's pane is
+// keyed by the number of reads, so its diff is read afresh with the lists.
 //
 export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const [commits, setCommits] = useState<ICommit[] | undefined>(undefined);
@@ -211,10 +210,6 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
 
     return (
         <main ref={pageRef} tabIndex={-1} data-id="repo-explorer-page" className="graft-page-in outline-none flex h-full w-max min-w-full flex-col gap-4 bg-[var(--color-bg)] p-6">
-            <div className="flex items-baseline gap-4">
-                <h1 data-id="repo-explorer-heading" className="text-[length:var(--text-2xl)] font-[var(--weight-bold)] text-[var(--color-text)]">Repo explorer</h1>
-                <Link to="/about" data-id="repo-explorer-about-link" className="text-[length:var(--text-md)] text-[var(--color-accent)] underline-offset-2 transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:text-[var(--color-accent-hover)] hover:underline">About</Link>
-            </div>
             <div ref={columnsRef} data-id="repo-explorer-columns" className="flex min-h-0 flex-1 items-stretch gap-3">
                 <RepoDetailsPane repoPath={repoPath} selectedLink={explorer.selectedLink} openLink={explorer.openLink} isActive={explorer.activePaneIndex === 0} onSelectLink={link => setExplorer(selectLink(link))} />
                 {isCommitsOpen && (

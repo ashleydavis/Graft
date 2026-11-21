@@ -6,7 +6,8 @@ The repo explorer page shows the open repo (see [open-repo](../open-repo/index.m
 
 ## Behaviour
 
-- While a repo is open, the left sidebar's "Repo explorer" link opens the repo explorer page, and the repo explorer page links back to the About page. The page's heading is "Repo explorer".
+- While a repo is open, the left sidebar's "Repo explorer" link opens the repo explorer page.
+- The breadcrumb trail shows the page's title, "Repo explorer", so the page starts with its panes, or with the message that no repo is open.
 - The page reads the open repo. Opening another repo shows that repo in its place, with only the repo details pane open. While no repo is open the page shows "No repo is open. Choose File, then Open repo, to open one."
 - A smoke test opens its own test repo with the welcome page's "Open repo" button, as [open-repo](../open-repo/detail.md) describes.
 - `scripts/test/create-test-repo.sh` creates a test repo in a known state with a few commits, at `/tmp/graft/test-repo` or at the path given as its argument.
@@ -26,7 +27,8 @@ The repo explorer page shows the open repo (see [open-repo](../open-repo/index.m
 - [x] A mock of the Git interface function exists for unit testing the `log` wrapper and future Git abstractions.
 - [x] A Ziggy background task runs the `log` wrapper and delivers the parsed first page to the UI.
 - [x] A repo explorer page on the TanStack router shows the first page of commits as a list in its commit pane.
-- [x] While a repo is open, the left sidebar links to the repo explorer page and the repo explorer page links to the About page.
+- [x] While a repo is open, the left sidebar links to the repo explorer page.
+- [x] The breadcrumb trail shows the page's title and the page starts with its panes, or with the message that no repo is open.
 - [x] The page reads the open repo, and a smoke test opens its own test repo with the welcome page's "Open repo" button.
 - [x] A script under `scripts/test/` creates the test repo in a known state with a few commits, at `/tmp/graft/test-repo` or at the path given as its argument.
 

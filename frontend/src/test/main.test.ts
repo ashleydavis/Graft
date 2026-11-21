@@ -169,16 +169,15 @@ describe("main", () => {
         expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("graft");
         expect(elementWithDataId("breadcrumb-repo")?.getAttribute("aria-label")).toBe("/repos/graft");
         act(() => {
-            elementWithDataId("repo-explorer-about-link")?.click();
+            elementWithDataId("left-sidebar-about-link")?.click();
         });
         expect((await screen.findByText("About Graft")).getAttribute("data-id")).toBe("about-heading");
         expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("graft");
         act(() => {
             elementWithDataId("left-sidebar-repo-explorer-link")?.click();
         });
-        expect((await screen.findByText("Repo explorer", {
-            selector: "h1",
-        })).getAttribute("data-id")).toBe("repo-explorer-heading");
+        expect((await screen.findByText("/repos/graft")).closest("[data-id=\"repo-details-path\"]")).not.toBeNull();
+        expect(elementWithDataId("breadcrumb-page")?.textContent).toBe("Repo explorer");
         act(() => {
             elementWithDataId("left-sidebar-about-link")?.click();
         });
