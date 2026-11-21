@@ -14,8 +14,8 @@ The repo explorer page shows the open repo (see [open-repo](../open-repo/index.m
 - When the commit pane opens it queues the commits task, a background task that runs the `log` wrapper. It reads the commits afresh each time the commit pane opens.
 - The `log` wrapper reads one page of commits at a time. It runs `git log -z --max-count=<page size>` with a `--format` string whose fields are split by the unit separator (0x1f). Given the hash of the last commit of the previous page, it starts from that commit and skips it with `--skip=1`, so a new commit on top does not shift the pages.
 - For each commit the `log` wrapper reads the hash, the parent hashes, the refs, the author's name, email and date, the committer's name, email and date, the title and the description.
-- The commit pane shows the first page only, of up to 50 commits, newest first. Each row shows the commit's title, its refs, its author's name, its author date and the first seven characters of its hash, as [columns](columns/detail.md) describes.
-- While the task runs the commit pane says "Loading the commits.". When the task fails the commit pane shows why, such as git log failing in a folder outside a repo.
+- The commit pane lists every commit, newest first, reading the next page as the list scrolls. Each row shows the commit's title, its refs, its author's name, its author date and the first seven characters of its hash, as [columns](columns/detail.md) describes.
+- While a commits task runs, a loading row in the commit pane says "Loading the commits.". When the task fails an error row in the commit pane shows why, such as git log failing in a folder outside a repo.
 - The `log` wrapper starts `git` through the Git interface function, the one function that runs `git` and reports its exit code, standard output and standard error. Its unit tests use a mock of that function in place of `git`.
 
 ## Acceptance criteria
@@ -25,8 +25,8 @@ The repo explorer page shows the open repo (see [open-repo](../open-repo/index.m
 - [x] For each commit the `log` wrapper returns the hash, the parent hashes, the refs, the author's name, email and date, the committer's name, email and date, the title and the description.
 - [x] The `log` wrapper takes a page size, passed to `--max-count`, and an optional hash of the last commit of the previous page. Given that hash, it starts from it and skips it with `--skip=1`.
 - [x] A mock of the Git interface function exists for unit testing the `log` wrapper and future Git abstractions.
-- [x] A Ziggy background task runs the `log` wrapper and delivers the parsed first page to the UI.
-- [x] A repo explorer page on the TanStack router shows the first page of commits as a list in its commit pane.
+- [x] A Ziggy background task runs the `log` wrapper and delivers each parsed page to the UI.
+- [x] A repo explorer page on the TanStack router shows the commits as a list in its commit pane.
 - [x] While a repo is open, the left sidebar links to the repo explorer page.
 - [x] The breadcrumb trail shows the page's title and the page starts with its panes, or with the message that no repo is open.
 - [x] The page reads the open repo, and a smoke test opens its own test repo with the welcome page's "Open repo" button.

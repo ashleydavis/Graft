@@ -420,6 +420,18 @@ wait_for_in_view() {
 }
 
 #
+# Scrolls the element with the data-id to the end of its content, as a user does with the mouse
+# wheel or the scroll bar. Usage: scroll_to_end <data-id>
+#
+scroll_to_end() {
+    local answer
+    answer="$(control "{\"command\":\"scroll-to-end\",\"dataId\":\"$1\"}")"
+    if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
+        fail "scrolling $1 to its end failed: $answer"
+    fi
+}
+
+#
 # Chooses a menu item as a user would, through the native app, so the native app's own actions really happen and any other action reaches the
 # frontend. Usage: choose_menu_item <action>
 #

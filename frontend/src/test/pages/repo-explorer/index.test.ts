@@ -32,6 +32,7 @@ import { formatDate, formatDateTime } from "../../../lib/date-format";
 import { RepoExplorerPage, scrollLastPaneIntoView } from "../../../pages/repo-explorer";
 import { activeFlatPaneClasses, activePaneClasses } from "../../../pages/repo-explorer/components/active-pane-style";
 import { openRowClasses } from "../../../pages/repo-explorer/components/commit-list";
+import { IFakeListLayout, installFakeListLayout } from "../../fake-list-layout";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../../fake-ziggy";
 import { RepoOpener } from "../../repo-opener";
 
@@ -56,9 +57,19 @@ Element.prototype.scrollIntoView = scrollIntoView;
 //
 const setPaneSteps = jest.fn();
 
+//
+// The fake layout each test runs with, so the commit list has a height to draw its rows in.
+//
+let layout: IFakeListLayout;
+
 beforeEach(() => {
     scrollIntoView.mockClear();
     setPaneSteps.mockClear();
+    layout = installFakeListLayout();
+});
+
+afterEach(() => {
+    layout.uninstall();
 });
 
 //
@@ -404,6 +415,7 @@ describe("RepoExplorerPage", () => {
         expect(task.data).toEqual({
             repoPath: "/other-repo",
             pageSize: 50,
+            afterHash: null,
         });
     });
 
@@ -417,6 +429,7 @@ describe("RepoExplorerPage", () => {
         expect(task.data).toEqual({
             repoPath: "/repo",
             pageSize: 50,
+            afterHash: null,
         });
     });
 
@@ -899,6 +912,164 @@ describe("RepoExplorerPage keys", () => {
             capture: true,
         });
         removeEventListener.mockRestore();
+    });
+});
+
+//
+// Makes a page of the count of commits as the commits task gives them, starting at the index, each
+// with a hash of its own made from its index and the title "Commit <index>".
+//
+function commitPageJson(firstIndex: number, count: number): typeof commitJson[] {
+    return Array.from({
+        length: count,
+    }, (unusedValue, offset) => ({
+        ...secondCommitJson,
+        hash: (firstIndex + offset).toString(16).padStart(40, "0"),
+        title: `Commit ${firstIndex + offset}`,
+    }));
+}
+
+//
+// Scrolls the commit list to its end, as a user does with the mouse wheel or the scroll bar.
+//
+function scrollCommitListToEnd(): void {
+    const scrollArea = elementWithDataId("commit-list-scroll");
+    act(() => {
+        scrollArea.scrollTop = scrollArea.scrollHeight;
+        scrollArea.dispatchEvent(new Event("scroll"));
+    });
+}
+
+//
+// Reads the data of the task the page queued at the index of window.ziggy's addTask calls.
+//
+function taskDataAt(ziggy: FakeTaskZiggy, index: number): IAddTask["data"] {
+    return (ziggy.addTask as jest.Mock).mock.calls[index][0].data;
+}
+
+//
+// Shows the repo explorer page, opens the commit pane with its Commits link and ends the commits
+// task with a full first page.
+//
+async function listFirstPage(ziggy: FakeTaskZiggy): Promise<void> {
+    renderRepoExplorerPage("/repo");
+    await clickCommitsLink();
+    await screen.findByText("Loading the commits.");
+    completeTaskAt(ziggy, 0, {
+        commits: commitPageJson(0, 50),
+    });
+    await screen.findByText("Commit 0");
+}
+
+describe("RepoExplorerPage commit pages", () => {
+    test("reads no further page until the list scrolls near the end of the first", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listFirstPage(ziggy);
+        expect(ziggy.addTask).toHaveBeenCalledTimes(1);
+        expect(screen.queryByText("Loading the commits.")).toBeNull();
+    });
+
+    test("reads the next page after the last commit read when the list scrolls near the end, with a loading row while it is read", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listFirstPage(ziggy);
+        scrollCommitListToEnd();
+        expect(ziggy.addTask).toHaveBeenCalledTimes(2);
+        expect(taskDataAt(ziggy, 1)).toEqual({
+            repoPath: "/repo",
+            pageSize: 50,
+            afterHash: commitPageJson(49, 1)[0].hash,
+        });
+        expect(screen.getByText("Loading the commits.").getAttribute("data-id")).toBe("commits-loading");
+        expect(screen.getByText("Commit 49")).toBeTruthy();
+
+        completeTaskAt(ziggy, 1, {
+            commits: commitPageJson(50, 50),
+        });
+        expect(screen.queryByText("Loading the commits.")).toBeNull();
+        scrollCommitListToEnd();
+        expect(screen.getByText("Commit 99")).toBeTruthy();
+        expect(taskDataAt(ziggy, 2)).toEqual({
+            repoPath: "/repo",
+            pageSize: 50,
+            afterHash: commitPageJson(99, 1)[0].hash,
+        });
+    });
+
+    test("reads no more pages after a page shorter than the page size, which ends at the first commit", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listFirstPage(ziggy);
+        scrollCommitListToEnd();
+        completeTaskAt(ziggy, 1, {
+            commits: commitPageJson(50, 3),
+        });
+        scrollCommitListToEnd();
+        expect(screen.getByText("Commit 52")).toBeTruthy();
+        expect(ziggy.addTask).toHaveBeenCalledTimes(2);
+        expect(screen.queryByText("Loading the commits.")).toBeNull();
+    });
+
+    test("shows an error row under the commits read when a later page could not be read, and reads no more", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listFirstPage(ziggy);
+        scrollCommitListToEnd();
+        const onTaskCompleted = (ziggy.onTaskCompleted as jest.Mock).mock.calls[1][0];
+        const taskId: string = (ziggy.addTask as jest.Mock).mock.calls[1][0].taskId;
+        act(() => {
+            onTaskCompleted({
+                taskId,
+                result: {
+                    taskId,
+                    status: "failed",
+                    errorMessage: "Running git log failed.",
+                    type: "commits",
+                    inputs: null,
+                },
+            });
+        });
+        expect(screen.getByText("Running git log failed.").getAttribute("data-id")).toBe("commits-error");
+        expect(screen.getByText("Commit 49")).toBeTruthy();
+        scrollCommitListToEnd();
+        expect(ziggy.addTask).toHaveBeenCalledTimes(2);
+    });
+
+    test("drops a page read before the commit pane closed and opened again", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        await clickCommitsLink();
+        await screen.findByText("Loading the commits.");
+        pressKey("Escape");
+        pressKey("Enter");
+        await screen.findByText("Loading the commits.");
+        completeTaskAt(ziggy, 0, {
+            commits: commitPageJson(100, 2),
+        });
+        expect(screen.queryByText("Commit 100")).toBeNull();
+        expect(screen.getByText("Loading the commits.")).toBeTruthy();
+        completeTaskAt(ziggy, 1, {
+            commits: commitPageJson(0, 2),
+        });
+        expect(screen.getByText("Commit 0")).toBeTruthy();
+        expect(screen.queryByText("Commit 100")).toBeNull();
+    });
+
+    test("Down moves the selection from the first page onto the next and scrolls each selected row into view", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listFirstPage(ziggy);
+        scrollCommitListToEnd();
+        completeTaskAt(ziggy, 1, {
+            commits: commitPageJson(50, 3),
+        });
+        layout.scrollTo.mockClear();
+        pressKey("ArrowRight");
+        for (let press = 0; press < 51; press++) {
+            pressKey("ArrowDown");
+        }
+        expect(isSelected(`commit-${commitPageJson(50, 1)[0].hash}`)).toBe(true);
+        expect(layout.scrollTo).toHaveBeenCalled();
+        pressKey("ArrowDown");
+        pressKey("ArrowDown");
+        pressKey("ArrowDown");
+        expect(isSelected(`commit-${commitPageJson(52, 1)[0].hash}`)).toBe(true);
     });
 });
 

@@ -113,12 +113,17 @@ export interface ICommitPageRequest {
 
     // The most commits to read.
     pageSize: number;
+
+    // The hash of the last commit of the page before, so the page starts after it, or undefined
+    // for the first page, which starts from HEAD.
+    afterHash: string | undefined;
 }
 
 //
-// Reads the first page of commits from the repo: queues the commits task as interactive, because
-// the user is waiting on it, and calls onRead with the commits or with why they could not be read
-// once the task ends.
+// Reads a page of commits from the repo, the first page or the page after the request's afterHash:
+// queues the commits task as interactive, because the user is waiting on it, and calls onRead with
+// the commits or with why they could not be read once the task ends. The first page sends
+// afterHash as null, which the task reads as no hash.
 //
 export function readCommitPage(request: ICommitPageRequest, onRead: (result: Result<ICommit[], IReadCommitsError>) => void): void {
     function onTaskCompleted(event: ITaskCompletedEvent): void {
@@ -137,6 +142,7 @@ export function readCommitPage(request: ICommitPageRequest, onRead: (result: Res
         data: {
             repoPath: request.repoPath,
             pageSize: request.pageSize,
+            afterHash: request.afterHash ?? null,
         },
         priority: "interactive",
     };

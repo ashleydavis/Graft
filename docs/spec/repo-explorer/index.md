@@ -4,7 +4,7 @@
 **Spec:** Settled
 **Implementation:** Complete
 
-A page that shows the open repo in panes that open to the right, starting with the repo details pane. Its Commits link opens the commit pane, which lists the first page of the repo's commits, read with `git log` in a background task. Its Commit link opens the changes pane, which stages and unstages the working tree's files. It shows that Graft runs `git` and reads its output end to end.
+A page that shows the open repo in panes that open to the right, starting with the repo details pane. Its Commits link opens the commit pane, which lists every one of the repo's commits, read a page at a time with `git log` in a background task as the list scrolls. Its Commit link opens the changes pane, which stages and unstages the working tree's files. It shows that Graft runs `git` and reads its output end to end.
 
 ## Sub-features
 

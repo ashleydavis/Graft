@@ -2,7 +2,7 @@
 
 **ID:** repo-explorer
 
-Manual test steps for the repo explorer page, which opens on the repo details pane, whose Commits link opens the commit pane listing the first page of the repo's commits.
+Manual test steps for the repo explorer page, which opens on the repo details pane, whose Commits link opens the commit pane listing the repo's commits, read a page at a time as the list scrolls.
 
 ## Sub-features
 

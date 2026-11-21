@@ -1,8 +1,8 @@
 //
 // The repo explorer page: shows the open repo in the repo details pane. Clicking its Commits link
-// opens the commit pane to its right with the first page of the repo's commits, clicking a commit
-// opens the commit details pane to its right and clicking a changed file there opens the file pane
-// to its right, like the column view of a file browser. Its Commit link opens the changes pane in
+// opens the commit pane to its right with the repo's commits, read a page at a time as the list
+// scrolls, clicking a commit opens the commit details pane to its right and clicking a changed file
+// there opens the file pane to its right, like the column view of a file browser. Its Commit link opens the changes pane in
 // place of the commit pane, with the working tree's unstaged and staged files, and clicking a file
 // there opens its file pane. The arrow keys, Enter and Escape move through the panes as in the
 // column view of macOS Finder. Clicking anywhere in a pane makes it the active pane.
@@ -13,7 +13,8 @@ import { usePaneTrail } from "../../components/pane-trail";
 import { useRepo } from "../../components/repo-context";
 import { explorerPaneSteps } from "../../lib/breadcrumb-trail";
 import { commitStagedFiles } from "../../lib/commit";
-import { ICommit, readCommitPage } from "../../lib/commits";
+import { canReadNextPage, COMMIT_PAGE_SIZE, commitPagesAfterRead, commitPagesReading, ICommitPages, nextPageAfterHash, noCommitPages } from "../../lib/commit-pages";
+import { readCommitPage } from "../../lib/commits";
 import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, COMMIT_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, initialRepoExplorerState, IRepoExplorerState, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
 import { toggleFileStaged } from "../../lib/stage-file";
 import { IWorkingChanges, IWorkingFile, readWorkingChanges } from "../../lib/working-changes";
@@ -23,12 +24,6 @@ import { CommitPane } from "./components/commit-pane";
 import { FilePane } from "./components/file-pane";
 import { RepoDetailsPane } from "./components/repo-details-pane";
 import { WorkingFilePane } from "./components/working-file-pane";
-
-//
-// The most commits the commit pane lists. It lists the first page only, and this many fills a
-// window with room to spare.
-//
-const COMMIT_PAGE_SIZE = 50;
 
 //
 // What the repo explorer is given: the repo to show.
@@ -60,32 +55,32 @@ export function RepoExplorerPage(): JSX.Element {
 // Shows the repo details pane, then the panes the user opens from it, starting at the top of the
 // page because the breadcrumb trail already names the page. It reads the first page of the repo's
 // commits, newest first, when the Commits link opens the commit pane, and reads them afresh each
-// time the pane opens. The commit pane shows that it is loading until the commits task ends, and
-// what went wrong when the commits could not be read. It owns the repo explorer's state
-// (lib/repo-explorer.ts): which pane is active, which link, commit and file are selected and which
-// are open, because each pane opens the next: a newly clicked commit closes the file pane and
-// closing a pane closes the panes to its right. Dates are shown in the browser's own locale and
-// time zone. When a pane opens, the page scrolls sideways to bring it into view, because the newest
-// pane is the one the user wants to read and it can open beyond the right edge of the window. While
-// the page is shown it handles the arrow keys, Enter and Escape itself, on the document in the
-// capture phase, so the key reaches it before a focused row's own Enter handling and the page does
-// not also scroll. It leaves the keys to a text box, link, button, menu or dialog that has the
-// focus. It takes the focus when it opens, so the keys work at once after the left sidebar's link
-// or Ctrl+1 opened it, while the focus would otherwise stay on the link outside the page. It takes
-// the focus and sets up the key listener with the items just drawn as React draws them (in layout
-// effects), before the browser paints, so a key pressed as soon as the page or its items show acts
-// on them. It reads the working tree's changes when the Commit link opens the changes pane and
-// again after each stage and unstage, so the lists show what git holds. The changed file's pane is
-// keyed by the number of reads, so its diff is read afresh with the lists. The Commit button commits
-// the staged files with the message in the commit section, then clears the message and reads the
-// changes again, so the staged list empties. The commit pane shows the new commit because it reads
-// the commits afresh each time it opens. It puts a step for each open pane in the breadcrumb trail
-// each time a pane opens or closes, and takes them out when the page closes, so the trail always
-// ends with the rightmost pane.
+// time the pane opens. It reads the next page when the commit list scrolls near the last commit
+// read, one page at a time, until the page that ends at the repo's first commit. The commit pane
+// shows a loading row while a page is read and what went wrong when one could not be read. It owns
+// the repo explorer's state (lib/repo-explorer.ts): which pane is active, which link, commit and
+// file are selected and which are open, because each pane opens the next: a newly clicked commit
+// closes the file pane and closing a pane closes the panes to its right. Dates are shown in the
+// browser's own locale and time zone. When a pane opens, the page scrolls sideways to bring it into
+// view, because the newest pane is the one the user wants to read and it can open beyond the right
+// edge of the window. While the page is shown it handles the arrow keys, Enter and Escape itself,
+// on the document in the capture phase, so the key reaches it before a focused row's own Enter
+// handling and the page does not also scroll. It leaves the keys to a text box, link, button, menu
+// or dialog that has the focus. It takes the focus when it opens, so the keys work at once after
+// the left sidebar's link or Ctrl+1 opened it, while the focus would otherwise stay on the link
+// outside the page. It takes the focus and sets up the key listener with the items just drawn as
+// React draws them (in layout effects), before the browser paints, so a key pressed as soon as the
+// page or its items show acts on them. It reads the working tree's changes when the Commit link
+// opens the changes pane and again after each stage and unstage, so the lists show what git holds.
+// The changed file's pane is keyed by the number of reads, so its diff is read afresh with the
+// lists. The Commit button commits the staged files with the message in the commit section, then
+// clears the message and reads the changes again, so the staged list empties. The commit pane
+// shows the new commit because it reads the commits afresh each time it opens. It puts a step
+// for each open pane in the breadcrumb trail each time a pane opens or closes, and takes them out
+// when the page closes, so the trail always ends with the rightmost pane.
 //
 export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
-    const [commits, setCommits] = useState<ICommit[] | undefined>(undefined);
-    const [error, setError] = useState<string | undefined>(undefined);
+    const [commitPages, setCommitPages] = useState<ICommitPages>(noCommitPages);
     const [explorer, setExplorer] = useState(initialRepoExplorerState);
     const [filePaths, setFilePaths] = useState<string[]>([]);
     const [changes, setChanges] = useState<IWorkingChanges | undefined>(undefined);
@@ -190,24 +185,38 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
         readChanges(state => state);
     }, [repoPath, isChangesOpen]);
 
+    //
+    // Reads the page of commits after the hash, or the first page for undefined, and adds it to the
+    // pages once the commits task ends. The pages record the task's id, so a page read before the
+    // commit pane closed and opened again is dropped.
+    //
+    function readPage(afterHash: string | undefined): void {
+        const taskId = `commits-${Date.now()}-${Math.random()}`;
+        setCommitPages(pages => commitPagesReading(pages, taskId));
+        readCommitPage({
+            taskId,
+            repoPath,
+            pageSize: COMMIT_PAGE_SIZE,
+            afterHash,
+        }, result => setCommitPages(pages => commitPagesAfterRead(pages, taskId, result)));
+    }
+
+    //
+    // Reads the next page when the commit list has scrolled near the last commit read, unless a
+    // page is being read, the last page has been read or the last read failed.
+    //
+    function readNextPage(): void {
+        if (canReadNextPage(commitPages)) {
+            readPage(nextPageAfterHash(commitPages));
+        }
+    }
+
     useEffect(() => {
-        setCommits(undefined);
-        setError(undefined);
+        setCommitPages(noCommitPages);
         if (!isCommitsOpen) {
             return;
         }
-        readCommitPage({
-            taskId: `commits-${Date.now()}-${Math.random()}`,
-            repoPath,
-            pageSize: COMMIT_PAGE_SIZE,
-        }, result => {
-            if (result.ok) {
-                setCommits(result.value);
-            }
-            else {
-                setError(result.error.message);
-            }
-        });
+        readPage(undefined);
     }, [repoPath, isCommitsOpen]);
 
     useLayoutEffect(() => {
@@ -229,7 +238,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     useLayoutEffect(() => {
         const items = {
             links: [COMMITS_LINK, COMMIT_LINK],
-            commitHashes: (commits ?? []).map(commit => commit.hash),
+            commitHashes: commitPages.commits.map(commit => commit.hash),
             filePaths,
             changeKeys: changeKeysOf(changes),
         };
@@ -253,7 +262,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
         return () => document.removeEventListener("keydown", onKeyDown, {
             capture: true,
         });
-    }, [commits, filePaths, changes]);
+    }, [commitPages.commits, filePaths, changes]);
 
     const openChange = findChange(changes, explorer.openChange);
     const changedFilePath = openChange?.file.path;
@@ -268,7 +277,17 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
             <div ref={columnsRef} data-id="repo-explorer-columns" onClickCapture={onColumnsClickCapture} className="flex min-h-0 flex-1 items-stretch gap-3">
                 <RepoDetailsPane repoPath={repoPath} selectedLink={explorer.selectedLink} openLink={explorer.openLink} isActive={explorer.activePaneIndex === 0} onSelectLink={link => setExplorer(selectLink(link))} />
                 {isCommitsOpen && (
-                    <CommitPane commits={commits} error={error} selectedHash={explorer.selectedHash} openHash={explorer.openHash} isActive={explorer.activePaneIndex === 1} dateFormat={dateFormat} onSelectCommit={hash => setExplorer(state => selectCommit(state, hash))} />
+                    <CommitPane
+                        commits={commitPages.commits}
+                        isLoading={commitPages.readTaskId !== undefined}
+                        error={commitPages.error}
+                        selectedHash={explorer.selectedHash}
+                        openHash={explorer.openHash}
+                        isActive={explorer.activePaneIndex === 1}
+                        dateFormat={dateFormat}
+                        onSelectCommit={hash => setExplorer(state => selectCommit(state, hash))}
+                        onNearEnd={readNextPage}
+                    />
                 )}
                 {explorer.openHash !== undefined && (
                     <CommitDetailsPane

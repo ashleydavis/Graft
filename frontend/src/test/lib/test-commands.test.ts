@@ -62,6 +62,8 @@ function makePlacedElement(text: string | null, value: string | undefined, bound
         getBoundingClientRect(): IHorizontalBounds {
             return bounds;
         },
+        scrollTop: 0,
+        scrollHeight: 500,
     };
     return element;
 }
@@ -284,6 +286,17 @@ describe("performTestCommand", () => {
             ok: true,
             value: "",
         });
+    });
+
+    test("scroll-to-end scrolls the element to the end of its content", () => {
+        const element = makeElement("", undefined);
+        expect(performTestCommand(makeFinder(element), {
+            command: "scroll-to-end",
+            dataId: "target",
+        })).toEqual({
+            ok: true,
+        });
+        expect(element.scrollTop).toBe(500);
     });
 
     test("in-view succeeds when the element is inside the window and fails when it is not", () => {

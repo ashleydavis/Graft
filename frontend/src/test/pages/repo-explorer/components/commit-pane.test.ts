@@ -11,6 +11,20 @@ import { ICommit } from "../../../../lib/commits";
 import { activePaneClasses } from "../../../../pages/repo-explorer/components/active-pane-style";
 import { openRowClasses } from "../../../../pages/repo-explorer/components/commit-list";
 import { CommitPane } from "../../../../pages/repo-explorer/components/commit-pane";
+import { IFakeListLayout, installFakeListLayout } from "../../../fake-list-layout";
+
+//
+// The fake layout each test runs with, so the commit list has a height to draw its rows in.
+//
+let layout: IFakeListLayout;
+
+beforeEach(() => {
+    layout = installFakeListLayout();
+});
+
+afterEach(() => {
+    layout.uninstall();
+});
 
 //
 // A commit to list.
@@ -36,6 +50,7 @@ const commit: ICommit = {
 function renderPane(isActive: boolean, onSelectCommit: jest.Mock): HTMLElement {
     const { container } = render(createElement(CommitPane, {
         commits: [commit],
+        isLoading: false,
         error: undefined,
         selectedHash: commit.hash,
         openHash: commit.hash,
@@ -45,6 +60,7 @@ function renderPane(isActive: boolean, onSelectCommit: jest.Mock): HTMLElement {
             timeZone: "UTC",
         },
         onSelectCommit,
+        onNearEnd: jest.fn(),
     }));
     return container;
 }

@@ -10,8 +10,8 @@ import type { IJsonObject } from "ziggy";
 // A command from the remote control connection.
 //
 export interface ITestCommand {
-    // What to do: ready, click, type, key-down, get-value, get-text, exists, in-view, insert,
-    // viewport or drop-file.
+    // What to do: ready, click, type, key-down, get-value, get-text, exists, in-view,
+    // scroll-to-end, insert, viewport or drop-file.
     command: string;
 
     // The data-id of the element to act on.
@@ -96,6 +96,14 @@ export interface IFoundElement {
 
     // Reads where the element's edges are in the window.
     getBoundingClientRect(): IHorizontalBounds;
+
+    // How far the element's content is scrolled from its top, in pixels, which the scroll-to-end
+    // command sets.
+    scrollTop: number;
+
+    // The height of the element's content in pixels, scrolled or not, which the scroll-to-end
+    // command scrolls to.
+    scrollHeight: number;
 }
 
 //
@@ -145,6 +153,12 @@ export function performTestCommand(finder: IElementFinder, command: ITestCommand
     }
     if (command.command === "in-view") {
         return elementInViewResult(element.getBoundingClientRect(), finder.windowWidth, command.dataId);
+    }
+    if (command.command === "scroll-to-end") {
+        element.scrollTop = element.scrollHeight;
+        return {
+            ok: true,
+        };
     }
     return { ok: false, error: `Unknown test command ${command.command}.` };
 }

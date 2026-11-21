@@ -15,10 +15,13 @@ import { PaneHeader } from "./pane-header";
 // What the commit pane shows and what it reports.
 //
 export interface ICommitPaneProps {
-    // The commits, or undefined until they are read.
-    commits: ICommit[] | undefined;
+    // The commits read so far, newest first.
+    commits: ICommit[];
 
-    // Why the commits could not be read, or undefined.
+    // Whether a page of commits is being read.
+    isLoading: boolean;
+
+    // Why the last page of commits could not be read, or undefined.
     error: string | undefined;
 
     // The hash of the selected commit, which the list shows as selected, or undefined.
@@ -35,6 +38,9 @@ export interface ICommitPaneProps {
 
     // Called with the hash of the commit the user clicks.
     onSelectCommit(hash: string): void;
+
+    // Called when the list has scrolled near the last commit read, so the next page is read.
+    onNearEnd(): void;
 }
 
 //
@@ -44,13 +50,11 @@ export interface ICommitPaneProps {
 // when it is taller than the card. The card's border is in the style guide's active pane colour
 // while the pane is active.
 //
-export function CommitPane({ commits, error, selectedHash, openHash, isActive, dateFormat, onSelectCommit }: ICommitPaneProps): JSX.Element {
+export function CommitPane({ commits, isLoading, error, selectedHash, openHash, isActive, dateFormat, onSelectCommit, onNearEnd }: ICommitPaneProps): JSX.Element {
     return (
         <section data-id="commit-pane" aria-label="Commits" className={`flex w-[min(850px,calc(100cqw-var(--space-6)*2))] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
             <PaneHeader title="Commits" titleDataId="commit-pane-heading" action={undefined} />
-            <div className="min-h-0 flex-1 overflow-auto">
-                <CommitList commits={commits} error={error} selectedHash={selectedHash} openHash={openHash} dateFormat={dateFormat} onSelectCommit={onSelectCommit} />
-            </div>
+            <CommitList commits={commits} isLoading={isLoading} error={error} selectedHash={selectedHash} openHash={openHash} dateFormat={dateFormat} onSelectCommit={onSelectCommit} onNearEnd={onNearEnd} />
         </section>
     );
 }

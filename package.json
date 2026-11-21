@@ -46,6 +46,7 @@
     "@fortawesome/react-fontawesome": "3.5.0",
     "@mui/material": "9.5.0",
     "@tanstack/react-router": "1.170.46",
+    "@tanstack/react-virtual": "3.14.28",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "tailwindcss": "4.3.3",
