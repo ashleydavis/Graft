@@ -1,9 +1,10 @@
 //
 // Tests the file pane: renders it with a fake window.ziggy made of Jest mocks and checks that it
-// queues the file diff task for the file, shows that it is loading, then shows the diff's lines
-// numbered and coloured by kind, each hunk's lines in a group of their own, or says why it could
-// not be read. It checks that the close button reports it and that the pane's border is in the
-// style guide's active pane colour while it is active, with the card kept to its border.
+// queues the file diff task for the file, shows only the file's name in its title, shows that it
+// is loading, then shows the diff's lines numbered and coloured by kind, each hunk's lines in a
+// group of their own, or says why it could not be read. It checks that the close button reports
+// it and that the pane's border is in the style guide's active pane colour while it is active,
+// with the card kept to its border.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
@@ -56,7 +57,21 @@ function isPaneMarkedActive(): boolean {
 }
 
 describe("FilePane", () => {
-    test("queues the file diff task for the file and shows its path and that it is loading", () => {
+    test("shows only the last part of a nested path in its title, with the full path in its tooltip", () => {
+        installFakeTaskZiggy();
+        render(createElement(FilePane, {
+            repoPath: "/repo",
+            hash: commitHash,
+            path: "docs/guide/setup.md",
+            isActive: false,
+            onClose: jest.fn(),
+        }));
+        const title = document.querySelector("[data-id=\"file-pane-path\"]");
+        expect(title?.textContent).toBe("setup.md");
+        expect(title?.parentElement?.getAttribute("title")).toBe("docs/guide/setup.md");
+    });
+
+    test("queues the file diff task for the file and shows its name and that it is loading", () => {
         const ziggy = installFakeTaskZiggy();
         renderPane(jest.fn(), false);
         expect(document.querySelector("[data-id=\"file-pane-path\"]")?.textContent).toBe("notes.txt");

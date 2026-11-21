@@ -1,8 +1,8 @@
 //
 // Tests the working file pane: renders it with a fake window.ziggy made of Jest mocks and checks
-// that it queues the working file diff task for the file and its list, shows the file's path and
-// that it is loading, then the diff or why it could not be read, and that the close button reports
-// it.
+// that it queues the working file diff task for the file and its list, shows the file's name alone
+// and that it is loading, then the diff or why it could not be read, and that the close button
+// reports it.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
@@ -46,10 +46,10 @@ function renderPane(onClose: jest.Mock): void {
 }
 
 describe("WorkingFilePane", () => {
-    test("queues the working file diff task for the file and its list and shows that it is loading", () => {
+    test("queues the working file diff task for the file and its list and shows the file's name alone and that it is loading", () => {
         const ziggy = installFakeTaskZiggy();
         renderPane(jest.fn());
-        expect(document.querySelector("[data-id=\"file-pane-path\"]")?.textContent).toBe("docs/new.txt");
+        expect(document.querySelector("[data-id=\"file-pane-path\"]")?.textContent).toBe("new.txt");
         expect(screen.getByText("Loading the diff.").getAttribute("data-id")).toBe("file-diff-loading");
         const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[0][0];
         expect(task.taskType).toBe("working-file-diff");

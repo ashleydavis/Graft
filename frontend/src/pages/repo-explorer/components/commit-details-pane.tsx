@@ -394,7 +394,7 @@ export function ChangedFileRow({ file, isSelected, isOpen, onSelectFile }: IChan
             <FileIcon path={file.path} />
             <Tooltip title={<FileTip file={file} />} enterDelay={500}>
                 <span className="min-w-0 flex-1 truncate">
-                    <FilePath path={file.path} dataId={undefined} />
+                    <FilePath path={file.path} />
                 </span>
             </Tooltip>
         </ListItemButton>

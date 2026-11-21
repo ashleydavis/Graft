@@ -253,7 +253,7 @@ export function ChangeRow({ file, isStaged, isSelected, isOpen, onSelect, onTogg
             <StageButton path={file.path} isStaged={isStaged} onClick={() => onToggleStaged(file, isStaged)} />
             <FileIcon path={file.path} />
             <span className="min-w-0 flex-1 truncate">
-                <FilePath path={file.path} dataId={undefined} />
+                <FilePath path={file.path} />
             </span>
         </ListItemButton>
     );

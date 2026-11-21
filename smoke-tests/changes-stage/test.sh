@@ -76,7 +76,8 @@ wait_for_missing_element git-command-2 30
 wait_for_text file-diff "The changed note." 30
 
 click "change-unstaged-docs/new.txt"
-wait_for_text file-pane-path "docs/new.txt" 30
+wait_for_text file-pane-path "new.txt" 30
+[ "$(text_of file-pane-path)" = "new.txt" ] || fail "the file pane's title showed \"$(text_of file-pane-path)\", not the file's name alone"
 wait_for_text file-diff "A new file." 30
 wait_for_text git-command-0-text "git diff --no-index -- /dev/null docs/new.txt" 30
 

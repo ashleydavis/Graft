@@ -11,9 +11,6 @@ import { JSX } from "react";
 export interface IFilePathProps {
     // The path of the file from the root of the repo.
     path: string;
-
-    // The data-id of the path, so a smoke test can read it, or undefined for none.
-    dataId: string | undefined;
 }
 
 //
@@ -21,12 +18,12 @@ export interface IFilePathProps {
 // its space, so the file name stays in view. Only once the directory has gone is the file name
 // itself cut short at its end.
 //
-export function FilePath({ path, dataId }: IFilePathProps): JSX.Element {
+export function FilePath({ path }: IFilePathProps): JSX.Element {
     const slash = path.lastIndexOf("/");
     const directory = path.slice(0, slash + 1);
     const name = path.slice(slash + 1);
     return (
-        <span data-id={dataId} className="flex min-w-0 whitespace-nowrap">
+        <span className="flex min-w-0 whitespace-nowrap">
             {directory !== "" && (
                 <span className="min-w-0 shrink-[1000] truncate text-left text-[var(--color-text-muted)] [direction:rtl]">
                     <bdi>{directory}</bdi>

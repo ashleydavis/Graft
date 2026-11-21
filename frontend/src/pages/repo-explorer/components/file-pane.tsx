@@ -10,7 +10,6 @@ import { DiffLineKind, IDiffHunk, IDiffLine, parseDiffLines, splitDiffHunks } fr
 import { readFileDiff } from "../../../lib/file-diff";
 import { activeFlatPaneClass } from "./active-pane-style";
 import { FileIcon } from "./file-icon";
-import { FilePath } from "./file-path";
 import { CloseButton } from "./pane-header";
 
 //
@@ -80,13 +79,14 @@ export interface IFileDiffCardProps {
 }
 
 //
-// Shows the diff in a rounded card headed by the file's icon and path, with a button that closes
+// Shows the diff in a rounded card headed by the file's icon and name, with a button that closes
 // the pane, as the style guide's file diff card is headed, so the file pane and the changes pane's
-// file pane look the same. It shows that the diff is loading until it is read and what went wrong
-// when it could not be. The card is 840 pixels wide, or the width of the page's visible area when
-// that is narrower, so the whole diff can be scrolled into view. The card's border is in the style
-// guide's active pane colour while the pane is active. The card has no shadow, as the style
-// guide's file diff card has none. The card fades in as it opens.
+// file pane look the same. The title holds the file's name alone, so it stays short in a narrow
+// pane, and hovering it shows the full path. It shows that the diff is loading until it is read
+// and what went wrong when it could not be. The card is 840 pixels wide, or the width of the
+// page's visible area when that is narrower, so the whole diff can be scrolled into view. The
+// card's border is in the style guide's active pane colour while the pane is active. The card has
+// no shadow, as the style guide's file diff card has none. The card fades in as it opens.
 //
 export function FileDiffCard({ path, diff, error, isActive, onClose }: IFileDiffCardProps): JSX.Element {
     return (
@@ -94,7 +94,7 @@ export function FileDiffCard({ path, diff, error, isActive, onClose }: IFileDiff
             <div className="flex flex-none items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-panel)] p-2">
                 <span title={path} className="flex min-w-0 flex-1 items-center gap-2 text-[length:var(--text-sm)] font-[var(--weight-medium)] text-[var(--color-text)]">
                     <FileIcon path={path} />
-                    <FilePath path={path} dataId="file-pane-path" />
+                    <span data-id="file-pane-path" className="min-w-0 truncate">{path.slice(path.lastIndexOf("/") + 1)}</span>
                 </span>
                 <CloseButton paneLabel="File diff" dataId="file-pane-close" onClose={onClose} />
             </div>
