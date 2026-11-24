@@ -76,6 +76,47 @@ fn expect_task_message(
     try native_app.expectMessageContaining(io, std.testing.allocator, expected_text);
 }
 
+//
+// Starts a backend of the app, queues the commits task with data the backend refuses, waits
+// for the message containing the failure text and checks the backend still handles a later
+// message, so a test fails when the refusal crashes the backend.
+//
+fn expect_task_refused(
+    comptime run_git: git_interface.RunGit,
+    data_json: []const u8,
+    failure_text: []const u8,
+) !void {
+    var native_app: FakeNativeApp = undefined;
+    native_app.init();
+    const directories = try test_environment.useTestEnvironment(
+        std.testing.allocator,
+        native_app.data_tmp,
+    );
+    defer test_environment.freeTestEnvironment(std.testing.allocator, directories);
+    defer native_app.deinit(io, std.testing.allocator);
+
+    try native_app.start(io, std.testing.allocator, native_app.config(2, 2), declare_app(run_git));
+    defer native_app.stop(io, std.testing.allocator);
+
+    const message = try std.fmt.allocPrint(
+        std.testing.allocator,
+        "{{\"kind\":\"system\",\"name\":\"add-task\",\"data\":{{\"taskId\":\"t1\"," ++
+            "\"taskType\":\"commits\",\"source\":\"commits\",\"data\":{s}}}}}",
+        .{data_json},
+    );
+    defer std.testing.allocator.free(message);
+
+    try native_app.send(io, std.testing.allocator, message);
+    try native_app.expectMessageContaining(io, std.testing.allocator, "\"status\":\"failed\"");
+    try native_app.expectMessageContaining(io, std.testing.allocator, failure_text);
+    try native_app.send(
+        io,
+        std.testing.allocator,
+        "{\"kind\":\"system\",\"id\":2,\"name\":\"get-platform\"}",
+    );
+    try native_app.expectMessageContaining(io, std.testing.allocator, "{\"id\":2,\"ok\":true");
+}
+
 test "the commits task reads the first page and gives it as its result" {
     const mock = comptime git_mock.mock_git(.{
         .expected_args = &.{
@@ -217,4 +258,20 @@ test "the commits task fails when its data has no page size" {
         .start_error = error.GitStartedWhenItShouldNotBe,
     });
     try expect_task_message(mock, "{\"repoPath\":\"/repo\"}", "\"status\":\"failed\"");
+}
+
+test "the commits task refuses an empty repo path and the backend keeps running" {
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = &.{},
+        .expected_shown_args = &.{},
+        .exit_code = 0,
+        .stdout = "",
+        .stderr = "",
+        .start_error = error.GitStartedWhenItShouldNotBe,
+    });
+    try expect_task_refused(
+        mock,
+        "{\"repoPath\":\"\",\"pageSize\":50}",
+        "The repo path is empty. Give the path of the repo to read.",
+    );
 }

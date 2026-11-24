@@ -1,4 +1,4 @@
-import type { IJsonObject } from "ziggy";
+import type { IAddTask, IJsonObject, IJsonValue, ITaskCompletedEvent } from "ziggy";
 
 //
 // The commands the remote control connection forwards to the frontend, performed on the frontend's DOM by data-id. The frontend
@@ -11,7 +11,7 @@ import type { IJsonObject } from "ziggy";
 //
 export interface ITestCommand {
     // What to do: ready, click, type, key-down, get-value, get-text, exists, in-view, in-view-of,
-    // scroll-to-end, insert, viewport or drop-file.
+    // scroll-to-end, insert, viewport, drop-file or run-task.
     command: string;
 
     // The data-id of the element to act on.
@@ -35,6 +35,12 @@ export interface ITestCommand {
 
     // The size in bytes of the file to drop, for the drop-file command.
     fileSize?: number;
+
+    // The type of the backend task to queue, for the run-task command.
+    taskType?: string;
+
+    // The data to queue the backend task with, for the run-task command.
+    taskData?: IJsonValue;
 }
 
 //
@@ -313,4 +319,41 @@ export function keyDownResult(element: IFoundElement, command: ITestCommand): IT
         ok: true,
         value: "prevented",
     };
+}
+
+//
+// Performs the run-task command: queues the backend task the command names with the command's
+// data, exactly as the frontend would, and calls onResult with the task's result as JSON text once
+// it ends, so a smoke test can send the backend invalid data and check how the backend
+// handles it. A command with no task type is a failure with a reason.
+//
+export function runTaskCommand(taskId: string, command: ITestCommand, onResult: (result: ITestResult) => void): void {
+    if (!command.taskType) {
+        onResult({
+            ok: false,
+            error: "The run-task command needs a taskType.",
+        });
+        return;
+    }
+
+    function onTaskCompleted(event: ITaskCompletedEvent): void {
+        if (event.taskId !== taskId) {
+            return;
+        }
+        window.ziggy.removeTaskCompletedListener(onTaskCompleted);
+        onResult({
+            ok: true,
+            value: JSON.stringify(event.result),
+        });
+    }
+
+    window.ziggy.onTaskCompleted(onTaskCompleted);
+    const task: IAddTask = {
+        taskId,
+        taskType: command.taskType,
+        source: "test-commands",
+        data: command.taskData ?? null,
+        priority: "interactive",
+    };
+    window.ziggy.addTask(task);
 }

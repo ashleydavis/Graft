@@ -28,6 +28,7 @@ The repo explorer page shows its panes side by side in columns. The first is the
 - The `diff-tree` wrapper reads the changed files with `git diff-tree -r -z --root --no-commit-id --name-status <hash>`, which compares the commit with its first parent, or with an empty tree for the first commit. git lists no changed files for a merge commit. It reads each file's line counts with the same command and `--numstat` in place of `--name-status`, because git writes only one of the two when given both. It refuses line counts that are not for the same files in the same order.
 - The file pane queues the file diff task, a background task that runs the `diff-tree` wrapper for the file's diff with `git diff-tree -r -p --root --no-commit-id <hash> -- :(literal)<path>`. The `:(literal)` makes git read the path as it is, with `*`, `?` and `[` in it read as those characters: opening `foo[1].txt` shows its diff alone. The help panel shows the path without `:(literal)`.
 - Both wrappers start `git` through the Git interface function. They refuse a hash that is not hexadecimal and an empty file path without starting `git`.
+- The commits, commit details and file diff tasks refuse a request with an empty repo path with an error, before starting `git`. The task fails with the text "The repo path is empty. Give the path of the repo to read." and the backend keeps running and handles the next message. Graft itself always sends the path of the open repo, so the text shows only to a smoke test that sends an empty path.
 
 ## Acceptance criteria
 
@@ -56,6 +57,7 @@ The repo explorer page shows its panes side by side in columns. The first is the
 - [x] The animation is turned off while the system's reduced motion setting is on.
 - [x] Keys and clicks work during the animation.
 - [x] The file pane passes the file's path to git as a literal path, so a path with `*`, `?` or `[` in it shows that file's diff alone.
+- [x] The commits, commit details and file diff tasks refuse an empty repo path with an error naming what was wrong and what to do, and the backend keeps running.
 
 ## Open questions
 

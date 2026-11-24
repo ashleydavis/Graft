@@ -2,12 +2,14 @@
 // Tests the commands the smoke tests send through the remote control connection: each command is
 // performed on a fake element finder, and each result is checked, including every failure and how
 // a result is turned into JSON. The type command is also performed on a text box React controls,
-// to check React sees the typed value.
+// to check React sees the typed value. The run-task command queues a task on a fake window.ziggy.
 //
 
 import { render } from "@testing-library/react";
 import { ChangeEvent, createElement } from "react";
-import { elementInsideResult, elementInViewResult, IBounds, IElementFinder, IFoundElement, performTestCommand, testResultToJson } from "../../lib/test-commands";
+import type { ITaskCompletedEvent, ITaskResult } from "ziggy";
+import { elementInsideResult, elementInViewResult, IBounds, IElementFinder, IFoundElement, performTestCommand, runTaskCommand, testResultToJson } from "../../lib/test-commands";
+import { FakeTaskZiggy, installFakeTaskZiggy } from "../fake-ziggy";
 
 //
 // A fake element that records what was done to it.
@@ -539,5 +541,104 @@ describe("testResultToJson", () => {
             value: "a value",
             error: "an error",
         });
+    });
+});
+
+//
+// The callback runTaskCommand registered with window.ziggy.
+//
+function registeredTaskCallback(ziggy: FakeTaskZiggy): (event: ITaskCompletedEvent) => void {
+    const onTaskCompleted = ziggy.onTaskCompleted as jest.Mock;
+    expect(onTaskCompleted).toHaveBeenCalledTimes(1);
+    return onTaskCompleted.mock.calls[0][0];
+}
+
+//
+// The result of a commits task the backend refused for its empty repo path.
+//
+const refusedTaskResult: ITaskResult = {
+    taskId: "run-task-3",
+    status: "failed",
+    errorMessage: "The repo path is empty. Give the path of the repo to read.",
+    type: "commits",
+    inputs: {
+        repoPath: "",
+        pageSize: 50,
+    },
+};
+
+describe("runTaskCommand", () => {
+    test("queues the task with the command's data and sends its result as JSON when it ends", () => {
+        const ziggy = installFakeTaskZiggy();
+        const onResult = jest.fn();
+        runTaskCommand("run-task-3", {
+            command: "run-task",
+            taskType: "commits",
+            taskData: {
+                repoPath: "",
+                pageSize: 50,
+            },
+        }, onResult);
+        expect(ziggy.addTask).toHaveBeenCalledWith({
+            taskId: "run-task-3",
+            taskType: "commits",
+            source: "test-commands",
+            data: {
+                repoPath: "",
+                pageSize: 50,
+            },
+            priority: "interactive",
+        });
+        expect(onResult).not.toHaveBeenCalled();
+
+        const onTaskCompleted = registeredTaskCallback(ziggy);
+        onTaskCompleted({
+            taskId: "another-task",
+            result: {
+                ...refusedTaskResult,
+                taskId: "another-task",
+            },
+        });
+        expect(onResult).not.toHaveBeenCalled();
+        expect(ziggy.removeTaskCompletedListener).not.toHaveBeenCalled();
+
+        onTaskCompleted({
+            taskId: "run-task-3",
+            result: refusedTaskResult,
+        });
+        expect(onResult).toHaveBeenCalledWith({
+            ok: true,
+            value: JSON.stringify(refusedTaskResult),
+        });
+        expect(ziggy.removeTaskCompletedListener).toHaveBeenCalledWith(onTaskCompleted);
+    });
+
+    test("queues the task with null as its data when the command has none", () => {
+        const ziggy = installFakeTaskZiggy();
+        runTaskCommand("run-task-4", {
+            command: "run-task",
+            taskType: "pick-repo-folder",
+        }, jest.fn());
+        expect(ziggy.addTask).toHaveBeenCalledWith({
+            taskId: "run-task-4",
+            taskType: "pick-repo-folder",
+            source: "test-commands",
+            data: null,
+            priority: "interactive",
+        });
+    });
+
+    test("fails with a reason and queues no task when the command has no task type", () => {
+        const ziggy = installFakeTaskZiggy();
+        const onResult = jest.fn();
+        runTaskCommand("run-task-5", {
+            command: "run-task",
+        }, onResult);
+        expect(onResult).toHaveBeenCalledWith({
+            ok: false,
+            error: "The run-task command needs a taskType.",
+        });
+        expect(ziggy.addTask).not.toHaveBeenCalled();
+        expect(ziggy.onTaskCompleted).not.toHaveBeenCalled();
     });
 });

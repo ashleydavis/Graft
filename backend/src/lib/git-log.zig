@@ -36,6 +36,12 @@ pub const invalid_commit_hash_text = "A commit was asked for by a hash that is n
     "Give the hash of a commit.";
 
 //
+// The text a task fails with when its request has an empty repo path. It is public because the
+// diff-tree wrapper checks the repo paths it is given in the same way.
+//
+pub const empty_repo_path_text = "The repo path is empty. Give the path of the repo to read.";
+
+//
 // The text the frontend is sent when git log writes output Graft cannot read, which both the
 // commit pane and the commit details can meet.
 //
@@ -176,6 +182,10 @@ pub fn read_log_page(
     run_git: git_interface.RunGit,
     request: LogPageRequest,
 ) !LogPage {
+    if (request.repo_path.len == 0) {
+        services.fail_with(empty_repo_path_text);
+        return error.InvalidRepoPath;
+    }
     if (request.page_size == 0) {
         services.fail_with("The commits were asked for with a page size of 0. Ask for at least " ++
             "one commit.");
@@ -187,6 +197,7 @@ pub fn read_log_page(
             return error.InvalidCommitHash;
         }
     }
+    assert(request.repo_path.len > 0);
     assert(request.page_size > 0);
 
     const max_count = try std.fmt.allocPrint(allocator, "--max-count={d}", .{request.page_size});
@@ -227,6 +238,10 @@ pub fn read_commit(
     run_git: git_interface.RunGit,
     request: CommitRequest,
 ) !Commit {
+    if (request.repo_path.len == 0) {
+        services.fail_with(empty_repo_path_text);
+        return error.InvalidRepoPath;
+    }
     if (!is_commit_hash(request.hash)) {
         services.fail_with(invalid_commit_hash_text);
         return error.InvalidCommitHash;

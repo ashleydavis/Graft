@@ -6,9 +6,10 @@
 // page and the repo explorer page. The Help page is on the router, with the trail following each
 // page and its drop-down opening the About page again. The left sidebar's Welcome link opens the
 // welcome page from the Help page before its About link opens the About page again. The smoke
-// tests' commands are performed only in test mode. The splash screen covers the page until the
-// native app reports the page is in sight. Each test puts a fake made of Jest mocks on
-// window.ziggy, where the frontend reaches the backend.
+// tests' commands are performed only in test mode, and the run-task command sends its result once
+// its task ends. The splash screen covers the page until the native app reports the page is in
+// sight. Each test puts a fake made of Jest mocks on window.ziggy, where the frontend reaches the
+// backend.
 //
 
 import { act, screen, waitFor } from "@testing-library/react";
@@ -16,7 +17,7 @@ import { installedZiggy } from "./install-app-window";
 import { ITestCommand } from "../lib/test-commands";
 import { createAppRouter, listenForTestCommands, showSplashScreen } from "../main";
 import { installFakeZiggy } from "./fake-ziggy";
-import type { ITestCommandEvent, IZiggyBridge } from "ziggy";
+import type { ITaskResult, ITestCommandEvent, IZiggyBridge } from "ziggy";
 
 //
 // The router scrolls the window to the top when it shows a page. jsdom reports window.scrollTo as
@@ -274,6 +275,51 @@ describe("listenForTestCommands", () => {
         expect(ziggy.sendTestResult).toHaveBeenCalledWith(8, {
             ok: false,
             error: "No element has the data-id missing.",
+        });
+    });
+
+    test("in test mode, the run-task command queues the task and sends its result when it ends", () => {
+        const ziggy = installFakeZiggy({
+            onTestCommand: jest.fn(),
+            sendTestResult: jest.fn().mockResolvedValue(undefined),
+            testUiReady: jest.fn(),
+            addTask: jest.fn(),
+            onTaskCompleted: jest.fn(),
+            removeTaskCompletedListener: jest.fn(),
+        });
+        listenForTestCommands("?testMode=1", document);
+        registeredCallback(ziggy)({
+            requestId: 10,
+            command: {
+                command: "run-task",
+                taskType: "commits",
+                taskData: {
+                    repoPath: "",
+                    pageSize: 50,
+                },
+            },
+        });
+        expect(ziggy.addTask).toHaveBeenCalledWith(expect.objectContaining({
+            taskId: "run-task-10",
+            taskType: "commits",
+        }));
+        expect(ziggy.sendTestResult).not.toHaveBeenCalled();
+
+        const result: ITaskResult = {
+            taskId: "run-task-10",
+            status: "failed",
+            errorMessage: "The task failed.",
+            type: "commits",
+            inputs: null,
+        };
+        const onTaskCompleted = ziggy.onTaskCompleted as jest.Mock;
+        onTaskCompleted.mock.calls[0][0]({
+            taskId: "run-task-10",
+            result,
+        });
+        expect(ziggy.sendTestResult).toHaveBeenCalledWith(10, {
+            ok: true,
+            value: JSON.stringify(result),
         });
     });
 

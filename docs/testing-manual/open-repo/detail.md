@@ -40,7 +40,8 @@ bun run macos
 10. Choose File, then "Open repo", and choose a folder outside a Git repo, such as `/tmp`. Click the repo details pane's "Commits" link and check the commit pane shows why git could not read it.
 11. Press Ctrl+O (Command+O on macOS). Check the folder picker opens, choose `/tmp/graft/test-repo` and check the repo explorer page shows the test repo in its repo details pane.
 12. Close the window and start Graft again. Check it starts on the welcome page with no repo open.
+13. From the repo root, run `bash smoke-tests/run-desktop.sh refused-task-data`, which sends the `pick-repo-folder` task data that is not null, data outside what the window sends. Check it ends with `PASSED: refused-task-data`, so the task failed with "The folder picker task was given data. Send null, because Graft sets every option of the folder picker." and Graft kept running.
 
 ## Expected result
 
-Graft starts with no repo open. File, Open repo and Ctrl+O (Command+O on macOS) open the folder chosen in the repo explorer, in place of the repo open before, and the repo stays open while moving between pages until Graft closes.
+Graft starts with no repo open. File, Open repo and Ctrl+O (Command+O on macOS) open the folder chosen in the repo explorer, in place of the repo open before, and the repo stays open while moving between pages until Graft closes. The `pick-repo-folder` task refuses data that is not null with an error and Graft keeps running.

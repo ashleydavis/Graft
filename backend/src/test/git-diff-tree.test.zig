@@ -243,6 +243,24 @@ test "read_changed_files lists no files when git lists none, as for a merge comm
     try std.testing.expectEqual(@as(usize, 0), files.len);
 }
 
+test "read_changed_files refuses an empty repo path without starting git" {
+    var task = git_mock.mock_task();
+    try std.testing.expectError(error.InvalidRepoPath, git_diff_tree.read_changed_files(
+        io,
+        git_mock.mock_services(&task),
+        std.testing.allocator,
+        mock_never_called,
+        .{
+            .repo_path = "",
+            .hash = commit_hash,
+        },
+    ));
+    try std.testing.expectEqualStrings(
+        "The repo path is empty. Give the path of the repo to read.",
+        task.failure.?,
+    );
+}
+
 test "read_changed_files refuses a hash that git could read as an option without starting git" {
     var task = git_mock.mock_task();
     try std.testing.expectError(error.InvalidCommitHash, git_diff_tree.read_changed_files(
@@ -627,6 +645,25 @@ test "read_file_diff passes a path that holds pattern characters as a literal pa
         },
     );
     try std.testing.expectEqualStrings(notes_diff, diff);
+}
+
+test "read_file_diff refuses an empty repo path without starting git" {
+    var task = git_mock.mock_task();
+    try std.testing.expectError(error.InvalidRepoPath, git_diff_tree.read_file_diff(
+        io,
+        git_mock.mock_services(&task),
+        std.testing.allocator,
+        mock_never_called,
+        .{
+            .repo_path = "",
+            .hash = commit_hash,
+            .path = "notes.txt",
+        },
+    ));
+    try std.testing.expectEqualStrings(
+        "The repo path is empty. Give the path of the repo to read.",
+        task.failure.?,
+    );
 }
 
 test "read_file_diff refuses a hash that git could read as an option without starting git" {

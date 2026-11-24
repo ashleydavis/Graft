@@ -114,6 +114,10 @@ pub fn read_changed_files(
     run_git: git_interface.RunGit,
     request: ChangedFilesRequest,
 ) ![]const ChangedFile {
+    if (request.repo_path.len == 0) {
+        services.fail_with(git_log.empty_repo_path_text);
+        return error.InvalidRepoPath;
+    }
     if (!git_log.is_commit_hash(request.hash)) {
         services.fail_with(git_log.invalid_commit_hash_text);
         return error.InvalidCommitHash;
@@ -206,6 +210,10 @@ pub fn read_file_diff(
     run_git: git_interface.RunGit,
     request: FileDiffRequest,
 ) ![]const u8 {
+    if (request.repo_path.len == 0) {
+        services.fail_with(git_log.empty_repo_path_text);
+        return error.InvalidRepoPath;
+    }
     if (!git_log.is_commit_hash(request.hash)) {
         services.fail_with(git_log.invalid_commit_hash_text);
         return error.InvalidCommitHash;

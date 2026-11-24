@@ -44,7 +44,9 @@ pub fn pick_repo_folder_message_handler(
 
 //
 // Shows the system folder picker through Ziggy's folder dialog native call and returns the folder
-// the user chose, or null when they cancelled. The frontend opens the folder it returns.
+// the user chose, or null when they cancelled. The frontend opens the folder it returns. Data
+// other than null fails the task with error.InvalidPickRepoFolderRequest and text that names the
+// fix, sending null, because the data comes from the frontend and a crash would end the backend.
 //
 pub fn pick_repo_folder_task_handler(
     services: TaskServices,
@@ -55,6 +57,11 @@ pub fn pick_repo_folder_task_handler(
     payload: std.json.Value,
 ) !?[]const u8 {
     assert(context.task_id.len > 0);
+    if (payload != .null) {
+        services.fail_with("The folder picker task was given data. Send null, because " ++
+            "Graft sets every option of the folder picker.");
+        return error.InvalidPickRepoFolderRequest;
+    }
     assert(payload == .null);
 
     const picked_json = try services.pickPaths(io, allocator, timers, .folder, "Open repo", null);

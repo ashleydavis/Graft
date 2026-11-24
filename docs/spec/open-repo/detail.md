@@ -10,6 +10,7 @@ A user opens a local repo by choosing its folder. Graft starts with no repo open
 - The File menu has an "Open repo" item, above "Close Window". It runs the `open-repo` action, declared in `backend/src/features/open-repo.zig`, so a shortcut or a button can run the same action. The welcome page's "Open repo" button runs it.
 - The `open-repo` action has the shortcut `CmdOrCtrl+O`: Command+O on macOS and Ctrl+O on Linux and Windows. Ziggy shows it beside the "Open repo" menu item in each platform's own form, and pressing it opens a repo the same way the menu item does. Like every shortcut of Graft's, it is kept clear of the web view's own keys (see [keyboard shortcuts overlay](../shortcuts-overlay/detail.md)).
 - The action shows the system folder picker, titled "Open repo", through Ziggy's folder dialog native call. The picker runs in the backend's `pick-repo-folder` task, because it waits for the user.
+- The `pick-repo-folder` task takes null as its data, because the backend sets every option of the folder picker. It refuses any other data with an error, before showing the picker. The task fails with the text "The folder picker task was given data. Send null, because Graft sets every option of the folder picker." and the backend keeps running and handles the next message.
 - Choosing a folder opens it in the repo explorer: the repo explorer page shows the folder in its repo details pane, whose Commits link lists the folder's commits. The folder is opened in place of any repo open before. Graft opens any folder chosen. When the folder is outside a Git repo, the commit pane shows why git could not read it.
 - Cancelling the picker leaves the page and the open repo as they were.
 - The open repo's path is kept in `RepoContext` in `frontend/src/components/repo-context.tsx`, with its provider `RepoProvider` and hook `useRepo`, provided at the root of the app above the router's pages. The layout and the pages read it, so the repo stays loaded while the user moves between pages. The path lasts as long as the window, so each run of Graft starts with no repo open.
@@ -27,6 +28,7 @@ A user opens a local repo by choosing its folder. Graft starts with no repo open
 - [x] Graft starts with no repo open, on the welcome page.
 - [x] While no repo is open, the left sidebar's "Repo explorer" link is hidden.
 - [x] Smoke tests open their own test repo with the welcome page's "Open repo" button, through a shared helper in `smoke-tests/lib/common.sh`.
+- [x] The `pick-repo-folder` task refuses data that is not null with an error naming what was wrong and what to do, and the backend keeps running.
 
 ## Open questions
 

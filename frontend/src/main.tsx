@@ -12,7 +12,7 @@ import { AppLayout } from "./components/app-layout";
 import { AppTheme, systemDarkQuery } from "./components/app-theme";
 import { RepoProvider } from "./components/repo-context";
 import { IDocumentLike, installSplashScreen } from "./lib/splash";
-import { ITestCommand, performTestCommand, testResultToJson } from "./lib/test-commands";
+import { ITestCommand, ITestResult, performTestCommand, runTaskCommand, testResultToJson } from "./lib/test-commands";
 import { AboutPage } from "./pages/about";
 import { RepoExplorerPage } from "./pages/repo-explorer";
 import { HelpPage } from "./pages/help";
@@ -126,15 +126,24 @@ export function showSplashScreen(page: IDocumentLike | Document): void {
 export function listenForTestCommands(search: string, page: Document): void {
     if (new URLSearchParams(search).get("testMode") === "1") {
         window.ziggy.onTestCommand<ITestCommand>(event => {
+            function sendResult(result: ITestResult): void {
+                window.ziggy.sendTestResult(event.requestId, testResultToJson(result))
+                    .catch(error => {
+                        console.error(`Graft could not send the smoke tests the result of the ${event.command.command} command: ${String(error)}. The smoke test that sent it gets no answer and fails, so look for why the remote control connection failed.`);
+                    });
+            }
+
+            if (event.command.command === "run-task") {
+                // The task ends after this callback returns, so its result is sent when it ends.
+                runTaskCommand(`run-task-${event.requestId}`, event.command, sendResult);
+                return;
+            }
             const finder = {
                 find: (dataId: string) => page.querySelector<HTMLElement>(`[data-id="${dataId}"]`),
                 windowWidth: window.innerWidth,
                 windowHeight: window.innerHeight,
             };
-            window.ziggy.sendTestResult(event.requestId, testResultToJson(performTestCommand(finder, event.command)))
-                .catch(error => {
-                    console.error(`Graft could not send the smoke tests the result of the ${event.command.command} command: ${String(error)}. The smoke test that sent it gets no answer and fails, so look for why the remote control connection failed.`);
-                });
+            sendResult(performTestCommand(finder, event.command));
         });
         window.ziggy.testUiReady();
     }

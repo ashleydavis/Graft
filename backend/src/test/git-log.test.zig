@@ -184,6 +184,33 @@ test "read_log_page reads an empty page when git lists no commits" {
     try std.testing.expectEqual(@as(usize, 0), page.commits.len);
 }
 
+test "read_log_page refuses an empty repo path without starting git" {
+    var task = git_mock.mock_task();
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = &.{},
+        .expected_shown_args = &.{},
+        .exit_code = 0,
+        .stdout = "",
+        .stderr = "",
+        .start_error = error.GitStartedWhenItShouldNotBe,
+    });
+    try std.testing.expectError(error.InvalidRepoPath, git_log.read_log_page(
+        io,
+        git_mock.mock_services(&task),
+        std.testing.allocator,
+        mock,
+        .{
+            .repo_path = "",
+            .page_size = 10,
+            .after_hash = null,
+        },
+    ));
+    try std.testing.expectEqualStrings(
+        "The repo path is empty. Give the path of the repo to read.",
+        task.failure.?,
+    );
+}
+
 test "read_log_page refuses a page size of 0 without starting git" {
     var task = git_mock.mock_task();
     const mock = comptime git_mock.mock_git(.{
@@ -582,6 +609,32 @@ test "read_commit reads the one commit the hash names and parses its fields" {
     try std.testing.expectEqualStrings("Cy Committer", commit.committerName);
     try std.testing.expectEqualStrings("The second commit", commit.title);
     try std.testing.expectEqualStrings("The first line.\nThe second line.", commit.description);
+}
+
+test "read_commit refuses an empty repo path without starting git" {
+    var task = git_mock.mock_task();
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = &.{},
+        .expected_shown_args = &.{},
+        .exit_code = 0,
+        .stdout = "",
+        .stderr = "",
+        .start_error = error.GitStartedWhenItShouldNotBe,
+    });
+    try std.testing.expectError(error.InvalidRepoPath, git_log.read_commit(
+        io,
+        git_mock.mock_services(&task),
+        std.testing.allocator,
+        mock,
+        .{
+            .repo_path = "",
+            .hash = second_hash,
+        },
+    ));
+    try std.testing.expectEqualStrings(
+        "The repo path is empty. Give the path of the repo to read.",
+        task.failure.?,
+    );
 }
 
 test "read_commit refuses a hash that git could read as an option without starting git" {

@@ -25,6 +25,7 @@ What every smoke test uses: it starts the app, talks to it through the remote co
 - `choose_menu_item <action>`: chooses a menu item through the native app, as a user would.
 - `press_key <key>`: presses a key through the native app, as a user would. The key is written as a shortcut, such as `CmdOrCtrl+Shift+H`.
 - `viewport_size`: prints the size of the area the frontend is drawn in.
+- `run_task <task-type> <data-json>`: queues the backend task of the type with the data through the frontend, waits for it to end and prints its result as JSON, so a smoke test can send the backend invalid data.
 
 The platform library `run.sh` chooses (`linux.sh`, `windows.sh` or `macos.sh`) starts and stops the app for it.
 

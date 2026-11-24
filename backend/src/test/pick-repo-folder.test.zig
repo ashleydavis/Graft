@@ -93,6 +93,46 @@ test "pick-repo-folder fails when the native app could not show the folder picke
     try native_app.expectMessageContaining(io, std.testing.allocator, "{\"id\":1,\"ok\":false");
 }
 
+test "the pick-repo-folder task refuses data that is not null and the backend keeps running" {
+    var native_app: FakeNativeApp = undefined;
+    native_app.init();
+    const directories = try test_environment.useTestEnvironment(
+        std.testing.allocator,
+        native_app.data_tmp,
+    );
+    defer test_environment.freeTestEnvironment(std.testing.allocator, directories);
+    defer native_app.deinit(io, std.testing.allocator);
+
+    try native_app.start(io, std.testing.allocator, native_app.config(2, 2), app.app);
+    defer native_app.stop(io, std.testing.allocator);
+
+    native_app.setResult(io, std.testing.allocator, "pick-paths", true, "[\"/repos/graft\"]");
+    try native_app.send(
+        io,
+        std.testing.allocator,
+        "{\"kind\":\"system\",\"name\":\"add-task\",\"data\":{\"taskId\":\"t1\"," ++
+            "\"taskType\":\"pick-repo-folder\",\"source\":\"open-repo\"," ++
+            "\"data\":{\"title\":\"Other\"}}}",
+    );
+    try native_app.expectMessageContaining(io, std.testing.allocator, "\"status\":\"failed\"");
+    try native_app.expectMessageContaining(
+        io,
+        std.testing.allocator,
+        "The folder picker task was given data. Send null, because Graft sets every option " ++
+            "of the folder picker.",
+    );
+
+    const picker_call = try native_app.lastCall(io, std.testing.allocator, "pick-paths");
+    try std.testing.expect(picker_call == null);
+
+    try native_app.send(io, std.testing.allocator, pick_message);
+    try native_app.expectMessageContaining(
+        io,
+        std.testing.allocator,
+        "{\"id\":1,\"ok\":true,\"data\":\"/repos/graft\"}",
+    );
+}
+
 //
 // The action event the backend sends the frontend when the open-repo action runs, from the menu or
 // from a run-action message.

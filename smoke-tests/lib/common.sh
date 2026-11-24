@@ -489,6 +489,23 @@ press_key() {
 }
 
 #
+# Queues the backend task of the type with the data through the frontend, as the frontend queues
+# its own tasks, waits for the task to end and prints its result as JSON, so a smoke test can send
+# the backend invalid data. The data reaches jq through the environment, as
+# press_key's key does. Usage: run_task <task-type> <data-json>
+#
+run_task() {
+    local line
+    line="$(RUN_TASK_TYPE="$1" RUN_TASK_DATA="$2" jq -nc '{command: "run-task", taskType: env.RUN_TASK_TYPE, taskData: (env.RUN_TASK_DATA | fromjson)}')" || fail "the data of the $1 task is not JSON: $2"
+    local answer
+    answer="$(control "$line")"
+    if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
+        fail "running the $1 task failed: $answer"
+    fi
+    printf '%s' "$answer" | jq -r '.value'
+}
+
+#
 # Prints the size in pixels of the area the frontend is drawn in, as <width>x<height>. Zooming, docking the developer tools and
 # going full screen change it.
 #
