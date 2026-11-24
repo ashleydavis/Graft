@@ -18,6 +18,32 @@ git -C /tmp/graft/test-repo branch first-branch "$(git -C /tmp/graft/test-repo r
 for tag in v0.1.0 v0.2.0 v0.3.0 v0.4.0 v0.5.0; do git -C /tmp/graft/test-repo tag "$tag" first-branch; done
 ```
 
+Create a test repo at `/tmp/graft/merge-repo` with a merge and more commits than one page of the commit list. The side branch's commits are dated between the main line's, so git log lists one from each side in turn:
+
+```bash
+./scripts/test/create-test-repo.sh /tmp/graft/merge-repo
+```
+
+```bash
+git -C /tmp/graft/merge-repo switch --quiet --create side
+```
+
+```bash
+for number in $(seq 1 30); do GIT_COMMITTER_DATE="@$((1767484800 + number * 120 - 60)) +0000" git -C /tmp/graft/merge-repo -c user.name="Ada Author" -c user.email=ada@example.com commit --quiet --allow-empty --message "Side $number"; done
+```
+
+```bash
+git -C /tmp/graft/merge-repo switch --quiet main
+```
+
+```bash
+for number in $(seq 1 30); do GIT_COMMITTER_DATE="@$((1767484800 + number * 120)) +0000" git -C /tmp/graft/merge-repo -c user.name="Ada Author" -c user.email=ada@example.com commit --quiet --allow-empty --message "Main $number"; done
+```
+
+```bash
+GIT_COMMITTER_DATE="@1767488460 +0000" git -C /tmp/graft/merge-repo -c user.name="Ada Author" -c user.email=ada@example.com merge --quiet --no-ff --no-edit --message "Merge side" side
+```
+
 Then build and run Graft with the command for your platform:
 
 ```bash
@@ -49,8 +75,9 @@ bun run macos
 13. Click "Change the note", then notes.txt. Check the third and fourth columns each fade in as they open. Click the X of the fourth column and check it fades out as it narrows to nothing, then goes. Click the X of the third column and check it does the same, and that while it narrows a click on "Add the notes" in the commit list selects it and opens its details.
 14. Press Escape twice quickly. Check the third column, then the commit list, fade out and narrow away while the keys still act. Press Enter and check the commit list opens again.
 15. Choose Dark from the theme menu in the top bar and repeat steps 3 to 8. Check every column is drawn in dark colours and its text is readable.
-16. Close the window. Turn on reduced motion in the system's settings (Reduce Animation in GNOME's Accessibility settings, Animation effects off in Windows' Accessibility settings, Reduce motion in macOS's Accessibility Display settings), run Graft again and open the test repo. Open the commit list, a commit and a file, then close them with their X buttons. Check each column appears and goes at once. Turn reduced motion off again and close the window.
+16. Choose File, then "Open repo", and choose `/tmp/graft/merge-repo`. Click the "Commits" link and scroll the commit list to its end. Check every "Side" and "Main" commit from 30 down to 1 is listed once, the two taking turns, the list ends with "Add the readme" and no loading row is left under it. Open the right sidebar and check the most recent command is `git log --max-count=50 --skip=50 <hash>`, where the hash is the one of "Merge side", the first commit listed. Close the sidebar.
+17. Close the window. Turn on reduced motion in the system's settings (Reduce Animation in GNOME's Accessibility settings, Animation effects off in Windows' Accessibility settings, Reduce motion in macOS's Accessibility Display settings), run Graft again and open the test repo. Open the commit list, a commit and a file, then close them with their X buttons. Check each column appears and goes at once. Turn reduced motion off again and close the window.
 
 ## Expected result
 
-Each commit row shows its title, refs, author, date and short hash, the title never hidden by badges, and a commit with more badges than fit shows a "…" whose drop-down lists them all. Clicking a commit opens its full message, author, committer, dates, parents and changed files with their line counts to the right of the commit list, clicking a changed file opens its diff to the right of that, the page scrolls each new column into view and each new column closes with its X button, in the light and dark themes. Each column fades in as it opens and fades and narrows away as it closes while the keys and clicks keep working, and opens and closes at once under reduced motion.
+Each commit row shows its title, refs, author, date and short hash, the title never hidden by badges, and a commit with more badges than fit shows a "…" whose drop-down lists them all. Clicking a commit opens its full message, author, committer, dates, parents and changed files with their line counts to the right of the commit list, clicking a changed file opens its diff to the right of that, the commit list reads each page after the first from the first commit listed so a merge's commits from both sides are each listed once, the page scrolls each new column into view and each new column closes with its X button, in the light and dark themes. Each column fades in as it opens and fades and narrows away as it closes while the keys and clicks keep working, and opens and closes at once under reduced motion.

@@ -55,7 +55,7 @@ describe("readCommitPage", () => {
             taskId: "t1",
             repoPath: "/repo",
             pageSize: 50,
-            afterHash: undefined,
+            start: undefined,
         }, onRead);
         expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t1",
@@ -64,7 +64,7 @@ describe("readCommitPage", () => {
             data: {
                 repoPath: "/repo",
                 pageSize: 50,
-                afterHash: null,
+                start: null,
             },
             priority: "interactive",
         });
@@ -94,13 +94,16 @@ describe("readCommitPage", () => {
 });
 
 describe("readCommitPage later pages", () => {
-    test("queues the commits task for the page after the hash it is given", () => {
+    test("queues the commits task for the page from the start hash, skipping the count it is given", () => {
         const ziggy = installFakeTaskZiggy();
         readCommitPage({
             taskId: "t2",
             repoPath: "/repo",
             pageSize: 50,
-            afterHash: "1111111111111111111111111111111111111111",
+            start: {
+                hash: "1111111111111111111111111111111111111111",
+                skipCount: 100,
+            },
         }, jest.fn());
         expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t2",
@@ -109,7 +112,10 @@ describe("readCommitPage later pages", () => {
             data: {
                 repoPath: "/repo",
                 pageSize: 50,
-                afterHash: "1111111111111111111111111111111111111111",
+                start: {
+                    hash: "1111111111111111111111111111111111111111",
+                    skipCount: 100,
+                },
             },
             priority: "interactive",
         });

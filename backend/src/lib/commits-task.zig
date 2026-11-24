@@ -29,10 +29,27 @@ pub const CommitsTaskRequest = struct {
     pageSize: u32,
 
     //
-    // The hash of the last commit of the previous page. The frontend leaves it out for the first
-    // page, so it defaults to null.
+    // Where a later page starts. The frontend sends null or leaves it out for the first page, so
+    // it defaults to null.
     //
-    afterHash: ?[]const u8 = null,
+    start: ?CommitsTaskStart = null,
+};
+
+//
+// Where a later page starts, as the frontend sends it: the start commit's hash and how many
+// commits the commit pane has read so far. The field names are camelCase for the same reason as
+// `CommitsTaskRequest`'s.
+//
+pub const CommitsTaskStart = struct {
+    //
+    // The hash of the first page's first commit.
+    //
+    hash: []const u8,
+
+    //
+    // How many commits the commit pane has read so far.
+    //
+    skipCount: u32,
 };
 
 //
@@ -70,10 +87,17 @@ pub fn commits_task_handler(comptime run_git: git_interface.RunGit) CommitsTaskH
             _ = timers;
             assert(context.task_id.len > 0);
 
+            var start: ?git_log.LogPageStart = null;
+            if (payload.start) |payload_start| {
+                start = .{
+                    .hash = payload_start.hash,
+                    .skip_count = payload_start.skipCount,
+                };
+            }
             const page = try git_log.read_log_page(io, services, allocator, run_git, .{
                 .repo_path = payload.repoPath,
                 .page_size = payload.pageSize,
-                .after_hash = payload.afterHash,
+                .start = start,
             });
             assert(page.commits.len <= payload.pageSize);
             return page;

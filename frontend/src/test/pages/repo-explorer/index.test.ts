@@ -463,7 +463,7 @@ describe("RepoExplorerPage", () => {
         expect(task.data).toEqual({
             repoPath: "/other-repo",
             pageSize: 50,
-            afterHash: null,
+            start: null,
         });
     });
 
@@ -477,7 +477,7 @@ describe("RepoExplorerPage", () => {
         expect(task.data).toEqual({
             repoPath: "/repo",
             pageSize: 50,
-            afterHash: null,
+            start: null,
         });
     });
 
@@ -1031,7 +1031,7 @@ describe("RepoExplorerPage commit pages", () => {
         expect(screen.queryByText("Loading the commits.")).toBeNull();
     });
 
-    test("reads the next page after the last commit read when the list scrolls near the end, with a loading row while it is read", async () => {
+    test("reads the next page from the first commit, skipping the commits read, when the list scrolls near the end, with a loading row while it is read", async () => {
         const ziggy = installFakeTaskZiggy();
         await listFirstPage(ziggy);
         scrollCommitListToEnd();
@@ -1039,7 +1039,10 @@ describe("RepoExplorerPage commit pages", () => {
         expect(taskDataAt(ziggy, 1)).toEqual({
             repoPath: "/repo",
             pageSize: 50,
-            afterHash: commitPageJson(49, 1)[0].hash,
+            start: {
+                hash: commitPageJson(0, 1)[0].hash,
+                skipCount: 50,
+            },
         });
         expect(screen.getByText("Loading the commits.").getAttribute("data-id")).toBe("commits-loading");
         expect(screen.getByText("Commit 49")).toBeTruthy();
@@ -1053,7 +1056,10 @@ describe("RepoExplorerPage commit pages", () => {
         expect(taskDataAt(ziggy, 2)).toEqual({
             repoPath: "/repo",
             pageSize: 50,
-            afterHash: commitPageJson(99, 1)[0].hash,
+            start: {
+                hash: commitPageJson(0, 1)[0].hash,
+                skipCount: 100,
+            },
         });
     });
 

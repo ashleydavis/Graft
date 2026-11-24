@@ -18,6 +18,32 @@ Create a second test repo at `/tmp/graft/paging-repo` with more commits than one
 for number in $(seq 1 120); do git -C /tmp/graft/paging-repo -c user.name="Ada Author" -c user.email=ada@example.com commit --quiet --allow-empty --message "Commit $number"; done
 ```
 
+Create a test repo at `/tmp/graft/merge-repo` with a merge and more commits than one page of the commit list. The side branch's commits are dated between the main line's, so git log lists one from each side in turn:
+
+```bash
+./scripts/test/create-test-repo.sh /tmp/graft/merge-repo
+```
+
+```bash
+git -C /tmp/graft/merge-repo switch --quiet --create side
+```
+
+```bash
+for number in $(seq 1 30); do GIT_COMMITTER_DATE="@$((1767484800 + number * 120 - 60)) +0000" git -C /tmp/graft/merge-repo -c user.name="Ada Author" -c user.email=ada@example.com commit --quiet --allow-empty --message "Side $number"; done
+```
+
+```bash
+git -C /tmp/graft/merge-repo switch --quiet main
+```
+
+```bash
+for number in $(seq 1 30); do GIT_COMMITTER_DATE="@$((1767484800 + number * 120)) +0000" git -C /tmp/graft/merge-repo -c user.name="Ada Author" -c user.email=ada@example.com commit --quiet --allow-empty --message "Main $number"; done
+```
+
+```bash
+GIT_COMMITTER_DATE="@1767488460 +0000" git -C /tmp/graft/merge-repo -c user.name="Ada Author" -c user.email=ada@example.com merge --quiet --no-ff --no-edit --message "Merge side" side
+```
+
 Then build and run Graft with the command for your platform:
 
 ```bash
@@ -41,11 +67,12 @@ bun run macos
 5. Click "About" in the left sidebar and check the About page shows.
 6. Click "Repo explorer" in the left sidebar, then the repo details pane's "Commits" link, and check the commit pane shows the same commits.
 7. Choose File, then "Open repo", and choose `/tmp/graft/paging-repo`. Click the "Commits" link and check the list starts with "Commit 120". Scroll down the commit list. Check that before the list ends a row with a spinner and "Loading the commits." shows under the last commit for a moment, then more commits are added under it, and that scrolling on reaches "Add the readme" as the last row, with no loading row under it.
-8. Click the button at the far right of the top bar to open the right sidebar. Check at most two Git commands are listed, the most recent at the top being `git log --max-count=50 --skip=1 <hash>`, the read of a later page, and that "Total time:" is no shorter than the two listed added together, because it adds up the first page's `git log --max-count=50` too. Click the button again to close the sidebar.
+8. Click the button at the far right of the top bar to open the right sidebar. Check at most two Git commands are listed, the most recent at the top being `git log --max-count=50 --skip=<count read> <hash>`, the read of a later page from the hash of "Commit 120", the first commit listed, skipping the commits already read, and that "Total time:" is no shorter than the two listed added together, because it adds up the first page's `git log --max-count=50` too. Click the button again to close the sidebar.
 9. Press Escape, then Enter, to close the commit pane and open it again, with the commit pane active. Hold Down. Check the selection moves down the commits, the list scrolls to keep the selected row in view, more pages are read as it nears the end and it stops on "Add the readme". Press Enter and check the commit details pane opens for "Add the readme".
-10. Close the window and start Graft again. Press Ctrl+1 (Cmd+1 on macOS) on the welcome page. Check the breadcrumb trail ends with "Repo explorer" and the page shows only "No repo is open. Choose File, then Open repo, to open one."
-11. Close the window.
+10. Choose File, then "Open repo", and choose `/tmp/graft/merge-repo`. Click the "Commits" link and check the list starts with "Merge side". Scroll down the commit list to its end. Check every commit from "Side 30" and "Main 30" down to "Side 1" and "Main 1" is listed once, the side branch's and the main line's taking turns, and the list ends with "Add the readme". Open the right sidebar and check the most recent command is `git log --max-count=50 --skip=50 <hash>`, where the hash is the one of "Merge side". Close the sidebar.
+11. Close the window and start Graft again. Press Ctrl+1 (Cmd+1 on macOS) on the welcome page. Check the breadcrumb trail ends with "Repo explorer" and the page shows only "No repo is open. Choose File, then Open repo, to open one."
+12. Close the window.
 
 ## Expected result
 
-The repo explorer page's commit pane lists the test repo's commits. For a repo with more commits than one page, the list reads the next page as it scrolls, with a loading row while it reads, until it ends at the repo's first commit, and the Down key moves the selection across the pages with the selected row kept in view. The left sidebar opens the repo explorer page and the About page. The breadcrumb trail names the repo explorer page. The page starts with its panes, or with the message that no repo is open.
+The repo explorer page's commit pane lists the test repo's commits. For a repo with more commits than one page, the list reads the next page as it scrolls, with a loading row while it reads, until it ends at the repo's first commit. Every page after the first starts from the first commit listed and skips the commits already read, so a repo with a merge lists the commits from both sides of the merge, each once. The Down key moves the selection across the pages with the selected row kept in view. The left sidebar opens the repo explorer page and the About page. The breadcrumb trail names the repo explorer page. The page starts with its panes, or with the message that no repo is open.

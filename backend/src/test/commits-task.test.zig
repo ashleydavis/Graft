@@ -93,7 +93,7 @@ test "the commits task reads the first page and gives it as its result" {
     );
 }
 
-test "the commits task reads a later page after the hash it is given" {
+test "the commits task reads a later page from the start hash, skipping the count it is given" {
     const mock = comptime git_mock.mock_git(.{
         .expected_args = &.{
             "-C",
@@ -102,13 +102,13 @@ test "the commits task reads a later page after the hash it is given" {
             "-z",
             "--max-count=5",
             format_arg,
-            "--skip=1",
+            "--skip=10",
             "abc123",
         },
         .expected_shown_args = &.{
             "log",
             "--max-count=5",
-            "--skip=1",
+            "--skip=10",
             "abc123",
         },
         .exit_code = 0,
@@ -118,8 +118,42 @@ test "the commits task reads a later page after the hash it is given" {
     });
     try expect_task_message(
         mock,
-        "{\"repoPath\":\"/repo\",\"pageSize\":5,\"afterHash\":\"abc123\"}",
+        "{\"repoPath\":\"/repo\",\"pageSize\":5," ++
+            "\"start\":{\"hash\":\"abc123\",\"skipCount\":10}}",
         "\"status\":\"succeeded\"",
+    );
+}
+
+test "the commits task reads the first page from HEAD when the start is null" {
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = &.{ "-C", "/repo", "log", "-z", "--max-count=50", format_arg },
+        .expected_shown_args = &.{ "log", "--max-count=50" },
+        .exit_code = 0,
+        .stdout = one_commit_output,
+        .stderr = "",
+        .start_error = null,
+    });
+    try expect_task_message(
+        mock,
+        "{\"repoPath\":\"/repo\",\"pageSize\":50,\"start\":null}",
+        "\"status\":\"succeeded\"",
+    );
+}
+
+test "the commits task refuses a start hash that is not hexadecimal without starting git" {
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = &.{},
+        .expected_shown_args = &.{},
+        .exit_code = 0,
+        .stdout = "",
+        .stderr = "",
+        .start_error = error.GitStartedWhenItShouldNotBe,
+    });
+    try expect_task_message(
+        mock,
+        "{\"repoPath\":\"/repo\",\"pageSize\":5," ++
+            "\"start\":{\"hash\":\"--all\",\"skipCount\":10}}",
+        "A commit was asked for by a hash that is not hexadecimal.",
     );
 }
 

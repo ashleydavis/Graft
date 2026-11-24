@@ -77,7 +77,7 @@ fn mock_first_page(comptime output: []const u8) git_interface.RunGit {
 const first_page_request: git_log.LogPageRequest = .{
     .repo_path = "repo",
     .page_size = 50,
-    .after_hash = null,
+    .start = null,
 };
 
 test "read_log_page reads the first page from HEAD and parses every field of each commit" {
@@ -118,7 +118,7 @@ test "read_log_page reads the first page from HEAD and parses every field of eac
     try std.testing.expectEqualStrings("", first.description);
 }
 
-test "read_log_page starts a later page from the previous page's last commit and skips it" {
+test "read_log_page starts a later page from the start commit and skips the commits read" {
     var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
@@ -131,13 +131,13 @@ test "read_log_page starts a later page from the previous page's last commit and
             "-z",
             "--max-count=1",
             format_arg,
-            "--skip=1",
+            "--skip=7",
             second_hash,
         },
         .expected_shown_args = &.{
             "log",
             "--max-count=1",
-            "--skip=1",
+            "--skip=7",
             second_hash,
         },
         .exit_code = 0,
@@ -155,7 +155,10 @@ test "read_log_page starts a later page from the previous page's last commit and
         .{
             .repo_path = "repo",
             .page_size = 1,
-            .after_hash = second_hash,
+            .start = .{
+                .hash = second_hash,
+                .skip_count = 7,
+            },
         },
     );
     try std.testing.expectEqual(@as(usize, 1), page.commits.len);
@@ -195,7 +198,7 @@ test "read_log_page refuses a page size of 0 without starting git" {
         .{
             .repo_path = "repo",
             .page_size = 0,
-            .after_hash = null,
+            .start = null,
         },
     ));
     try std.testing.expectEqualStrings(
@@ -204,7 +207,7 @@ test "read_log_page refuses a page size of 0 without starting git" {
     );
 }
 
-test "read_log_page refuses an after hash that git could read as an option" {
+test "read_log_page refuses a start hash that git could read as an option" {
     var task = git_mock.mock_task();
     const mock = comptime git_mock.mock_git(.{
         .expected_args = &.{},
@@ -222,7 +225,10 @@ test "read_log_page refuses an after hash that git could read as an option" {
         .{
             .repo_path = "repo",
             .page_size = 10,
-            .after_hash = "--all",
+            .start = .{
+                .hash = "--all",
+                .skip_count = 10,
+            },
         },
     ));
     try std.testing.expectEqualStrings(
@@ -347,6 +353,58 @@ fn read_two_commits(allocator: std.mem.Allocator) !void {
 
 test "read_log_page frees everything when an allocation fails" {
     try std.testing.checkAllAllocationFailures(std.testing.allocator, read_two_commits, .{});
+}
+
+//
+// Reads a later page of `two_commits_output` with the allocator, from the start commit skipping
+// the commits read, for the allocation failure test of the later page's `--skip` argument. The
+// page is allocated in an arena over the allocator, as a task's is.
+//
+fn read_later_page(allocator: std.mem.Allocator) !void {
+    var task = git_mock.mock_task();
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = &.{
+            "-C",
+            "repo",
+            "log",
+            "-z",
+            "--max-count=50",
+            format_arg,
+            "--skip=50",
+            second_hash,
+        },
+        .expected_shown_args = &.{
+            "log",
+            "--max-count=50",
+            "--skip=50",
+            second_hash,
+        },
+        .exit_code = 0,
+        .stdout = two_commits_output,
+        .stderr = "",
+        .start_error = null,
+    });
+    _ = try git_log.read_log_page(
+        io,
+        git_mock.mock_services(&task),
+        arena.allocator(),
+        mock,
+        .{
+            .repo_path = "repo",
+            .page_size = 50,
+            .start = .{
+                .hash = second_hash,
+                .skip_count = 50,
+            },
+        },
+    );
+}
+
+test "read_log_page frees everything on a later page when an allocation fails" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, read_later_page, .{});
 }
 
 test "parse_log_output refuses more commits than the page holds" {

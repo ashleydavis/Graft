@@ -12,7 +12,7 @@ The repo explorer page shows the open repo (see [open-repo](../open-repo/index.m
 - A smoke test opens its own test repo with the welcome page's "Open repo" button, as [open-repo](../open-repo/detail.md) describes.
 - `scripts/test/create-test-repo.sh` creates a test repo in a known state with a few commits, at `/tmp/graft/test-repo` or at the path given as its argument.
 - When the commit pane opens it queues the commits task, a background task that runs the `log` wrapper. It reads the commits afresh each time the commit pane opens.
-- The `log` wrapper reads one page of commits at a time. It runs `git log -z --max-count=<page size>` with a `--format` string whose fields are split by the unit separator (0x1f). Given the hash of the last commit of the previous page, it starts from that commit and skips it with `--skip=1`, so a new commit on top does not shift the pages.
+- The `log` wrapper reads one page of commits at a time. It runs `git log -z --max-count=<page size>` with a `--format` string whose fields are split by the unit separator (0x1f). The first page starts from HEAD, and the commit pane keeps the hash of its first commit as the start commit. Every later page runs `git log -z --max-count=<page size> --skip=<count read> <start hash>`, where the count is how many commits the pane has read so far. Every page starts from the same commit, so the pages together list the same commits as one `git log` from the start commit, the commits from both sides of a merge included, and a new commit on top does not shift the pages. The start hash is checked to be hexadecimal before it reaches git.
 - For each commit the `log` wrapper reads the hash, the parent hashes, the refs, the author's name, email and date, the committer's name, email and date, the title and the description.
 - The commit pane lists every commit, newest first, reading the next page as the list scrolls. Each row shows the commit's title, its refs, its author's name, its author date and the first seven characters of its hash, as [columns](columns/detail.md) describes.
 - While a commits task runs, a loading row in the commit pane says "Loading the commits.". When the task fails an error row in the commit pane shows why, such as git log failing in a folder outside a repo.
@@ -23,7 +23,9 @@ The repo explorer page shows the open repo (see [open-repo](../open-repo/index.m
 - [x] One Zig Git interface function starts `git` with the arguments it is given and reports back the exit code, standard output and standard error.
 - [x] A `log` wrapper calls the Git interface function to run `git log -z` with a `--format` string whose fields are split by the unit separator (0x1f).
 - [x] For each commit the `log` wrapper returns the hash, the parent hashes, the refs, the author's name, email and date, the committer's name, email and date, the title and the description.
-- [x] The `log` wrapper takes a page size, passed to `--max-count`, and an optional hash of the last commit of the previous page. Given that hash, it starts from it and skips it with `--skip=1`.
+- [x] The `log` wrapper takes a page size, passed to `--max-count`, and for a later page a start hash and the count of commits read so far. Given them, it runs `git log` from the start hash and skips that count with `--skip=<count read>`. The first page starts from HEAD.
+- [x] Reading every page of a repo with a merge lists the same commits in the same order as one `git log` from the start commit, none missing and none twice, and a commit made on top after the first page is read does not shift the later pages.
+- [x] The start hash is checked to be a commit hash before it reaches git.
 - [x] A mock of the Git interface function exists for unit testing the `log` wrapper and future Git abstractions.
 - [x] A Ziggy background task runs the `log` wrapper and delivers each parsed page to the UI.
 - [x] A repo explorer page on the TanStack router shows the commits as a list in its commit pane.

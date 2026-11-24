@@ -4,12 +4,15 @@
 // can run in parallel with themselves, and checks only that the function starts git with the
 // arguments, reports its exit code, standard output and standard error and sends the event that
 // names the command with how long it ran, and how that command is written for a shell. It checks
-// git runs with the environment Ziggy gives the calling thread, or with the process's own.
+// git runs with the environment Ziggy gives the calling thread, or with the process's own. It also
+// runs the `log` wrapper's page command against a real repo with a merge, because only real git
+// shows whether paging by a start commit and a skip count lists every commit once.
 //
 
 const std = @import("std");
 const ziggy = @import("ziggy");
 const git_interface = @import("../lib/git-interface.zig");
+const git_log = @import("../lib/git-log.zig");
 const test_environment = @import("test-environment.zig");
 
 const io = std.testing.io;
@@ -663,4 +666,158 @@ test "is_plain_shell_word accepts only words a shell reads as they are" {
     try std.testing.expect(!git_interface.is_plain_shell_word("$HOME"));
     try std.testing.expect(!git_interface.is_plain_shell_word("a*"));
     try std.testing.expect(!git_interface.is_plain_shell_word("~/repo"));
+}
+
+//
+// The page size the paging test reads with. It is small so the test repo's few commits fill
+// several pages, and a page boundary falls between the merged branch's commits and the merge.
+//
+const test_page_size: u32 = 2;
+
+//
+// Runs git with the arguments, with the author and commit dates set to the date through the
+// environment Ziggy gives the calling thread, so a test sets the order `git log` lists the
+// commits in.
+//
+fn run_git_at_date(date: []const u8, args: []const []const u8) !void {
+    var environment = try std.testing.environ.createMap(std.testing.allocator);
+    defer environment.deinit();
+
+    try environment.put("GIT_AUTHOR_DATE", date);
+    try environment.put("GIT_COMMITTER_DATE", date);
+    ziggy.utils.process_env.setEnvironMap(&environment);
+    defer ziggy.utils.process_env.setEnvironMap(null);
+
+    try run_git_successfully(args);
+}
+
+//
+// Makes an empty commit with the message in the repo at the date, with a fixed author so the
+// commit is made the same way on every machine.
+//
+fn commit_at_date(directory: *const TestDirectory, message: []const u8, date: []const u8) !void {
+    try run_git_at_date(date, &.{
+        "-C",
+        directory.path(),
+        "-c",
+        "user.name=Graft Test",
+        "-c",
+        "user.email=graft-test@example.com",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "--quiet",
+        "--allow-empty",
+        "--message",
+        message,
+    });
+}
+
+//
+// Reads one page of the repo's commits with the command the `log` wrapper builds for it, run by
+// `start_git` against the real repo, and parses git's output. Everything is allocated with the
+// arena, which the caller frees.
+//
+fn read_page(
+    arena: std.mem.Allocator,
+    directory: *const TestDirectory,
+    start: ?git_log.LogPageStart,
+) ![]const git_log.Commit {
+    const max_count = try std.fmt.allocPrint(arena, "--max-count={d}", .{test_page_size});
+    const command = try git_log.read_log_page_command(arena, .{
+        .repo_path = directory.path(),
+        .page_size = test_page_size,
+        .start = start,
+    }, max_count);
+    const repo_args = [_][]const u8{
+        "-C",
+        command.repo_path,
+    };
+    const args = try std.mem.concat(arena, []const u8, &.{ &repo_args, command.args });
+    const result = try git_interface.start_git(io, arena, args);
+    try std.testing.expectEqual(@as(?u8, 0), result.exit_code);
+    const commits = try git_log.parse_log_output(arena, result.stdout, test_page_size);
+    try std.testing.expect(commits.len <= test_page_size);
+    return commits;
+}
+
+test "every page read from the start commit lists the commits of one git log, merge included" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    // The side branch's commits are dated between the main line's, so git log mixes them in.
+    try init_repo(&directory);
+    try commit_at_date(&directory, "Main 1", "2026-01-01T00:00:00+00:00");
+    try run_git_successfully(&.{ "-C", directory.path(), "switch", "--quiet", "--create", "side" });
+    try commit_at_date(&directory, "Side 1", "2026-01-02T00:00:00+00:00");
+    try commit_at_date(&directory, "Side 2", "2026-01-04T00:00:00+00:00");
+    try run_git_successfully(&.{ "-C", directory.path(), "switch", "--quiet", "main" });
+    try commit_at_date(&directory, "Main 2", "2026-01-03T00:00:00+00:00");
+    try commit_at_date(&directory, "Main 3", "2026-01-05T00:00:00+00:00");
+    try run_git_at_date("2026-01-06T00:00:00+00:00", &.{
+        "-C",
+        directory.path(),
+        "-c",
+        "user.name=Graft Test",
+        "-c",
+        "user.email=graft-test@example.com",
+        "-c",
+        "commit.gpgsign=false",
+        "merge",
+        "--quiet",
+        "--no-ff",
+        "--no-edit",
+        "--message",
+        "Merge side",
+        "side",
+    });
+
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+
+    const arena = arena_state.allocator();
+    var hashes: std.ArrayList([]const u8) = .empty;
+    const first_page = try read_page(arena, &directory, null);
+    try std.testing.expectEqual(@as(usize, test_page_size), first_page.len);
+    for (first_page) |page_commit| {
+        try hashes.append(arena, page_commit.hash);
+    }
+    const start_hash = first_page[0].hash;
+
+    // A commit made on top after the first page is read does not shift the later pages.
+    try commit_at_date(&directory, "Main 4", "2026-01-07T00:00:00+00:00");
+    for (0..16) |_| {
+        const page = try read_page(arena, &directory, .{
+            .hash = start_hash,
+            .skip_count = @intCast(hashes.items.len),
+        });
+        for (page) |page_commit| {
+            try hashes.append(arena, page_commit.hash);
+        }
+        if (page.len < test_page_size) {
+            break;
+        }
+    } else {
+        return error.PagesNeverEnded;
+    }
+
+    const whole_log = try git_interface.start_git(io, arena, &.{
+        "-C",
+        directory.path(),
+        "log",
+        "--format=%H",
+        start_hash,
+    });
+    try std.testing.expectEqual(@as(?u8, 0), whole_log.exit_code);
+    var expected_hashes: std.ArrayList([]const u8) = .empty;
+    var lines = std.mem.splitScalar(u8, std.mem.trimEnd(u8, whole_log.stdout, "\n"), '\n');
+    while (lines.next()) |line| {
+        try expected_hashes.append(arena, line);
+    }
+    try std.testing.expectEqual(@as(usize, 6), expected_hashes.items.len);
+    try std.testing.expectEqual(expected_hashes.items.len, hashes.items.len);
+    for (expected_hashes.items, hashes.items) |expected_hash, hash| {
+        try std.testing.expectEqualStrings(expected_hash, hash);
+    }
 }

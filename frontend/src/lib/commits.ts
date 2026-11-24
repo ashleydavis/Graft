@@ -3,7 +3,7 @@
 // git log, and turns the task's result into commits.
 //
 
-import type { IAddTask, ITaskCompletedEvent, ITaskResult } from "ziggy";
+import type { IAddTask, IJsonObject, ITaskCompletedEvent, ITaskResult } from "ziggy";
 import { err, ok, Result } from "./result";
 
 //
@@ -114,16 +114,28 @@ export interface ICommitPageRequest {
     // The most commits to read.
     pageSize: number;
 
-    // The hash of the last commit of the page before, so the page starts after it, or undefined
-    // for the first page, which starts from HEAD.
-    afterHash: string | undefined;
+    // Where a later page starts, or undefined for the first page, which starts from HEAD.
+    start: ICommitPageStart | undefined;
 }
 
 //
-// Reads a page of commits from the repo, the first page or the page after the request's afterHash:
+// Where a later page of commits starts: every page after the first runs git log from the same
+// start commit and skips the commits already read, so the commits from the other side of a merge
+// are listed and a commit made on top of the history does not shift the pages.
+//
+export interface ICommitPageStart {
+    // The hash of the first page's first commit.
+    hash: string;
+
+    // How many commits the commit pane has read so far, which git log skips.
+    skipCount: number;
+}
+
+//
+// Reads a page of commits from the repo, the first page or the page the request's start names:
 // queues the commits task as interactive, because the user is waiting on it, and calls onRead with
-// the commits or with why they could not be read once the task ends. The first page sends
-// afterHash as null, which the task reads as no hash.
+// the commits or with why they could not be read once the task ends. The first page sends start as
+// null, which the task reads as starting from HEAD.
 //
 export function readCommitPage(request: ICommitPageRequest, onRead: (result: Result<ICommit[], IReadCommitsError>) => void): void {
     function onTaskCompleted(event: ITaskCompletedEvent): void {
@@ -135,6 +147,13 @@ export function readCommitPage(request: ICommitPageRequest, onRead: (result: Res
     }
 
     window.ziggy.onTaskCompleted(onTaskCompleted);
+    let start: IJsonObject | null = null;
+    if (request.start) {
+        start = {
+            hash: request.start.hash,
+            skipCount: request.start.skipCount,
+        };
+    }
     const task: IAddTask = {
         taskId: request.taskId,
         taskType: "commits",
@@ -142,7 +161,7 @@ export function readCommitPage(request: ICommitPageRequest, onRead: (result: Res
         data: {
             repoPath: request.repoPath,
             pageSize: request.pageSize,
-            afterHash: request.afterHash ?? null,
+            start,
         },
         priority: "interactive",
     };

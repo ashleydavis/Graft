@@ -140,11 +140,27 @@ pub const LogPageRequest = struct {
     page_size: u32,
 
     //
-    // The hash of the last commit of the previous page, or null for the first page. The page
-    // starts from that commit and skips it, so a commit made on top of the history after the
-    // previous page was read does not shift the pages.
+    // Where a later page starts, or null for the first page, which starts from HEAD.
     //
-    after_hash: ?[]const u8,
+    start: ?LogPageStart,
+};
+
+//
+// Where a later page of commits starts: every page after the first runs `git log` from the same
+// commit and skips the commits already read. Starting each page from the last commit read would
+// list only that commit's ancestors and lose the other side of a merge, and starting from HEAD
+// would shift the pages when a commit is made on top of the history.
+//
+pub const LogPageStart = struct {
+    //
+    // The hash of the first page's first commit, which the commit pane keeps as the start commit.
+    //
+    hash: []const u8,
+
+    //
+    // How many commits the commit pane has read so far. Passed to `--skip`.
+    //
+    skip_count: u32,
 };
 
 //
@@ -165,8 +181,8 @@ pub fn read_log_page(
             "one commit.");
         return error.InvalidPageSize;
     }
-    if (request.after_hash) |hash| {
-        if (!is_commit_hash(hash)) {
+    if (request.start) |start| {
+        if (!is_commit_hash(start.hash)) {
             services.fail_with(invalid_commit_hash_text);
             return error.InvalidCommitHash;
         }
@@ -270,8 +286,9 @@ pub const CommitRequest = struct {
 
 //
 // The command `read_log_page` runs: the first page starts from HEAD, and a later page starts from
-// the last commit of the previous page and skips it. The help panel shows it without `-z` and the
-// format, as `git log --max-count=<page size>`, which lists the same commits in git's own layout.
+// the start commit and skips the commits already read. The help panel shows it without `-z` and
+// the format, as `git log --max-count=<page size>` or `git log --max-count=<page size>
+// --skip=<count read> <start hash>`, which lists the same commits in git's own layout.
 //
 pub fn read_log_page_command(
     allocator: std.mem.Allocator,
@@ -287,10 +304,12 @@ pub fn read_log_page_command(
         max_count,
         log_format,
     };
-    if (request.after_hash) |hash| {
+    if (request.start) |start| {
+        assert(is_commit_hash(start.hash));
+        const skip = try std.fmt.allocPrint(allocator, "--skip={d}", .{start.skip_count});
         const later_page_args = [_][]const u8{
-            "--skip=1",
-            hash,
+            skip,
+            start.hash,
         };
         return .{
             .repo_path = request.repo_path,

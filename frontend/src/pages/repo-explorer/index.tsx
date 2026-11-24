@@ -13,8 +13,8 @@ import { usePaneTrail } from "../../components/pane-trail";
 import { useRepo } from "../../components/repo-context";
 import { explorerPaneSteps } from "../../lib/breadcrumb-trail";
 import { commitStagedFiles } from "../../lib/commit";
-import { canReadNextPage, COMMIT_PAGE_SIZE, commitPagesAfterRead, commitPagesReading, ICommitPages, nextPageAfterHash, noCommitPages } from "../../lib/commit-pages";
-import { readCommitPage } from "../../lib/commits";
+import { canReadNextPage, COMMIT_PAGE_SIZE, commitPagesAfterRead, commitPagesReading, ICommitPages, nextPageStart, noCommitPages } from "../../lib/commit-pages";
+import { ICommitPageStart, readCommitPage } from "../../lib/commits";
 import { openPaneIds } from "../../lib/pane-animation";
 import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, COMMIT_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, initialRepoExplorerState, IRepoExplorerState, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
 import { toggleFileStaged } from "../../lib/stage-file";
@@ -188,18 +188,18 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     }, [repoPath, isChangesOpen]);
 
     //
-    // Reads the page of commits after the hash, or the first page for undefined, and adds it to the
-    // pages once the commits task ends. The pages record the task's id, so a page read before the
-    // commit pane closed and opened again is dropped.
+    // Reads the page of commits the start names, or the first page for undefined, and adds it to
+    // the pages once the commits task ends. The pages record the task's id, so a page read before
+    // the commit pane closed and opened again is dropped.
     //
-    function readPage(afterHash: string | undefined): void {
+    function readPage(start: ICommitPageStart | undefined): void {
         const taskId = `commits-${Date.now()}-${Math.random()}`;
         setCommitPages(pages => commitPagesReading(pages, taskId));
         readCommitPage({
             taskId,
             repoPath,
             pageSize: COMMIT_PAGE_SIZE,
-            afterHash,
+            start,
         }, result => setCommitPages(pages => commitPagesAfterRead(pages, taskId, result)));
     }
 
@@ -209,7 +209,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     //
     function readNextPage(): void {
         if (canReadNextPage(commitPages)) {
-            readPage(nextPageAfterHash(commitPages));
+            readPage(nextPageStart(commitPages));
         }
     }
 

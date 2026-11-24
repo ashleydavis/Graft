@@ -3,7 +3,7 @@
 // wanted, so the commit list can load every commit page by page as the user scrolls.
 //
 
-import { ICommit, IReadCommitsError } from "./commits";
+import { ICommit, ICommitPageStart, IReadCommitsError } from "./commits";
 import { Result } from "./result";
 
 //
@@ -100,14 +100,18 @@ export function canReadNextPage(pages: ICommitPages): boolean {
 }
 
 //
-// Picks the hash the next page starts after: the last commit read, or undefined before any is
-// read, so the first page starts from HEAD.
+// Works out where the next page starts: from the first page's first commit, which the pane keeps
+// as the start commit, skipping every commit read so far. Undefined before any commit is read, so
+// the first page starts from HEAD.
 //
-export function nextPageAfterHash(pages: ICommitPages): string | undefined {
+export function nextPageStart(pages: ICommitPages): ICommitPageStart | undefined {
     if (pages.commits.length === 0) {
         return undefined;
     }
-    return pages.commits[pages.commits.length - 1].hash;
+    return {
+        hash: pages.commits[0].hash,
+        skipCount: pages.commits.length,
+    };
 }
 
 //
