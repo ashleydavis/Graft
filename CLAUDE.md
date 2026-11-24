@@ -23,6 +23,12 @@ Graft is a desktop Git client with a simple, intuitive UI that supports the deve
 See `docs/architecture.md` for the reasons.
 
 - Every access to Git, the file system and the computer goes through the Zig backend. The frontend never reaches them itself.
+- All Git work is done by running the `git` command line from Zig. Nothing else is acceptable: no libgit2 and no Git written in Zig.
+- Every Git operation goes through one Zig interface to the `git` command line.
+- The bottom level is one Git interface function that starts `git` with the arguments it is given.
+- On top of it are separate wrapper functions, one per operation as needed, such as `commit` and `clone`. The Git interface function and the wrappers are kept separate.
+- Git interfaces, abstractions and mocks are added only when a feature in Graft needs them, or when the developer explicitly asks for them.
+- A mock of the Git interface is built with it. Every unit test uses the mock, except the unit tests of the Git interface function, which check the Git interface works with real `git` on temporary repos.
 - Expensive work runs in a Ziggy task on a worker thread, never on the backend's main thread or the UI thread.
 - Threads share no state and use no locks. They talk only by messages.
 - Several instances of Graft can run at once, for example on different virtual desktops. Each instance is a separate process with one window.
@@ -59,6 +65,7 @@ Never run `scripts/test-everything.sh` with `--force`. Always run it without the
 
 ## Docs
 
+- [goals.md](goals.md): what Graft aims to be.
 - `docs/setup.md`: set up the project and a worktree.
 - `docs/development.md`: develop, test and contribute.
 - `docs/architecture.md`: the parts, how they fit together and why.
@@ -69,6 +76,9 @@ Never run `scripts/test-everything.sh` with `--force`. Always run it without the
 ## Rules
 
 The enforced rule set is in `docs/rules/` (coding style, the style guide, testing, documentation, Git, Zig and any others). Every change must follow it.
+
+- A rule says what every change must or must not do. Rules go in `docs/rules/`.
+- Documentation says how things work and how to use them (how to run, how to write a test, how a part fits together). It goes in the matching file under "Docs" above, never in `docs/rules/`. A major topic, such as performance testing, gets its own file in `docs/`, listed under "Docs".
 
 ## Communication style
 

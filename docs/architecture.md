@@ -88,7 +88,7 @@ A user action that needs data from Git:
 
 ## User interface
 
-Graft's UI grows one small piece at a time, one ticket at a time. Each page, button, menu and feature exists only once a ticket adds it. The Graft UI mockup guides only the general structure and style of what a ticket adds. It is never copied, and Graft may never have all of its features.
+Graft's UI grows one small piece at a time, one ticket at a time. Each page, button, menu and feature exists only once a ticket adds it.
 
 ## Key design decisions
 

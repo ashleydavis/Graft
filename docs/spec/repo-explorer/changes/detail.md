@@ -31,7 +31,7 @@ The changes pane is where the user gets the working tree's changes ready for the
 - [x] The file diff pane's title shows the file's name only.
 - [x] A file can be staged (moving it from the unstaged list to the staged list) and unstaged (the reverse), whole files only.
 - [x] The lists update after each stage and unstage.
-- [x] The Commit pane follows the mockup in the Graft style guide, without the buttons and features it shows beyond stage, unstage and commit.
+- [x] The Commit pane follows the Graft style guide, without the buttons and features it shows beyond stage, unstage and commit.
 - [x] The git commands it runs show in the git commands panel like the other panes.
 - [x] The Commit pane has a commit message box and a Commit button.
 - [x] Commit commits the staged files with the message, then the staged list empties and the commits pane shows the new commit when open.

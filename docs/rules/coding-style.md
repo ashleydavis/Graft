@@ -34,4 +34,3 @@ These apply to every change.
 - Minimize complexity.
 - Don't overengineer.
 - Keep it as simple as possible (the developer will say if they want it more complicated).
-- Never copy the Graft UI mockup and never add its pages, buttons, menus or features to Graft unless a ticket asks for them. Graft grows one small piece at a time and may never have all the mockup's features.

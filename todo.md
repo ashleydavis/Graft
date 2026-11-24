@@ -2,23 +2,112 @@
 
 ## Now
 
+- Reduce merge conflicts again. infra-1 halved them (about one per two approved tickets on 2026-11-23, from about one per ticket before), but they still happen. The causes are in `docs/reducing-conflicts.md` under "Session of 2026-11-23".
+- I'd like to create some performance tests so we can keep a handle on the performance of Graft as it is developed.
+    - Form: a `perf-tests/` suite, one directory per scenario, written like the smoke tests and run with `bun run test:perf`.
+    - Graft records the timings itself in test mode, with named marks (`<feature>:<step>`, using `performance.mark`) around each user action, and a remote control command returns them. The shell does not time anything, because the `wait_for_*` helpers in `smoke-tests/lib/common.sh` poll and would mostly measure the polling.
+    - Ziggy's remote control passes any command it does not handle itself to the frontend through `window.ziggy.onTestCommand` (Ziggy's `docs/user-guide/testing.md`).
+    - The backend records, for each message and task, the time it waited in the queue, the time it ran and the time spent in `git`.
+    - Zig benchmarks time the slow backend operations on their own (parsing `git log`, listing a directory, reading status).
+    - No Jest performance tests: jsdom does not render like the system web view, so its timings would mislead.
+    - Each scenario runs on generated test repos at small, medium and large sizes. A script generates them the same way every time (fixed seed, dates and authors). The large repo has deep directories, one directory with thousands of entries, big binary files and big diffs.
+    - Measure startup (time until the splash shows, time until the start page is usable and memory use once idle).
+    - Measure opening and switching repos (time until the first commit rows show and time until the whole list has loaded).
+    - Measure the directory listing (the first and second time the browser opens, and expanding a directory with thousands of entries). The second opening measures the directory cache item under "Performance" below.
+    - Measure the commit list (selecting a commit until its files and diff show, and frame times and dropped frames while scrolling the large repo).
+    - Measure diffs (opening a large diff and moving between hunks with the keyboard).
+    - Measure the changes pane (status refresh with many changed files, and staging a file or hunk until the lists update).
+    - Measure responsiveness (keypress to screen update, and the number of tasks that block the UI thread for longer than 50 ms).
+    - Measure resources (peak memory, CPU time and the number of file watchers in use). These are measured on Linux only, read by the test script from `/proc/<pid>/` (`VmHWM` in `status` for peak memory, `utime` and `stime` in `stat` for CPU time, and the `inotify` entries under `fdinfo` for file watchers).
+    - Each scenario runs once to warm up, then 5 times. Results are the median and 95th percentile. Cold starts are reported separately.
+    - Each run appends a JSON line holding the commit, machine, scenario, repo size and timings, so the trend can be tracked. Timings from different machines are not compared.
+    - A run fails when a median goes over its budget.
+    - Runs locally on demand and in the release workflows (`release-linux.yml`, `release-macos-arm64.yml`, `release-macos-x64.yml` and `release-windows.yml`). It is not part of the pre-commit hook: too slow and too noisy.
+    - Rule for `docs/rules/testing.md`: every feature a user waits on (loading, opening, switching, listing, searching, diffing, staging) gets a performance test in the same ticket. Each test has a time budget, set from its first measured run and approved by the developer. A change that pushes any test over its budget is not done. Budgets change only with the developer's approval. A ticket's test plan lists its performance tests and their results.
+    - Repo sizes: small is 10 commits and 10 files, medium is 10,000 commits and 5,000 files, large is 100,000 commits and 50,000 files.
+    - A slowdown of more than 10% against the last result is a warning.
+    - Local results go in `perf-tests/results.jsonl`, which is committed. A release workflow uploads its results as a workflow artifact.
+    - A test over budget in a release workflow blocks the release. Each release workflow has its own budgets, set from its own first measured run, because CI runners are slower and vary more than the developer's machine.
+    - Budgets go in `perf-tests/budgets.json`, keyed by scenario, repo size and where it runs (the machine's host name locally, the workflow's name in CI). A new budget is 125% of the first measured median, then approved by the developer.
+    - A scenario with no budget yet for where it runs records its result and passes, so the first release after a new scenario never fails for lack of a budget.
+    - The 10% warning is checked locally only, against the last line in `results.jsonl` from the same machine. CI has no earlier result to compare with.
+    - Startup time is measured from the moment the test script launches the process, in epoch milliseconds. The frontend reports its marks as `performance.timeOrigin` plus the mark's time, so both use the same clock.
+    - Scroll smoothness is measured from the gaps between `requestAnimationFrame` callbacks. A dropped frame is a gap longer than 1.5 frames at the display's refresh rate.
+    - Release workflows cache the generated test repos with `actions/cache`, keyed on the generator script's hash, so the large repo is not rebuilt on every release.
+    - Scenarios for features Graft does not have yet (the directory browser, diff hunks, staging hunks, file watching) are added by the ticket that builds the feature, not by the first performance ticket.
+    - Every ticket runs `bun run test:perf` before it goes to review, because the pre-commit hook does not run it.
+    - Document the performance tests in their own file, `docs/performance-tests.md`, listed under "Docs" in `CLAUDE.md` and linked from "Testing" in `docs/development.md`: how to run them (all of them and one scenario), how to write a new scenario (adding marks, the remote control command, budgets and the test repos) and how to set or approve a budget. The docs never list the tests.
+- Directory browser: Implement the directory browser from the Graft style guide into graft. 
+    - It's important that it be keyboard navigable.
+    - Tree keys, as in the style guide: E or Space opens or closes a directory, F focuses the tree on it, U goes to the parent directory and A expands or collapses all.
+    - I'd like to try this two ways:
+        1. There's a separate page that always holds the directory browser from which a repo can be selected and click the Open button to open it. We can switch back to the directory browser at any time to open more repos into the current window.
+        2. The directory browser is the first pane in the commit explorer. Meaning that when ever a directory is clicked that is a repo, it opens the commit history to the right. Other panes get opened further to the right.        
+    - Each repo in the directory browser could have "Open in this window" and "Open in new window".
+    - This should be two tickets so I can try both options. I'll approve one and drop the other.
+- Commit pane: Rename it to "Changes".
+- Changes: Commit component doesn't have separate message/title and description. Pick the most standard terminology and make them separate fields.
 - Commit needs a progress indicator to show when it's working, for example while the pre-commit hook runs the tests.
+    - As in the style guide, the indicator is a spinner inside the button while its action runs. Every button whose action takes time (such as Push and Pull) does the same.
 - Commit needs a cancel button to stop a commit in progress that's taking too long (for example running tests).
-- Commit and other operations need a log, for example a bottom panel or drawer, that shows what's happening. It shows earlier commands, the commands running now (with a spinner) and any error. It clears when the repo changes and when the user clicks a clear button, and it is searchable.
-- Show a commit's error in a toast, following the style guide.
+    - Changes: Be able to cancel a commit that is taking ages due to a pre commit hook.
+- Show the error from every Git operation in an error toast, following the style guide.
+    - Show a commit's error in a toast, following the style guide.
 - Breadcrumb trail: it looks good full screen, but in a smaller window when the trail does not fit it wraps, the top part goes off the top of the window and the bottom part overflows the nav bar. Collapse the middle of the trail and truncate long text. Clicking the collapsed part shows a list of the left out items.
 - The "Ctrl+/: Show hotkeys" reminder takes too much screen space. Move it to the Help page.
 - Changing between commits in the Commits pane and between files in the Commit pane causes jerky, flickery horizontal scrolling, because the rightmost pane keeps closing and opening. It should change seamlessly from one item to the next.
-
 - Clicking outside the shortcuts overlay should dismiss it. There should also be a close button if there isn't one already.
 - The Commits pane doesn't have a close button.
 - Changing commits with the arrow keys doesn't change what's shown in the Commit pane.
 - Using the arrow keys to change files in the Commit pane should update what's shown in the diff pane, but it doesn't.
-- Tweak the text on the welcome page.
+- Commits: I'm seeing the main branch, but possibly other branches are hidden? I can't see the other branches. Make sure all branches are shown in the commit log.
+- Repo pane: Show branches here. Click/select a branch to open the pane to see only its commit log.
+- Repo pane: Show tags here. Click/select a tag to open the pane to see the tags details.
+- Commit pane: The dropdown configuration dialog should allow branches to be shown or hidden. We'll need an toggle button that changes between visible and hidden for each branch. Should be able to click a branch and then click "Show only this branch". Also need a button "Show all branches".
+- Commits: For the following columns in the Commits pane, the user should be able to enable/disable them through the Commits pane configuration drop down. All of these should be hidden by default.
+    - Author
+    - Date
+    - Short sha 
+    - Graph and Badges can also be turned on and off, as in the style guide, but are not hidden by default.
+    - The choices are saved in Graft's state file.
+- When viewing the pane for a particular branch, tag, commit, diff or file (focused down) put that thing in the breadcrumb trail.
+- Want the following to be context sensitive and relevant to the current selected component or pane:
+    - Git command pane
+    - Help pane
+    - Command pallette
+    - Shortcuts overlay
+- Remove the commit hash from title of the Commit pane. When we start adding other buttons to the pane title bar there will be limited screen real estate there.
+- When hovered over the filename in the diff title bar show a tooltip with the full path and other info about the file.
+- There doesn't need to be a "Commits" link in the left sidebar, because that now lives in the "repo explorer" in the repo details pane when a repo is opened or selected.
+- Every file path shown anywhere in Graft (as in the diff pane's header) has a drop down menu with:
+  - Copy full file path
+  - Copy relative file path
+  - Copy file name
+  - Open in the platform's file manager, named for the platform (Explorer on Windows, Finder on macOS, the file manager on Linux)
+  - Open in editor
+- Add proper tooltips, as in the style guide, to everything that has more info to show.
+- Make every tree and list searchable by what it shows, not by deep content such as file contents. As in the style guide, a search button and a hotkey enter search mode, typing starts the search (debounced) and Escape leaves search mode.
+- A header row naming the commit list columns (Message, Author, Date, Hash), as in the style guide.
+- End-of-list text in the commit list, as in the style guide: "That is every commit." and "There are no commits."
+- Grey placeholder rows while the commit list loads, as in the style guide, in place of the spinner and "Loading the commits."
+- Ctrl+C copies the most useful value of the selected item in every tree, table and list, for example the selected commit's hash.
+- Move the commit's message and facts (author, dates, hash, parents) into a pane of their own, as in the style guide: the commit details pane gets a "Commit details" row at the top, and opening it shows them in a pane to its right.
+- Copy buttons for the commit's title, description and full hash in the commit details, as in the style guide.
+- A "Refs" row in the commit details facts, as in the style guide, showing the branch badges that point at the commit.
+- A "Refs" row in the commit details facts, as in the style guide, showing the tag badges that point at the commit.
+- When the author and committer are the same person at the same time, the commit details show one "Author" row in place of two, as in the style guide.
+- A maximise button on every pane, and the M key, to make a pane fill the repo explorer and restore it, as in the style guide.
+- A collapse button on every pane, and the C key, to fold a pane into a narrow strip with its title down it, as in the style guide.
+- Resize handles between panes, as in the style guide: drag, arrow keys, double-click to reset, with limits. The widths are saved in Graft's state file.
+- The diff pane grows to fill the leftover width, at least 840px, as in the style guide. It is fixed at 840px now.
+- A pane scrolls back into view when it becomes active again with Left, Escape or a click, as in the style guide.
+- File list views to switch between with the T key, as in the style guide: full paths, name and directory columns, or a tree. The tree is the default. The choice is saved in Graft's state file.
+- A tree view component, as in the style guide, used everywhere a tree is needed (the directory browser, file lists and others): guide lines, +/- toggles, merged single-child directories, and Expand all and Collapse all.
+- Home and End move to the first and last item in every existing list, tree and table.
+- Page Up and Page Down move a page at a time in every existing list, tree and table.
+- Toolbar buttons for Push and Pull. Pull uses rebase by default. Pull's key is Ctrl+Shift+L and Push's key is Ctrl+Shift+K.
 
 ## Code Review
-
-## Code Review Later
 
 - `read_file_diff` in `backend/src/lib/git-diff-tree.zig`: git reads the file path as a pattern, so opening `foo[1].txt` also shows the diff of `foo1.txt`. Pass the path as `:(literal)<path>` in `args` and keep the plain path in `shown_args`.
 - `backend/src/lib/git-log.zig`: with `log.showSignature=true` in the user's git config, `git log` adds signature text to its output, so parsing fails and the commits page shows an error. Add `--no-show-signature` to both `git log` calls.
@@ -29,40 +118,89 @@
 
 ## Later
 
-- Reduce merge conflicts again. infra-1 halved them (about one per two approved tickets on 2026-11-23, from about one per ticket before), but they still happen. The causes are in `docs/reducing-conflicts.md` under "Session of 2026-11-23".
-
-- Commits: I'm seeing the main branch, but possibly other branches are hidden? I can't see the other branches.
-- Make it easy to filter branches. Maybe a branch selector dropdown dialog that we can use to view, and search branches with options to show/hide them. Also an option for each branch to "show only this one". A reset butt to "show all branches" would be good too.
-- Commits: For the following columns in the Commits pane, the user should be able to enable/disable them through the Commits pane configuration drop down. All of these should be hidden by default.
-    - Author
-    - Date
-    - Short sha 
-- There should be an info button in the Commits toolbar with an info drop down that shows information about the opened repository.
-- Want an "auto sync" button that when toggled on enables automatic pull (with rebase) and push for a repo. It just automatically syncs with the remote when updates are available locally or in the remove.
-- Be able to cancel commits that are taking ages due to a pre commit hook.
-- Implement the directory browser from the Graft style guide into graft. 
-    - It's important that it be keyboard navigable.
-    - I'd like to try this two ways:
-        1. There's a separate page that always holds the directory browser from which a repo can be selected and click the Open button to open it. We can switch back to the directory browser at any time to open more repos into the current window.
-        2. The directory browser is the first pane in the commit explorer. Meaning that when ever a directory is clicked that is a repo, it opens the commit history to the right. Other panes get opened further to the right.
-        3. Each repod in the directory browser could have "Open in this window" and "Open in new window".
-- When viewing a particular branch, tag, commit, diff or file (focused down) put that thing in the breadcrumb trail.
-- Want the following to be context sensitive and relevant to the current selected component or pane:
-    - Git command pane
-    - Help pane
-    - Command pallette
-    - Shortcuts overlay
-- Might need another color to show a partially staged file. Eg yellow
+- Keep the automatic stash and unstash during a pull (and rebase). It works well.
+- Graft needs a command palette in the style of VS Code. Its key is Ctrl+Shift+P.
+- Be able to amend commits.
+- Pull, rebase and push is one button. What the button does is configurable.
+- Watching for changes:
+    - Graft watches the file system for changes in a way that never runs the system out of file watchers.
+    - It might find out how many file watchers the system supports and keep to a quota well below that limit.
+    - It falls back to polling for changes when file watchers are not working or the quota is reached.
+    - It ignores very big directories such as `node_modules` and `.git`.
+    - When the watcher notices new files and adds them to the unstaged or staged area, the selection does not change, so the user never loses their place.
+- Graft must have a searchable list of recent repos.
+- Graft needs built-in help that shows the user how to get started. The welcome page and Help page exist, but might need more work. Review them from a new user's point of view.
+- If the Graft config file is bad report the error as a toast message.
+- If the Graft state file is bad, delete it, create it again and report that the file was correcte d in a warning toast message.
+- Commit and other operations need a log, for example a bottom panel or drawer, that shows what's happening. It shows earlier commands, the commands running now (with a spinner) and any error. It clears when the repo changes. It needs:
+    - Collapse and expand.
+    - A Clear all button.
+    - Search.
+- Want an "auto sync" button that when toggled on enables automatic pull (with rebase) and push for a repo. It just automatically syncs with the remote when updates are available locally or in the remote.
+- Stage and unstage hunks, as in the style guide.
+- Might need another color to show a partially staged file. Eg yellow.
 - Any colors used in a view (eg green for staged) need to be explained in context sensitive help.
-- Consider removoing the commit hash from title of Commit pane. When we start adding other buttons to the pane title bar there will be limited screen real estate there.
-- When hovered over the filename in the diff title bar show a tooltip with the full path and other info about the file.
-- Be able to tear out a pane and make it a "pinned" tab that we can switch back to at any time. 
+- Be able to tear out a pane and make it a "pinned" tab that we can switch back to at any time.
+    - When there are too many tabs to show, a searchable drop down tab picker lists them all. A hotkey opens it, the arrow keys move through it and Enter picks a tab and brings it in as the last shown tab, in place of the tab that was last.
+    - Tabs can be reordered by dragging.
 - Be able to tear out a pane or tab into a new window.
-- There probably doesn't need to be a "Commits" link in the left sidebar, because I'm thinking that will go in the "repo explorer" in the repo details pane when a repo is opened or selected.
+- The context senstive help should have "Suggested commands" below the actual commands. These should show 1 or 2 commands that user might want to run next against their repo depending on the page or pane they are currently looking at.
+- Discard a file, hunk or picked lines straight away with no confirmation, as in the style guide. The discarded part stays in view faded and struck through, and its Discard button turns into Undo.
+    - A discarded file or hunk should be undoable/restorable as specified in the Graft style guide. This should survive app restarts or changes between repos. You should stash the hunk with a hash of it's content and a name that indicates it's a stash used by Graft.
+- The staged and unstaged file lists can be searched by file name and contents.
+- Full commit search over file names, contents and commit messages.
+- The title bar should say the curent open repo name and the checked-out branch.
+- The user should be able to set the name of the repo. This should have a button to open the rename dialog from the repo pane configuration dropdown and should be remembered. It doesn't affect the directory name of the repo. The rename dialog should be triggerable by hotkey.
+- Commit graph in the commit list, as in the style guide: coloured lanes, merge and branch curves, dotted lanes for unmerged branches, six lane colours reused in order, and each commit's dot ringed in the row's background colour so it stands clear of the lane lines.
+- Commit list columns drop out when the list is too narrow, as in the style guide.
+- A HEAD badge on the commit the working tree is on, including a detached HEAD, as in the style guide.
+- A commit actions menu, as in the style guide (New branch here, New tag here, Copy hash, Revert, Reset to here), opened from a button or by right-clicking a commit row. New branch's key is B and New tag's key is T.
+- A "Compare with" option for a commit, as in the style guide: against its parent or against the files on disk now.
+- Detect renamed and copied files, and show the old path and how similar the files are, as in the style guide.
+- Selecting a directory in a commit's file list opens a pane with the diffs of all its files stacked, as in the style guide.
+- Focus a tree on one directory, with a button to go to the parent directory, as in the style guide.
+- Commits: There should be an info button in the Commits toolbar with an info drop down that shows information about the opened repository, according to the style guide, including the checked-out branch, how far it is ahead of and behind its remote, any conflicts and the last fetch time.
+- Diff: There should be an info button for each file diff that shows details of the file, according to the style guide.
+- Info buttons, according to the style guide, on everything that has details to show: each file (in file lists and diffs), hunk, commit, branch, tag, remote and directory. Details such as a file's status (added, modified, renamed, copied, conflict) go in the info drop down, never as letters on the rows.
+- A side by side diff view, with the L key to switch between it and unified, as in the style guide. The choice is saved in Graft's state file.
+- Mark the words that changed within a changed line of a diff, as in the style guide.
+- Long diff lines stay on one row and scroll sideways, with the W key to switch wrapping on and off, as in the style guide. Graft always wraps now. The choice is saved in Graft's state file.
+- Unchanged lines between hunks folded behind a bar that counts them, shown or folded again by click or Space, as in the style guide.
+- Choose between showing the whole file and only the changes in a diff, with the F key, as in the style guide. The choice is saved in Graft's state file.
+- A diff options button on the diff's header, as in the style guide, opening a drop down configuration dialog for the diff (unified or side by side, wrap long lines, whole file or only changes), each option with its key shown beside it.
+- The diff card's header shows the change status (added, modified, deleted, renamed or copied), line counts and a rename as old path → new path, as in the style guide.
+- In stacked diffs (such as a directory's), each diff folds away under its header with a button or the E key, as in the style guide. A deleted file's diff starts folded.
+- Diffs over 200 changed lines wait behind a button to show them, as in the style guide.
+- A plain note in place of the diff for a rename with no changes, a binary file (with its sizes) and a mode change, as in the style guide. Graft shows git's raw header lines now.
+- In a diff, the current hunk or run of unchanged lines is marked with a border, as in the style guide, and a click picks one.
+- Find in the diff (Ctrl+F or a button), as in the style guide: highlights matches, shows "n of m", has Previous and Next and closes with Escape.
+- A diff explorer, as in the style guide, to review a whole commit or all the working changes in one pass: every changed file's diff in one scrolling column, a toolbar naming the current file and change with Previous and Next change and file buttons, Up and Down to step through the changes and Shift+Up and Shift+Down to jump file to file.
+- In a diff, Up and Down move between hunks, or between lines in line selection mode. They also move to the previous or next file when at the first or last hunk. Shift+Up and Shift+Down move to the previous or next file.
+- In a diff, Home and End move to the first and last hunk, Ctrl+Home and Ctrl+End move to the first and last file, and Page Up and Page Down move a page of hunks at a time.
+- Line selection mode in a diff (V key), as in the style guide: pick lines with click, Shift+click and Ctrl+click, Space stages or unstages them, and a bar stages, unstages or discards the picked lines.
+- A green bar beside staged lines and staged hunks in a diff, as in the style guide.
+- In a diff, Delete or Backspace discards the picked lines, else the current hunk, else the file, as in the style guide. Pressing it again on a discarded part brings it back.
+- In a diff, Space stages or unstages the current hunk, or the whole file when no hunk is current, as in the style guide.
+- A stage or unstage button next to each changed file, as in the style guide. This includes a partly staged file.
+- S and U stage and unstage the selected file in a file list, as in the style guide.
+- Directory rows in a tree of changed files have buttons that stage, unstage, discard and undo every file inside them, as in the style guide.
+- Changes pane modes, as in the style guide: a "Combined" mode, with one list of every changed file and one diff, as the default, and the S key to switch to the "Staged and unstaged" mode with separate Unstaged and Staged lists. The choice is saved in Graft's state file.
+- In the changes pane's "Staged and unstaged" mode, the H key stacks the Unstaged and Staged panels or puts them side by side, and each panel can be collapsed or maximised, as in the style guide. The choices are saved in Graft's state file.
+- A "No verify" checkbox on the commit box that skips Git's commit hooks (`git commit --no-verify`), as in the style guide.
+- A toast after committing, as in the style guide: "Committed n files: <title>" or "Amended the last commit: <title>".
+- Ctrl+Enter commits the staged changes from the changes pane, as in the style guide.
+- A "Commit and Push" button beside the Commit button in the changes pane, which commits the staged changes and then pushes. Its key is Ctrl+Shift+Enter.
+- Changes pane keys, as in the style guide: Space stages or unstages the selected file or directory, Right moves into the diff, Left or Escape goes back to the file list, and Enter moves to the commit summary.
+- The diff slides in from the left whenever a different file is selected in the changes pane, by mouse click or by key, as in the style guide.
+- Each toolbar button (such as Push and Pull) has a drop down dialog to configure its default behaviour or a one-off behaviour for the next run.
+- Status banners, as in the style guide (info, success, warning, error, with an optional title and a Dismiss button), for things like a rebase in progress, a branch behind its remote or a rejected push.
+- A progress bar for network work (fetch, pull, push, clone), as in the style guide, with a percentage or a moving bar when the size is unknown, labelled with what Git is doing (such as "Receiving objects" or "Connecting to origin").
+- Rows that do not match a search are faded, not hidden, as on the style guide's overview page.
+- File icons chosen by whole file name for `Cargo.lock`, `Dockerfile` and `LICENSE`, as in the style guide.
 
 ## Handling multiple repos
 
-- A popup dialog to search and open repos. This has to be fast and keyboard driven. So hotkey to show/hide (also Escape to hide). And up/down arrows to navigate. Type to search for a repo by name or description.
+- A popup dialog to search and open repos. This has to be fast and keyboard driven. So hotkey (Ctrl+P) to show/hide (also Escape to hide). And up/down arrows to navigate. Type to search for a repo by name or description.
 - To show which repos are open, we just need an open repos section in the left side pane. Like vs code open editors.
 - Breadcrumb trail: The breadcrumb trail can also be used to switch between open repos by clicking on the repo name in the breadcrumb trail. This opens a drop down searachable list of open repos. A hotkey should also trigger that dropdown and it should be navigable and searchable using the keyboards. Search repos just by typing or by clicking the search button and typing in the search input.
     - Clicking on the repo name should open the repo quick select dropdown dialog. 
@@ -79,3 +217,27 @@
 ## Performance
 
 - Cache the local directory structure (only after the browser asks for first time). Watch for changes. Do a throttled update of the cache. This means the directory browser is instantly available on every subsequent viewing. Or don't need update the cache automatically. Just mark the cache as dirty if something changes. That way the cache regenerates on the next use.
+
+
+## Future
+
+- Stash management. Stash's key is Ctrl+Shift+S.
+- Bisect.
+- Advanced worktree management: easy create, merge and destroy. Take a chunk of code and factor it out to a worktree or collapse it back. Make worktrees on worktrees to stack work on work.
+- An easy way to navigate tags, worktrees and branches. Could there be one consolidated view for them?
+- Focus mode: focus on a particular branch or worktree.
+- Could one search cover the whole app? For example the commit list, file contents, staged and unstaged files, tags, branches and worktrees from the same search view.
+- A global PRs view.
+- Be able to open a repo directly from GitHub (possibly cloning it locally).
+- Comments: the user can put comments on commits, files, diff hunks and practically anything else in a repo. A separate page of the app lists those comments. This lets the developer highlight potential issues, often caused by AI, to come back to later.
+- Graft records an audit log of the changes made to the Git repo through the UI.
+- Graft must let the user edit their local identity.
+- Graft must let the user set the identity on a repo by repo basis.
+- Image diff, as in the style guide: before and after side by side on a checkerboard, with dimensions and file sizes.
+- A Blame view of a file, as a tab beside the Unified and Side by side diff views, as in the style guide: each line shows the commit and author that last changed it.
+- A Settings page, as in the style guide, with switches for fetching in the background, showing whitespace changes, auto-stash, prune on fetch, signing commits, running hooks and the pull mode (merge, rebase, fast-forward only or ask each time). Its key is Ctrl+,.
+- Rebase and interactive rebase.
+- Complete branch management.
+    - A Create branch dialog, as in the style guide, with a branch name and a start point. It checks the name and says what is wrong (for example "Branch names cannot contain spaces"), then creates the branch and switches to it. Its key is B.
+    - A Delete branch button, as in the style guide, disabled for a protected branch with the reason in its tooltip.
+    - A Merge drop down button, as in the style guide (Merge into main, Rebase onto main, Tag this commit), and a merge mode choice (merge commit, rebase or squash).
