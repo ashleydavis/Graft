@@ -50,8 +50,17 @@ wait_for_element "commit-${hashes[0]}" 30
 wait_for_text "commit-title-${hashes[0]}" "Commit $EXTRA_COMMIT_COUNT" 30
 
 # Scrolling to the end reads the next page, until the repo's first commit, "Add the readme", shows.
+# control's answer is kept in a variable before jq reads it, as wait_for_element does. With the
+# control call inside the test's own "$(...)", the macOS runner's bash 3.2 split the JSON's braces
+# at the comma and called control twice, so [ got four arguments and failed with "[: too many
+# arguments". The loop then ended before it scrolled, and the Release macOS arm64 workflow failed
+# commit-pages with "commit-title-<hash> never showed "Add the readme"".
 waited=0
-while [ "$(control "{\"command\":\"exists\",\"dataId\":\"commit-$first_hash\"}" | jq -r '.ok')" != "true" ]; do
+while true; do
+    answer="$(control "{\"command\":\"exists\",\"dataId\":\"commit-$first_hash\"}")"
+    if [ "$(printf '%s' "$answer" | jq -r '.ok')" = "true" ]; then
+        break
+    fi
     [ "$waited" -lt 60 ] || fail "the commit list never showed the repo's first commit after scrolling to its end"
     scroll_to_end commit-list-scroll
     sleep 1
