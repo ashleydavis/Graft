@@ -308,7 +308,14 @@ value_of() {
     if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
         fail "get-value $1 failed: $answer"
     fi
-    printf '%s' "$answer" | jq -r '.value'
+    # jq on Windows writes each newline as CRLF unless given --binary, which only the Windows build
+    # of jq accepts. With CRLF a multi-line value never equals the text typed in: the Release
+    # Windows workflow failed changes-commit with "the commit message box lost the message".
+    if [ "$ZIGGY_SMOKE_PLATFORM" = "windows" ]; then
+        printf '%s' "$answer" | jq --binary -r '.value'
+    else
+        printf '%s' "$answer" | jq -r '.value'
+    fi
 }
 
 #
