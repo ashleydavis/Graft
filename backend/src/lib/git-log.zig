@@ -215,11 +215,10 @@ pub fn read_log_page(
 }
 
 //
-// Reads the one commit the hash names from the repo by running `git log -z --max-count=1` through
-// `run_git`, for the commit details pane. Its strings point into git's output, allocated with the
-// allocator, so the caller passes an arena. When git fails, what it wrote goes to the task's log
-// and the function returns error.CommitReadFailed. The help panel shows the command without `-z`
-// and the format, as `git log --max-count=1 <hash>`.
+// Reads the one commit the hash names from the repo by running the command `read_commit_command`
+// builds through `run_git`, for the commit details pane. Its strings point into git's output,
+// allocated with the allocator, so the caller passes an arena. When git fails, what it wrote goes
+// to the task's log and the function returns error.CommitReadFailed.
 //
 pub fn read_commit(
     io: std.Io,
@@ -234,16 +233,8 @@ pub fn read_commit(
     }
     assert(request.repo_path.len > 0);
 
-    const result = try run_git(io, services, allocator, .{
-        .repo_path = request.repo_path,
-        .args = &.{
-            "log",
-            "-z",
-            "--max-count=1",
-            log_format,
-            request.hash,
-        },
-    });
+    const command = try read_commit_command(allocator, request);
+    const result = try run_git(io, services, allocator, command);
     if (result.exit_code != 0) {
         services.log.tool("git", .{
             .stdout = result.stdout,
@@ -285,10 +276,41 @@ pub const CommitRequest = struct {
 };
 
 //
-// The command `read_log_page` runs: the first page starts from HEAD, and a later page starts from
-// the start commit and skips the commits already read. The help panel shows it without `-z` and
-// the format, as `git log --max-count=<page size>` or `git log --max-count=<page size>
-// --skip=<count read> <start hash>`, which lists the same commits in git's own layout.
+// Builds the command `read_commit` runs: `git log -z --no-show-signature --max-count=1` with the
+// format and the hash. `--no-show-signature` stops a `log.showSignature` in the user's git config
+// adding signature text that the parser cannot read. The help panel shows it without `-z` and the
+// format, as `git log --no-show-signature --max-count=1 <hash>`. The arguments are allocated with
+// the allocator.
+//
+pub fn read_commit_command(
+    allocator: std.mem.Allocator,
+    request: CommitRequest,
+) !git_interface.GitCommand {
+    assert(request.repo_path.len > 0);
+    assert(is_commit_hash(request.hash));
+
+    const args = [_][]const u8{
+        "log",
+        "-z",
+        "--no-show-signature",
+        "--max-count=1",
+        log_format,
+        request.hash,
+    };
+    return .{
+        .repo_path = request.repo_path,
+        .args = try allocator.dupe([]const u8, &args),
+    };
+}
+
+//
+// Builds the command `read_log_page` runs: the first page starts from HEAD, and a later page
+// starts from the start commit and skips the commits already read. `--no-show-signature` stops a
+// `log.showSignature` in the user's git config adding signature text that the parser cannot read.
+// The help panel shows it without `-z` and the format, as
+// `git log --no-show-signature --max-count=<page size>` or
+// `git log --no-show-signature --max-count=<page size> --skip=<count read> <start hash>`, which
+// lists the same commits in git's own layout.
 //
 pub fn read_log_page_command(
     allocator: std.mem.Allocator,
@@ -301,6 +323,7 @@ pub fn read_log_page_command(
     const first_page_args = [_][]const u8{
         "log",
         "-z",
+        "--no-show-signature",
         max_count,
         log_format,
     };

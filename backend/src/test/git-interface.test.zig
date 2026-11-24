@@ -7,7 +7,9 @@
 // git runs with the environment Ziggy gives the calling thread, or with the process's own, and that
 // git reads a path after `:(literal)` as itself. It also runs the `log` wrapper's page command
 // against a real repo with a merge, because only real git shows whether paging by a start commit
-// and a skip count lists every commit once.
+// and a skip count lists every commit once, and checks the `git log` commands the `log` wrapper
+// builds give output its parser reads when the repo has `log.showSignature` set and a signed
+// commit.
 //
 
 const std = @import("std");
@@ -961,4 +963,159 @@ test "every page read from the start commit lists the commits of one git log, me
     for (expected_hashes.items, hashes.items) |expected_hash, hash| {
         try std.testing.expectEqualStrings(expected_hash, hash);
     }
+}
+
+// Makes an SSH key with no passphrase at `.git/signing-key` in the test's repo, so a commit can be
+// signed without GPG on the machine and without a key outside the test directory.
+//
+fn make_signing_key(directory: *const TestDirectory) !void {
+    const key_path = try std.fmt.allocPrint(
+        std.testing.allocator,
+        "{s}/.git/signing-key",
+        .{directory.path()},
+    );
+    defer std.testing.allocator.free(key_path);
+
+    const result = try std.process.run(std.testing.allocator, io, .{
+        .argv = &.{
+            "ssh-keygen",
+            "-q",
+            "-t",
+            "ed25519",
+            "-N",
+            "",
+            "-C",
+            "graft-test",
+            "-f",
+            key_path,
+        },
+        .stdout_limit = .unlimited,
+        .stderr_limit = .unlimited,
+        .cwd = .inherit,
+        .environ_map = null,
+        .create_no_window = true,
+        .timeout = .none,
+    });
+    defer std.testing.allocator.free(result.stdout);
+    defer std.testing.allocator.free(result.stderr);
+
+    if (result.term != .exited) {
+        std.debug.print("ssh-keygen did not exit: {s}\n", .{result.stderr});
+    }
+    try std.testing.expect(result.term == .exited);
+    try std.testing.expectEqual(@as(u8, 0), result.term.exited);
+}
+
+//
+// Makes an empty commit with the message in the repo, signed with the SSH key
+// `make_signing_key` made, then sets `log.showSignature=true` in the repo's config, as a user who
+// signs their commits might have it.
+//
+fn commit_signed_with_show_signature(directory: *const TestDirectory, message: []const u8) !void {
+    try make_signing_key(directory);
+    try run_git_successfully(&.{
+        "-C",
+        directory.path(),
+        "-c",
+        "user.name=Graft Test",
+        "-c",
+        "user.email=graft-test@example.com",
+        "-c",
+        "gpg.format=ssh",
+        "-c",
+        "user.signingkey=.git/signing-key",
+        "commit",
+        "--quiet",
+        "--allow-empty",
+        "--gpg-sign",
+        "--message",
+        message,
+    });
+    try run_git_successfully(&.{
+        "-C",
+        directory.path(),
+        "config",
+        "log.showSignature",
+        "true",
+    });
+}
+
+//
+// Runs the command the `log` wrapper built with `start_git`, the way `run_git` starts it, and
+// checks git exits with 0 and its output parses into the one commit the repo holds.
+//
+fn expect_log_command_parses(
+    directory: *const TestDirectory,
+    command: git_interface.GitCommand,
+    title: []const u8,
+) !void {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const argv = try arena.allocator().alloc([]const u8, command.args.len + 2);
+    argv[0] = "-C";
+    argv[1] = directory.path();
+    @memcpy(argv[2..], command.args);
+    const result = try git_interface.start_git(io, arena.allocator(), argv);
+    try std.testing.expectEqual(@as(?u8, 0), result.exit_code);
+
+    const commits = try git_log.parse_log_output(arena.allocator(), result.stdout, 50);
+    try std.testing.expectEqual(@as(usize, 1), commits.len);
+    try std.testing.expectEqualStrings(title, commits[0].title);
+}
+
+//
+// Checks the `log` wrapper's commands work with real git when the repo signs its commits and has
+// `log.showSignature` set, by making a signed commit in a temporary repo, running the page command
+// and the one commit command the wrapper builds and parsing what each writes.
+//
+test "the log wrapper's commands read a signed commit when log.showSignature is set" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    try init_repo(&directory);
+    try commit_signed_with_show_signature(&directory, "A signed commit");
+
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const signed = try git_interface.start_git(io, arena.allocator(), &.{
+        "-C",
+        directory.path(),
+        "cat-file",
+        "commit",
+        "HEAD",
+    });
+    try std.testing.expect(std.mem.indexOf(u8, signed.stdout, "gpgsig") != null);
+
+    const head = try git_interface.start_git(io, arena.allocator(), &.{
+        "-C",
+        directory.path(),
+        "rev-parse",
+        "HEAD",
+    });
+    const head_hash = std.mem.trimEnd(u8, head.stdout, "\n");
+
+    try expect_log_command_parses(
+        &directory,
+        try git_log.read_log_page_command(
+            arena.allocator(),
+            .{
+                .repo_path = directory.path(),
+                .page_size = 50,
+                .start = null,
+            },
+            "--max-count=50",
+        ),
+        "A signed commit",
+    );
+    try expect_log_command_parses(
+        &directory,
+        try git_log.read_commit_command(arena.allocator(), .{
+            .repo_path = directory.path(),
+            .hash = head_hash,
+        }),
+        "A signed commit",
+    );
 }

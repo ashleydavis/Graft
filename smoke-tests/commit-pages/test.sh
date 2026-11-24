@@ -73,7 +73,7 @@ wait_for_missing_element commits-error 5
 # The right sidebar lists the git log that read the page after the first, the most recent command:
 # from the first page's first commit, skipping the page already read.
 click right-sidebar-toggle
-wait_for_text git-command-0-text "git log --max-count=$PAGE_SIZE --skip=$PAGE_SIZE ${hashes[0]}" 30
+wait_for_text git-command-0-text "git log --no-show-signature --max-count=$PAGE_SIZE --skip=$PAGE_SIZE ${hashes[0]}" 30
 click right-sidebar-toggle
 
 # Escape closes the commit pane and Enter on the selected Commits link opens it again, reading the

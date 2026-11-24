@@ -28,8 +28,22 @@ const format_arg = "--format=%H%x1f%P%x1f%D%x1f%an%x1f%ae%x1f%aI%x1f%cn%x1f%ce%x
 // The `git log` call the task makes for the commit, answered with the commit.
 //
 const log_call: git_mock.MockGitOptions = .{
-    .expected_args = &.{ "-C", "/repo", "log", "-z", "--max-count=1", format_arg, commit_hash },
-    .expected_shown_args = &.{ "log", "--max-count=1", commit_hash },
+    .expected_args = &.{
+        "-C",
+        "/repo",
+        "log",
+        "-z",
+        "--no-show-signature",
+        "--max-count=1",
+        format_arg,
+        commit_hash,
+    },
+    .expected_shown_args = &.{
+        "log",
+        "--no-show-signature",
+        "--max-count=1",
+        commit_hash,
+    },
     .exit_code = 0,
     .stdout = commit_hash ++ "\x1f\x1fHEAD -> main\x1f" ++
         "Ada Author\x1fada@example.com\x1f2026-01-01T00:00:00+00:00\x1f" ++

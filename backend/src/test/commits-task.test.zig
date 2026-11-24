@@ -78,8 +78,20 @@ fn expect_task_message(
 
 test "the commits task reads the first page and gives it as its result" {
     const mock = comptime git_mock.mock_git(.{
-        .expected_args = &.{ "-C", "/repo", "log", "-z", "--max-count=50", format_arg },
-        .expected_shown_args = &.{ "log", "--max-count=50" },
+        .expected_args = &.{
+            "-C",
+            "/repo",
+            "log",
+            "-z",
+            "--no-show-signature",
+            "--max-count=50",
+            format_arg,
+        },
+        .expected_shown_args = &.{
+            "log",
+            "--no-show-signature",
+            "--max-count=50",
+        },
         .exit_code = 0,
         .stdout = one_commit_output,
         .stderr = "",
@@ -100,6 +112,7 @@ test "the commits task reads a later page from the start hash, skipping the coun
             "/repo",
             "log",
             "-z",
+            "--no-show-signature",
             "--max-count=5",
             format_arg,
             "--skip=10",
@@ -107,6 +120,7 @@ test "the commits task reads a later page from the start hash, skipping the coun
         },
         .expected_shown_args = &.{
             "log",
+            "--no-show-signature",
             "--max-count=5",
             "--skip=10",
             "abc123",
@@ -126,8 +140,16 @@ test "the commits task reads a later page from the start hash, skipping the coun
 
 test "the commits task reads the first page from HEAD when the start is null" {
     const mock = comptime git_mock.mock_git(.{
-        .expected_args = &.{ "-C", "/repo", "log", "-z", "--max-count=50", format_arg },
-        .expected_shown_args = &.{ "log", "--max-count=50" },
+        .expected_args = &.{
+            "-C",
+            "/repo",
+            "log",
+            "-z",
+            "--no-show-signature",
+            "--max-count=50",
+            format_arg,
+        },
+        .expected_shown_args = &.{ "log", "--no-show-signature", "--max-count=50" },
         .exit_code = 0,
         .stdout = one_commit_output,
         .stderr = "",
@@ -159,8 +181,20 @@ test "the commits task refuses a start hash that is not hexadecimal without star
 
 test "the commits task fails with a description of the error when git log fails" {
     const mock = comptime git_mock.mock_git(.{
-        .expected_args = &.{ "-C", "/repo", "log", "-z", "--max-count=50", format_arg },
-        .expected_shown_args = &.{ "log", "--max-count=50" },
+        .expected_args = &.{
+            "-C",
+            "/repo",
+            "log",
+            "-z",
+            "--no-show-signature",
+            "--max-count=50",
+            format_arg,
+        },
+        .expected_shown_args = &.{
+            "log",
+            "--no-show-signature",
+            "--max-count=50",
+        },
         .exit_code = 128,
         .stdout = "",
         .stderr = "fatal: not a git repository\n",

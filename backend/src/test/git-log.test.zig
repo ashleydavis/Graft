@@ -45,6 +45,7 @@ const first_page_args: []const []const u8 = &.{
     "repo",
     "log",
     "-z",
+    "--no-show-signature",
     "--max-count=50",
     format_arg,
 };
@@ -54,6 +55,7 @@ const first_page_args: []const []const u8 = &.{
 //
 const first_page_shown_args: []const []const u8 = &.{
     "log",
+    "--no-show-signature",
     "--max-count=50",
 };
 
@@ -129,6 +131,7 @@ test "read_log_page starts a later page from the start commit and skips the comm
             "repo",
             "log",
             "-z",
+            "--no-show-signature",
             "--max-count=1",
             format_arg,
             "--skip=7",
@@ -136,6 +139,7 @@ test "read_log_page starts a later page from the start commit and skips the comm
         },
         .expected_shown_args = &.{
             "log",
+            "--no-show-signature",
             "--max-count=1",
             "--skip=7",
             second_hash,
@@ -371,6 +375,7 @@ fn read_later_page(allocator: std.mem.Allocator) !void {
             "repo",
             "log",
             "-z",
+            "--no-show-signature",
             "--max-count=50",
             format_arg,
             "--skip=50",
@@ -378,6 +383,7 @@ fn read_later_page(allocator: std.mem.Allocator) !void {
         },
         .expected_shown_args = &.{
             "log",
+            "--no-show-signature",
             "--max-count=50",
             "--skip=50",
             second_hash,
@@ -517,6 +523,7 @@ const commit_args: []const []const u8 = &.{
     "repo",
     "log",
     "-z",
+    "--no-show-signature",
     "--max-count=1",
     format_arg,
     second_hash,
@@ -527,6 +534,7 @@ const commit_args: []const []const u8 = &.{
 //
 const commit_shown_args: []const []const u8 = &.{
     "log",
+    "--no-show-signature",
     "--max-count=1",
     second_hash,
 };
@@ -711,4 +719,62 @@ fn read_second_commit(allocator: std.mem.Allocator) !void {
 
 test "read_commit frees everything when an allocation fails" {
     try std.testing.checkAllAllocationFailures(std.testing.allocator, read_second_commit, .{});
+}
+
+//
+// Checks the arguments hold `--no-show-signature`, so a `log.showSignature` in the user's git
+// config cannot add signature text to the output the parser reads.
+//
+fn expect_no_show_signature(args: []const []const u8) !void {
+    var found = false;
+    for (args) |arg| {
+        if (std.mem.eql(u8, arg, "--no-show-signature")) {
+            found = true;
+        }
+    }
+    try std.testing.expect(found);
+}
+
+//
+// Checks a `log.showSignature` in the user's git config cannot break the commit list on any page,
+// by building the first page's command and a later page's command and looking for the option in
+// each.
+//
+test "read_log_page_command passes --no-show-signature for the first page and a later page" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const first_page = try git_log.read_log_page_command(
+        arena.allocator(),
+        first_page_request,
+        "--max-count=50",
+    );
+    try expect_no_show_signature(first_page.args);
+
+    const later_page = try git_log.read_log_page_command(
+        arena.allocator(),
+        .{
+            .repo_path = "repo",
+            .page_size = 50,
+            .start = .{
+                .hash = second_hash,
+                .skip_count = 50,
+            },
+        },
+        "--max-count=50",
+    );
+    try expect_no_show_signature(later_page.args);
+}
+
+//
+// Checks a `log.showSignature` in the user's git config cannot break the commit details pane, by
+// building the one commit command and looking for the option and the repo it runs in.
+//
+test "read_commit_command passes --no-show-signature" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const command = try git_log.read_commit_command(arena.allocator(), commit_request);
+    try expect_no_show_signature(command.args);
+    try std.testing.expectEqualStrings("repo", command.repo_path);
 }
