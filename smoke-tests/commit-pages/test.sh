@@ -31,9 +31,14 @@ done
 
 #
 # Every commit's hash, newest first, as the commit list shows them. The history is a line, so
-# git rev-list gives the same order as git log.
+# git rev-list gives the same order as git log. Read with a while loop because the macOS runner
+# runs the smoke tests under its own bash 3.2, and mapfile needs bash 4: the Release macOS arm64
+# workflow failed here with "mapfile: command not found".
 #
-mapfile -t hashes < <(git -C "$repo" rev-list HEAD)
+hashes=()
+while IFS= read -r hash; do
+    hashes+=("$hash")
+done < <(git -C "$repo" rev-list HEAD)
 commit_count="${#hashes[@]}"
 [ "$commit_count" -gt "$PAGE_SIZE" ] || fail "the test repo has $commit_count commits, which fit on one page"
 first_hash="${hashes[$((commit_count - 1))]}"
