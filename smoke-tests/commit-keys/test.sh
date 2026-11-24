@@ -6,7 +6,8 @@
 # presses keys as a user does: Left in the breadcrumb trail drop-down's search box moves its cursor,
 # Ctrl+1 opens the repo explorer, the arrow keys and Enter open the commit pane from the repo
 # details pane's Commits link, then a commit, Up and Down show another commit's details at once,
-# Enter opens one of its files, Escape closes the panes one at a time, Ctrl+1 returns to the repo
+# in the commit pane and in the commit details pane after Enter, a click in it or Right, Enter opens
+# one of its files, Escape closes the panes one at a time, Ctrl+1 returns to the repo
 # explorer from the Help page and Escape then Enter at once closes the commit pane and opens it
 # again while it animates. See test.md.
 #
@@ -59,14 +60,31 @@ wait_for_commit_title "Add the notes"
 press_key Up
 wait_for_commit_title "Change the note"
 
-# Enter makes the commit details pane active, so Down below moves through its files.
+# Enter makes the commit details pane active. With no file pane open, Down and Up there open the
+# commit below and above, as they do in the commit pane, and the commit details pane stays active.
 press_key Enter
+wait_for_commit_title "Change the note"
+press_key Down
+wait_for_commit_title "Add the notes"
+press_key Up
+wait_for_commit_title "Change the note"
+
+# A click in the commit details pane makes it active, and Down there opens the commit below.
+press_key Left
+click commit-details-title
+press_key Down
+wait_for_commit_title "Add the notes"
+
+# Right from the commit pane makes the commit details pane active, and Up there opens the commit
+# above.
+press_key Left
+press_key Right
+press_key Up
 wait_for_commit_title "Change the note"
 wait_for_text changed-file-notes.txt "notes.txt" 30
 
-# Its one changed file is selected once the files are read, Down keeps it selected at the end of
-# the list and Enter opens its diff.
-press_key Down
+# The commit details pane is still active, so Enter opens its one changed file, which is selected
+# once the files are read.
 press_key Enter
 wait_for_element file-pane 30
 wait_for_text file-pane-path "notes.txt" 30

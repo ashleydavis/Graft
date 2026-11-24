@@ -762,7 +762,7 @@ describe("RepoExplorerPage keys", () => {
         expect(activePaneIds()).toEqual(["commit-pane"]);
     });
 
-    test("Down, Up and Enter in the commit details pane select and open a changed file", async () => {
+    test("Down and Up in the commit details pane open the commit below or above, and Enter opens the selected file", async () => {
         const ziggy = installFakeTaskZiggy();
         await listTwoCommits(ziggy);
         pressKey("ArrowDown");
@@ -770,30 +770,47 @@ describe("RepoExplorerPage keys", () => {
         completeCommitDetails(ziggy, 1);
         expect(isSelected("changed-file-README.md")).toBe(true);
         pressKey("ArrowDown");
-        expect(isSelected("changed-file-notes.txt")).toBe(true);
+        const downTask: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[2][0];
+        expect(downTask.taskType).toBe("commit-details");
+        expect(downTask.data).toEqual({
+            repoPath: "/repo",
+            hash: secondCommitJson.hash,
+        });
+        expect(isSelected(`commit-${secondCommitJson.hash}`)).toBe(true);
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
         pressKey("ArrowUp");
-        expect(isSelected("changed-file-README.md")).toBe(true);
-        pressKey("ArrowDown");
-        pressKey("Enter");
-        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[2][0];
-        expect(task.taskType).toBe("file-diff");
-        expect(task.data).toEqual({
+        const upTask: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[3][0];
+        expect(upTask.taskType).toBe("commit-details");
+        expect(upTask.data).toEqual({
             repoPath: "/repo",
             hash: commitJson.hash,
-            path: "notes.txt",
+        });
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(true);
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        completeCommitDetails(ziggy, 3);
+        expect(isSelected("changed-file-README.md")).toBe(true);
+        pressKey("Enter");
+        const fileTask: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[4][0];
+        expect(fileTask.taskType).toBe("file-diff");
+        expect(fileTask.data).toEqual({
+            repoPath: "/repo",
+            hash: commitJson.hash,
+            path: "README.md",
         });
         expect(activePaneIds()).toEqual(["file-pane"]);
     });
 
-    test("selects the first changed file once the files are read, after a Down that came before them selected nothing", async () => {
+    test("Up at the first commit in the commit details pane leaves it open and reads it no more", async () => {
         const ziggy = installFakeTaskZiggy();
         await listTwoCommits(ziggy);
         pressKey("ArrowDown");
         pressKey("Enter");
-        pressKey("ArrowDown");
         completeCommitDetails(ziggy, 1);
+        pressKey("ArrowUp");
+        expect((ziggy.addTask as jest.Mock).mock.calls.length).toBe(2);
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(true);
         expect(isSelected("changed-file-README.md")).toBe(true);
-        expect(isSelected("changed-file-notes.txt")).toBe(false);
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
     });
 
     test("Left and Right move between the open panes and stop at the ends", async () => {
@@ -804,7 +821,6 @@ describe("RepoExplorerPage keys", () => {
         pressKey("ArrowDown");
         pressKey("Enter");
         completeCommitDetails(ziggy, 1);
-        pressKey("ArrowDown");
         pressKey("Enter");
         pressKey("ArrowRight");
         expect(activePaneIds()).toEqual(["file-pane"]);
@@ -826,10 +842,9 @@ describe("RepoExplorerPage keys", () => {
         pressKey("ArrowDown");
         pressKey("Enter");
         completeCommitDetails(ziggy, 1);
-        pressKey("ArrowDown");
         pressKey("Enter");
         pressKey("ArrowDown");
-        expect(isSelected("changed-file-notes.txt")).toBe(true);
+        expect(isSelected("changed-file-README.md")).toBe(true);
         expect(isSelected(`commit-${commitJson.hash}`)).toBe(true);
     });
 
@@ -839,7 +854,6 @@ describe("RepoExplorerPage keys", () => {
         pressKey("ArrowDown");
         pressKey("Enter");
         completeCommitDetails(ziggy, 1);
-        pressKey("ArrowDown");
         pressKey("Enter");
         pressKey("Escape");
         expect(document.querySelector("[data-id=\"file-pane\"]")).toBeNull();
@@ -942,7 +956,6 @@ describe("RepoExplorerPage keys", () => {
         pressKey("ArrowDown");
         pressKey("Enter");
         completeCommitDetails(ziggy, 1);
-        pressKey("ArrowDown");
         pressKey("Enter");
         fireEvent.click(elementWithDataId("changed-file-notes.txt"));
         expect(isSelected("changed-file-notes.txt")).toBe(true);
@@ -1211,7 +1224,6 @@ describe("RepoExplorerPage pane animation", () => {
         pressKey("ArrowDown");
         pressKey("Enter");
         completeCommitDetails(ziggy, 1);
-        pressKey("ArrowDown");
         pressKey("Enter");
         pressKey("Escape");
         pressKey("Escape");

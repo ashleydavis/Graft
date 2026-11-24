@@ -387,6 +387,11 @@ export function targetPaneIndex(columns: Element, target: EventTarget): number |
 // Moves the selection in the active pane one step, up for step -1 and down for step 1. The file
 // pane lists no items, so the selection stays as it is there.
 //
+// With the commit details pane active and no file pane open, Up and Down open the commit above or
+// below, as they do in the commit pane, so the commit details pane follows the keys after Enter, a
+// click in it or Right. The commit details pane stays active, so the next Up or Down moves on
+// through the commits.
+//
 // In a commit's file list, while a file pane is open, the file pane shows the newly selected file
 // at once, so the user can read one diff after another with Up and Down alone. The commit details
 // pane stays active, so the next Up or Down moves on through the list.
@@ -411,13 +416,13 @@ export function moveSelection(state: IRepoExplorerState, items: IRepoExplorerIte
         return moveCommitSelection(state, items.commitHashes, step);
     }
     if (state.activePaneIndex === 2) {
-        const selectedPath = itemAfterMove(items.filePaths, state.selectedPath, step);
         if (state.openPath === undefined) {
             return {
-                ...state,
-                selectedPath,
+                ...moveCommitSelection(state, items.commitHashes, step),
+                activePaneIndex: 2,
             };
         }
+        const selectedPath = itemAfterMove(items.filePaths, state.selectedPath, step);
         if (selectedPath === undefined) {
             return state;
         }

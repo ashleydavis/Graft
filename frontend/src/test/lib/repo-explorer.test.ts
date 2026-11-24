@@ -458,13 +458,37 @@ describe("moveSelection", () => {
         expect(moveSelection(commitsOpen, items, 1).selectedHash).toBe("aaa");
     });
 
-    test("moves the selected file in the commit details pane", () => {
-        expect(moveSelection(detailsOpen, items, 1).selectedPath).toBe("README.md");
-        expect(moveSelection(detailsOpen, items, 1).selectedHash).toBe("bbb");
+    test("opens the commit below or above in the commit details pane with no file open, keeping the commit details pane active", () => {
+        const down = moveSelection({
+            ...detailsOpen,
+            selectedPath: "README.md",
+        }, items, 1);
+        expect(down).toEqual({
+            ...detailsOpen,
+            selectedHash: "ccc",
+            openHash: "ccc",
+        });
+        const up = moveSelection(detailsOpen, items, -1);
+        expect(up).toEqual({
+            ...detailsOpen,
+            selectedHash: "aaa",
+            openHash: "aaa",
+        });
     });
 
-    test("leaves the file pane closed when it moves the selected file with no file open", () => {
-        expect(moveSelection(detailsOpen, items, 1).openPath).toBeUndefined();
+    test("leaves the first and last commit open in the commit details pane with no file open", () => {
+        const first: IRepoExplorerState = {
+            ...detailsOpen,
+            selectedHash: "aaa",
+            openHash: "aaa",
+        };
+        expect(moveSelection(first, items, -1)).toEqual(first);
+        const last: IRepoExplorerState = {
+            ...detailsOpen,
+            selectedHash: "ccc",
+            openHash: "ccc",
+        };
+        expect(moveSelection(last, items, 1)).toEqual(last);
     });
 
     test("opens the newly selected file in the file pane when a file is open, keeping the commit details pane active", () => {
@@ -668,6 +692,38 @@ describe("explorerStateAfterKey", () => {
         const afterUp = explorerStateAfterKey(state, "ArrowUp", items);
         expect(afterUp.selectedHash).toBe("aaa");
         expect(afterUp.openHash).toBe("aaa");
+    });
+
+    test("Up and Down after Enter on a commit open the commit above or below and keep the commit details pane active", () => {
+        const enter = explorerStateAfterKey({
+            ...commitsOpen,
+            selectedHash: "bbb",
+        }, "Enter", items);
+        expect(enter.activePaneIndex).toBe(2);
+        const afterUp = explorerStateAfterKey(enter, "ArrowUp", items);
+        expect(afterUp.selectedHash).toBe("aaa");
+        expect(afterUp.openHash).toBe("aaa");
+        expect(afterUp.activePaneIndex).toBe(2);
+        const afterDown = explorerStateAfterKey(afterUp, "ArrowDown", items);
+        expect(afterDown.selectedHash).toBe("bbb");
+        expect(afterDown.openHash).toBe("bbb");
+        expect(afterDown.activePaneIndex).toBe(2);
+        expect(explorerStateAfterKey(afterUp, "ArrowUp", items)).toEqual(afterUp);
+    });
+
+    test("Up and Down with a file open in the commit details pane still move through the commit's files", () => {
+        const fileOpen: IRepoExplorerState = {
+            ...allOpen,
+            activePaneIndex: 2,
+            selectedPath: "notes.txt",
+            openPath: "notes.txt",
+        };
+        const afterUp = explorerStateAfterKey(fileOpen, "ArrowUp", items);
+        expect(afterUp.openPath).toBe("README.md");
+        expect(afterUp.openHash).toBe("bbb");
+        const afterDown = explorerStateAfterKey(afterUp, "ArrowDown", items);
+        expect(afterDown.openPath).toBe("notes.txt");
+        expect(afterDown.openHash).toBe("bbb");
     });
 
     test("Enter on the commit whose details are open makes the commit details pane active", () => {
