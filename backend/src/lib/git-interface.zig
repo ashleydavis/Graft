@@ -220,7 +220,9 @@ pub fn git_command_event(
 // same arguments without `-z` and without a `--format` that writes bytes by their hex code (`%x`),
 // which Graft adds only to read git's output, so the command shown prints git's own output when
 // pasted into a terminal. The arguments from `--` on are paths, so they are all shown, even one
-// named `-z`. The list is allocated with the allocator, and its words point into `args`.
+// named `-z`. Each is shown with the `:(literal)` Graft puts in front of a path left out, so the
+// help panel shows the path as the user would type it. The list is allocated with the allocator,
+// and its words point into `args`.
 //
 pub fn shown_args(allocator: std.mem.Allocator, args: []const []const u8) ![]const []const u8 {
     assert(args.len > 0);
@@ -246,10 +248,33 @@ pub fn shown_args(allocator: std.mem.Allocator, args: []const []const u8) ![]con
             shown_count += 1;
         }
     }
-    @memcpy(shown[shown_count..], args[path_index..]);
     assert(shown_count == path_index - parser_count);
+    for (args[path_index..], shown[shown_count..]) |arg, *shown_arg| {
+        shown_arg.* = shown_path(arg);
+    }
     assert(shown.len > 0);
     return shown;
+}
+
+//
+// The text Graft puts in front of a path it passes after `--` so git reads the path as it is, with
+// `*`, `?` and `[` in it read as those characters. The value is git's own name for this, its
+// `literal` pathspec magic, written in the long form.
+//
+pub const literal_path_prefix = ":(literal)";
+
+//
+// Works out an argument after `--` as the help panel shows it: the path without the
+// `:(literal)` Graft puts in front of it, or the argument as it is when it has none.
+//
+pub fn shown_path(arg: []const u8) []const u8 {
+    if (std.mem.startsWith(u8, arg, literal_path_prefix)) {
+        const path = arg[literal_path_prefix.len..];
+        assert(path.len + literal_path_prefix.len == arg.len);
+        return path;
+    }
+    assert(!std.mem.startsWith(u8, arg, literal_path_prefix));
+    return arg;
 }
 
 //

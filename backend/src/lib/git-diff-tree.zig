@@ -193,10 +193,11 @@ fn read_changed_files_git(
 
 //
 // Reads the diff of one file in the commit by running `git diff-tree -r -p` through `run_git`,
-// limited to the file's path, compared as `read_changed_files` compares. The diff is git's text,
-// allocated with the allocator. When git fails, what it wrote goes to the task's log and the
-// function returns error.GitDiffTreeFailed. The help panel shows the same command, because Graft
-// reads git's own output.
+// limited to the file's path, compared as `read_changed_files` compares. The path is passed as a
+// literal path (`:(literal)<path>`), so a path such as `foo[1].txt` limits the diff to that file
+// alone. The diff is git's text, allocated with the allocator. When git fails, what it wrote goes
+// to the task's log and the function returns error.GitDiffTreeFailed. The help panel shows the
+// same command with the path as the user would type it, without `:(literal)`.
 //
 pub fn read_file_diff(
     io: std.Io,
@@ -218,8 +219,17 @@ pub fn read_file_diff(
     assert(request.path.len > 0);
 
     //
-    // The path follows `--`, so git reads it as a path even when it starts with a dash.
+    // The path follows `--`, so git reads it as a path even when it starts with a dash, and it
+    // starts with `:(literal)`, so git reads `*`, `?` and `[` in it as those characters and the
+    // path matches that one file alone.
     //
+    const literal_path = try std.mem.concat(allocator, u8, &.{
+        git_interface.literal_path_prefix,
+        request.path,
+    });
+    defer allocator.free(literal_path);
+
+    assert(literal_path.len == git_interface.literal_path_prefix.len + request.path.len);
     const args: []const []const u8 = &.{
         "diff-tree",
         "-r",
@@ -228,7 +238,7 @@ pub fn read_file_diff(
         "--no-commit-id",
         request.hash,
         "--",
-        request.path,
+        literal_path,
     };
     const result = try run_git(io, services, allocator, .{
         .repo_path = request.repo_path,

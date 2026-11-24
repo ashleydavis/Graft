@@ -26,7 +26,7 @@ The repo explorer page shows its panes side by side in columns. The first is the
 - The commit details pane queues the commit details task, a background task that runs the `log` wrapper for the commit's details and the `diff-tree` wrapper for its changed files.
 - The `log` wrapper reads one commit with `git log -z --max-count=1` and the same `--format` string the commit pane uses.
 - The `diff-tree` wrapper reads the changed files with `git diff-tree -r -z --root --no-commit-id --name-status <hash>`, which compares the commit with its first parent, or with an empty tree for the first commit. git lists no changed files for a merge commit. It reads each file's line counts with the same command and `--numstat` in place of `--name-status`, because git writes only one of the two when given both. It refuses line counts that are not for the same files in the same order.
-- The file pane queues the file diff task, a background task that runs the `diff-tree` wrapper for the file's diff with `git diff-tree -r -p --root --no-commit-id <hash> -- <path>`.
+- The file pane queues the file diff task, a background task that runs the `diff-tree` wrapper for the file's diff with `git diff-tree -r -p --root --no-commit-id <hash> -- :(literal)<path>`. The `:(literal)` makes git read the path as it is, with `*`, `?` and `[` in it read as those characters: opening `foo[1].txt` shows its diff alone. The help panel shows the path without `:(literal)`.
 - Both wrappers start `git` through the Git interface function. They refuse a hash that is not hexadecimal and an empty file path without starting `git`.
 
 ## Acceptance criteria
@@ -54,6 +54,7 @@ The repo explorer page shows its panes side by side in columns. The first is the
 - [x] A pane animates as it opens and as it closes, using the style guide's duration and easing tokens.
 - [x] The animation is turned off while the system's reduced motion setting is on.
 - [x] Keys and clicks work during the animation.
+- [x] The file pane passes the file's path to git as a literal path, so a path with `*`, `?` or `[` in it shows that file's diff alone.
 
 ## Open questions
 

@@ -73,7 +73,8 @@ const numstat_shown_args: []const []const u8 = &.{
 };
 
 //
-// The arguments `read_file_diff` starts git with for notes.txt in the commit in the repo at "repo".
+// The arguments `read_file_diff` starts git with for notes.txt in the commit in the repo at "repo",
+// with the path passed as a literal path.
 //
 const file_diff_args: []const []const u8 = &.{
     "-C",
@@ -85,11 +86,12 @@ const file_diff_args: []const []const u8 = &.{
     "--no-commit-id",
     commit_hash,
     "--",
-    "notes.txt",
+    ":(literal)notes.txt",
 };
 
 //
-// The arguments the help panel is given to show for the same command.
+// The arguments the help panel is given to show for the same command, with the path as the user
+// would type it.
 //
 const file_diff_shown_args: []const []const u8 = &.{
     "diff-tree",
@@ -576,6 +578,53 @@ test "read_file_diff reads the diff of the one file in the commit" {
         arena.allocator(),
         mock,
         file_diff_request,
+    );
+    try std.testing.expectEqualStrings(notes_diff, diff);
+}
+
+test "read_file_diff passes a path that holds pattern characters as a literal path" {
+    var task = git_mock.mock_task();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = &.{
+            "-C",
+            "repo",
+            "diff-tree",
+            "-r",
+            "-p",
+            "--root",
+            "--no-commit-id",
+            commit_hash,
+            "--",
+            ":(literal)foo[1].txt",
+        },
+        .expected_shown_args = &.{
+            "diff-tree",
+            "-r",
+            "-p",
+            "--root",
+            "--no-commit-id",
+            commit_hash,
+            "--",
+            "foo[1].txt",
+        },
+        .exit_code = 0,
+        .stdout = notes_diff,
+        .stderr = "",
+        .start_error = null,
+    });
+    const diff = try git_diff_tree.read_file_diff(
+        io,
+        git_mock.mock_services(&task),
+        arena.allocator(),
+        mock,
+        .{
+            .repo_path = "repo",
+            .hash = commit_hash,
+            .path = "foo[1].txt",
+        },
     );
     try std.testing.expectEqualStrings(notes_diff, diff);
 }

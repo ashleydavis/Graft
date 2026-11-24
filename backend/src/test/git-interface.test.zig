@@ -4,9 +4,10 @@
 // can run in parallel with themselves, and checks only that the function starts git with the
 // arguments, reports its exit code, standard output and standard error and sends the event that
 // names the command with how long it ran, and how that command is written for a shell. It checks
-// git runs with the environment Ziggy gives the calling thread, or with the process's own. It also
-// runs the `log` wrapper's page command against a real repo with a merge, because only real git
-// shows whether paging by a start commit and a skip count lists every commit once.
+// git runs with the environment Ziggy gives the calling thread, or with the process's own, and that
+// git reads a path after `:(literal)` as itself. It also runs the `log` wrapper's page command
+// against a real repo with a merge, because only real git shows whether paging by a start commit
+// and a skip count lists every commit once.
 //
 
 const std = @import("std");
@@ -15,6 +16,7 @@ const git_interface = @import("../lib/git-interface.zig");
 const git_log = @import("../lib/git-log.zig");
 const test_environment = @import("test-environment.zig");
 
+const assert = std.debug.assert;
 const io = std.testing.io;
 const FakeNativeApp = ziggy.fake_native_app.FakeNativeApp;
 const TaskContext = ziggy.task_runner.TaskContext;
@@ -115,6 +117,69 @@ fn commit(directory: *const TestDirectory, message: []const u8) !void {
         "--message",
         message,
     });
+}
+
+//
+// Writes each file with the same one line in the repo's working tree, then commits them all, with
+// a fixed author so the commit runs without the user's own git config.
+//
+fn commit_files(directory: *const TestDirectory, file_names: []const []const u8) !void {
+    assert(file_names.len > 0);
+
+    var repo = try std.Io.Dir.cwd().openDir(io, directory.path(), .{});
+    defer repo.close(io);
+
+    for (file_names) |file_name| {
+        try repo.writeFile(io, .{
+            .sub_path = file_name,
+            .data = "A line.\n",
+        });
+    }
+    try run_git_successfully(&.{
+        "-C",
+        directory.path(),
+        "add",
+        "--all",
+    });
+    try run_git_successfully(&.{
+        "-C",
+        directory.path(),
+        "-c",
+        "user.name=Graft Test",
+        "-c",
+        "user.email=graft-test@example.com",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "--quiet",
+        "--message",
+        "Add the files",
+    });
+}
+
+//
+// Runs `git diff-tree -p` for the newest commit in the repo, limited to the path, and returns what
+// git wrote, which the caller frees with `std.testing.allocator`.
+//
+fn read_newest_commit_diff(directory: *const TestDirectory, path: []const u8) ![]const u8 {
+    assert(path.len > 0);
+
+    const result = try git_interface.start_git(io, std.testing.allocator, &.{
+        "-C",
+        directory.path(),
+        "diff-tree",
+        "-r",
+        "-p",
+        "--root",
+        "--no-commit-id",
+        "HEAD",
+        "--",
+        path,
+    });
+    defer std.testing.allocator.free(result.stderr);
+
+    try std.testing.expectEqual(@as(?u8, 0), result.exit_code);
+    return result.stdout;
 }
 
 test "start_git reports what git wrote to its standard output and exit code 0" {
@@ -316,6 +381,45 @@ test "run_git sends the shown command with its duration and runs git in the repo
         "\"status\":\"succeeded\",\"outputs\":{\"stdout\":" ++
             "\"The second commit\\nThe first commit\\n\"}",
     );
+}
+
+test "git reads a path after :(literal) as itself" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    try init_repo(&directory);
+    try commit_files(&directory, &.{
+        "foo[1].txt",
+        "foo1.txt",
+    });
+
+    const literal_diff = try read_newest_commit_diff(&directory, ":(literal)foo[1].txt");
+    defer std.testing.allocator.free(literal_diff);
+
+    try std.testing.expect(std.mem.indexOf(u8, literal_diff, "b/foo[1].txt\n") != null);
+    try std.testing.expect(std.mem.indexOf(u8, literal_diff, "foo1.txt") == null);
+
+    //
+    // Without `:(literal)` git reads `[1]` as a pattern that matches foo1.txt, which is why Graft
+    // passes the literal path.
+    //
+    const pattern_diff = try read_newest_commit_diff(&directory, "foo[1].txt");
+    defer std.testing.allocator.free(pattern_diff);
+
+    try std.testing.expect(std.mem.indexOf(u8, pattern_diff, "b/foo1.txt\n") != null);
+
+    //
+    // `*` and `?` are read as themselves too, so they match neither file.
+    //
+    const star_diff = try read_newest_commit_diff(&directory, ":(literal)foo*.txt");
+    defer std.testing.allocator.free(star_diff);
+
+    try std.testing.expectEqualStrings("", star_diff);
+    const question_diff = try read_newest_commit_diff(&directory, ":(literal)foo?.txt");
+    defer std.testing.allocator.free(question_diff);
+
+    try std.testing.expectEqualStrings("", question_diff);
 }
 
 //
@@ -540,6 +644,43 @@ test "shown_args keeps every argument when Graft adds none to read the output" {
         "--",
         "notes.txt",
     });
+}
+
+test "shown_args leaves out the :(literal) in front of each path after --" {
+    try expect_shown_args(std.testing.allocator, &.{
+        "diff-tree",
+        "-p",
+        "abc123",
+        "--",
+        ":(literal)foo[1].txt",
+        ":(literal)a*b?.txt",
+    }, &.{
+        "diff-tree",
+        "-p",
+        "abc123",
+        "--",
+        "foo[1].txt",
+        "a*b?.txt",
+    });
+}
+
+test "shown_args keeps a :(literal) before --" {
+    try expect_shown_args(std.testing.allocator, &.{
+        "log",
+        ":(literal)main",
+    }, &.{
+        "log",
+        ":(literal)main",
+    });
+}
+
+test "shown_path leaves out :(literal) only from the start of a path" {
+    try std.testing.expectEqualStrings("foo[1].txt", git_interface.shown_path(
+        ":(literal)foo[1].txt",
+    ));
+    try std.testing.expectEqualStrings("notes.txt", git_interface.shown_path("notes.txt"));
+    try std.testing.expectEqualStrings("a:(literal)b", git_interface.shown_path("a:(literal)b"));
+    try std.testing.expectEqualStrings("--", git_interface.shown_path("--"));
 }
 
 //

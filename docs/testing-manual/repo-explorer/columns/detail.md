@@ -77,7 +77,26 @@ bun run macos
 15. Choose Dark from the theme menu in the top bar and repeat steps 3 to 8. Check every column is drawn in dark colours and its text is readable.
 16. Choose File, then "Open repo", and choose `/tmp/graft/merge-repo`. Click the "Commits" link and scroll the commit list to its end. Check every "Side" and "Main" commit from 30 down to 1 is listed once, the two taking turns, the list ends with "Add the readme" and no loading row is left under it. Open the right sidebar and check the most recent command is `git log --max-count=50 --skip=50 <hash>`, where the hash is the one of "Merge side", the first commit listed. Close the sidebar.
 17. Close the window. Turn on reduced motion in the system's settings (Reduce Animation in GNOME's Accessibility settings, Animation effects off in Windows' Accessibility settings, Reduce motion in macOS's Accessibility Display settings), run Graft again and open the test repo. Open the commit list, a commit and a file, then close them with their X buttons. Check each column appears and goes at once. Turn reduced motion off again and close the window.
+18. Add a commit with two files whose names git could read as a pattern:
+
+    ```bash
+    printf 'The bracket file.\n' > '/tmp/graft/test-repo/foo[1].txt'
+    ```
+
+    ```bash
+    printf 'The plain file.\n' > /tmp/graft/test-repo/foo1.txt
+    ```
+
+    ```bash
+    git -C /tmp/graft/test-repo add --all
+    ```
+
+    ```bash
+    git -C /tmp/graft/test-repo commit --message "Add the two files"
+    ```
+
+    Run Graft again, open `/tmp/graft/test-repo` and the commit list, click "Add the two files" and check "Files changed (2)" lists foo1.txt and foo[1].txt. Click foo[1].txt and check the fourth column shows only the green row "The bracket file.", with no row "The plain file.".
 
 ## Expected result
 
-Each commit row shows its title, refs, author, date and short hash, the title never hidden by badges, and a commit with more badges than fit shows a "…" whose drop-down lists them all. Clicking a commit opens its full message, author, committer, dates, parents and changed files with their line counts to the right of the commit list, clicking a changed file opens its diff to the right of that, the commit list reads each page after the first from the first commit listed so a merge's commits from both sides are each listed once, the page scrolls each new column into view and each new column closes with its X button, in the light and dark themes. Each column fades in as it opens and fades and narrows away as it closes while the keys and clicks keep working, and opens and closes at once under reduced motion.
+Each commit row shows its title, refs, author, date and short hash, the title never hidden by badges, and a commit with more badges than fit shows a "…" whose drop-down lists them all. Clicking a commit opens its full message, author, committer, dates, parents and changed files with their line counts to the right of the commit list, clicking a changed file opens its diff to the right of that, the commit list reads each page after the first from the first commit listed so a merge's commits from both sides are each listed once, the page scrolls each new column into view and each new column closes with its X button, in the light and dark themes. Each column fades in as it opens and fades and narrows away as it closes while the keys and clicks keep working, and opens and closes at once under reduced motion. A file whose name has `[` in it shows its own diff alone.

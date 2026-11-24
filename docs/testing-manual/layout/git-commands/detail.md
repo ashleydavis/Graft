@@ -35,7 +35,26 @@ bun run macos
 9. Click the button at the far right of the top bar twice, to close and open the sidebar. Check the same two commands are still listed.
 10. Click "Help" in the left sidebar. Check the sidebar shows "This page has run no Git commands."
 11. Click "Repo explorer" in the left sidebar, then the repo details pane's "Commits" link. Check at most two commands are listed again, with `git log --max-count=50` at the top, because the page ran it again.
+12. Close the window. Add a commit with two files whose names git could read as a pattern:
+
+    ```bash
+    printf 'The bracket file.\n' > '/tmp/graft/test-repo/foo[1].txt'
+    ```
+
+    ```bash
+    printf 'The plain file.\n' > /tmp/graft/test-repo/foo1.txt
+    ```
+
+    ```bash
+    git -C /tmp/graft/test-repo add --all
+    ```
+
+    ```bash
+    git -C /tmp/graft/test-repo commit --message "Add the two files"
+    ```
+
+    Run Graft again, open `/tmp/graft/test-repo`, open the right sidebar and the commit list, click "Add the two files" and click foo[1].txt. Check the sidebar's top command is `git diff-tree -r -p --root --no-commit-id <hash> -- 'foo[1].txt'`, with no `:(literal)` in it.
 
 ## Expected result
 
-The right sidebar shows the two Git commands the open page ran most recently, the most recent first, under the `cd` into the repo, each with how long it took and the total time of every command the page ran. Each copies with its button and runs in a terminal. The commands stay when a pane or the sidebar closes and follow the page that is open.
+The right sidebar shows the two Git commands the open page ran most recently, the most recent first, under the `cd` into the repo, each with how long it took and the total time of every command the page ran. Each copies with its button and runs in a terminal. A file's path is shown as the user would type it, without `:(literal)`. The commands stay when a pane or the sidebar closes and follow the page that is open.

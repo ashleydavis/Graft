@@ -20,7 +20,8 @@ const test_environment = @import("test-environment.zig");
 const commit_hash = "1111111111111111111111111111111111111111";
 
 //
-// The arguments of the `git diff-tree` call the task makes for README.md in the commit.
+// The arguments of the `git diff-tree` call the task makes for README.md in the commit, with the
+// path passed as a literal path.
 //
 const diff_args: []const []const u8 = &.{
     "-C",
@@ -32,11 +33,12 @@ const diff_args: []const []const u8 = &.{
     "--no-commit-id",
     commit_hash,
     "--",
-    "README.md",
+    ":(literal)README.md",
 };
 
 //
-// The arguments the help panel is given to show for the same command.
+// The arguments the help panel is given to show for the same command, with the path as the user
+// would type it.
 //
 const diff_shown_args: []const []const u8 = &.{
     "diff-tree",
