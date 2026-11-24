@@ -40,6 +40,10 @@ wait_for_missing_element breadcrumb-pane-commits 30
 open_commit_pane
 wait_for_text breadcrumb-pane-commits "Commits" 30
 wait_for_in_view breadcrumb-pane-commits 30
+# The commit pane shows before its commit list has read and drawn the commits, and click fails at
+# once when the element is missing. The Release macOS arm64 workflow failed here with "No element
+# has the data-id commit-<hash>", so the test waits for the row first.
+wait_for_element "commit-$head_hash" 30
 click "commit-$head_hash"
 wait_for_text breadcrumb-pane-commit "${head_hash:0:7}" 30
 wait_for_in_view breadcrumb-pane-commit 30
