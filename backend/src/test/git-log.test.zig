@@ -202,7 +202,7 @@ test "read_log_page refuses an empty repo path without starting git" {
         .{
             .repo_path = "",
             .page_size = 10,
-            .after_hash = null,
+            .start = null,
         },
     ));
     try std.testing.expectEqualStrings(
