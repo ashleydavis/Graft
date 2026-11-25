@@ -1,10 +1,10 @@
 //
 // Tests the keyboard shortcuts overlay: renders it with a fake window.ziggy that keeps the action
 // handler it registers and gives an action list, runs the Keyboard Shortcuts action as Ziggy does
-// for the `?` shortcut and presses Escape and clicks outside the overlay, then checks when the
-// overlay shows and when it has gone. It checks the overlay lists the shortcuts of the action list
-// in one column, that its search box has the focus and filters them and that a list Ziggy cannot
-// read is reported. It presses Ctrl+/ on the page, in a text box and in the search box and checks
+// for the `?` shortcut, presses Escape, clicks outside the overlay and clicks its close button,
+// then checks when the overlay shows and when it has gone. It checks the overlay lists the
+// shortcuts of the action list in one column, that its search box has the focus and filters them
+// and that a list Ziggy cannot read is reported. It presses Ctrl+/ on the page, in a text box and in the search box and checks
 // it opens and closes the overlay without typing, and that Ctrl+Shift+/ leaves it closed. It holds
 // Ctrl+/ with its repeats sent as keyups and keydowns with `repeat` false, as WebKitGTK sends
 // them on some Linux desktops, and checks the overlay opens once and stays open, and that releasing
@@ -300,14 +300,29 @@ describe("ShortcutsOverlay", () => {
         await waitForClosedOverlay();
     });
 
-    test("a click outside the overlay leaves it open", async () => {
+    test("a click outside the overlay closes it and clears the search", async () => {
         const ziggy = await renderShortcutsOverlay();
         await pressQuestionMark(ziggy);
-        const backdrop = document.querySelector<HTMLElement>(".MuiBackdrop-root");
-        expect(backdrop).not.toBeNull();
+        typeSearch("open");
+        const outside = overlayElement("shortcuts-overlay-outside");
+        expect(outside).not.toBeUndefined();
         act(() => {
-            fireEvent.mouseDown(backdrop ?? document.body);
-            fireEvent.click(backdrop ?? document.body);
+            fireEvent.mouseDown(outside ?? document.body);
+            fireEvent.click(outside ?? document.body);
+        });
+        await waitForClosedOverlay();
+        await pressQuestionMark(ziggy);
+        expect(overlayElement("shortcuts-overlay-search")).toHaveProperty("value", "");
+    });
+
+    test("a click inside the overlay leaves it open", async () => {
+        const ziggy = await renderShortcutsOverlay();
+        await pressQuestionMark(ziggy);
+        const list = overlayElement("shortcuts-overlay-columns");
+        expect(list).not.toBeUndefined();
+        act(() => {
+            fireEvent.mouseDown(list ?? document.body);
+            fireEvent.click(list ?? document.body);
         });
 
         //
@@ -318,6 +333,37 @@ describe("ShortcutsOverlay", () => {
             await new Promise(resolve => setTimeout(resolve, 1000));
         });
         expect(overlayElement("shortcuts-overlay-search")).not.toBeUndefined();
+    });
+
+    test("the title row has a close button at its right with a Close tooltip", async () => {
+        const ziggy = await renderShortcutsOverlay();
+        await pressQuestionMark(ziggy);
+        const title = overlayElement("shortcuts-overlay-title");
+        const close = overlayElement("shortcuts-overlay-close");
+        expect(close).not.toBeUndefined();
+        expect(title?.lastElementChild).toBe(close);
+        expect(close?.getAttribute("aria-label")).toBe("Close");
+        act(() => {
+            fireEvent.mouseOver(close ?? document.body);
+        });
+        await waitFor(() => {
+            expect(document.querySelector("[role=\"tooltip\"]")?.textContent).toBe("Close");
+        });
+    });
+
+    test("a click on the close button closes the overlay and clears the search", async () => {
+        const ziggy = await renderShortcutsOverlay();
+        await pressQuestionMark(ziggy);
+        typeSearch("open");
+        const close = overlayElement("shortcuts-overlay-close");
+        expect(close).not.toBeUndefined();
+        act(() => {
+            fireEvent.click(close ?? document.body);
+        });
+        await waitForClosedOverlay();
+        await pressQuestionMark(ziggy);
+        expect(overlayElement("shortcuts-overlay-search")).toHaveProperty("value", "");
+        expect(shownShortcuts()).toEqual(["shortcut-open-repo", "shortcut-toggle-shortcuts-overlay", "shortcut-toggle-shortcuts-overlay-ctrl", "shortcut-quit"]);
     });
 
     test("Ctrl+/ on the page shows the overlay and keeps the key from doing anything else", async () => {

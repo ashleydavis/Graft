@@ -7,7 +7,7 @@ What every smoke test uses: it starts the app, talks to it through the remote co
 - `restart_test_app`: stops the app and starts it again, with a new remote control server, on the config and state files the last run left.
 - `restart_app_on_start_page`: starts the app again as `restart_test_app` does and waits until it shows its start page.
 - `control <json>`: sends one command to the app through the remote control server and prints the reply.
-- `click <data-id>`: clicks the element with the data-id.
+- `click <data-id>`: clicks the element with the data-id as a user's click reaches the page: a mousedown and a mouseup, then the click.
 - `open_sidebar_page <page>`: clicks the page's link in the left sidebar (data-id `left-sidebar-<page>-link`) and waits until the page (data-id `<page>-page`) shows. Every smoke test opens a page from the sidebar with it, so a change to the links is one edit in this file.
 - `answer_picker [path ...]`: gives the next folder picker the paths, so it shows no dialog and returns them as chosen. No paths is a cancelled picker.
 - `open_repo_with_button <path>`: opens the repo at the path from the welcome page as a user does. It gives the folder picker the path with `answer_picker`, clicks the welcome page's Open repo button and waits until the repo explorer page shows its repo details pane. Every smoke test that needs an open repo opens it with this.

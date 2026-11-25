@@ -4,7 +4,8 @@
 # Starts the real app with remote control on and presses keys as a user does: `?` shows the
 # keyboard shortcuts overlay, which lists Open repo's shortcut first, with the focus in its search
 # box. `?` typed there types the character, filters the list to the Keyboard Shortcuts action and
-# leaves the overlay open. Escape closes it. Typing "quit" in the search box filters the list to
+# leaves the overlay open. Escape closes it. A click outside the overlay closes it, and so does a
+# click on its close button. Typing "quit" in the search box filters the list to
 # Quit. Then `?` typed in the breadcrumb trail drop-down's search box types the character and leaves
 # the overlay closed. Ctrl+/, pressed with the key-down test command, shows the overlay from that
 # search box without typing, stays open while Ctrl+/ repeats, lists Ctrl+/, closes the overlay
@@ -118,6 +119,18 @@ wait_for_element shortcuts-overlay 30
 
 # Escape closes the overlay.
 press_key Escape
+wait_for_missing_element shortcuts-overlay 30
+
+# A click outside the overlay closes it.
+press_key "?"
+wait_for_element shortcuts-overlay-outside 30
+click shortcuts-overlay-outside
+wait_for_missing_element shortcuts-overlay 30
+
+# A click on the close button at the right of the title closes the overlay.
+press_key "?"
+wait_for_element shortcuts-overlay-close 30
+click shortcuts-overlay-close
 wait_for_missing_element shortcuts-overlay 30
 
 # Typing a label in the search box filters the list to the shortcuts it matches.

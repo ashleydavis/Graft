@@ -187,6 +187,31 @@ describe("performTestCommand", () => {
         expect(element.clicks).toBe(1);
     });
 
+    test("click sends a bubbling mousedown and mouseup of the main button before it clicks", () => {
+        const element = makeElement("", undefined);
+        let clicksAtMouseUp = -1;
+        element.dispatchEvent = (event: Event): boolean => {
+            element.events.push(event);
+            if (event.type === "mouseup") {
+                clicksAtMouseUp = element.clicks;
+            }
+            return true;
+        };
+        performTestCommand(makeFinder(element), {
+            command: "click",
+            dataId: "target",
+        });
+        expect(element.events.map(event => event.type)).toEqual(["mousedown", "mouseup"]);
+        for (const event of element.events) {
+            expect(event).toBeInstanceOf(MouseEvent);
+            expect(event).toHaveProperty("bubbles", true);
+            expect(event).toHaveProperty("cancelable", true);
+            expect(event).toHaveProperty("button", 0);
+        }
+        expect(clicksAtMouseUp).toBe(0);
+        expect(element.clicks).toBe(1);
+    });
+
     test("type sets the value and sends an input event", () => {
         const element = makeElement("", "");
         expect(performTestCommand(makeFinder(element), {

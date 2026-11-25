@@ -19,14 +19,17 @@ The keyboard shortcuts overlay is a dialog over Graft's window. It is the place 
 - A search box at the top of the overlay has the focus when the overlay opens. Typing there filters the list to the shortcuts whose label or keys contain the text, ignoring case. When none matches, the overlay says no shortcut matches the text. The search is cleared each time the overlay closes.
 - The search box is a text box, so `?` typed there types a question mark and the overlay stays open. Escape closes the overlay.
 - When Ziggy cannot give the action list, the overlay shows why in place of the list.
-- A click outside the overlay leaves it open.
+- A click outside the overlay closes it.
+- The overlay's title row has a close button at its right, an X icon button with the tooltip "Close", as the style guide's overlay has. A click on it closes the overlay.
 - The overlay shows over every page. The page behind it is dimmed.
-- The overlay shows the heading "Keyboard shortcuts", then the search box, then the shortcuts.
+- The overlay shows the heading "Keyboard shortcuts" with the close button at its right, then the search box, then the shortcuts.
 
 ## Acceptance criteria
 
 - [x] `?` shows the keyboard shortcuts overlay.
 - [x] `?` or Escape closes it.
+- [x] A click outside the overlay closes it.
+- [x] The overlay's title row has a close button at its right, an X icon button with a "Close" tooltip, that closes the overlay.
 - [x] `?` typed in a text box types the character and leaves the overlay closed.
 - [x] Showing and closing the overlay is a Ziggy action with the shortcut `?`, so Ziggy handles the key.
 - [x] The overlay and any tooltip read the shortcuts from `window.ziggy.listActions()`. The one shortcut written into the overlay itself is Ctrl+/, which Ziggy's shortcut syntax refuses.

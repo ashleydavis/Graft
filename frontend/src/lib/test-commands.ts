@@ -153,7 +153,7 @@ export function performTestCommand(finder: IElementFinder, command: ITestCommand
         return { ok: false, error: `No element has the data-id ${command.dataId}.` };
     }
     if (command.command === "click") {
-        element.click();
+        clickElement(element);
         return { ok: true };
     }
     if (command.command === "type") {
@@ -186,6 +186,26 @@ export function performTestCommand(finder: IElementFinder, command: ITestCommand
         return inViewOfResult(finder, element, command.dataId, command.containerDataId);
     }
     return { ok: false, error: `Unknown test command ${command.command}.` };
+}
+
+//
+// Clicks the element for the click command as a user's click reaches the page: a mousedown and a
+// mouseup of the main button, then the click. Some components act only on a click whose mousedown
+// they saw on the same element, such as MaterialUI's Dialog, which closes on a click outside it
+// only then, so a click alone would leave it open.
+//
+export function clickElement(element: IFoundElement): void {
+    element.dispatchEvent(new MouseEvent("mousedown", {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+    }));
+    element.dispatchEvent(new MouseEvent("mouseup", {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+    }));
+    element.click();
 }
 
 //
