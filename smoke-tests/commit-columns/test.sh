@@ -5,7 +5,9 @@
 # that repo with the welcome page's Open repo button and checks what each of the repo explorer
 # page's columns shows: the commit pane's rows, the commit details pane a click on a commit opens
 # and the file pane a click on a changed file opens, and that each pane that opens is scrolled into
-# view. See test.md.
+# view. Then it opens a second test repo with more commits than the commit list shows at once,
+# scrolls the list to its end and checks the header row naming the columns is still in view. See
+# test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -24,6 +26,10 @@ open_repo_with_button "$repo"
 open_sidebar_page repo-explorer
 open_commit_pane
 wait_for_element "commit-$head_hash" 30
+wait_for_text commit-list-header-message "Message" 30
+wait_for_text commit-list-header-author "Author" 30
+wait_for_text commit-list-header-date "Date" 30
+wait_for_text commit-list-header-hash "Hash" 30
 wait_for_text "commit-$head_hash" "Change the note" 30
 wait_for_text "commit-$head_hash" "main" 30
 wait_for_text "commit-$head_hash" "Ada Author" 30
@@ -53,3 +59,23 @@ wait_for_element file-diff 30
 wait_for_text file-diff "The first note." 30
 wait_for_text file-diff "The second note." 30
 wait_for_element commit-pane 5
+
+# A repo with more commits than the commit list shows at once, so the list scrolls. Scrolled to its
+# end, the list no longer draws the newest commit's row, and the header row naming the columns is
+# still in view above it.
+long_repo="$ZIGGY_TEST_DIR/long-repo"
+"$ZIGGY_SMOKE_APP_DIR/scripts/test/create-test-repo.sh" "$long_repo" || fail "could not create the test repo at $long_repo"
+for number in $(seq 1 60); do
+    git -C "$long_repo" -c user.name="Smoke Test" -c user.email=smoke-test@example.com -c commit.gpgsign=false commit --quiet --allow-empty --message "Commit $number" || fail "could not add commit $number to the test repo at $long_repo"
+done
+long_head_hash="$(git -C "$long_repo" rev-parse HEAD)" || fail "could not read the newest commit of $long_repo"
+answer_picker "$long_repo"
+choose_menu_item open-repo
+wait_for_text repo-details-name "long-repo" 30
+open_commit_pane
+wait_for_element "commit-$long_head_hash" 30
+scroll_to_end commit-list-scroll
+wait_for_missing_element "commit-$long_head_hash" 30
+wait_for_in_view_of commit-list-header commit-pane 30
+wait_for_text commit-list-header-message "Message" 30
+wait_for_text commit-list-header-hash "Hash" 30

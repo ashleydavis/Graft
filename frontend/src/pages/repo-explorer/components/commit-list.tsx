@@ -1,6 +1,6 @@
 //
-// The commit list: the commit pane's scrolling list of commits, one row each, with a row under them
-// while the next page loads or when it could not be read.
+// The commit list: the commit pane's scrolling list of commits, one row each, under a header row
+// naming the columns, with a row under them while the next page loads or when it could not be read.
 //
 
 import { CircularProgress, List, ListItemButton, Tooltip } from "@mui/material";
@@ -80,6 +80,13 @@ export function openRowClass(isOpen: boolean): string {
 }
 
 //
+// The Tailwind classes of the hash column, which the header row's "Hash" and each row's short hash
+// share: seven characters of the monospace font wide, so the header's name starts where the hashes
+// do.
+//
+export const hashColumnClasses = "w-[7ch] flex-none font-[family-name:var(--font-mono)] text-[length:var(--text-sm)]";
+
+//
 // Picks the Tailwind class of the commit title's weight: bold for the open commit, normal for the
 // rest.
 //
@@ -102,7 +109,10 @@ export function titleWeightClass(isOpen: boolean): string {
 // an error row when one could not be read. When the last row drawn comes near the last commit read
 // it calls onNearEnd, so the next page is read as the user scrolls. When the selected commit
 // changes, it scrolls the least amount that brings the commit's row into view, so the selected row
-// stays in sight as the arrow keys move it.
+// stays in sight as the arrow keys move it. Above the scrolling area a header row names the
+// columns, Message, Author, Date and Hash, each lined up with its column in the rows and styled as
+// the style guide's table header, so it stays in view as the list scrolls. Over the badges' column
+// it leaves a blank space of the same width.
 //
 export function CommitList({ commits, isLoading, error, selectedHash, openHash, dateFormat, onSelectCommit, onNearEnd }: ICommitListProps): JSX.Element {
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -140,47 +150,58 @@ export function CommitList({ commits, isLoading, error, selectedHash, openHash, 
     }, [selectedHash]);
 
     return (
-        <div ref={scrollRef} data-id="commit-list-scroll" className="min-h-0 flex-1 overflow-auto">
-            <List data-id="commit-list" disablePadding={true} className="relative w-full" style={{
-                height: `${virtualizer.getTotalSize()}px`,
-            }}>
-                {rows.map(row => {
-                    const commit = commits[row.index];
-                    const isOpen = commit.hash === openHash;
-                    return (
-                        <ListItemButton
-                            key={row.key}
-                            component="li"
-                            data-id={`commit-${commit.hash}`}
-                            selected={commit.hash === selectedHash}
-                            aria-current={isOpen ? "true" : undefined}
-                            onClick={() => onSelectCommit(commit.hash)}
-                            className={`absolute left-0 top-0 flex h-[calc(var(--space-8)+var(--space-1))] w-full items-center gap-3 rounded-none px-3 py-0 ${openRowClass(isOpen)}`}
-                            style={{
-                                transform: `translateY(${row.start}px)`,
-                            }}
-                        >
-                            <Tooltip title={commit.title} enterDelay={500}>
-                                <span data-id={`commit-title-${commit.hash}`} className={`min-w-0 flex-1 truncate text-[var(--color-text)] ${titleWeightClass(isOpen)}`}>{commit.title}</span>
-                            </Tooltip>
-                            <RefBadges hash={commit.hash} refs={commit.refs} />
-                            <span className="w-[80px] flex-none truncate text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{commit.authorName}</span>
-                            <span className="w-[52px] flex-none text-right text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{formatDate(commit.authorDate, dateFormat)}</span>
-                            <code className="flex-none font-[family-name:var(--font-mono)] text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{commit.hash.slice(0, 7)}</code>
-                        </ListItemButton>
-                    );
-                })}
-            </List>
-            {isLoading && (
-                <p data-id="commits-loading" className="flex h-[calc(var(--space-8)+var(--space-1))] items-center gap-2 px-4 text-[length:var(--text-sm)] text-[var(--color-text-muted)]">
-                    <CircularProgress size={16} color="inherit" aria-label="Loading" />
-                    Loading the commits.
-                </p>
-            )}
-            {error !== undefined && (
-                <p data-id="commits-error" className="m-3 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[var(--color-text)]">{error}</p>
-            )}
-        </div>
+        <>
+            <div data-id="commit-list-header" className="flex flex-none items-center gap-3 border-b border-[var(--color-border)] px-3 py-[var(--space-1)] text-[length:var(--text-sm)] leading-[var(--leading-normal)] font-[var(--weight-medium)] text-[var(--color-text-muted)] [scrollbar-gutter:stable] overflow-y-hidden">
+                <span data-id="commit-list-header-message" className="min-w-0 flex-1 truncate">Message</span>
+                <span className="w-[calc(var(--space-8)*5)] flex-none" />
+                <span data-id="commit-list-header-author" className="w-[80px] flex-none truncate">Author</span>
+                <span data-id="commit-list-header-date" className="w-[52px] flex-none text-right">Date</span>
+                <span data-id="commit-list-header-hash" className={hashColumnClasses}>
+                    <span className="font-[family-name:var(--font-sans)]">Hash</span>
+                </span>
+            </div>
+            <div ref={scrollRef} data-id="commit-list-scroll" className="min-h-0 flex-1 overflow-auto [scrollbar-gutter:stable]">
+                <List data-id="commit-list" disablePadding={true} className="relative w-full" style={{
+                    height: `${virtualizer.getTotalSize()}px`,
+                }}>
+                    {rows.map(row => {
+                        const commit = commits[row.index];
+                        const isOpen = commit.hash === openHash;
+                        return (
+                            <ListItemButton
+                                key={row.key}
+                                component="li"
+                                data-id={`commit-${commit.hash}`}
+                                selected={commit.hash === selectedHash}
+                                aria-current={isOpen ? "true" : undefined}
+                                onClick={() => onSelectCommit(commit.hash)}
+                                className={`absolute left-0 top-0 flex h-[calc(var(--space-8)+var(--space-1))] w-full items-center gap-3 rounded-none px-3 py-0 ${openRowClass(isOpen)}`}
+                                style={{
+                                    transform: `translateY(${row.start}px)`,
+                                }}
+                            >
+                                <Tooltip title={commit.title} enterDelay={500}>
+                                    <span data-id={`commit-title-${commit.hash}`} className={`min-w-0 flex-1 truncate text-[var(--color-text)] ${titleWeightClass(isOpen)}`}>{commit.title}</span>
+                                </Tooltip>
+                                <RefBadges hash={commit.hash} refs={commit.refs} />
+                                <span className="w-[80px] flex-none truncate text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{commit.authorName}</span>
+                                <span className="w-[52px] flex-none text-right text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{formatDate(commit.authorDate, dateFormat)}</span>
+                                <code className={`${hashColumnClasses} text-[var(--color-text-muted)]`}>{commit.hash.slice(0, 7)}</code>
+                            </ListItemButton>
+                        );
+                    })}
+                </List>
+                {isLoading && (
+                    <p data-id="commits-loading" className="flex h-[calc(var(--space-8)+var(--space-1))] items-center gap-2 px-4 text-[length:var(--text-sm)] text-[var(--color-text-muted)]">
+                        <CircularProgress size={16} color="inherit" aria-label="Loading" />
+                        Loading the commits.
+                    </p>
+                )}
+                {error !== undefined && (
+                    <p data-id="commits-error" className="m-3 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[var(--color-text)]">{error}</p>
+                )}
+            </div>
+        </>
     );
 }
 

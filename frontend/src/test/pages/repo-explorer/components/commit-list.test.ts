@@ -1,8 +1,9 @@
 //
 // Tests the commit list: renders it with commits, while a page loads and with an error, and checks
-// what each row shows, that each row is a MaterialUI ListItemButton with the selected commit's set
-// as selected, that the open commit's row has the open bar and a bold title, that the refs sit in
-// their column after the title and that clicking a commit reports its hash. With the scrolling
+// what each row shows, that a header row above the scrolling area names the columns in line with
+// them, that each row is a MaterialUI ListItemButton with the selected commit's set as selected,
+// that the open commit's row has the open bar and a bold title, that the refs sit in their column
+// after the title and that clicking a commit reports its hash. With the scrolling
 // area given a height, it checks the virtual list draws only the rows in view and a few more, calls
 // onNearEnd only once the last drawn row is near the last commit, and scrolls the selected commit's
 // row into view.
@@ -11,7 +12,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { ICommit } from "../../../../lib/commits";
-import { COMMIT_LIST_PADDING_PX, COMMIT_ROW_HEIGHT_PX, CommitList, lastRowIndex, openRowClass, openRowClasses, titleWeightClass } from "../../../../pages/repo-explorer/components/commit-list";
+import { COMMIT_LIST_PADDING_PX, COMMIT_ROW_HEIGHT_PX, CommitList, hashColumnClasses, lastRowIndex, openRowClass, openRowClasses, titleWeightClass } from "../../../../pages/repo-explorer/components/commit-list";
 import { FAKE_LIST_HEIGHT_PX, IFakeListLayout, installFakeListLayout } from "../../../fake-list-layout";
 
 //
@@ -120,6 +121,30 @@ describe("CommitList", () => {
         expect(row?.children[3].textContent).toBe("Jan 3");
         expect(row?.children[4].textContent).toBe("1111111");
         expect(container.querySelector(`[data-id="commit-${secondCommit.hash}"]`)?.textContent).toBe("The second commitAda AuthorJan 32222222");
+    });
+
+    test("names the columns in a header row above the scrolling area, lined up with the rows", () => {
+        const container = renderList(undefined, undefined, jest.fn());
+        const header = container.querySelector("[data-id=\"commit-list-header\"]");
+        expect(header?.nextElementSibling?.getAttribute("data-id")).toBe("commit-list-scroll");
+        expect(header?.children[0].getAttribute("data-id")).toBe("commit-list-header-message");
+        expect(header?.children[0].textContent).toBe("Message");
+        expect(header?.children[1].textContent).toBe("");
+        expect(header?.children[2].getAttribute("data-id")).toBe("commit-list-header-author");
+        expect(header?.children[2].textContent).toBe("Author");
+        expect(header?.children[3].getAttribute("data-id")).toBe("commit-list-header-date");
+        expect(header?.children[3].textContent).toBe("Date");
+        expect(header?.children[4].getAttribute("data-id")).toBe("commit-list-header-hash");
+        expect(header?.children[4].textContent).toBe("Hash");
+        const row = container.querySelector(`[data-id="commit-${commit.hash}"]`);
+        expect(header?.children[1].className).toContain("w-[calc(var(--space-8)*5)]");
+        expect(row?.children[1].className).toContain("w-[calc(var(--space-8)*5)]");
+        expect(header?.children[2].className).toContain("w-[80px]");
+        expect(row?.children[2].className).toContain("w-[80px]");
+        expect(header?.children[3].className).toContain("w-[52px]");
+        expect(row?.children[3].className).toContain("w-[52px]");
+        expect(header?.children[4].className).toBe(hashColumnClasses);
+        expect(row?.children[4].className).toContain(hashColumnClasses);
     });
 
     test("draws each row as a MaterialUI ListItemButton in a list item", () => {
