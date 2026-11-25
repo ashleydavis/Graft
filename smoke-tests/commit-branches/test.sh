@@ -77,7 +77,10 @@ wait_for_text "commit-refs-$first_hash" "empty" 30
 wait_for_missing_element "commit-$stash_hash" 5
 
 # The right sidebar shows the git log that read the page, which lists the same commits in a shell.
+# The Commits link's click leaves the repo details pane active, so Right makes the commit pane
+# active for the right sidebar to list its commands.
 click right-sidebar-toggle
+press_key Right
 wait_for_text git-command-0-text "$SHOWN_LOG_COMMAND" 30
 directory_command="$(text_of git-commands-directory)"
 [ "$directory_command" = "cd $repo" ] || fail "the sidebar showed \"$directory_command\", not \"cd $repo\""

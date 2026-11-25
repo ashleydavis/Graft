@@ -4,7 +4,7 @@ Smoke test that the commit pane lists the commits of every branch and HEAD. It c
 
 It starts the real app with remote control on, opens the repo with the welcome page's Open repo button, through `open_repo_with_button`, and opens the commit pane with the repo details pane's Commits link, through `open_commit_pane`. It checks "Remote branch commit" is listed with the origin/remote-only badge, "Other branch commit" with the other badge, main's newest commit with the main badge and the first commit with the empty badge, and that the stash's commit is not listed.
 
-Last it opens the right sidebar and checks it shows `git log --no-show-signature --max-count=50 --branches --remotes HEAD --` as the most recent command. It runs that command after the `cd` the sidebar shows, in a shell of its own, with `--format=%H` added before the `--`, and checks it lists the same commits in the same order: the remote-tracking branch's commit, the other branch's commit and main's three commits.
+Last it opens the right sidebar, presses Right to make the commit pane active and checks it shows `git log --no-show-signature --max-count=50 --branches --remotes HEAD --` as the most recent command. It runs that command after the `cd` the sidebar shows, in a shell of its own, with `--format=%H` added before the `--`, and checks it lists the same commits in the same order: the remote-tracking branch's commit, the other branch's commit and main's three commits.
 
 ## How it is invoked
 
