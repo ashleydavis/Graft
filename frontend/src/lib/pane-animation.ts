@@ -5,7 +5,7 @@
 // reduced motion setting is on.
 //
 
-import { CHANGES_LINK, COMMITS_LINK, IRepoExplorerState, linkBranch } from "./repo-explorer";
+import { CHANGES_LINK, COMMITS_LINK, IRepoExplorerState, linkBranch, tagNameOfLink } from "./repo-explorer";
 
 //
 // The media query that matches while the system's reduced motion setting is on. The panes read it
@@ -67,6 +67,9 @@ export interface IOpenPaneIds {
     // The open changed file's key, which stays the same as the changes are read again, so the pane
     // opens afresh only for another file.
     workingFilePane: string | undefined;
+
+    // The open tag's link while a tag's link is open, so another tag's details open afresh.
+    tagPane: string | undefined;
 }
 
 //
@@ -82,6 +85,7 @@ export function openPaneIds(explorer: IRepoExplorerState, hasOpenChange: boolean
         filePane: undefined,
         changesPane: undefined,
         workingFilePane: undefined,
+        tagPane: undefined,
     };
     if (explorer.openLink === COMMITS_LINK) {
         ids.commitPane = COMMITS_LINK;
@@ -99,6 +103,9 @@ export function openPaneIds(explorer: IRepoExplorerState, hasOpenChange: boolean
         if (hasOpenChange) {
             ids.workingFilePane = explorer.openChange;
         }
+    }
+    if (tagNameOfLink(explorer.openLink) !== undefined) {
+        ids.tagPane = explorer.openLink;
     }
     return ids;
 }

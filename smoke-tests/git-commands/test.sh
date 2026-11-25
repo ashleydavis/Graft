@@ -3,7 +3,7 @@
 #
 # Creates a test repo of the smoke test's own, starts the real app with remote control on, opens the
 # repo with the welcome page's Open repo button and checks the right sidebar lists the Git commands
-# of the active pane as Right, Left, Escape and clicks change it: git for-each-ref, which reads the branches, for the repo details pane,
+# of the active pane as Right, Left, Escape and clicks change it: git for-each-ref for the tags and for the branches for the repo details pane,
 # git log for the commit pane, the two git diff-tree commands for the commit details pane and git
 # diff-tree for a file's diff for the file pane. It checks every command listed shows how long it
 # took and the panel shows the total time of every command the pane ran. It checks a pane's
@@ -61,7 +61,7 @@ check_durations() {
 # Runs every command the sidebar shows, each after the cd it shows, in a shell of its own started
 # outside the repo, as a user pasting them into a terminal would. Fails when the sidebar shows no
 # command, when a command fails, when git log does not list the test repo's newest commit or when
-# git for-each-ref does not list main as the checked-out branch.
+# git for-each-ref does not list main as the checked-out branch or its tag.
 #
 run_shown_commands() {
     local directory_command
@@ -91,6 +91,9 @@ run_shown_commands() {
             "git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/")
                 [ "$output" = "* refs/heads/main" ] || fail "\"$command\" did not list main as checked out: $output"
                 ;;
+            "$tags_command")
+                [ "$output" = "v1.0" ] || fail "\"$command\" did not list the tag v1.0: $output"
+                ;;
         esac
         index=$((index + 1))
     done
@@ -103,11 +106,19 @@ click right-sidebar-toggle
 wait_for_element git-commands-panel 30
 wait_for_text git-commands-empty "This page has run no Git commands." 30
 
-# The repo details pane, active as the repo opens, has run only the git for-each-ref that reads the
-# branches.
+#
+# The commands the repo explorer page runs for the repo details pane when it opens: the tags, read
+# after the branches, so the panel lists them first.
+#
+tags_command="git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags"
+branches_command="git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/"
+
+# The repo details pane, active as the repo opens, has run only the two git for-each-ref commands
+# that read the tags and the branches.
 open_repo_with_button "$repo"
-wait_for_text git-command-0-text "git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/" 30
-wait_for_missing_element git-command-1 30
+wait_for_text git-command-0-text "$tags_command" 30
+wait_for_text git-command-1-text "$branches_command" 30
+wait_for_missing_element git-command-2 30
 wait_for_text git-commands-directory "cd $repo" 30
 run_shown_commands
 
@@ -135,12 +146,12 @@ check_durations
 run_shown_commands
 
 # Left goes back to the commit pane's git log, and Left again to the repo details pane, which has
-# run only the git for-each-ref.
+# run only the two git for-each-ref commands.
 press_key Left
 wait_for_text git-command-0-text "git log --no-show-signature --max-count=50 --branches --remotes HEAD --" 30
 press_key Left
-wait_for_text git-command-0-text "git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/" 30
-wait_for_missing_element git-command-1 30
+wait_for_text git-command-0-text "$tags_command" 30
+wait_for_text git-command-1-text "$branches_command" 30
 
 # A click on a file leaves the commit details pane active. Right makes the file pane active, which
 # lists only the git diff-tree for the file's diff.

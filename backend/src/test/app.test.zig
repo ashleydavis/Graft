@@ -41,6 +41,8 @@ test "the app registers the repo explorer's and open-repo's tasks" {
     try std.testing.expect(has_task("commits"));
     try std.testing.expect(has_task("commit-details"));
     try std.testing.expect(has_task("file-diff"));
+    try std.testing.expect(has_task("tags"));
+    try std.testing.expect(has_task("tag-details"));
     try std.testing.expect(has_task("pick-repo-folder"));
 }
 

@@ -34,3 +34,8 @@ export const CHANGES_PANE = "changes-pane";
 // tree.
 //
 export const WORKING_FILE_PANE = "working-file-pane";
+
+//
+// The name of the tag pane, which shows the open tag's details.
+//
+export const TAG_PANE = "tag-pane";

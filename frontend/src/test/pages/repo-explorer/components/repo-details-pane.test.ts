@@ -9,12 +9,15 @@
 // It checks the maximise button reports a click, the card fills the repo explorer while maximised
 // and the pane is hidden, still drawn, while another pane is maximised.
 // It checks the collapse button and the strip drawn while the pane is collapsed.
+// It checks the Tags heading lists a row for each tag, the same kind of row as the links, that
+// clicking a tag reports its link, that a repo with no tags shows the heading alone and that tags
+// that could not be read show why.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { IBranch } from "../../../../lib/branches";
-import { branchLink, CHANGES_LINK, COMMITS_LINK } from "../../../../lib/repo-explorer";
+import { branchLink, CHANGES_LINK, COMMITS_LINK, tagLink } from "../../../../lib/repo-explorer";
 import { maximisedPaneClasses } from "../../../../pages/repo-explorer/components/pane-width";
 import { activePaneClasses } from "../../../../pages/repo-explorer/components/active-pane-style";
 import { openRowClasses } from "../../../../pages/repo-explorer/components/commit-list";
@@ -36,9 +39,22 @@ const twoBranches: IBranch[] = [
 
 //
 // Renders the pane for the repo at /repos/graft with the link selected and open as given, active or
-// not, with the callback, listing twoBranches.
+// not, with the callback, listing twoBranches and the tags v1.0 and v2.0.
 //
 function renderPane(options: { link: string | undefined; isActive: boolean; onSelectLink: jest.Mock }): HTMLElement {
+    return renderPaneWithBranches({
+        ...options,
+        branches: twoBranches,
+        branchesError: undefined,
+        tagNames: ["v1.0", "v2.0"],
+        tagsError: undefined,
+    });
+}
+
+//
+// Renders the pane as renderPane does, with the tags and the tags error as given.
+//
+function renderPaneWithTags(options: { link: string | undefined; isActive: boolean; onSelectLink: jest.Mock; tagNames: string[] | undefined; tagsError: string | undefined }): HTMLElement {
     return renderPaneWithBranches({
         ...options,
         branches: twoBranches,
@@ -49,7 +65,7 @@ function renderPane(options: { link: string | undefined; isActive: boolean; onSe
 //
 // Renders the pane as renderPane does, with the branches and the branches error given.
 //
-function renderPaneWithBranches(options: { link: string | undefined; isActive: boolean; onSelectLink: jest.Mock; branches: IBranch[] | undefined; branchesError: string | undefined }): HTMLElement {
+function renderPaneWithBranches(options: { link: string | undefined; isActive: boolean; onSelectLink: jest.Mock; branches: IBranch[] | undefined; branchesError: string | undefined; tagNames?: string[]; tagsError?: string }): HTMLElement {
     const { container } = render(createElement(RepoDetailsPane, {
         repoPath: "/repos/graft",
         branches: options.branches,
@@ -62,6 +78,8 @@ function renderPaneWithBranches(options: { link: string | undefined; isActive: b
         isCollapsed: false,
         onToggleCollapse: jest.fn(),
         isHidden: false,
+        tagNames: options.tagNames,
+        tagsError: options.tagsError,
         onSelectLink: options.onSelectLink,
         width: undefined,
     }));
@@ -207,6 +225,8 @@ describe("RepoDetailsPane maximise button", () => {
             isHidden: options.isHidden,
             isCollapsed: false,
             onToggleCollapse: jest.fn(),
+            tagNames: undefined,
+            tagsError: undefined,
             onSelectLink: jest.fn(),
             width: undefined,
         }));
@@ -259,6 +279,8 @@ describe("RepoDetailsPane collapse", () => {
             isHidden: false,
             isCollapsed: false,
             onToggleCollapse,
+            tagNames: undefined,
+            tagsError: undefined,
             onSelectLink: jest.fn(),
             width: undefined,
         }));
@@ -280,6 +302,8 @@ describe("RepoDetailsPane collapse", () => {
             isHidden: false,
             isCollapsed: true,
             onToggleCollapse,
+            tagNames: undefined,
+            tagsError: undefined,
             onSelectLink: jest.fn(),
             width: undefined,
         }));
@@ -383,5 +407,73 @@ describe("RepoDetailsPane collapse", () => {
         expect(elementIn(container, "repo-details-branch-list").children.length).toBe(0);
         expect(container.querySelector("[data-id=\"repo-details-branches-error\"]")).toBeNull();
         expect(container.querySelector("[data-id=\"repo-details-branches-loading\"]")).toBeNull();
+    });
+
+    test("lists each tag under the Tags heading as a row with the tag icon and its name, as the links are drawn", () => {
+        const container = renderPane({
+            link: undefined,
+            isActive: false,
+            onSelectLink: jest.fn(),
+        });
+        expect(elementIn(container, "repo-details-tags-heading").textContent).toBe("Tags");
+        const rows = Array.from(elementIn(container, "repo-details-tags").children);
+        expect(rows.map(row => row.getAttribute("data-id"))).toEqual(["repo-details-tag-v1.0", "repo-details-tag-v2.0"]);
+        const row = elementIn(container, "repo-details-tag-v1.0");
+        expect(row.textContent).toBe("v1.0");
+        expect(row.querySelector("svg[data-icon=\"tag\"]")).not.toBeNull();
+        expect(row.className).toContain("MuiListItemButton-root");
+        expect(row.className).toBe(elementIn(container, "repo-details-commits").className);
+        expect(container.querySelector("[data-id=\"repo-details-tags-error\"]")).toBeNull();
+    });
+
+    test("shows a tag's row alone as selected and open while its tag pane is open", () => {
+        const container = renderPane({
+            link: tagLink("v2.0"),
+            isActive: false,
+            onSelectLink: jest.fn(),
+        });
+        const row = elementIn(container, "repo-details-tag-v2.0");
+        expect(row.className).toContain("Mui-selected");
+        expect(row.className).toContain(openRowClasses);
+        expect(row.getAttribute("aria-current")).toBe("true");
+        expect(elementIn(container, "repo-details-tag-v1.0").className).not.toContain("Mui-selected");
+        expect(elementIn(container, "repo-details-commits").className).not.toContain("Mui-selected");
+    });
+
+    test("reports the tag's link when the user clicks a tag", () => {
+        const onSelectLink = jest.fn();
+        renderPane({
+            link: undefined,
+            isActive: false,
+            onSelectLink,
+        });
+        fireEvent.click(screen.getByText("v2.0"));
+        expect(onSelectLink).toHaveBeenCalledWith(tagLink("v2.0"));
+    });
+
+    test("shows the Tags heading with no rows and no error for a repo with no tags and before the tags are read", () => {
+        for (const tagNames of [[], undefined]) {
+            const container = renderPaneWithTags({
+                link: undefined,
+                isActive: false,
+                onSelectLink: jest.fn(),
+                tagNames,
+                tagsError: undefined,
+            });
+            expect(elementIn(container, "repo-details-tags-heading").textContent).toBe("Tags");
+            expect(elementIn(container, "repo-details-tags").children.length).toBe(0);
+            expect(container.querySelector("[data-id=\"repo-details-tags-error\"]")).toBeNull();
+        }
+    });
+
+    test("shows why the tags could not be read under the Tags heading", () => {
+        const container = renderPaneWithTags({
+            link: undefined,
+            isActive: false,
+            onSelectLink: jest.fn(),
+            tagNames: undefined,
+            tagsError: "Running git for-each-ref failed.",
+        });
+        expect(elementIn(container, "repo-details-tags-error").textContent).toBe("Running git for-each-ref failed.");
     });
 });

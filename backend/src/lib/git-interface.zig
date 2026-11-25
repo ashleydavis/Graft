@@ -279,9 +279,9 @@ pub fn shown_path(arg: []const u8) []const u8 {
 
 //
 // Checks whether the argument is one Graft adds only so it can read git's output: `-z`, or a
-// `--format` that writes bytes by their hex code (`%x`), which is how Graft writes the separator
-// characters between fields. `shown_args` calls it to leave those arguments out of the command
-// the help panel shows.
+// `--format` that writes bytes by their hex code, which is how Graft writes the separator
+// characters between fields: `%x1f` in git log's format and `%1f` in git for-each-ref's.
+// `shown_args` calls it to leave those arguments out of the command the help panel shows.
 //
 pub fn is_parser_arg(arg: []const u8) bool {
     assert(arg.len > 0);
@@ -290,7 +290,10 @@ pub fn is_parser_arg(arg: []const u8) bool {
         return true;
     }
     if (std.mem.startsWith(u8, arg, "--format=")) {
-        return std.mem.indexOf(u8, arg, "%x") != null;
+        if (std.mem.indexOf(u8, arg, "%x") != null) {
+            return true;
+        }
+        return std.mem.indexOf(u8, arg, "%1f") != null;
     }
     return false;
 }

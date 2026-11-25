@@ -1,17 +1,18 @@
 //
 // The repo details pane: the first column of the repo explorer, with the open repo's name and
-// path, the links that open the panes about the repo to its right, Commits and Commit, and the
-// repo's local branches, each of which opens its branch pane to the right.
+// path, the links that open the panes about the repo to its right, Commits and Changes, the repo's
+// local branches, each of which opens its branch pane to the right, and one link for each of the
+// repo's tags.
 //
 
-import { faCodeBranch, faCodeCommit, faPenToSquare, IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { faCodeBranch, faCodeCommit, faPenToSquare, faTag, IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Chip, List, ListItemButton } from "@mui/material";
 import { JSX } from "react";
 import { IBranch } from "../../../lib/branches";
 import { repoName } from "../../../lib/breadcrumb-trail";
 import { paneWidthStyle } from "../../../lib/pane-widths";
-import { branchLink, CHANGES_LINK, COMMITS_LINK } from "../../../lib/repo-explorer";
+import { branchLink, CHANGES_LINK, COMMITS_LINK, tagLink } from "../../../lib/repo-explorer";
 import { activePaneClass } from "./active-pane-style";
 import { CollapsedStrip } from "./collapse";
 import { Fact } from "./commit-info-pane";
@@ -59,7 +60,15 @@ export interface IRepoDetailsPaneProps {
     // Called when the user clicks the collapse button or the strip's restore button.
     onToggleCollapse(): void;
 
-    // Called with the name of the row the user clicks, a link or a branch as branchLink names it.
+    // The names of the repo's tags, in the order the pane lists them, or undefined until they are
+    // read.
+    tagNames: string[] | undefined;
+
+    // Why the tags could not be read, or undefined.
+    tagsError: string | undefined;
+
+    // Called with the name of the row the user clicks, a link, a branch or a tag as branchLink and
+    // tagLink name them.
     onSelectLink(link: string): void;
 
     // The width its resize handle set, in pixels, or undefined for its usual width.
@@ -70,13 +79,16 @@ export interface IRepoDetailsPaneProps {
 // Shows the repo in a rounded card headed "Repo" and the repo's name: its name and its full path as
 // labelled facts, laid out as the commit details pane lays out a commit's facts, then the Commits
 // link, which opens the commit pane, and the Changes link, which opens the changes pane, then the
-// Branches list, each branch opening its branch pane. The card never shrinks, so the panes that
-// open to its right never hide it, and fills the repo explorer while it is maximised. It is 360
-// pixels wide, or the width its resize handle set. The card's border is in the style guide's active
-// pane colour while the pane is active. The header's button maximises the pane and restores it.
-// While it is collapsed it draws the strip with "Repo" and the repo's name down it in its place.
+// Branches list, each branch opening its branch pane, then a "Tags" heading with a row for each
+// tag, which opens the tag pane, as the style guide's sidebar lays out its Tags group: the tag icon
+// and the tag's name. A repo with no tags shows the heading alone, and tags that could not be read
+// show why under it. The card never shrinks, so the panes that open to its right never hide it, and
+// fills the repo explorer while it is maximised. It is 360 pixels wide, or the width its resize
+// handle set. The card's border is in the style guide's active pane colour while the pane is
+// active. The header's button maximises the pane and restores it. While it is collapsed it draws
+// the strip with "Repo" and the repo's name down it in its place.
 //
-export function RepoDetailsPane({ repoPath, branches, branchesError, selectedLink, openLink, isActive, isMaximised, onToggleMaximise, isHidden, isCollapsed, onToggleCollapse, onSelectLink, width }: IRepoDetailsPaneProps): JSX.Element {
+export function RepoDetailsPane({ repoPath, branches, branchesError, selectedLink, openLink, isActive, isMaximised, onToggleMaximise, isHidden, isCollapsed, onToggleCollapse, tagNames, tagsError, onSelectLink, width }: IRepoDetailsPaneProps): JSX.Element {
     const name = repoName(repoPath);
     if (isCollapsed && !isHidden) {
         return <CollapsedStrip paneLabel="Repo details" title={`Repo ${name}`} paneDataId="repo-details-pane" isActive={isActive} onRestore={onToggleCollapse} />;
@@ -108,6 +120,15 @@ export function RepoDetailsPane({ repoPath, branches, branchesError, selectedLin
                     <LinkRow link={CHANGES_LINK} label="Changes" icon={faPenToSquare} dataId="repo-details-changes" selectedLink={selectedLink} openLink={openLink} onSelectLink={onSelectLink} />
                 </List>
                 <BranchList branches={branches} error={branchesError} selectedLink={selectedLink} openLink={openLink} onSelectLink={onSelectLink} />
+                <p data-id="repo-details-tags-heading" className="border-t border-[var(--color-border)] px-4 pt-3 pb-2 text-[length:var(--text-sm)] font-[var(--weight-bold)] leading-[var(--leading-normal)] text-[var(--color-text-muted)]">Tags</p>
+                {tagsError !== undefined && (
+                    <p data-id="repo-details-tags-error" className="mx-3 mb-2 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[length:var(--text-sm)] text-[var(--color-text)]">{tagsError}</p>
+                )}
+                <List data-id="repo-details-tags" disablePadding={true} className="px-1 pb-2">
+                    {(tagNames ?? []).map(tagName => (
+                        <LinkRow key={tagName} link={tagLink(tagName)} label={tagName} icon={faTag} dataId={`repo-details-tag-${tagName}`} selectedLink={selectedLink} openLink={openLink} onSelectLink={onSelectLink} />
+                    ))}
+                </List>
             </div>
         </section>
     );

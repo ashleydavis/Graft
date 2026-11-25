@@ -9,6 +9,8 @@ const commit_details_task = @import("../lib/commit-details-task.zig");
 const commits_task = @import("../lib/commits-task.zig");
 const file_diff_task = @import("../lib/file-diff-task.zig");
 const git_interface = @import("../lib/git-interface.zig");
+const tag_details_task = @import("../lib/tag-details-task.zig");
+const tags_task = @import("../lib/tags-task.zig");
 
 //
 // Repo Explorer opens the repo explorer page from any page. Its shortcut holds Ctrl (Cmd on
@@ -24,12 +26,15 @@ pub const actions: []const ziggy.action.Action = &.{
 
 //
 // The repo explorer page's tasks: the branches task for the repo details pane, the commits task
-// for the commit pane and the branch pane, the commit details task for the commit details pane and
-// the file diff task for the file pane. Each runs the real Git interface function.
+// for the commit pane and the branch pane, the commit details task for the commit details pane,
+// the file diff task for the file pane, the tags task for the repo details pane's Tags list and the
+// tag details task for the tag pane. Each runs the real Git interface function.
 //
 pub const tasks = .{
     .branches = branches_task.branches_task_handler(git_interface.run_git),
     .commits = commits_task.commits_task_handler(git_interface.run_git),
     .@"commit-details" = commit_details_task.commit_details_task_handler(git_interface.run_git),
     .@"file-diff" = file_diff_task.file_diff_task_handler(git_interface.run_git),
+    .tags = tags_task.tags_task_handler(git_interface.run_git),
+    .@"tag-details" = tag_details_task.tag_details_task_handler(git_interface.run_git),
 };

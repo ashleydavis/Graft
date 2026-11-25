@@ -913,7 +913,9 @@ test "is_parser_arg picks out -z and a --format with separator characters only" 
     try std.testing.expect(git_interface.is_parser_arg("-z"));
     try std.testing.expect(git_interface.is_parser_arg("--format=%H%x1f%s"));
     try std.testing.expect(git_interface.is_parser_arg("--format=%s%x00"));
+    try std.testing.expect(git_interface.is_parser_arg("--format=%(refname)%1f%(subject)%00"));
     try std.testing.expect(!git_interface.is_parser_arg("--format=%s"));
+    try std.testing.expect(!git_interface.is_parser_arg("--format=%(refname:strip=2)"));
     try std.testing.expect(!git_interface.is_parser_arg("-zz"));
     try std.testing.expect(!git_interface.is_parser_arg("--max-count=1"));
     try std.testing.expect(!git_interface.is_parser_arg("%x1f"));

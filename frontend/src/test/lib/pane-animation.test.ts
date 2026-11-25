@@ -5,7 +5,7 @@
 //
 
 import { closingPaneId, openPaneIds, paneAnimationClass } from "../../lib/pane-animation";
-import { branchLink, changeKey, CHANGES_LINK, COMMITS_LINK, initialRepoExplorerState, IRepoExplorerState } from "../../lib/repo-explorer";
+import { branchLink, changeKey, CHANGES_LINK, COMMITS_LINK, initialRepoExplorerState, IRepoExplorerState, tagLink } from "../../lib/repo-explorer";
 
 describe("closingPaneId", () => {
     test("closes the pane that was open when no pane takes its place", () => {
@@ -46,6 +46,7 @@ describe("openPaneIds", () => {
             filePane: undefined,
             changesPane: undefined,
             workingFilePane: undefined,
+            tagPane: undefined,
         });
     });
 
@@ -62,6 +63,7 @@ describe("openPaneIds", () => {
             filePane: "abc src/a.ts",
             changesPane: undefined,
             workingFilePane: undefined,
+            tagPane: undefined,
         });
     });
 
@@ -105,6 +107,7 @@ describe("openPaneIds", () => {
             filePane: undefined,
             changesPane: CHANGES_LINK,
             workingFilePane: changeKey(false, "notes.txt"),
+            tagPane: undefined,
         });
     });
 
@@ -124,5 +127,20 @@ describe("openPaneIds", () => {
             openChange: changeKey(false, "notes.txt"),
         };
         expect(openPaneIds(explorer, true).workingFilePane).toBeUndefined();
+    });
+
+    test("names the tag pane by the open tag's link while a tag's link is open", () => {
+        const explorer: IRepoExplorerState = {
+            ...initialRepoExplorerState,
+            openLink: tagLink("v1.0"),
+        };
+        expect(openPaneIds(explorer, false)).toEqual({
+            commitPane: undefined,
+            commitDetailsPane: undefined,
+            filePane: undefined,
+            changesPane: undefined,
+            workingFilePane: undefined,
+            tagPane: "tag:v1.0",
+        });
     });
 });

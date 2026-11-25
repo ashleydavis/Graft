@@ -39,6 +39,11 @@
 // It checks the page reads the repo's branches as it opens, lists them in the repo details pane, and
 // that a branch opens the branch pane titled with its name, reading its first page from the branch,
 // with the keys moving through the branch rows and Escape closing the branch pane.
+// The page lists the repo's tags in the repo details pane from lib/tags, which Jest mocks here so the
+// other tests see only the tasks their panes queue: it checks the page reads the tags when it opens,
+// that a click, or Down and Enter, on a tag opens the tag pane in place of any other pane, that the
+// keys move between the repo details pane and the tag pane, that Escape and the close button close
+// it and that tags that could not be read show why.
 //
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -55,6 +60,8 @@ import { REDUCED_MOTION_QUERY } from "../../../lib/pane-animation";
 import { pageWidthClass, RepoExplorerPage, scrollLastPaneIntoView, scrollPaneIntoView } from "../../../pages/repo-explorer";
 import { openColumnClass } from "../../../pages/repo-explorer/components/animated-pane";
 import { maximisedPaneClasses } from "../../../pages/repo-explorer/components/pane-width";
+import { ok, err } from "../../../lib/result";
+import { readTagDetails, readTags } from "../../../lib/tags";
 import { activeFlatPaneClasses, activePaneClasses } from "../../../pages/repo-explorer/components/active-pane-style";
 import { openRowClasses } from "../../../pages/repo-explorer/components/commit-list";
 import { IFakeListLayout, installFakeListLayout } from "../../fake-list-layout";
@@ -62,6 +69,13 @@ import { makeFakeMediaQuery } from "../../fake-media-query";
 import { boxOfWidth } from "../../fake-box";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../../fake-ziggy";
 import { RepoOpener } from "../../repo-opener";
+
+//
+// lib/tags queues the tags task when the page opens. Jest mocks every function of it, so the tests
+// of the other panes see only the tasks those panes queue, and the tests of the tags set what the
+// mocks read.
+//
+jest.mock("../../../lib/tags");
 
 //
 // The router scrolls the window to the top when it shows a page. jsdom reports window.scrollTo as
@@ -2953,5 +2967,101 @@ describe("RepoExplorerPage branches", () => {
         expect(document.querySelector("[data-id=\"commit-pane\"]")).toBeNull();
         expect(activePaneIds()).toEqual(["repo-details-pane"]);
         expect(isSelected("repo-details-branch-main")).toBe(true);
+    });
+});
+
+describe("RepoExplorerPage tags", () => {
+    //
+    // The tag details the mock of readTagDetails reads: the lightweight tag v1.0.
+    //
+    const tagDetails = {
+        name: "v1.0",
+        commitHash: commitJson.hash,
+        commitTitle: "Add the notes",
+        annotation: undefined,
+    };
+
+    beforeEach(() => {
+        (readTags as jest.Mock).mockReset();
+        (readTagDetails as jest.Mock).mockReset();
+        (readTags as jest.Mock).mockImplementation((request, onRead) => onRead(ok(["v1.0"])));
+        (readTagDetails as jest.Mock).mockImplementation((request, onRead) => onRead(ok(tagDetails)));
+    });
+
+    afterEach(() => {
+        (readTags as jest.Mock).mockReset();
+        (readTagDetails as jest.Mock).mockReset();
+    });
+
+    test("reads the repo's tags when it opens and lists them under the Tags heading", async () => {
+        installFakeTaskZiggy();
+        renderRepoExplorerPage("/repos/graft");
+        await screen.findByText("v1.0");
+        expect(readTags).toHaveBeenCalledTimes(1);
+        expect((readTags as jest.Mock).mock.calls[0][0].repoPath).toBe("/repos/graft");
+        expect(elementWithDataId("repo-details-tag-v1.0").textContent).toBe("v1.0");
+    });
+
+    test("a click on a tag opens the tag pane in place of the commit pane, with the tag's details", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage("/repos/graft");
+        await clickCommitsLink();
+        expect(document.querySelector("[data-id=\"commit-pane\"]")).not.toBeNull();
+        fireEvent.click(elementWithDataId("repo-details-tag-v1.0"));
+        expect(document.querySelector("[data-id=\"commit-pane\"]")).toBeNull();
+        expect(paneElements().map(pane => pane.getAttribute("data-id"))).toEqual(["repo-details-pane", "tag-pane"]);
+        expect((readTagDetails as jest.Mock).mock.calls[0][0]).toMatchObject({
+            repoPath: "/repos/graft",
+            name: "v1.0",
+        });
+        expect(elementWithDataId("tag-heading").textContent).toBe("Tagv1.0");
+        expect(elementWithDataId("tag-commit").textContent).toBe("1111111 Add the notes");
+        expect(isSelected("repo-details-tag-v1.0")).toBe(true);
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+        expect(lastPaneStepIds()).toEqual(["breadcrumb-pane-tag"]);
+        expect(paneTaskCount(ziggy)).toBe(1);
+    });
+
+    test("Down moves to the tag, Enter opens its pane active, Left and Right move between the panes and Escape closes it", async () => {
+        installFakeTaskZiggy();
+        renderRepoExplorerPage("/repos/graft");
+        await screen.findByText("v1.0");
+        pressKey("ArrowDown");
+        pressKey("ArrowDown");
+        pressKey("ArrowDown");
+        expect(isSelected("repo-details-tag-v1.0")).toBe(true);
+        expect(document.querySelector("[data-id=\"tag-pane\"]")).toBeNull();
+        pressKey("Enter");
+        expect(activePaneIds()).toEqual(["tag-pane"]);
+        pressKey("ArrowLeft");
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+        pressKey("ArrowRight");
+        expect(activePaneIds()).toEqual(["tag-pane"]);
+        pressKey("ArrowDown");
+        expect(activePaneIds()).toEqual(["tag-pane"]);
+        pressKey("Escape");
+        expect(document.querySelector("[data-id=\"tag-pane\"]")).toBeNull();
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+        expect(isSelected("repo-details-tag-v1.0")).toBe(true);
+    });
+
+    test("the tag pane's close button closes it", async () => {
+        installFakeTaskZiggy();
+        renderRepoExplorerPage("/repos/graft");
+        fireEvent.click(await screen.findByText("v1.0"));
+        fireEvent.click(elementWithDataId("tag-close"));
+        expect(document.querySelector("[data-id=\"tag-pane\"]")).toBeNull();
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+    });
+
+    test("shows why the tags could not be read", async () => {
+        (readTags as jest.Mock).mockImplementation((request, onRead) => onRead(err({
+            name: "TaskFailed",
+            message: "Running git for-each-ref failed.",
+        })));
+        installFakeTaskZiggy();
+        renderRepoExplorerPage("/repos/graft");
+        expect((await screen.findByText("Running git for-each-ref failed.")).getAttribute("data-id")).toBe("repo-details-tags-error");
+        expect(elementWithDataId("repo-details-tags").children.length).toBe(0);
     });
 });

@@ -13,13 +13,14 @@ import { IWorkingChanges, IWorkingFile } from "./working-changes";
 // branch is open the branch pane takes the commit pane's place, listing only that branch's
 // commits, and the panes to its right are the same. While the Changes link is open the changes
 // pane follows the repo details pane in place of the commit pane, then the file pane while a
-// changed file is open.
+// changed file is open. While a tag's link is open the tag pane alone follows the repo details
+// pane.
 //
 export interface IRepoExplorerState {
     // The position of the active pane among the open panes: 0 for the repo details pane, 1 for
     // the commit pane or the branch pane, 2 for the commit details pane and 3 for the file pane,
-    // or 1 for the changes pane and 2 for the file pane while the Changes link is open. The keys
-    // act on this pane.
+    // or 1 for the changes pane and 2 for the file pane while the Changes link is open, or 1 for
+    // the tag pane while a tag's link is open. The keys act on this pane.
     activePaneIndex: number;
 
     // The name of the selected row in the repo details pane, a link as in "commits" or a branch as
@@ -65,8 +66,8 @@ export interface IRepoExplorerState {
 // What the panes list, which Up, Down, Home and End move through.
 //
 export interface IRepoExplorerItems {
-    // The names of the rows in the repo details pane, its links then its branches as branchLink
-    // names them, in the order it lists them.
+    // The names of the rows in the repo details pane, its links then its branches then its tags
+    // as branchLink and tagLink name them, in the order it lists them.
     links: string[];
 
     // The hashes of the commits in the commit pane, in the order it lists them.
@@ -133,6 +134,34 @@ export function linkBranch(link: string | undefined): string | undefined {
         return undefined;
     }
     return link.slice(BRANCH_LINK_PREFIX.length);
+}
+
+//
+// The text in front of a tag's name in the name of its link, so a tag's link can never have the
+// name of the Commits or Commit link, whatever the tag is called.
+//
+const TAG_LINK_PREFIX = "tag:";
+
+//
+// Makes the name of the repo details pane's link for the tag, which opens the tag pane, so the
+// state records an open tag as it records the other open links.
+//
+export function tagLink(tagName: string): string {
+    return `${TAG_LINK_PREFIX}${tagName}`;
+}
+
+//
+// Reads the name of the tag whose link this is, or undefined for the Commits and Commit links and
+// for no link, so the page knows which tag pane to show.
+//
+export function tagNameOfLink(link: string | undefined): string | undefined {
+    if (link === undefined) {
+        return undefined;
+    }
+    if (!link.startsWith(TAG_LINK_PREFIX)) {
+        return undefined;
+    }
+    return link.slice(TAG_LINK_PREFIX.length);
 }
 
 //
@@ -490,10 +519,10 @@ export function closeCommitDetailsPane(state: IRepoExplorerState): IRepoExplorer
 }
 
 //
-// Closes the pane the open link or branch opened, the commit pane, the branch pane or the changes
-// pane, and every pane to its right, as Escape and the commit pane's close button do, and makes
-// the repo details pane active. The link stays selected, and its pane opens afresh when it opens
-// again. Only the repo details pane stays collapsed, when it was.
+// Closes the pane the open link or branch opened, the commit pane, the branch pane, the changes
+// pane or the tag pane, and every pane to its right, as Escape and the commit pane's close button
+// do, and makes the repo details pane active. The link stays selected, and its pane opens afresh
+// when it opens again. Only the repo details pane stays collapsed, when it was.
 //
 export function closeLinkPane(state: IRepoExplorerState): IRepoExplorerState {
     return keepOpenPanesCollapsed({
@@ -568,8 +597,8 @@ export function targetPaneIndex(columns: Element, target: EventTarget): number |
 
 //
 // Moves the selection in the active pane one step, up for step -1 and down for step 1, or to the
-// first item for step -Infinity and the last for step Infinity. The file pane lists no items, so
-// the selection stays as it is there.
+// first item for step -Infinity and the last for step Infinity. The file pane and the tag pane
+// list no items, so the selection stays as it is there.
 //
 // With the commit details pane active and no file pane open, Up and Down open the commit above or
 // below and Home and End the first and last commit read, as they do in the commit pane, so the
@@ -587,6 +616,9 @@ export function moveSelection(state: IRepoExplorerState, items: IRepoExplorerIte
             ...state,
             selectedLink: itemAfterMove(items.links, state.selectedLink, step),
         };
+    }
+    if (tagNameOfLink(state.openLink) !== undefined) {
+        return state;
     }
     if (state.openLink === CHANGES_LINK) {
         if (state.activePaneIndex === 1) {

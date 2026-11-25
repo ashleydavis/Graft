@@ -7,7 +7,7 @@
 //
 
 import { clipStepLabel, COLLAPSED_STEP_WIDTH_PX, collapsedStepCount, explorerPaneSteps, fileStep, ITrailOption, ITrailStep, ITrailWidths, pageTrail, repoName, searchMatches } from "../../lib/breadcrumb-trail";
-import { branchLink, COMMIT_DETAILS_PATH, initialRepoExplorerState } from "../../lib/repo-explorer";
+import { branchLink, COMMIT_DETAILS_PATH, initialRepoExplorerState, tagLink } from "../../lib/repo-explorer";
 
 //
 // The hash of the commit the pane step tests open, long like a real one so its step is cut short.
@@ -275,6 +275,21 @@ describe("explorerPaneSteps", () => {
                 label: "new.txt",
                 tooltip: "docs/new.txt",
                 dataId: "breadcrumb-pane-file",
+                options: [],
+            },
+        ]);
+    });
+
+    test("has the tag's name as the step while the tag pane is open", () => {
+        expect(explorerPaneSteps({
+            ...initialRepoExplorerState,
+            selectedLink: tagLink("v1.0"),
+            openLink: tagLink("v1.0"),
+        }, undefined)).toEqual([
+            {
+                label: "v1.0",
+                tooltip: "v1.0",
+                dataId: "breadcrumb-pane-tag",
                 options: [],
             },
         ]);

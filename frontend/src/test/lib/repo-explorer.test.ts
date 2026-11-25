@@ -67,6 +67,8 @@ import {
     MAXIMISE_KEY,
     toggleMaximise,
     toggleCollapsedPane,
+    tagLink,
+    tagNameOfLink,
 } from "../../lib/repo-explorer";
 
 //
@@ -1953,5 +1955,93 @@ describe("branch rows", () => {
         expect(other.openLink).toBe(branchLink("main"));
         expect(other.openHash).toBeUndefined();
         expect(other.selectedHash).toBeUndefined();
+    });
+});
+
+describe("tagLink and tagNameOfLink", () => {
+    test("make a tag's link from its name and read the name back", () => {
+        expect(tagLink("v1.0")).toBe("tag:v1.0");
+        expect(tagNameOfLink(tagLink("v1.0"))).toBe("v1.0");
+        expect(tagNameOfLink(tagLink("release/commits"))).toBe("release/commits");
+    });
+
+    test("give a tag's link a name no other link has, even for a tag named after one", () => {
+        expect(tagLink(COMMITS_LINK)).not.toBe(COMMITS_LINK);
+        expect(tagLink(CHANGES_LINK)).not.toBe(CHANGES_LINK);
+    });
+
+    test("read no tag from the Commits and Commit links or from no link", () => {
+        expect(tagNameOfLink(COMMITS_LINK)).toBeUndefined();
+        expect(tagNameOfLink(CHANGES_LINK)).toBeUndefined();
+        expect(tagNameOfLink(undefined)).toBeUndefined();
+    });
+});
+
+describe("the keys with a tag in the repo details pane", () => {
+    //
+    // The items the panes list for a repo with the tag v1.0: the Commits and Commit links, then the
+    // tag's link, and no commits, files or changes because no pane that lists them is open.
+    //
+    const tagItems: IRepoExplorerItems = {
+        links: [COMMITS_LINK, CHANGES_LINK, tagLink("v1.0")],
+        commitHashes: [],
+        filePaths: [],
+        changeKeys: [],
+        pageRowCount: 10,
+    };
+
+    //
+    // The explorer with the tag pane of v1.0 open and active.
+    //
+    const tagOpen: IRepoExplorerState = {
+        ...selectLink(tagLink("v1.0")),
+        activePaneIndex: 1,
+    };
+
+    test("Down moves past the links to the tag's row", () => {
+        let state = initialRepoExplorerState;
+        for (let press = 0; press < 3; press += 1) {
+            state = explorerStateAfterKey(state, "ArrowDown", tagItems);
+        }
+        expect(state.selectedLink).toBe(tagLink("v1.0"));
+        expect(state.openLink).toBeUndefined();
+    });
+
+    test("Enter on the tag's row opens the tag pane and makes it active", () => {
+        const state = explorerStateAfterKey({
+            ...initialRepoExplorerState,
+            selectedLink: tagLink("v1.0"),
+        }, "Enter", tagItems);
+        expect(state).toEqual(tagOpen);
+        expect(openPaneCount(state)).toBe(2);
+    });
+
+    test("a click on the tag's row opens the tag pane in place of any other pane, with the repo details pane active", () => {
+        const state = selectLink(tagLink("v1.0"));
+        expect(state.openLink).toBe(tagLink("v1.0"));
+        expect(state.openHash).toBeUndefined();
+        expect(state.openChange).toBeUndefined();
+        expect(state.activePaneIndex).toBe(0);
+    });
+
+    test("Up, Down and Enter in the tag pane change nothing, because it lists no items", () => {
+        expect(explorerStateAfterKey(tagOpen, "ArrowDown", tagItems)).toEqual(tagOpen);
+        expect(explorerStateAfterKey(tagOpen, "ArrowUp", tagItems)).toEqual(tagOpen);
+        expect(explorerStateAfterKey(tagOpen, "Enter", tagItems)).toEqual(tagOpen);
+    });
+
+    test("Left and Right move between the repo details pane and the tag pane", () => {
+        const left = explorerStateAfterKey(tagOpen, "ArrowLeft", tagItems);
+        expect(left.activePaneIndex).toBe(0);
+        expect(explorerStateAfterKey(left, "ArrowRight", tagItems)).toEqual(tagOpen);
+        expect(explorerStateAfterKey(tagOpen, "ArrowRight", tagItems)).toEqual(tagOpen);
+    });
+
+    test("Escape in the tag pane closes it, keeps the tag selected and makes the repo details pane active", () => {
+        const state = explorerStateAfterKey(tagOpen, "Escape", tagItems);
+        expect(state.openLink).toBeUndefined();
+        expect(state.selectedLink).toBe(tagLink("v1.0"));
+        expect(state.activePaneIndex).toBe(0);
+        expect(openPaneCount(state)).toBe(1);
     });
 });
