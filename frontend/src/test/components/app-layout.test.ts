@@ -469,7 +469,7 @@ describe("AppLayout's Help pane", () => {
         await screen.findByText("The repo explorer page");
         expect(elementWithDataId(container, "help-pane-name")?.textContent).toBe("Repo explorer");
         act(() => {
-            elementWithDataId(container, "mock-activate-commit-pane")?.click();
+            elementWithDataId(container, "mock-activate-pane")?.click();
         });
         expect(elementWithDataId(container, "help-pane-name")?.textContent).toBe("Commit pane");
         act(() => {

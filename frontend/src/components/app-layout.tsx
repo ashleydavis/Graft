@@ -87,9 +87,10 @@ export function useSavedSwitch(stateKey: string, description: string): [boolean,
 // overlay, so `?` shows it over every page, and the command palette, so Ctrl+Shift+P shows it over
 // every page. It keeps the active pane the page sets through ActivePaneContext and works out the
 // selected pane or page from it and the page the router shows, so the command palette lists that
-// pane or page's commands first and the right sidebar's Help pane shows its help under the Git commands panel. It calls the hook of each feature whose action works on
-// every page, one line per feature, because the layout is inside both the router and the open
-// repo's context for as long as the window is open.
+// pane or page's commands first and the right sidebar's Help pane shows its help under the Git
+// commands panel. It calls the hook of each feature whose action works on every page, one line per
+// feature, because the layout is inside both the router and the open repo's context for as long as
+// the window is open.
 //
 export function AppLayout(): JSX.Element {
     const [isLeftSidebarMinimised, toggleLeftSidebar] = useSavedSwitch(leftSidebarMinimisedStateKey, "whether the left sidebar is minimised");

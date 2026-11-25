@@ -41,13 +41,13 @@ describe("HelpPane", () => {
             help: viewHelp("commit-pane"),
         }));
         expect(elementWithDataId(container, "help-pane-name")?.textContent).toBe("Commit pane");
-        expect(elementWithDataId(container, "help-pane-description")?.textContent).toBe(PANE_HELP.commit.description);
+        expect(elementWithDataId(container, "help-pane-description")?.textContent).toBe(PANE_HELP["commit-pane"].description);
         const keyRows = elementWithDataId(container, "help-pane-keys")?.children;
-        expect(keyRows).toHaveLength(PANE_HELP.commit.keys.length);
-        expect(elementWithDataId(container, "help-pane-key-0-text")?.textContent).toBe(PANE_HELP.commit.keys[0].text);
+        expect(keyRows).toHaveLength(PANE_HELP["commit-pane"].keys.length);
+        expect(elementWithDataId(container, "help-pane-key-0-text")?.textContent).toBe(PANE_HELP["commit-pane"].keys[0].text);
         expect(elementWithDataId(container, "help-pane-key-1-text")?.textContent).toBe("Makes the repo details pane active.");
         const clicks = elementWithDataId(container, "help-pane-clicks")?.querySelectorAll("li");
-        expect(Array.from(clicks ?? []).map(click => click.textContent)).toEqual(PANE_HELP.commit.clicks);
+        expect(Array.from(clicks ?? []).map(click => click.textContent)).toEqual(PANE_HELP["commit-pane"].clicks);
         expect(elementWithDataId(container, "help-pane-click-0")?.textContent).toBe("Click a commit to open its details.");
     });
 

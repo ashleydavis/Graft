@@ -4,7 +4,7 @@
 // page of its own.
 //
 
-import { ExplorerPane, IViewHelp, PAGE_HELP, PANE_HELP, viewHelp } from "../../lib/context-help";
+import { ExplorerPane, isPageView, IViewHelp, PAGE_HELP, PANE_HELP, viewHelp } from "../../lib/context-help";
 
 //
 // Lists the keys a pane's help names, each key once, in the order the help lists them.
