@@ -87,6 +87,7 @@
 - A progress bar for network work (fetch, pull, push, clone), as in the style guide, with a percentage or a moving bar when the size is unknown, labelled with what Git is doing (such as "Receiving objects" or "Connecting to origin").
 - Rows that do not match a search are faded, not hidden, as on the style guide's overview page.
 - File icons chosen by whole file name for `Cargo.lock`, `Dockerfile` and `LICENSE`, as in the style guide.
+- File diff: Up/down: should navigate hunks or lines (depending on mode). From the first hunk/link up goes to the last in the prev file. From the last hunk/link down goes to the first in the next file.
 
 ## Handling multiple repos
 
