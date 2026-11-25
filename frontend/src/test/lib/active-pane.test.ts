@@ -29,7 +29,7 @@ describe("repoExplorerActivePane", () => {
         expect(repoExplorerActivePane(explorerState(COMMITS_LINK, 3))).toBe("file-pane");
     });
 
-    test("names the changes pane and its file pane while the Commit link is open", () => {
+    test("names the changes pane and its file pane while the Changes link is open", () => {
         expect(repoExplorerActivePane(explorerState(CHANGES_LINK, 1))).toBe("changes-pane");
         expect(repoExplorerActivePane(explorerState(CHANGES_LINK, 2))).toBe("working-file-pane");
     });

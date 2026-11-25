@@ -41,7 +41,7 @@ export const PANE_OR_PAGE_NAMES: Record<PaneOrPage, string> = {
 
 //
 // Works out the repo explorer's active pane from its state, so the repo explorer page can put it
-// in the layout's shared value. While the Commit link is open the changes pane and its file pane
+// in the layout's shared value. While the Changes link is open the changes pane and its file pane
 // follow the repo details pane, and otherwise the commit pane, the commit details pane and the file
 // pane do.
 //

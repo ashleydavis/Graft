@@ -731,7 +731,7 @@ describe("RepoExplorerPage active pane", () => {
         expect(lastActivePane()).toBeUndefined();
     });
 
-    test("sets the changes pane while the Commit link is open", async () => {
+    test("sets the changes pane while the Changes link is open", async () => {
         const ziggy = installFakeTaskZiggy();
         await openChanges(ziggy);
         fireEvent.click(elementWithDataId("change-unstaged-notes.txt"));
