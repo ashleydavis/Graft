@@ -7,8 +7,9 @@
 
 import { faAnglesLeft, faAnglesRight, faCheck } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Button, IconButton, List, ListItemButton, TextField, Tooltip } from "@mui/material";
+import { Button, IconButton, List, ListItemButton, TextField } from "@mui/material";
 import { JSX, useEffect, useRef } from "react";
+import { DetailTooltip, FullTextTooltip } from "../../../components/tooltip";
 import { canCommit, commitButtonText, commitTip } from "../../../lib/commit";
 import { paneWidthStyle } from "../../../lib/pane-widths";
 import { changeKey } from "../../../lib/repo-explorer";
@@ -22,7 +23,6 @@ import { FilePath } from "./file-path";
 import { FilePathMenu, filePathMenuRowStyle } from "./file-path-menu";
 import { collapseHandler, MaximiseButton, PaneHeader } from "./pane-header";
 import { paneWidthClass } from "./pane-width";
-import { Tip } from "./tip";
 
 //
 // What the changes pane shows and what it reports.
@@ -290,11 +290,12 @@ export interface IChangeRowProps {
 
 //
 // Shows one changed file as the style guide's file rows do: the stage or unstage button at its
-// left, then the file's icon, its path and its file path menu. The row is a MaterialUI
-// ListItemButton, so a selected file shows the selected background. Its data-id holds the list and
-// the path, because a file with staged and unstaged changes has a row in each list. When the row
-// becomes selected it scrolls its list by the least amount that shows it, so the highlighted file
-// stays visible as the keys move through a list longer than its box.
+// left, then the file's icon, its path, with the full path in a tooltip because a long path is cut
+// short, and its file path menu. The row is a MaterialUI ListItemButton, so a selected file shows
+// the selected background. Its data-id holds the list and the path, because a file with staged and
+// unstaged changes has a row in each list. When the row becomes selected it scrolls its list by the
+// least amount that shows it, so the highlighted file stays visible as the keys move through a list
+// longer than its box.
 //
 export function ChangeRow({ repoPath, file, isStaged, isSelected, isOpen, onSelect, onToggleStaged }: IChangeRowProps): JSX.Element {
     const rowRef = useRef<HTMLLIElement>(null);
@@ -327,9 +328,11 @@ export function ChangeRow({ repoPath, file, isStaged, isSelected, isOpen, onSele
         >
             <StageButton path={file.path} isStaged={isStaged} onClick={() => onToggleStaged(file, isStaged)} />
             <FileIcon path={file.path} />
-            <span className="min-w-0 flex-1 truncate">
-                <FilePath path={file.path} />
-            </span>
+            <FullTextTooltip text={file.path} dataId={`change-${listName}-${file.path}-tip`}>
+                <span className="min-w-0 flex-1 truncate">
+                    <FilePath path={file.path} />
+                </span>
+            </FullTextTooltip>
             <FilePathMenu repoPath={repoPath} path={file.path} dataId={`change-${listName}-menu-${file.path}`} />
         </ListItemButton>
     );
@@ -382,7 +385,7 @@ export function StageButton({ path, isStaged, onClick }: IStageButtonProps): JSX
         dataId = `unstage-${path}`;
     }
     return (
-        <Tooltip title={<Tip title={label} detail={detail} />}>
+        <DetailTooltip title={label} detail={detail}>
             <IconButton
                 data-id={dataId}
                 aria-label={label}
@@ -395,7 +398,7 @@ export function StageButton({ path, isStaged, onClick }: IStageButtonProps): JSX
             >
                 <FontAwesomeIcon icon={icon} />
             </IconButton>
-        </Tooltip>
+        </DetailTooltip>
     );
 }
 
@@ -452,13 +455,13 @@ export function CommitSection({ message, stagedCount, error, isCommitting, onMes
             {error !== undefined && (
                 <p data-id="commit-error" className="max-h-[160px] overflow-auto whitespace-pre-wrap rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[length:var(--text-sm)] text-[var(--color-text)]">{error}</p>
             )}
-            <Tooltip title={<Tip title={tip.title} detail={tip.detail} />}>
+            <DetailTooltip title={tip.title} detail={tip.detail}>
                 <span className="block">
                     <Button data-id="commit-button" variant="contained" fullWidth={true} disabled={isDisabled} onClick={onCommit}>
                         {commitButtonText(stagedCount)}
                     </Button>
                 </span>
-            </Tooltip>
+            </DetailTooltip>
         </section>
     );
 }

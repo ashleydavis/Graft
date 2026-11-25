@@ -10,7 +10,7 @@
 import { act, fireEvent, render } from "@testing-library/react";
 import { createElement } from "react";
 import type { IAddTask, IPlatformInfo, ITaskCompletedEvent } from "ziggy";
-import { COPIED_DURATION_MS } from "../../../../components/copy-button";
+import { COPIED_DURATION_MS } from "../../../../lib/clipboard";
 import { FilePathMenu } from "../../../../pages/repo-explorer/components/file-path-menu";
 import { installFakeZiggy } from "../../../fake-ziggy";
 

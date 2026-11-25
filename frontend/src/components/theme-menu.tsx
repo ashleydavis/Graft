@@ -5,9 +5,10 @@
 
 import { faChevronDown, faCircleHalfStroke, faMoon, faSun, IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { ButtonBase, ListItemIcon, ListItemText, Menu, MenuItem, Tooltip } from "@mui/material";
+import { ButtonBase, ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material";
 import { JSX, useState } from "react";
 import { themeButtonLabel, themeOptions, ThemeSetting } from "../lib/theme";
+import { LabelTooltip } from "./tooltip";
 
 //
 // What the theme menu shows and what it reports.
@@ -52,7 +53,7 @@ export function ThemeMenu({ setting, onChooseSetting }: IThemeMenuProps): JSX.El
 
     return (
         <>
-            <Tooltip title={label}>
+            <LabelTooltip label={label} placement="bottom">
                 <ButtonBase
                     data-id="theme-button"
                     aria-label={label}
@@ -64,7 +65,7 @@ export function ThemeMenu({ setting, onChooseSetting }: IThemeMenuProps): JSX.El
                     <FontAwesomeIcon data-id={`theme-icon-${setting}`} icon={themeIcons[setting]} className="text-[length:var(--icon-lg)]" />
                     <FontAwesomeIcon icon={faChevronDown} className={`text-[length:var(--icon-sm)] transition-transform duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${anchor !== undefined ? "rotate-180" : ""}`} />
                 </ButtonBase>
-            </Tooltip>
+            </LabelTooltip>
             <Menu
                 data-id="theme-menu"
                 open={anchor !== undefined}

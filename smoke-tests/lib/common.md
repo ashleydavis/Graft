@@ -11,6 +11,8 @@ What every smoke test uses: it starts the app, talks to it through the remote co
 - `double_click <data-id>`: double-clicks the element with the data-id.
 - `focus_element <data-id>`: gives the element with the data-id the keyboard focus, so the keys a test presses next go to it, as when a user clicks into a text box.
 - `width_of <data-id>`: prints the width of the element with the data-id in whole pixels.
+- `hover <data-id>`: rests the pointer on the element with the data-id, as a user does to open its tooltip.
+- `unhover <data-id>`: moves the pointer off the element with the data-id, as a user does to close its tooltip.
 - `open_sidebar_page <page>`: clicks the page's link in the left sidebar (data-id `left-sidebar-<page>-link`) and waits until the page (data-id `<page>-page`) shows. Every smoke test opens a page from the sidebar with it, so a change to the links is one edit in this file.
 - `answer_picker [path ...]`: gives the next folder picker the paths, so it shows no dialog and returns them as chosen. No paths is a cancelled picker.
 - `open_repo_with_button <path>`: opens the repo at the path from the welcome page as a user does. It gives the folder picker the path with `answer_picker`, clicks the welcome page's Open repo button and waits until the repo explorer page shows its repo details pane. Every smoke test that needs an open repo opens it with this.

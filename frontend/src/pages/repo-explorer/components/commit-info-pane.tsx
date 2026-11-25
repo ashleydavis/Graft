@@ -4,7 +4,8 @@
 // message, author, committer, dates, hash and parents.
 //
 
-import { JSX, ReactNode } from "react";
+import { Fragment, JSX, ReactNode } from "react";
+import { codeField, CopyTip, FullTextTooltip, PinnableTooltip } from "../../../components/tooltip";
 import { ICommit } from "../../../lib/commits";
 import { formatDateTime, IDateFormatOptions } from "../../../lib/date-format";
 import { activePaneClass } from "./active-pane-style";
@@ -74,10 +75,10 @@ export function CommitInfoPane({ commit, isActive, isMaximised, onToggleMaximise
                     </div>
                     <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-4 gap-y-2">
                         <Fact label="Authored" dataId="commit-details-author">
-                            <PersonAndDate name={commit.authorName} email={commit.authorEmail} date={formatDateTime(commit.authorDate, dateFormat)} />
+                            <PersonAndDate name={commit.authorName} email={commit.authorEmail} date={formatDateTime(commit.authorDate, dateFormat)} dataId="commit-details-author-name" />
                         </Fact>
                         <Fact label="Committed" dataId="commit-details-committer">
-                            <PersonAndDate name={commit.committerName} email={commit.committerEmail} date={formatDateTime(commit.committerDate, dateFormat)} />
+                            <PersonAndDate name={commit.committerName} email={commit.committerEmail} date={formatDateTime(commit.committerDate, dateFormat)} dataId="commit-details-committer-name" />
                         </Fact>
                         <Fact label="Hash" dataId="commit-details-hash">
                             <code className="break-all font-[family-name:var(--font-mono)]">{commit.hash}</code>
@@ -131,18 +132,25 @@ export interface IPersonAndDateProps {
 
     // When they acted, already formatted.
     date: string;
+
+    // The data-id of the name line, whose full text tooltip's data-id is this with "-tip" after
+    // it, so a test can find them.
+    dataId: string;
 }
 
 //
 // Shows a person and when they acted: the name, the email address muted after it and the date
-// muted on the line below, as the style guide's commit details do.
+// muted on the line below, as the style guide's commit details do. The name line is cut short in a
+// narrow pane, so its full text shows in a tooltip.
 //
-export function PersonAndDate({ name, email, date }: IPersonAndDateProps): JSX.Element {
+export function PersonAndDate({ name, email, date, dataId }: IPersonAndDateProps): JSX.Element {
     return (
         <div className="flex flex-col">
-            <span className="truncate">
-                {name} <span className="text-[var(--color-text-muted)]">&lt;{email}&gt;</span>
-            </span>
+            <FullTextTooltip text={`${name} <${email}>`} dataId={`${dataId}-tip`}>
+                <span data-id={dataId} className="truncate">
+                    {name} <span className="text-[var(--color-text-muted)]">&lt;{email}&gt;</span>
+                </span>
+            </FullTextTooltip>
             <span className="text-[var(--color-text-muted)]">{date}</span>
         </div>
     );
@@ -167,20 +175,37 @@ export interface IParentsProps {
 }
 
 //
-// Shows the commit's parents as their short hashes in the code font, or says in muted text that
-// the commit is the first, which has none.
+// Shows the commit's parents as their short hashes in the code font, two spaces apart, as the
+// style guide's commit details write them, or says in muted text that the commit is the first,
+// which has none. Each short hash shows a pinnable tooltip with the parent's full hash and a button
+// that copies it.
 //
 export function Parents({ parentHashes }: IParentsProps): JSX.Element {
     if (parentHashes.length === 0) {
         return <span className="text-[var(--color-text-muted)]">None, this is the first commit</span>;
     }
-    return <code className="whitespace-pre font-[family-name:var(--font-mono)]">{parentsText(parentHashes)}</code>;
+    return (
+        <code className="whitespace-pre font-[family-name:var(--font-mono)]">
+            {parentHashes.map((parentHash, index) => (
+                <Fragment key={parentHash}>
+                    {parentSeparator(index)}
+                    <PinnableTooltip dataId={`commit-details-parent-${parentHash}-tip`} enterDelayMs={400} maxWidth="calc(var(--space-8) * 16)" tip={pinButton => <CopyTip fields={[codeField("Parent hash", parentHash)]} action={pinButton} />}>
+                        <span data-id={`commit-details-parent-${parentHash}`}>{parentHash.slice(0, 7)}</span>
+                    </PinnableTooltip>
+                </Fragment>
+            ))}
+        </code>
+    );
 }
 
 //
-// Writes the commit's parents as their short hashes, two spaces apart, as the style guide's commit
-// details write them.
+// Picks the text before a parent's short hash: nothing before the first and two spaces before
+// each other, so the short hashes read as the style guide's commit details write them.
 //
-export function parentsText(parentHashes: string[]): string {
-    return parentHashes.map(parentHash => parentHash.slice(0, 7)).join("  ");
+export function parentSeparator(index: number): string {
+    if (index === 0) {
+        return "";
+    }
+    return "  ";
 }
+

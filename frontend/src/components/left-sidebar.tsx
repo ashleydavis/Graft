@@ -6,9 +6,9 @@
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faCircleInfo, faCircleQuestion, faCodeCommit, faHouse } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Tooltip } from "@mui/material";
 import { Link } from "@tanstack/react-router";
 import { JSX } from "react";
+import { LabelTooltip } from "./tooltip";
 
 //
 // Whether the left sidebar is minimised and whether a repo is open. The layout owns both: the top
@@ -52,7 +52,7 @@ export interface ISidebarLinkProps {
 //
 export function SidebarLink({ to, icon, label, dataId, isMinimised }: ISidebarLinkProps): JSX.Element {
     return (
-        <Tooltip title={label} placement="right">
+        <LabelTooltip label={label} placement="right">
             <Link
                 to={to}
                 data-id={dataId}
@@ -70,7 +70,7 @@ export function SidebarLink({ to, icon, label, dataId, isMinimised }: ISidebarLi
                 </span>
                 {!isMinimised && <span data-id={`${dataId}-label`} className="truncate">{label}</span>}
             </Link>
-        </Tooltip>
+        </LabelTooltip>
     );
 }
 

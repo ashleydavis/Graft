@@ -4,8 +4,10 @@
 // buttons, what it shows while the changes load, when they could not be read, when a stage failed
 // and when there are none, that each row and button reports its file, that a button's click does
 // not select its row and that the pane marks the selected and open rows and its active border. It
-// checks the collapse button and the strip drawn while the pane is collapsed. It checks the
-// commit section under the lists: the message box reports each change, the Commit button counts
+// checks the collapse button and the strip drawn while the pane is collapsed. It checks the stage
+// button's tooltip shows what the button does and what that means and a row's path shows the full
+// path in a tooltip. It checks the commit section under the lists: the message box reports each
+// change, the Commit button counts
 // the staged files, is disabled while the message is empty, no file is staged or a commit is being
 // made, reports its click once enabled and shows why the last commit failed with git's line breaks.
 // It checks the maximise button reports a click and the card fills the repo explorer while
@@ -455,5 +457,30 @@ describe("ChangesPane maximise button", () => {
         });
         expect(elementWithDataId("changes-pane").className).not.toContain(maximisedPaneClasses);
         expect(screen.getByLabelText("Maximise the pane").getAttribute("data-id")).toBe("changes-maximise");
+    });
+});
+
+describe("ChangeRow's tooltip", () => {
+    test("shows the file's full path when the pointer rests on its path", async () => {
+        renderPane({
+            changes,
+        });
+        fireEvent.mouseOver(screen.getByText("new.txt"));
+        const tip = await screen.findByText("docs/new.txt", {
+            selector: "[data-id=\"change-unstaged-docs/new.txt-tip\"]",
+        });
+        expect(tip.textContent).toBe("docs/new.txt");
+    });
+
+    test("shows what the stage button does in bold above what that means for the file", async () => {
+        renderPane({
+            changes,
+        });
+        fireEvent.mouseOver(elementWithDataId("stage-notes.txt"));
+        const tooltip = await screen.findByRole("tooltip");
+        const lines = tooltip.querySelector(".flex-col")?.children;
+        expect(lines?.[0].textContent).toBe("Stage this file");
+        expect(lines?.[0].className).toContain("font-[var(--weight-bold)]");
+        expect(lines?.[1].textContent).toBe("Adds the file's changes to the next commit.");
     });
 });

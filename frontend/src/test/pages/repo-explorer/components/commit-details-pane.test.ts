@@ -7,15 +7,16 @@
 // checks the row and each changed file are MaterialUI ListItemButtons with the selected one set as
 // selected and the open one marked open, that the pane reports the commit it read and that its
 // border is in the style guide's active pane colour while it is active, and that the pane's
-// scrolling area scrolls to show the selected row each time the selection changes. It also checks
-// the colour, name and meaning of each change type and the text of the line counts.
+// scrolling area scrolls to show the selected row each time the selection changes. It checks a
+// changed file's pinnable file tooltip pins with P and closes with Escape. It also checks the
+// colour, name and meaning of each change type and the text of the line counts.
 // It checks the maximise button reports a click, sits before the close button and the card fills
 // the repo explorer while maximised.
 // It checks the collapse button and the strip drawn while the pane is collapsed, which still reads
 // the commit.
 //
 
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { IChangedFile } from "../../../../lib/commit-details";
 import { createElement, ReactElement } from "react";
 import type { IAddTask, ITaskCompletedEvent } from "ziggy";
@@ -348,6 +349,29 @@ describe("CommitDetailsPane", () => {
         expect(elementWithDataId("commit-details-row").textContent).toBe("Commit details");
     });
 
+    test("shows a changed file's pinnable file tooltip, which P pins and Escape closes", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderPane(undefined, jest.fn(), jest.fn(), false, jest.fn());
+        completeTask(ziggy, succeededResult([], ""));
+        fireEvent.mouseOver(screen.getByText("new.md"));
+        const tip = await screen.findByText("Added", {
+            selector: "[data-id=\"changed-file-docs/new.md-tip\"] span",
+        });
+        expect(tip.closest("[data-id=\"changed-file-docs/new.md-tip\"]")?.textContent).toContain("Pathdocs/new.md");
+        fireEvent.keyDown(document.body, {
+            key: "p",
+        });
+        expect(elementWithDataId("changed-file-docs/new.md-tip-pin").getAttribute("aria-pressed")).toBe("true");
+        fireEvent.mouseLeave(screen.getByText("new.md"));
+        expect(document.querySelector("[data-id=\"changed-file-docs/new.md-tip\"]")).not.toBeNull();
+        fireEvent.keyDown(document.body, {
+            key: "Escape",
+        });
+        await waitFor(() => {
+            expect(document.querySelector("[data-id=\"changed-file-docs/new.md-tip\"]")).toBeNull();
+        });
+    });
+
     test("shows the selected changed file as selected and the open one with the open bar", () => {
         const ziggy = installFakeTaskZiggy();
         renderPane("notes.txt", jest.fn(), jest.fn(), false, jest.fn());
@@ -531,12 +555,17 @@ describe("lineCountsText", () => {
 });
 
 describe("FileTip", () => {
-    test("shows the change type in its colour, its name, the line counts, what it means and the path", () => {
+    test("shows the change type in its colour, its name, the line counts and the pin button, what it means and the path with its copy button", () => {
         const { container } = render(createElement(FileTip, {
             file: modifiedFile,
+            pinButton: createElement("button", {
+                "data-id": "the-pin",
+            }, "Pin"),
         }));
-        expect(container.textContent).toBe("MModified+9 −2The file's lines changed.Pathdocs/notes.txt");
+        expect(container.textContent).toBe("MModified+9 −2PinThe file's lines changed.Pathdocs/notes.txt");
         expect(screen.getByText("M").className).toContain("text-[var(--color-warning)]");
+        expect(screen.getByText("Pin").parentElement?.textContent).toBe("MModified+9 −2Pin");
+        expect(screen.getByLabelText("Copy path")).toBeTruthy();
     });
 });
 

@@ -16,7 +16,7 @@
 
 import { JSX, MouseEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useActivePane } from "../../components/active-pane";
-import { copyText } from "../../components/copy-button";
+import { copyText } from "../../lib/clipboard";
 import { usePaneTrail } from "../../components/pane-trail";
 import { useRepo } from "../../components/repo-context";
 import { repoExplorerActivePane } from "../../lib/active-pane";

@@ -43,3 +43,45 @@ export function formatDateTime(date: Date, options: IDateFormatOptions): string 
         minute: "2-digit",
     });
 }
+
+//
+// Writes a number with at least two digits, as ISO 8601 writes each part of a date, a time and an
+// offset.
+//
+export function twoDigits(value: number): string {
+    return String(value).padStart(2, "0");
+}
+
+//
+// Formats the date as ISO 8601 in the time zone, to the second and with the zone's offset from
+// UTC ("2026-01-03T19:00:00+10:00" in Australia/Brisbane), for the commit pane's date tooltip,
+// whose field copies it, as the style guide's date tooltip shows it. ISO 8601 is written the same
+// way in every locale, so only the time zone is used. The offset is the zone's wall clock time at that moment
+// less the moment itself.
+//
+export function formatIsoDate(date: Date, options: IDateFormatOptions): string {
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: options.timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23",
+    }).formatToParts(date);
+    const values: Record<string, string> = {};
+    for (const part of parts) {
+        values[part.type] = part.value;
+    }
+    const wallClockMs = Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day), Number(values.hour), Number(values.minute), Number(values.second));
+    const momentMs = Math.floor(date.getTime() / 1000) * 1000;
+    const offsetMinutes = Math.round((wallClockMs - momentMs) / 60000);
+    let sign = "+";
+    if (offsetMinutes < 0) {
+        sign = "-";
+    }
+    const offsetSize = Math.abs(offsetMinutes);
+    const offset = `${sign}${twoDigits(Math.floor(offsetSize / 60))}:${twoDigits(offsetSize % 60)}`;
+    return `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}:${values.second}${offset}`;
+}

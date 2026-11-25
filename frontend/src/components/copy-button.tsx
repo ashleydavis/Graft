@@ -5,15 +5,10 @@
 
 import { faCheck, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { IconButton, Tooltip } from "@mui/material";
+import { IconButton } from "@mui/material";
 import { JSX, useEffect, useState } from "react";
-
-//
-// How long the tick shows after a copy, in milliseconds. A second and a half is long enough to see
-// that the copy worked and short enough that the button is back to Copy before it is needed again,
-// as in the style guide's copy button.
-//
-export const COPIED_DURATION_MS = 1500;
+import { COPIED_DURATION_MS, copyText } from "../lib/clipboard";
+import { LabelTooltip } from "./tooltip";
 
 //
 // What the copy button copies, what it is called and how a smoke test finds it.
@@ -52,7 +47,7 @@ export function CopyButton({ dataId, text, label }: ICopyButtonProps): JSX.Eleme
     }
 
     return (
-        <Tooltip title={name}>
+        <LabelTooltip label={name} placement="bottom">
             <IconButton
                 data-id={dataId}
                 size="small"
@@ -62,18 +57,6 @@ export function CopyButton({ dataId, text, label }: ICopyButtonProps): JSX.Eleme
             >
                 <FontAwesomeIcon icon={isCopied ? faCheck : faCopy} />
             </IconButton>
-        </Tooltip>
+        </LabelTooltip>
     );
-}
-
-//
-// Writes the text to the clipboard, calls onCopied once it is there, so the button can show the
-// tick, and reports a failure in the log.
-//
-export function copyText(text: string, onCopied: () => void): void {
-    navigator.clipboard.writeText(text)
-        .then(onCopied)
-        .catch(error => {
-            console.error(`Graft could not copy "${text}" to the clipboard: ${String(error)}. Nothing was copied, so look at whether the web view allows the clipboard.`);
-        });
 }

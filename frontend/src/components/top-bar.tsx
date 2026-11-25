@@ -6,7 +6,7 @@
 
 import { faBars, faKeyboard, faTableColumns } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { IconButton, Tooltip } from "@mui/material";
+import { IconButton } from "@mui/material";
 import { JSX } from "react";
 import { ITrailStep } from "../lib/breadcrumb-trail";
 import { shortcutsOverlayCtrlKeys } from "../lib/shortcuts";
@@ -14,6 +14,7 @@ import { ThemeSetting } from "../lib/theme";
 import { BreadcrumbTrail } from "./breadcrumb-trail";
 import { shortcutsOverlayAction } from "./shortcuts-overlay";
 import { ThemeMenu } from "./theme-menu";
+import { LabelTooltip, ShortcutTooltip } from "./tooltip";
 
 //
 // The text of the keyboard shortcuts button's label and tooltip, naming what a click does.
@@ -62,8 +63,8 @@ export interface ITopBarProps {
 // Shows the menu button that minimises and expands the left sidebar at the left, Graft's name next
 // to it and the button that slides the right sidebar in and out at the right, so each button sits
 // on the side of the sidebar it moves. The theme menu's button sits just inside the right sidebar's
-// button and shows the theme in use. Each button's label and tooltip say what a click does, in the
-// style guide's MaterialUI tooltip.
+// button and shows the theme in use. Each button's label and tooltip say what a click does, in
+// Graft's shared label tooltip.
 // The breadcrumb trail takes the free space between them, set off by a divider, so it says where
 // the user is without moving the buttons. After the trail the bar always shows "Ctrl+/: Show
 // hotkeys", to remind the user of the key that shows the keyboard shortcuts overlay. It is styled
@@ -71,8 +72,7 @@ export interface ITopBarProps {
 // one line. Between the reminder and the theme menu's button sits the keyboard shortcuts button,
 // so the button is beside the reminder of its key. A click runs the Keyboard Shortcuts action, the
 // one `?` runs, whose handler the overlay registers, so the overlay opens the same way from both.
-// Its tooltip names the button's action and Ctrl+/, as the style guide's tooltip with a shortcut
-// does: the shortcut after the label, in the code font and fainter.
+// Its tooltip is the shared tooltip with a shortcut, which names the button's action and Ctrl+/.
 //
 export function TopBar({ isLeftSidebarMinimised, onToggleLeftSidebar, isRightSidebarOpen, onToggleRightSidebar, trail, onNavigate, themeSetting, onChooseThemeSetting }: ITopBarProps): JSX.Element {
     const leftSidebarLabel = isLeftSidebarMinimised ? "Expand the left sidebar" : "Minimise the left sidebar";
@@ -80,11 +80,11 @@ export function TopBar({ isLeftSidebarMinimised, onToggleLeftSidebar, isRightSid
 
     return (
         <header data-id="top-bar" className="relative z-10 flex h-12 shrink-0 items-center gap-[var(--space-2)] border-b border-[var(--color-border)] bg-[var(--color-panel)] px-[var(--space-2)] shadow-[var(--shadow-raised)]">
-            <Tooltip title={leftSidebarLabel}>
+            <LabelTooltip label={leftSidebarLabel} placement="bottom">
                 <IconButton data-id="left-sidebar-toggle" aria-label={leftSidebarLabel} size="small" onClick={onToggleLeftSidebar}>
                     <FontAwesomeIcon icon={faBars} />
                 </IconButton>
-            </Tooltip>
+            </LabelTooltip>
             <span data-id="top-bar-name" className="select-none px-[var(--space-1)] text-[length:var(--text-lg)] font-[var(--weight-bold)] leading-[var(--leading-tight)] text-[var(--color-text)]">
                 Graft
             </span>
@@ -94,14 +94,7 @@ export function TopBar({ isLeftSidebarMinimised, onToggleLeftSidebar, isRightSid
             <span data-id="top-bar-shortcuts-reminder" className="shrink-0 select-none whitespace-nowrap font-[family-name:var(--font-mono)] text-[length:var(--text-sm)] text-[var(--color-text-muted)]">
                 {shortcutsOverlayCtrlKeys}: Show hotkeys
             </span>
-            <Tooltip
-                title={
-                    <span data-id="shortcuts-button-tooltip" className="inline-flex items-baseline gap-[var(--space-2)]">
-                        {shortcutsButtonLabel}
-                        <span className="font-[family-name:var(--font-mono)] opacity-70">{shortcutsOverlayCtrlKeys}</span>
-                    </span>
-                }
-            >
+            <ShortcutTooltip label={shortcutsButtonLabel} shortcut={shortcutsOverlayCtrlKeys} dataId="shortcuts-button-tooltip">
                 <IconButton
                     data-id="shortcuts-button"
                     aria-label={shortcutsButtonLabel}
@@ -112,13 +105,13 @@ export function TopBar({ isLeftSidebarMinimised, onToggleLeftSidebar, isRightSid
                 >
                     <FontAwesomeIcon icon={faKeyboard} />
                 </IconButton>
-            </Tooltip>
+            </ShortcutTooltip>
             <ThemeMenu setting={themeSetting} onChooseSetting={onChooseThemeSetting} />
-            <Tooltip title={rightSidebarLabel}>
+            <LabelTooltip label={rightSidebarLabel} placement="bottom">
                 <IconButton data-id="right-sidebar-toggle" aria-label={rightSidebarLabel} size="small" onClick={onToggleRightSidebar}>
                     <FontAwesomeIcon icon={faTableColumns} />
                 </IconButton>
-            </Tooltip>
+            </LabelTooltip>
         </header>
     );
 }

@@ -9,6 +9,7 @@ import { faCodeBranch, faCodeCommit, faPenToSquare, faTag, IconDefinition } from
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Chip, List, ListItemButton } from "@mui/material";
 import { JSX } from "react";
+import { FullTextTooltip } from "../../../components/tooltip";
 import { IBranch } from "../../../lib/branches";
 import { repoName } from "../../../lib/breadcrumb-trail";
 import { paneWidthStyle } from "../../../lib/pane-widths";
@@ -77,16 +78,17 @@ export interface IRepoDetailsPaneProps {
 
 //
 // Shows the repo in a rounded card headed "Repo" and the repo's name: its name and its full path as
-// labelled facts, laid out as the commit details pane lays out a commit's facts, then the Commits
-// link, which opens the commit pane, and the Changes link, which opens the changes pane, then the
-// Branches list, each branch opening its branch pane, then a "Tags" heading with a row for each
-// tag, which opens the tag pane, as the style guide's sidebar lays out its Tags group: the tag icon
-// and the tag's name. A repo with no tags shows the heading alone, and tags that could not be read
-// show why under it. The card never shrinks, so the panes that open to its right never hide it, and
-// fills the repo explorer while it is maximised. It is 360 pixels wide, or the width its resize
-// handle set. The card's border is in the style guide's active pane colour while the pane is
-// active. The header's button maximises the pane and restores it. While it is collapsed it draws
-// the strip with "Repo" and the repo's name down it in its place.
+// labelled facts, the path with its full text in a tooltip, laid out as the commit details pane
+// lays out a commit's facts, then the Commits link, which opens the commit pane, and the Changes
+// link, which opens the changes pane, then the Branches list, each branch opening its branch pane,
+// then a "Tags" heading with a row for each tag, which opens the tag pane, as the style guide's
+// sidebar lays out its Tags group: the tag icon and the tag's name. A repo with no tags shows the
+// heading alone, and tags that could not be read show why under it. The card never shrinks, so the
+// panes that open to its right never hide it, and fills the repo explorer while it is maximised. It
+// is 360 pixels wide, or the width its resize handle set. The card's border is in the style
+// guide's active pane colour while the pane is active. The header's button maximises the pane and
+// restores it. While it is collapsed it draws the strip with "Repo" and the repo's name down it in
+// its place.
 //
 export function RepoDetailsPane({ repoPath, branches, branchesError, selectedLink, openLink, isActive, isMaximised, onToggleMaximise, isHidden, isCollapsed, onToggleCollapse, tagNames, tagsError, onSelectLink, width }: IRepoDetailsPaneProps): JSX.Element {
     const name = repoName(repoPath);
@@ -112,7 +114,9 @@ export function RepoDetailsPane({ repoPath, branches, branchesError, selectedLin
                         {name}
                     </Fact>
                     <Fact label="Path" dataId="repo-details-path">
-                        <code className="break-all font-[family-name:var(--font-mono)]">{repoPath}</code>
+                        <FullTextTooltip text={repoPath} dataId="repo-details-path-tip">
+                            <code className="break-all font-[family-name:var(--font-mono)]">{repoPath}</code>
+                        </FullTextTooltip>
                     </Fact>
                 </dl>
                 <List data-id="repo-details-links" disablePadding={true} className="px-1 py-2">

@@ -260,6 +260,30 @@ width_of() {
 }
 
 #
+# Rests the pointer on the element with the data-id, as a user does to open its tooltip.
+# Usage: hover <data-id>
+#
+hover() {
+    local answer
+    answer="$(control "{\"command\":\"hover\",\"dataId\":\"$1\"}")"
+    if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
+        fail "hover $1 failed: $answer"
+    fi
+}
+
+#
+# Moves the pointer off the element with the data-id, as a user does to close its tooltip.
+# Usage: unhover <data-id>
+#
+unhover() {
+    local answer
+    answer="$(control "{\"command\":\"unhover\",\"dataId\":\"$1\"}")"
+    if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
+        fail "unhover $1 failed: $answer"
+    fi
+}
+
+#
 # Opens a page with its link in the left sidebar, as a user does, and waits until the page shows,
 # so a change to the sidebar's links is one edit here. <page> is the page's name as it appears in
 # the link's data-id, left-sidebar-<page>-link, and in the page's own data-id, <page>-page.

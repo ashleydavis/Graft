@@ -369,6 +369,40 @@ describe("performTestCommand", () => {
         expect(element.events).toEqual([]);
     });
 
+    test("hover dispatches a bubbling mouseover from outside the window on the element", () => {
+        const element = makeElement("", undefined);
+        expect(performTestCommand(makeFinder(element), {
+            command: "hover",
+            dataId: "target",
+        })).toEqual({
+            ok: true,
+        });
+        expect(element.events.length).toBe(1);
+        const event = element.events[0];
+        expect(event).toBeInstanceOf(MouseEvent);
+        expect(event).toHaveProperty("type", "mouseover");
+        expect(event).toHaveProperty("bubbles", true);
+        expect(event).toHaveProperty("cancelable", true);
+        expect(event).toHaveProperty("relatedTarget", null);
+    });
+
+    test("unhover dispatches a bubbling mouseout to outside the window on the element", () => {
+        const element = makeElement("", undefined);
+        expect(performTestCommand(makeFinder(element), {
+            command: "unhover",
+            dataId: "target",
+        })).toEqual({
+            ok: true,
+        });
+        expect(element.events.length).toBe(1);
+        const event = element.events[0];
+        expect(event).toBeInstanceOf(MouseEvent);
+        expect(event).toHaveProperty("type", "mouseout");
+        expect(event).toHaveProperty("bubbles", true);
+        expect(event).toHaveProperty("cancelable", true);
+        expect(event).toHaveProperty("relatedTarget", null);
+    });
+
     test("get-value reads the value, or an empty string when there is none", () => {
         expect(performTestCommand(makeFinder(makeElement("", "a value")), {
             command: "get-value",

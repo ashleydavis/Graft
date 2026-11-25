@@ -10,8 +10,9 @@ import type { IAddTask, IJsonObject, IJsonValue, ITaskCompletedEvent } from "zig
 // A command from the remote control connection.
 //
 export interface ITestCommand {
-    // What to do: ready, click, double-click, focus, type, key-down, get-value, get-text, width,
-    // exists, in-view, in-view-of, bounds, scroll-to-end, insert, viewport, drop-file or run-task.
+    // What to do: ready, click, double-click, focus, type, key-down, hover, unhover, get-value,
+    // get-text, width, exists, in-view, in-view-of, bounds, scroll-to-end, insert, viewport,
+    // drop-file or run-task.
     command: string;
 
     // The data-id of the element to act on.
@@ -130,8 +131,10 @@ export interface IFoundElement {
 }
 
 //
-// Performs one test command and returns its result. An unknown command or a missing element is a failure with a reason,
-// never a silent success.
+// Performs one test command and returns its result. Hover and unhover move a pointer onto and off
+// the element, as a mouseover and a mouseout that bubble, which is how a tooltip sees the pointer
+// rest on its element and leave it, so a smoke test can open and close a tooltip. An unknown
+// command or a missing element is a failure with a reason, never a silent success.
 //
 export function performTestCommand(finder: IElementFinder, command: ITestCommand): ITestResult {
     if (command.command === "ready") {
@@ -185,6 +188,26 @@ export function performTestCommand(finder: IElementFinder, command: ITestCommand
     }
     if (command.command === "key-down") {
         return keyDownResult(element, command);
+    }
+    if (command.command === "hover") {
+        element.dispatchEvent(new MouseEvent("mouseover", {
+            bubbles: true,
+            cancelable: true,
+            relatedTarget: null,
+        }));
+        return {
+            ok: true,
+        };
+    }
+    if (command.command === "unhover") {
+        element.dispatchEvent(new MouseEvent("mouseout", {
+            bubbles: true,
+            cancelable: true,
+            relatedTarget: null,
+        }));
+        return {
+            ok: true,
+        };
     }
     if (command.command === "get-value") {
         return { ok: true, value: element.value ?? "" };

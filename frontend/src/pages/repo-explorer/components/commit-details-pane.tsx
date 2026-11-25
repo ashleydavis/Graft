@@ -6,8 +6,9 @@
 
 import { faMessage } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { List, ListItemButton, Tooltip } from "@mui/material";
-import { JSX, useEffect, useRef, useState } from "react";
+import { List, ListItemButton } from "@mui/material";
+import { JSX, ReactNode, useEffect, useRef, useState } from "react";
+import { codeField, CopyTip, PinnableTooltip } from "../../../components/tooltip";
 import { IChangedFile, ICommitDetails, readCommitDetails } from "../../../lib/commit-details";
 import { paneWidthStyle } from "../../../lib/pane-widths";
 import { COMMIT_DETAILS_PATH } from "../../../lib/repo-explorer";
@@ -312,14 +313,17 @@ export function lineCountsText(file: IChangedFile): string {
 export interface IFileTipProps {
     // The changed file.
     file: IChangedFile;
+
+    // The pinnable tooltip's pin button, which shows at the end of the first line.
+    pinButton: ReactNode;
 }
 
 //
 // Shows a changed file's tooltip as the style guide's file tooltip lays it out: its change type
-// letter in its colour, the change type's name and its line counts on the first line, what the
-// change type means under it, then its path.
+// letter in its colour, the change type's name, its line counts and the pin button on the first
+// line, what the change type means under it, then its path with a button that copies it.
 //
-export function FileTip({ file }: IFileTipProps): JSX.Element {
+export function FileTip({ file, pinButton }: IFileTipProps): JSX.Element {
     const tip = statusTip(file.status);
     return (
         <span className="flex flex-col gap-1">
@@ -327,12 +331,10 @@ export function FileTip({ file }: IFileTipProps): JSX.Element {
                 <span className={`font-[family-name:var(--font-mono)] font-[var(--weight-bold)] ${statusColorClass(file.status)}`}>{file.status}</span>
                 <span className="font-[var(--weight-bold)]">{tip.title}</span>
                 <span className="flex-1 font-[family-name:var(--font-mono)]">{lineCountsText(file)}</span>
+                {pinButton}
             </span>
             <span className="text-[length:var(--text-xs)] font-[var(--weight-normal)] opacity-80">{tip.detail}</span>
-            <span className="flex flex-col gap-px py-1">
-                <span className="text-[length:var(--text-xs)] font-[var(--weight-normal)] text-[var(--color-tooltip-muted)]">Path</span>
-                <span className="border-t border-dotted border-[var(--color-tooltip-border)] pt-[calc(var(--space-1)*1.5+1px)] font-[family-name:var(--font-mono)] [overflow-wrap:anywhere]">{file.path}</span>
-            </span>
+            <CopyTip fields={[codeField("Path", file.path)]} action={undefined} />
         </span>
     );
 }
@@ -359,8 +361,8 @@ export interface IChangedFileRowProps {
 
 //
 // Shows one changed file as the style guide's file rows do: its icon, its path and its file path
-// menu, with its change type and line counts in the tooltip on the path. The row is a MaterialUI
-// ListItemButton, so a selected file shows the selected background. When the row becomes selected
+// menu, with its change type and line counts in the pinnable file tooltip on the path. The row is a
+// MaterialUI ListItemButton, so a selected file shows the selected background. When the row becomes selected
 // it scrolls itself into view, so the highlighted file stays visible as Up and Down move through a
 // list longer than the pane.
 //
@@ -386,11 +388,11 @@ export function ChangedFileRow({ repoPath, file, isSelected, isOpen, onSelectFil
             sx={filePathMenuRowStyle}
         >
             <FileIcon path={file.path} />
-            <Tooltip title={<FileTip file={file} />} enterDelay={500}>
-                <span className="min-w-0 flex-1 truncate">
+            <PinnableTooltip dataId={`changed-file-${file.path}-tip`} enterDelayMs={500} maxWidth="calc(var(--space-8) * 12)" tip={pinButton => <FileTip file={file} pinButton={pinButton} />}>
+                <span data-id={`changed-file-${file.path}-path`} className="min-w-0 flex-1 truncate">
                     <FilePath path={file.path} />
                 </span>
-            </Tooltip>
+            </PinnableTooltip>
             <FilePathMenu repoPath={repoPath} path={file.path} dataId={`changed-file-menu-${file.path}`} />
         </ListItemButton>
     );

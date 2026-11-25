@@ -40,7 +40,7 @@ bun run macos
 
 1. Wait for Graft's window to open on the welcome page, then click "Open repo" and choose `/tmp/graft/test-repo`.
 2. Check the repo explorer page opens with one column, a rounded card headed "Repo" and "test-repo" in muted text, with its border in the theme's blue primary colour.
-3. Check the card shows "Name" with "test-repo" and "Path" with `/tmp/graft/test-repo` in the code font, then a "Commits" row with the commit icon and a "Changes" row with the pen-to-square icon.
+3. Check the card shows "Name" with "test-repo" and "Path" with `/tmp/graft/test-repo` in the code font, then a "Commits" row with the commit icon and a "Changes" row with the pen-to-square icon. Hover the path and check its tooltip shows `/tmp/graft/test-repo`.
 4. Hover the "Commits" row and check it shows the hover colour.
 5. Click "Commits". Check the row is selected with a bar on its left edge, the commit pane opens to the right of the repo details pane listing the test repo's commits and the repo details pane keeps the blue border.
 6. Click "Change the note" in the commit pane, then notes.txt. Check the commit details pane and the file pane open to the right of the commit pane as before.

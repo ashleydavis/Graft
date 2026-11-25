@@ -6,9 +6,10 @@
 
 import { faChevronDown, faChevronRight, faEllipsis, faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Breadcrumbs, breadcrumbsClasses, IconButton, InputAdornment, MenuItem, MenuList, Popover, TextField, Tooltip } from "@mui/material";
+import { Breadcrumbs, breadcrumbsClasses, IconButton, InputAdornment, MenuItem, MenuList, Popover, TextField } from "@mui/material";
 import { JSX, useLayoutEffect, useRef, useState } from "react";
 import { clipStepLabel, collapsedStepCount, ITrailOption, ITrailStep, ITrailWidths, PAGE_STEP_DATA_ID, searchMatches } from "../lib/breadcrumb-trail";
+import { LabelTooltip } from "./tooltip";
 
 //
 // What the trail shows and how it opens another page. The layout knows the page being shown and
@@ -178,7 +179,7 @@ export function CollapsedSteps({ steps }: ICollapsedStepsProps): JSX.Element {
     const label = collapsedStepsLabel(steps.length);
     return (
         <>
-            <Tooltip title={label}>
+            <LabelTooltip label={label} placement="bottom">
                 <IconButton
                     data-id="breadcrumb-collapsed"
                     aria-label={label}
@@ -189,7 +190,7 @@ export function CollapsedSteps({ steps }: ICollapsedStepsProps): JSX.Element {
                 >
                     <FontAwesomeIcon icon={faEllipsis} />
                 </IconButton>
-            </Tooltip>
+            </LabelTooltip>
             <Popover
                 data-id="breadcrumb-collapsed-menu"
                 open={anchor !== undefined}
@@ -243,19 +244,19 @@ export function stepTextClasses(step: ITrailStep, isLast: boolean): string {
 //
 // Shows a step with pages to switch to as a drop-down and any other step as plain text, because a
 // step with no sibling has nowhere to go. Its text is cut short when it is long, and with an
-// ellipsis when the trail gives it less room than its text, and its tooltip, the style guide's
-// MaterialUI tooltip, always holds it in full.
+// ellipsis when the trail gives it less room than its text, and its tooltip, Graft's shared label
+// tooltip, always holds it in full.
 //
 export function TrailStep({ step, isLast, onNavigate }: ITrailStepProps): JSX.Element {
     if (step.options.length > 0) {
         return <TrailStepMenu step={step} isLast={isLast} onNavigate={onNavigate} />;
     }
     return (
-        <Tooltip title={step.tooltip}>
+        <LabelTooltip label={step.tooltip} placement="bottom">
             <span data-id={step.dataId} className={`block truncate ${stepTextClasses(step, isLast)}`}>
                 {clipStepLabel(step.label)}
             </span>
-        </Tooltip>
+        </LabelTooltip>
     );
 }
 
@@ -295,7 +296,7 @@ export function TrailStepMenu({ step, isLast, onNavigate }: ITrailStepProps): JS
 
     return (
         <>
-            <Tooltip title={step.tooltip}>
+            <LabelTooltip label={step.tooltip} placement="bottom">
                 <button
                     type="button"
                     data-id={step.dataId}
@@ -307,7 +308,7 @@ export function TrailStepMenu({ step, isLast, onNavigate }: ITrailStepProps): JS
                     <span className="min-w-0 truncate">{clipStepLabel(step.label)}</span>
                     <FontAwesomeIcon icon={faChevronDown} className={chevronClasses} />
                 </button>
-            </Tooltip>
+            </LabelTooltip>
             <Popover
                 data-id={`${step.dataId}-menu`}
                 open={anchor !== undefined}

@@ -5,10 +5,11 @@
 
 import { faMagnifyingGlass, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Dialog, DialogTitle, IconButton, List, ListSubheader, Tooltip } from "@mui/material";
+import { Dialog, DialogTitle, IconButton, List, ListSubheader } from "@mui/material";
 import { Fragment, JSX, useEffect, useState } from "react";
 import { PaneOrPage } from "../lib/active-pane";
 import { actionShortcuts, isControlReleased, isShortcutsOverlayCtrlKey, IShortcut, matchingGroups, overlayShortcuts, shortcutGroups, shortcutKeyNames } from "../lib/shortcuts";
+import { LabelTooltip } from "./tooltip";
 
 //
 // The name of the backend's Keyboard Shortcuts action (backend/src/features/shortcuts-overlay.zig),
@@ -186,11 +187,11 @@ export function ShortcutsOverlay({ paneOrPage }: IShortcutsOverlayProps): JSX.El
         >
             <DialogTitle data-id="shortcuts-overlay-title" className="flex items-center gap-[var(--space-2)] pt-[var(--space-3)] pr-[var(--space-3)] pb-[var(--space-2)] pl-[var(--space-4)]">
                 <span className="flex-1">Keyboard shortcuts</span>
-                <Tooltip title="Close">
+                <LabelTooltip label="Close" placement="bottom">
                     <IconButton data-id="shortcuts-overlay-close" aria-label="Close" size="small" onClick={() => setOpen(false)}>
                         <FontAwesomeIcon icon={faXmark} />
                     </IconButton>
-                </Tooltip>
+                </LabelTooltip>
             </DialogTitle>
             <div className="mx-[var(--space-4)] mb-[var(--space-2)] flex items-center gap-[var(--space-2)] rounded-[var(--radius-md)] border border-[var(--color-border-control)] bg-[var(--color-panel)] px-[var(--space-3)] py-[var(--space-1)] text-[var(--color-text-muted)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:border-[var(--color-text-muted)] focus-within:border-[var(--color-focus)]">
                 <FontAwesomeIcon icon={faMagnifyingGlass} className="text-[length:var(--icon-md)]" />

@@ -65,7 +65,7 @@ function isPaneMarkedActive(): boolean {
 }
 
 describe("FilePane", () => {
-    test("shows only the last part of a nested path in its title, with the full path in its tooltip", () => {
+    test("shows only the last part of a nested path in its title, with the full path in its tooltip", async () => {
         installFakeTaskZiggy();
         render(createElement(FilePane, {
             repoPath: "/repo",
@@ -80,7 +80,10 @@ describe("FilePane", () => {
         }));
         const title = document.querySelector("[data-id=\"file-pane-path\"]");
         expect(title?.textContent).toBe("setup.md");
-        expect(title?.parentElement?.getAttribute("title")).toBe("docs/guide/setup.md");
+        expect(title?.parentElement?.hasAttribute("title")).toBe(false);
+        fireEvent.mouseOver(screen.getByText("setup.md"));
+        const tip = await screen.findByText("docs/guide/setup.md");
+        expect(tip.getAttribute("data-id")).toBe("file-pane-path-tip");
     });
 
     test("queues the file diff task for the file and shows its name and that it is loading", () => {

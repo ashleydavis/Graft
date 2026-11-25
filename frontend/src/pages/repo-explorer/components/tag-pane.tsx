@@ -146,7 +146,7 @@ export function TagContent({ details, error, dateFormat }: ITagContentProps): JS
                 </Fact>
                 {annotation && (
                     <Fact label="Tagged" dataId="tag-tagger">
-                        <PersonAndDate name={annotation.taggerName} email={annotation.taggerEmail} date={formatDateTime(annotation.taggerDate, dateFormat)} />
+                        <PersonAndDate name={annotation.taggerName} email={annotation.taggerEmail} date={formatDateTime(annotation.taggerDate, dateFormat)} dataId="tag-tagger-name" />
                     </Fact>
                 )}
             </dl>

@@ -6,11 +6,11 @@
 // text.
 //
 
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { ICommit } from "../../../../lib/commits";
 import { activePaneClasses } from "../../../../pages/repo-explorer/components/active-pane-style";
-import { CommitInfoPane, parentsLabel, parentsText } from "../../../../pages/repo-explorer/components/commit-info-pane";
+import { CommitInfoPane, parentSeparator, parentsLabel } from "../../../../pages/repo-explorer/components/commit-info-pane";
 
 //
 // The hash of the commit the pane shows.
@@ -130,6 +130,23 @@ describe("CommitInfoPane", () => {
     });
 });
 
+describe("CommitInfoPane tooltips", () => {
+    test("shows each parent's full hash with a copy button in the parent's tooltip", async () => {
+        renderPane(commitWith(["2222222222222222222222222222222222222222", "3333333333333333333333333333333333333333"], ""), false, jest.fn());
+        fireEvent.mouseOver(elementWithDataId("commit-details-parent-3333333333333333333333333333333333333333"));
+        const tip = await screen.findByText("3333333333333333333333333333333333333333");
+        expect(tip.closest("[data-id=\"commit-details-parent-3333333333333333333333333333333333333333-tip\"]")?.textContent).toBe("Parent hash3333333333333333333333333333333333333333");
+        expect(screen.getByLabelText("Copy parent hash")).toBeTruthy();
+    });
+
+    test("shows the author's and committer's full name and email in a tooltip on the line cut short", async () => {
+        renderPane(commitWith([], ""), false, jest.fn());
+        fireEvent.mouseOver(elementWithDataId("commit-details-committer-name"));
+        const tip = await screen.findByText("Cy Committer <cy@example.com>");
+        expect(tip.getAttribute("data-id")).toBe("commit-details-committer-name-tip");
+    });
+});
+
 describe("CommitInfoPane collapse and maximise", () => {
     test("shows a collapse button, a maximise button and a close button in that order", () => {
         renderPane(commitWith([], ""), false, jest.fn());
@@ -188,9 +205,10 @@ describe("parentsLabel", () => {
     });
 });
 
-describe("parentsText", () => {
-    test("writes each parent as its short hash, two spaces apart", () => {
-        expect(parentsText(["2222222222222222222222222222222222222222"])).toBe("2222222");
-        expect(parentsText(["2222222222222222222222222222222222222222", "3333333333333333333333333333333333333333"])).toBe("2222222  3333333");
+describe("parentSeparator", () => {
+    test("is nothing before the first parent and two spaces before each other", () => {
+        expect(parentSeparator(0)).toBe("");
+        expect(parentSeparator(1)).toBe("  ");
+        expect(parentSeparator(2)).toBe("  ");
     });
 });

@@ -4,12 +4,13 @@
 // when it could not be read and a row once every commit has been read.
 //
 
-import { List, ListItemButton, Skeleton, Tooltip } from "@mui/material";
+import { List, ListItemButton, Skeleton } from "@mui/material";
 import { Rect, useVirtualizer, VirtualItem } from "@tanstack/react-virtual";
 import { JSX, useEffect, useRef } from "react";
+import { codeField, CopyTip, ICopyField, multilineField, PinnableTooltip, textField } from "../../../components/tooltip";
 import { isNearEnd } from "../../../lib/commit-pages";
 import { ICommit } from "../../../lib/commits";
-import { formatDate, IDateFormatOptions } from "../../../lib/date-format";
+import { formatDate, formatDateTime, formatIsoDate, IDateFormatOptions } from "../../../lib/date-format";
 import { RefBadges } from "./ref-badges";
 
 //
@@ -194,20 +195,23 @@ export function listEndRow(commitCount: number, isLoading: boolean, error: strin
 // so the selected commit shows the selected background, and the open commit's row has a bar at its
 // left edge and a bold title, as in the style guide's commit list. The refs keep a narrow column of
 // their own after the title, which shows only the badges that fit, so the title always keeps its
-// room and the author, date and hash line up from row to row. Clicking a commit calls
-// onSelectCommit with its hash. While a page is read it shows grey placeholder rows under the
-// commits, built from MaterialUI's Skeleton as the style guide's loading placeholder is, each the
-// height of a commit row with grey blocks where the title, author, date and hash go. Before the
-// first page they fill the visible part of the list. The list is marked busy for assistive
-// technology while a page is read, and the placeholder rows are hidden from it. It shows an error
-// row when a page could not be read, and once the last page has been read it shows the end of list
-// row that listEndRow picks, in muted text as in the style guide. When the last row drawn comes near
-// the last commit read it calls onNearEnd, so the next page is read as the user scrolls. When the
-// selected commit changes, it scrolls the least amount that brings the commit's row into view, so
-// the selected row stays in sight as the arrow keys move it. Above the scrolling area a header row
-// names the columns, Message, Author, Date and Hash, each lined up with its column in the rows and
-// styled as the style guide's table header, so it stays in view as the list scrolls. Over the
-// badges' column it leaves a blank space of the same width.
+// room and the author, date and hash line up from row to row. As in the style guide's commit list,
+// the title, author, date and short hash each show a pinnable tooltip of fields to copy. The
+// title's holds the title and description. The author's holds the name and email. The date's holds
+// the long date and the ISO 8601 date. The short hash's holds the full and short hash. Clicking a
+// commit calls onSelectCommit with its hash. While a page is read it shows grey placeholder rows
+// under the commits, built from MaterialUI's Skeleton as the style guide's loading placeholder is,
+// each the height of a commit row with grey blocks where the title, author, date and hash go.
+// Before the first page they fill the visible part of the list. The list is marked busy for
+// assistive technology while a page is read, and the placeholder rows are hidden from it. It shows
+// an error row when a page could not be read, and once the last page has been read it shows the end
+// of list row that listEndRow picks, in muted text as in the style guide. When the last row drawn
+// comes near the last commit read it calls onNearEnd, so the next page is read as the user scrolls.
+// When the selected commit changes, it scrolls the least amount that brings the commit's row into
+// view, so the selected row stays in sight as the arrow keys move it. Above the scrolling area a
+// header row names the columns, Message, Author, Date and Hash, each lined up with its column in
+// the rows and styled as the style guide's table header, so it stays in view as the list scrolls.
+// Over the badges' column it leaves a blank space of the same width.
 //
 export function CommitList({ commits, isLoading, error, hasReadLastPage, selectedHash, openHash, dateFormat, onSelectCommit, onNearEnd }: ICommitListProps): JSX.Element {
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -276,13 +280,19 @@ export function CommitList({ commits, isLoading, error, hasReadLastPage, selecte
                                     transform: `translateY(${row.start}px)`,
                                 }}
                             >
-                                <Tooltip title={commit.title} enterDelay={500}>
+                                <PinnableTooltip dataId={`commit-title-${commit.hash}-tip`} enterDelayMs={500} maxWidth="calc(var(--space-8) * 16)" tip={pinButton => <CopyTip fields={titleFields(commit)} action={pinButton} />}>
                                     <span data-id={`commit-title-${commit.hash}`} className={`min-w-0 flex-1 truncate text-[var(--color-text)] ${titleWeightClass(isOpen)}`}>{commit.title}</span>
-                                </Tooltip>
+                                </PinnableTooltip>
                                 <RefBadges hash={commit.hash} refs={commit.refs} />
-                                <span className="w-[80px] flex-none truncate text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{commit.authorName}</span>
-                                <span className="w-[52px] flex-none text-right text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{formatDate(commit.authorDate, dateFormat)}</span>
-                                <code className={`${hashColumnClasses} text-[var(--color-text-muted)]`}>{commit.hash.slice(0, 7)}</code>
+                                <PinnableTooltip dataId={`commit-author-${commit.hash}-tip`} enterDelayMs={400} maxWidth="calc(var(--space-8) * 12)" tip={pinButton => <CopyTip fields={[textField("Author", commit.authorName), codeField("Email", commit.authorEmail)]} action={pinButton} />}>
+                                    <span className="w-[80px] flex-none truncate text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{commit.authorName}</span>
+                                </PinnableTooltip>
+                                <PinnableTooltip dataId={`commit-date-${commit.hash}-tip`} enterDelayMs={400} maxWidth="calc(var(--space-8) * 12)" tip={pinButton => <CopyTip fields={[textField("Written", formatDateTime(commit.authorDate, dateFormat)), codeField("ISO 8601", formatIsoDate(commit.authorDate, dateFormat))]} action={pinButton} />}>
+                                    <span className="w-[52px] flex-none text-right text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{formatDate(commit.authorDate, dateFormat)}</span>
+                                </PinnableTooltip>
+                                <PinnableTooltip dataId={`commit-hash-${commit.hash}-tip`} enterDelayMs={400} maxWidth="calc(var(--space-8) * 16)" tip={pinButton => <CopyTip fields={[codeField("Commit hash", commit.hash), codeField("Short hash", commit.hash.slice(0, 7))]} action={pinButton} />}>
+                                    <code data-id={`commit-hash-${commit.hash}`} className={`${hashColumnClasses} text-[var(--color-text-muted)]`}>{commit.hash.slice(0, 7)}</code>
+                                </PinnableTooltip>
                             </ListItemButton>
                         );
                     })}
@@ -313,6 +323,17 @@ export function CommitList({ commits, isLoading, error, hasReadLastPage, selecte
             </div>
         </>
     );
+}
+
+//
+// Lists the fields of a commit title's tooltip: the title and then, when the message has more than
+// a title, the description with its line breaks kept.
+//
+export function titleFields(commit: ICommit): ICopyField[] {
+    if (commit.description === "") {
+        return [textField("Title", commit.title)];
+    }
+    return [textField("Title", commit.title), multilineField("Description", commit.description)];
 }
 
 //

@@ -101,6 +101,19 @@ function elementIn(container: HTMLElement, dataId: string): HTMLElement {
 }
 
 describe("RepoDetailsPane", () => {
+    test("shows the repo's full path in a tooltip on its path", async () => {
+        const container = renderPane({
+            link: undefined,
+            isActive: false,
+            onSelectLink: jest.fn(),
+        });
+        fireEvent.mouseOver(elementIn(container, "repo-details-path").firstElementChild ?? elementIn(container, "repo-details-path"));
+        const tip = await screen.findByText("/repos/graft", {
+            selector: "[data-id=\"repo-details-path-tip\"]",
+        });
+        expect(tip.textContent).toBe("/repos/graft");
+    });
+
     test("shows the repo's name and path in a card headed Repo that never shrinks", () => {
         const container = renderPane({
             link: undefined,

@@ -5,9 +5,10 @@
 
 import { faCloud, faCodeBranch, faEllipsis, faTag, IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Chip, IconButton, Popover, Tooltip } from "@mui/material";
+import { Chip, IconButton, Popover } from "@mui/material";
 import { JSX, useLayoutEffect, useRef, useState } from "react";
 import { shownBadgeCount } from "../../../lib/ref-badge-count";
+import { LabelTooltip } from "../../../components/tooltip";
 
 //
 // The kinds of ref a badge marks, one Chip variant each.
@@ -151,7 +152,7 @@ export function RefBadges({ hash, refs }: IRefBadgesProps): JSX.Element {
             ))}
             {hiddenCount > 0 && (
                 <>
-                    <Tooltip title={`${hiddenCount} more`}>
+                    <LabelTooltip label={`${hiddenCount} more`} placement="bottom">
                         <IconButton
                             data-id={`commit-refs-more-${hash}`}
                             className="ml-[var(--space-1)]"
@@ -167,7 +168,7 @@ export function RefBadges({ hash, refs }: IRefBadgesProps): JSX.Element {
                         >
                             <FontAwesomeIcon icon={faEllipsis} />
                         </IconButton>
-                    </Tooltip>
+                    </LabelTooltip>
                     <Popover
                         data-id={`commit-refs-menu-${hash}`}
                         open={anchor !== undefined}

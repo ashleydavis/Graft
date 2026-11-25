@@ -1,9 +1,10 @@
 //
 // Tests the date formats of the repo explorer page: formats fixed dates in fixed locales and time
-// zones and checks the text, so the tests give the same result on every machine.
+// zones and checks the text, so the tests give the same result on every machine. It checks the
+// ISO 8601 dates of the commit pane's date tooltip carry each zone's offset.
 //
 
-import { formatDate, formatDateTime } from "../../lib/date-format";
+import { formatDate, formatDateTime, formatIsoDate, twoDigits } from "../../lib/date-format";
 
 //
 // A commit date late in the day in UTC, which is already the next day east of it.
@@ -49,5 +50,43 @@ describe("formatDateTime", () => {
             locale: "en-US",
             timeZone: "Australia/Brisbane",
         }))).toBe("Jan 4, 2026, 9:30 AM");
+    });
+});
+
+describe("twoDigits", () => {
+    test("writes a number with at least two digits", () => {
+        expect(twoDigits(0)).toBe("00");
+        expect(twoDigits(7)).toBe("07");
+        expect(twoDigits(42)).toBe("42");
+    });
+});
+
+describe("formatIsoDate", () => {
+    test("writes the date in UTC with a zero offset", () => {
+        expect(formatIsoDate(lateDate, {
+            locale: "en-US",
+            timeZone: "UTC",
+        })).toBe("2026-01-03T23:30:05+00:00");
+    });
+
+    test("writes the date in a zone east of UTC, on its next day, with its offset", () => {
+        expect(formatIsoDate(lateDate, {
+            locale: "en-GB",
+            timeZone: "Australia/Brisbane",
+        })).toBe("2026-01-04T09:30:05+10:00");
+    });
+
+    test("writes the date in a zone west of UTC with its negative offset", () => {
+        expect(formatIsoDate(lateDate, {
+            locale: "en-US",
+            timeZone: "America/New_York",
+        })).toBe("2026-01-03T18:30:05-05:00");
+    });
+
+    test("writes an offset with its minutes and ignores the milliseconds of the date", () => {
+        expect(formatIsoDate(new Date("2026-01-03T00:00:00.999Z"), {
+            locale: "en-US",
+            timeZone: "Asia/Kolkata",
+        })).toBe("2026-01-03T05:30:00+05:30");
     });
 });

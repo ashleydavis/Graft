@@ -7,13 +7,15 @@
 // that the refs sit in their column after the title and that clicking a commit reports its hash. With
 // the scrolling area given a height, it checks the virtual list draws only the rows in view and a few
 // more, calls onNearEnd only once the last drawn row is near the last commit, and scrolls the
-// selected commit's row into view.
+// selected commit's row into view. It checks the title, author, date and short hash each show their
+// fields in a pinnable tooltip. It checks the fields of a title's tooltip with and without a
+// description.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { ICommit } from "../../../../lib/commits";
-import { COMMIT_LIST_PADDING_PX, COMMIT_ROW_HEIGHT_PX, CommitList, hashColumnClasses, LATER_PAGE_PLACEHOLDER_ROW_COUNT, lastRowIndex, listEndRow, openRowClass, openRowClasses, placeholderRowCount, placeholderTitleWidth, scrollAreaHeightPx, titleWeightClass } from "../../../../pages/repo-explorer/components/commit-list";
+import { COMMIT_LIST_PADDING_PX, COMMIT_ROW_HEIGHT_PX, CommitList, hashColumnClasses, LATER_PAGE_PLACEHOLDER_ROW_COUNT, lastRowIndex, listEndRow, openRowClass, openRowClasses, placeholderRowCount, placeholderTitleWidth, scrollAreaHeightPx, titleFields, titleWeightClass } from "../../../../pages/repo-explorer/components/commit-list";
 import { FAKE_LIST_HEIGHT_PX, IFakeListLayout, installFakeListLayout } from "../../../fake-list-layout";
 
 //
@@ -455,6 +457,67 @@ describe("openRowClass", () => {
     test("draws the open bar on an open row and no shadow on any other", () => {
         expect(openRowClass(true)).toBe(openRowClasses);
         expect(openRowClass(false)).toBe("shadow-none");
+    });
+});
+
+describe("CommitList tooltips", () => {
+    test("shows the full and short hash with copy buttons in the short hash's pinnable tooltip", async () => {
+        renderList(undefined, undefined, jest.fn());
+        fireEvent.mouseOver(screen.getByText("2222222"));
+        const tip = await screen.findByText("2222222222222222222222222222222222222222");
+        expect(tip.closest("[data-id=\"commit-hash-2222222222222222222222222222222222222222-tip\"]")?.textContent).toBe("Commit hash2222222222222222222222222222222222222222Short hash2222222");
+        expect(screen.getByLabelText("Copy commit hash")).toBeTruthy();
+        expect(screen.getByLabelText("Copy short hash")).toBeTruthy();
+        expect(screen.getByLabelText("Pin the tooltip (P)")).toBeTruthy();
+    });
+
+    test("shows the title in the title's pinnable tooltip", async () => {
+        renderList(undefined, undefined, jest.fn());
+        fireEvent.mouseOver(screen.getByText("The second commit"));
+        const tip = await screen.findByText("Title");
+        expect(tip.closest("[data-id=\"commit-title-2222222222222222222222222222222222222222-tip\"]")?.textContent).toBe("TitleThe second commit");
+    });
+
+    test("shows the author's name and email in the author's pinnable tooltip", async () => {
+        renderList(undefined, undefined, jest.fn());
+        fireEvent.mouseOver(screen.getAllByText("Ada Author")[1]);
+        const tip = await screen.findByText("ada@example.com");
+        expect(tip.closest("[data-id=\"commit-author-2222222222222222222222222222222222222222-tip\"]")?.textContent).toBe("AuthorAda AuthorEmailada@example.com");
+    });
+
+    test("shows the long date and the ISO 8601 date in the date's pinnable tooltip", async () => {
+        renderList(undefined, undefined, jest.fn());
+        fireEvent.mouseOver(screen.getAllByText("Jan 3")[1]);
+        const tip = await screen.findByText("2026-01-03T09:00:00+00:00");
+        expect(tip.closest("[data-id=\"commit-date-2222222222222222222222222222222222222222-tip\"]")?.textContent?.replace(/\s/g, " ")).toBe("WrittenJan 3, 2026, 9:00 AMISO 86012026-01-03T09:00:00+00:00");
+    });
+});
+
+describe("titleFields", () => {
+    test("lists the title alone when the message is only a title", () => {
+        expect(titleFields(commit)).toEqual([{
+            label: "Title",
+            value: "The first commit",
+            isCode: false,
+            isMultiline: false,
+        }]);
+    });
+
+    test("lists the title and the description, keeping its line breaks", () => {
+        expect(titleFields({
+            ...commit,
+            description: "First line.\nSecond line.",
+        })).toEqual([{
+            label: "Title",
+            value: "The first commit",
+            isCode: false,
+            isMultiline: false,
+        }, {
+            label: "Description",
+            value: "First line.\nSecond line.",
+            isCode: false,
+            isMultiline: true,
+        }]);
     });
 });
 

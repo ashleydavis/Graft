@@ -35,7 +35,7 @@ bun run macos
 9. Click the About icon. Check the About page shows in the main content area.
 10. Click the menu button again. Check the left sidebar slides wider and shows the names again.
 11. Click the button at the far right of the top bar. Check a right sidebar slides in from the right edge and the main content area narrows to make room.
-12. Click the same button again. Check the right sidebar slides back out.
+12. Click the same button again. Check the right sidebar slides back out. Hover the menu button and the right sidebar's button and check each tooltip opens below its button with what a click does, in the same grey box, colours and font and after the same short wait as every other tooltip in Graft.
 13. Hover over "test-repo" in the trail. Check its tooltip is "/tmp/graft/test-repo".
 14. Click "Help" in the left sidebar. Check the Help page shows and the trail ends with "Help".
 15. Click "Help" in the trail. Check a drop-down opens under it with a search box, "Help" highlighted and "About".

@@ -7,7 +7,7 @@ import { faCheck, faChevronDown, faCopy, faFile, faFolderOpen, faPenToSquare, fa
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ClickAwayListener, Divider, IconButton, ListItemIcon, ListItemText, MenuItem, MenuList, Paper, Popper, Tooltip } from "@mui/material";
 import { JSX, KeyboardEvent, MouseEvent, useEffect, useState } from "react";
-import { copyText, COPIED_DURATION_MS } from "../../../components/copy-button";
+import { COPIED_DURATION_MS, copyText } from "../../../lib/clipboard";
 import { copyItems, fileManagerLabel, fileName, openFile, OpenTarget } from "../../../lib/file-path-menu";
 
 //

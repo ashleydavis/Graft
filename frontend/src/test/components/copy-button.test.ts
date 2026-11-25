@@ -6,7 +6,8 @@
 
 import { act, render } from "@testing-library/react";
 import { createElement } from "react";
-import { COPIED_DURATION_MS, CopyButton } from "../../components/copy-button";
+import { CopyButton } from "../../components/copy-button";
+import { COPIED_DURATION_MS } from "../../lib/clipboard";
 
 //
 // Puts a fake clipboard on the navigator whose writeText is the mock, because jsdom has none.

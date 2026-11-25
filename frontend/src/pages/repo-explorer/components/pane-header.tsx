@@ -6,8 +6,9 @@
 
 import { faDownLeftAndUpRightToCenter, faUpRightAndDownLeftFromCenter, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { IconButton, Tooltip } from "@mui/material";
+import { IconButton } from "@mui/material";
 import { JSX, ReactNode } from "react";
+import { DetailTooltip, LabelTooltip } from "../../../components/tooltip";
 import { MAXIMISE_KEY } from "../../../lib/repo-explorer";
 import { CollapseButton } from "./collapse";
 
@@ -72,11 +73,11 @@ export interface ICloseButtonProps {
 //
 export function CloseButton({ paneLabel, dataId, onClose }: ICloseButtonProps): JSX.Element {
     return (
-        <Tooltip title="Close">
+        <LabelTooltip label="Close" placement="bottom">
             <IconButton data-id={dataId} aria-label={`Close ${paneLabel.toLowerCase()}`} size="small" onClick={onClose}>
                 <FontAwesomeIcon icon={faXmark} />
             </IconButton>
-        </Tooltip>
+        </LabelTooltip>
     );
 }
 
@@ -107,18 +108,12 @@ export function MaximiseButton({ isMaximised, dataId, onToggleMaximise }: IMaxim
         label = "Restore the pane";
         icon = faDownLeftAndUpRightToCenter;
     }
-    const tip = (
-        <span className="flex flex-col gap-[2px] py-[2px]">
-            <span className="font-[var(--weight-bold)]">{label}</span>
-            <span className="text-[length:var(--text-xs)] font-[var(--weight-normal)] opacity-80">{`Key: ${MAXIMISE_KEY}`}</span>
-        </span>
-    );
     return (
-        <Tooltip title={tip}>
+        <DetailTooltip title={label} detail={`Key: ${MAXIMISE_KEY}`}>
             <IconButton data-id={dataId} aria-label={label} aria-pressed={isMaximised} size="small" onClick={onToggleMaximise}>
                 <FontAwesomeIcon icon={icon} />
             </IconButton>
-        </Tooltip>
+        </DetailTooltip>
     );
 }
 
