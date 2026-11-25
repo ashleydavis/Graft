@@ -37,12 +37,14 @@ const log_call: git_mock.MockGitOptions = .{
         "--max-count=1",
         format_arg,
         commit_hash,
+        "--",
     },
     .expected_shown_args = &.{
         "log",
         "--no-show-signature",
         "--max-count=1",
         commit_hash,
+        "--",
     },
     .exit_code = 0,
     .stdout = commit_hash ++ "\x1f\x1fHEAD -> main\x1f" ++

@@ -120,7 +120,7 @@ test "read_log_page reads the first page from HEAD and parses every field of eac
     try std.testing.expectEqualStrings("", first.description);
 }
 
-test "read_log_page starts a later page from the start commit and skips the commits read" {
+test "read_log_page starts a later page from the start commit and skips the commits read, with -- after its hash" {
     var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
@@ -136,6 +136,7 @@ test "read_log_page starts a later page from the start commit and skips the comm
             format_arg,
             "--skip=7",
             second_hash,
+            "--",
         },
         .expected_shown_args = &.{
             "log",
@@ -143,6 +144,7 @@ test "read_log_page starts a later page from the start commit and skips the comm
             "--max-count=1",
             "--skip=7",
             second_hash,
+            "--",
         },
         .exit_code = 0,
         .stdout = first_hash ++ "\x1f\x1f\x1f" ++
@@ -407,6 +409,7 @@ fn read_later_page(allocator: std.mem.Allocator) !void {
             format_arg,
             "--skip=50",
             second_hash,
+            "--",
         },
         .expected_shown_args = &.{
             "log",
@@ -414,6 +417,7 @@ fn read_later_page(allocator: std.mem.Allocator) !void {
             "--max-count=50",
             "--skip=50",
             second_hash,
+            "--",
         },
         .exit_code = 0,
         .stdout = two_commits_output,
@@ -554,6 +558,7 @@ const commit_args: []const []const u8 = &.{
     "--max-count=1",
     format_arg,
     second_hash,
+    "--",
 };
 
 //
@@ -564,6 +569,7 @@ const commit_shown_args: []const []const u8 = &.{
     "--no-show-signature",
     "--max-count=1",
     second_hash,
+    "--",
 };
 
 //
@@ -583,7 +589,7 @@ const second_commit_output = second_hash ++ "\x1f" ++ first_hash ++ "\x1f" ++
     "Cy Committer\x1fcy@example.com\x1f2026-01-02T03:04:06+10:00\x1f" ++
     "The second commit\x1fThe first line.\nThe second line.\n\x00";
 
-test "read_commit reads the one commit the hash names and parses its fields" {
+test "read_commit reads the commit the hash names, with -- after it, and parses its fields" {
     var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();

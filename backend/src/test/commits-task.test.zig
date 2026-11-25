@@ -158,6 +158,7 @@ test "the commits task reads a later page from the start hash, skipping the coun
             format_arg,
             "--skip=10",
             "abc123",
+            "--",
         },
         .expected_shown_args = &.{
             "log",
@@ -165,6 +166,7 @@ test "the commits task reads a later page from the start hash, skipping the coun
             "--max-count=5",
             "--skip=10",
             "abc123",
+            "--",
         },
         .exit_code = 0,
         .stdout = one_commit_output,

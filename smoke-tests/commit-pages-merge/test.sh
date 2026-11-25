@@ -97,9 +97,9 @@ wait_for_missing_element commits-error 5
 wait_for_text "commit-title-$side_hash" "Side 1" 30
 
 # The right sidebar lists the git log that read the second page: from the first page's first
-# commit, skipping the page already read.
+# commit, skipping the page already read, with `--` after the hash.
 click right-sidebar-toggle
-wait_for_text git-command-0-text "git log --no-show-signature --max-count=$PAGE_SIZE --skip=$PAGE_SIZE ${hashes[0]}" 30
+wait_for_text git-command-0-text "git log --no-show-signature --max-count=$PAGE_SIZE --skip=$PAGE_SIZE ${hashes[0]} --" 30
 click right-sidebar-toggle
 
 # Escape closes the commit pane and Enter on the selected Commits link opens it again, reading the

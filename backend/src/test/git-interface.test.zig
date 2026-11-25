@@ -9,7 +9,9 @@
 // against a real repo with a merge, because only real git shows whether paging by a start commit
 // and a skip count lists every commit once, and checks the `git log` commands the `log` wrapper
 // builds give output its parser reads when the repo has `log.showSignature` set and a signed
-// commit.
+// commit. It checks git reads a hash the `log` wrapper puts before `--` as a commit when a file
+// has the same name, that a branch with the same name as a short hash still wins over the commit
+// and that a full hash is read as a commit even when a branch has its name.
 //
 
 const std = @import("std");
@@ -233,6 +235,193 @@ test "start_git reports git's error exit code and standard error without failing
     try std.testing.expectEqual(@as(?u8, 128), result.exit_code);
     try std.testing.expectEqualStrings("", result.stdout);
     try std.testing.expect(result.stderr.len > 0);
+}
+
+//
+// The length of a full commit hash, which `git rev-parse` writes.
+//
+const full_hash_length = 40;
+
+//
+// The length of the short hash the tests use, which is git's default abbreviation.
+//
+const short_hash_length = 7;
+
+comptime {
+    std.debug.assert(short_hash_length < full_hash_length);
+}
+
+//
+// Reads the full hash of the commit the revision names in the test repo into the buffer.
+//
+fn read_commit_hash(
+    directory: *const TestDirectory,
+    revision: []const u8,
+    hash: *[full_hash_length]u8,
+) !void {
+    std.debug.assert(revision.len > 0);
+
+    const result = try git_interface.start_git(io, std.testing.allocator, &.{
+        "-C",
+        directory.path(),
+        "rev-parse",
+        revision,
+    });
+    defer std.testing.allocator.free(result.stdout);
+    defer std.testing.allocator.free(result.stderr);
+
+    try std.testing.expectEqual(@as(?u8, 0), result.exit_code);
+    try std.testing.expectEqual(@as(usize, full_hash_length + 1), result.stdout.len);
+    @memcpy(hash, result.stdout[0..full_hash_length]);
+}
+
+//
+// Writes an empty file with the name into the test repo's working tree.
+//
+fn write_empty_file(directory: *const TestDirectory, name: []const u8) !void {
+    std.debug.assert(name.len > 0);
+
+    var path_buffer: [128]u8 = undefined;
+    const path = try std.fmt.bufPrint(&path_buffer, "{s}/{s}", .{
+        directory.path(),
+        name,
+    });
+    std.debug.assert(path.len > directory.path().len);
+    try std.Io.Dir.cwd().writeFile(io, .{
+        .sub_path = path,
+        .data = "",
+        .flags = .{},
+    });
+}
+
+//
+// Runs `git log` in the test repo with the revision arguments the `log` wrapper builds, followed
+// by `--`, and checks git lists only the commit the expected hash names.
+//
+fn expect_log_lists_only(
+    directory: *const TestDirectory,
+    revision_args: []const []const u8,
+    expected_hash: []const u8,
+) !void {
+    std.debug.assert(revision_args.len > 0);
+    std.debug.assert(expected_hash.len == full_hash_length);
+
+    var args_buffer: [16][]const u8 = undefined;
+    const fixed_args = [_][]const u8{
+        "-C",
+        directory.path(),
+        "log",
+        "-z",
+        "--max-count=1",
+        "--format=%H",
+    };
+    const arg_count = fixed_args.len + revision_args.len + 1;
+    std.debug.assert(arg_count <= args_buffer.len);
+    @memcpy(args_buffer[0..fixed_args.len], &fixed_args);
+    @memcpy(args_buffer[fixed_args.len .. arg_count - 1], revision_args);
+    args_buffer[arg_count - 1] = "--";
+
+    const args = args_buffer[0..arg_count];
+    const result = try git_interface.start_git(io, std.testing.allocator, args);
+    defer std.testing.allocator.free(result.stdout);
+    defer std.testing.allocator.free(result.stderr);
+
+    try std.testing.expectEqual(@as(?u8, 0), result.exit_code);
+    try std.testing.expectEqualStrings(expected_hash, std.mem.trimEnd(u8, result.stdout, "\x00"));
+}
+
+test "git log with -- after a short hash reads that commit when a file has the hash's name" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    try init_repo(&directory);
+    try commit(&directory, "The first commit");
+    try commit(&directory, "The second commit");
+    var first_hash: [full_hash_length]u8 = undefined;
+    try read_commit_hash(&directory, "HEAD~1", &first_hash);
+    const short_hash = first_hash[0..short_hash_length];
+    try write_empty_file(&directory, short_hash);
+
+    try expect_log_lists_only(&directory, &.{short_hash}, &first_hash);
+}
+
+test "git log with -- after a full hash reads that commit when a file has the hash's name" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    try init_repo(&directory);
+    try commit(&directory, "The first commit");
+    try commit(&directory, "The second commit");
+    var first_hash: [full_hash_length]u8 = undefined;
+    try read_commit_hash(&directory, "HEAD~1", &first_hash);
+    try write_empty_file(&directory, &first_hash);
+
+    try expect_log_lists_only(&directory, &.{&first_hash}, &first_hash);
+}
+
+test "git log with -- after --skip=1 and a hash reads the next page when a file has its name" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    try init_repo(&directory);
+    try commit(&directory, "The first commit");
+    try commit(&directory, "The second commit");
+    var first_hash: [full_hash_length]u8 = undefined;
+    try read_commit_hash(&directory, "HEAD~1", &first_hash);
+    var second_hash: [full_hash_length]u8 = undefined;
+    try read_commit_hash(&directory, "HEAD", &second_hash);
+    try write_empty_file(&directory, &second_hash);
+
+    try expect_log_lists_only(&directory, &.{ "--skip=1", &second_hash }, &first_hash);
+}
+
+test "git log with -- after a short hash still reads a branch with the hash's name" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    try init_repo(&directory);
+    try commit(&directory, "The first commit");
+    try commit(&directory, "The second commit");
+    var first_hash: [full_hash_length]u8 = undefined;
+    try read_commit_hash(&directory, "HEAD~1", &first_hash);
+    var second_hash: [full_hash_length]u8 = undefined;
+    try read_commit_hash(&directory, "HEAD", &second_hash);
+    const short_hash = first_hash[0..short_hash_length];
+    try run_git_successfully(&.{
+        "-C",
+        directory.path(),
+        "branch",
+        short_hash,
+        "HEAD",
+    });
+
+    try expect_log_lists_only(&directory, &.{short_hash}, &second_hash);
+    try expect_log_lists_only(&directory, &.{&first_hash}, &first_hash);
+}
+
+test "git log with -- after a full hash reads that commit when a branch has the hash's name" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    try init_repo(&directory);
+    try commit(&directory, "The first commit");
+    try commit(&directory, "The second commit");
+    var first_hash: [full_hash_length]u8 = undefined;
+    try read_commit_hash(&directory, "HEAD~1", &first_hash);
+    try run_git_successfully(&.{
+        "-C",
+        directory.path(),
+        "branch",
+        &first_hash,
+        "HEAD",
+    });
+
+    try expect_log_lists_only(&directory, &.{&first_hash}, &first_hash);
 }
 
 test "start_git runs git with the environment Ziggy gives the calling thread" {

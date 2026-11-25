@@ -292,10 +292,11 @@ pub const CommitRequest = struct {
 
 //
 // Builds the command `read_commit` runs: `git log -z --no-show-signature --max-count=1` with the
-// format and the hash. `--no-show-signature` stops a `log.showSignature` in the user's git config
-// adding signature text that the parser cannot read. The help panel shows it without `-z` and the
-// format, as `git log --no-show-signature --max-count=1 <hash>`. The arguments are allocated with
-// the allocator.
+// format and the hash, then `--`. `--no-show-signature` stops a `log.showSignature` in the user's
+// git config adding signature text that the parser cannot read. The `--` after the hash makes git
+// read it only as a commit, even when a file has the same name. The help panel shows it without
+// `-z` and the format, as `git log --no-show-signature --max-count=1 <hash> --`. The arguments are
+// allocated with the allocator.
 //
 pub fn read_commit_command(
     allocator: std.mem.Allocator,
@@ -311,6 +312,7 @@ pub fn read_commit_command(
         "--max-count=1",
         log_format,
         request.hash,
+        "--",
     };
     return .{
         .repo_path = request.repo_path,
@@ -320,12 +322,13 @@ pub fn read_commit_command(
 
 //
 // Builds the command `read_log_page` runs: the first page starts from HEAD, and a later page
-// starts from the start commit and skips the commits already read. `--no-show-signature` stops a
+// starts from the start commit and skips the commits already read, with `--` after the hash so git
+// reads it only as a commit, even when a file has the same name. `--no-show-signature` stops a
 // `log.showSignature` in the user's git config adding signature text that the parser cannot read.
 // The help panel shows it without `-z` and the format, as
 // `git log --no-show-signature --max-count=<page size>` or
-// `git log --no-show-signature --max-count=<page size> --skip=<count read> <start hash>`, which
-// lists the same commits in git's own layout.
+// `git log --no-show-signature --max-count=<page size> --skip=<count read> <start hash> --`,
+// which lists the same commits in git's own layout.
 //
 pub fn read_log_page_command(
     allocator: std.mem.Allocator,
@@ -348,6 +351,7 @@ pub fn read_log_page_command(
         const later_page_args = [_][]const u8{
             skip,
             start.hash,
+            "--",
         };
         return .{
             .repo_path = request.repo_path,
