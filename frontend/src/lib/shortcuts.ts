@@ -1,9 +1,11 @@
 //
-// Works out what the keyboard shortcuts overlay lists from Ziggy's action list: the actions that
-// have a shortcut and those a search matches.
+// Works out what the keyboard shortcuts overlay lists from Ziggy's action list and the active
+// pane's keys: the groups of shortcuts and those a search matches.
 //
 
 import type { IActionInfo } from "ziggy";
+import { PaneOrPage, PANE_OR_PAGE_NAMES } from "./active-pane";
+import { PANE_KEYS } from "./pane-keys";
 
 //
 // One keyboard shortcut the overlay lists: an action of Graft's, or a standard item of its menu,
@@ -159,6 +161,79 @@ export function overlayShortcuts(shortcuts: IShortcut[], actionName: string): IS
                 name: `${actionName}-ctrl`,
                 label: shortcut.label,
                 keys: shortcutsOverlayCtrlKeys,
+            });
+        }
+    }
+    return result;
+}
+
+//
+// One group of shortcuts the overlay lists under a heading, as the style guide's overlay groups
+// them.
+//
+export interface IShortcutGroup {
+    // The name the group's data-ids are built from: the pane's name, such as "commit-pane", or
+    // "general" for the shortcuts that work everywhere.
+    name: string;
+
+    // The group's heading, such as "Commit pane".
+    title: string;
+
+    // The shortcuts in the group, in the order the overlay lists them.
+    shortcuts: IShortcut[];
+}
+
+//
+// Makes the shortcuts of the pane's keys from PANE_KEYS, each named after the pane and the key, so
+// each row has a data-id of its own, such as "commit-pane-arrowup".
+//
+export function paneShortcuts(pane: PaneOrPage): IShortcut[] {
+    return (PANE_KEYS[pane] ?? []).map(paneKey => {
+        return {
+            name: `${pane}-${paneKey.eventKey.toLowerCase()}`,
+            label: paneKey.label,
+            keys: paneKey.keys,
+        };
+    });
+}
+
+//
+// Works out the overlay's groups: the selected pane or page's keys first, under its name, when it
+// has keys of its own, then the shortcuts given, which work on every page, under "General". With
+// no selected pane or page, or one with no keys of its own, the overlay lists the General group
+// alone.
+//
+export function shortcutGroups(paneOrPage: PaneOrPage | undefined, shortcuts: IShortcut[]): IShortcutGroup[] {
+    const general: IShortcutGroup = {
+        name: "general",
+        title: "General",
+        shortcuts,
+    };
+    if (paneOrPage === undefined || PANE_KEYS[paneOrPage] === undefined) {
+        return [general];
+    }
+    return [
+        {
+            name: paneOrPage,
+            title: PANE_OR_PAGE_NAMES[paneOrPage],
+            shortcuts: paneShortcuts(paneOrPage),
+        },
+        general,
+    ];
+}
+
+//
+// Filters each group to the shortcuts whose label or keys contain the search text, ignoring case,
+// as matchingShortcuts does, and drops a group left with no shortcut, so the overlay hides it.
+//
+export function matchingGroups(groups: IShortcutGroup[], searchText: string): IShortcutGroup[] {
+    const result: IShortcutGroup[] = [];
+    for (const group of groups) {
+        const shortcuts = matchingShortcuts(group.shortcuts, searchText);
+        if (shortcuts.length > 0) {
+            result.push({
+                ...group,
+                shortcuts,
             });
         }
     }

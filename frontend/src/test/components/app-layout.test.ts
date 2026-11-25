@@ -2,7 +2,8 @@
 // Tests the app's layout: renders it as the root of a router with a mock page and checks it
 // lays out the top bar, the left sidebar, the main content area holding the page and the right
 // sidebar, that the Keyboard Shortcuts action and the top bar's keyboard shortcuts button show the
-// keyboard shortcuts overlay over it, that the left sidebar starts expanded and the right sidebar
+// keyboard shortcuts overlay over it, that the overlay lists the keys of the pane the page makes
+// active first, that the left sidebar starts expanded and the right sidebar
 // closed, that the top bar's buttons minimise and expand the left sidebar and slide the right
 // sidebar in and out, that both sidebars
 // are saved in Graft's state file and restored from it, that the top bar's breadcrumb trail
@@ -44,6 +45,23 @@ describe("AppLayout", () => {
         });
         expect(elementWithDataId(document.body, "shortcuts-overlay-search")).not.toBeUndefined();
         expect(elementWithDataId(container, "main-content")).not.toBeUndefined();
+    });
+
+    test("the keyboard shortcuts overlay lists the keys of the pane the page makes active first", async () => {
+        const [container, ziggy] = await renderAppLayoutWithZiggy("/repos/graft");
+        act(() => {
+            elementWithDataId(container, "left-sidebar-repo-explorer-link")?.click();
+        });
+        await screen.findByText("The repo explorer page");
+        act(() => {
+            elementWithDataId(container, "mock-activate-pane")?.click();
+        });
+        await act(async () => {
+            await ziggy.runRegisteredAction(shortcutsOverlayAction);
+        });
+        const groups = elementWithDataId(document.body, "shortcuts-overlay-columns")?.querySelectorAll("ul");
+        expect(groups?.[0]?.getAttribute("data-id")).toBe("shortcut-group-commit-pane");
+        expect(elementWithDataId(document.body, "shortcut-group-commit-pane-title")?.textContent).toBe("Commit pane");
     });
 
     test("the top bar's keyboard shortcuts button shows the keyboard shortcuts overlay over the layout", async () => {

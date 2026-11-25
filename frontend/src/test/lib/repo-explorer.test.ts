@@ -11,8 +11,12 @@
 // collapsed as panes close and moving through a collapsed pane with the keys.
 // It checks a branch's row is selected, opened and closed as a link is, and that its branch pane
 // takes the commit pane's place.
+// It checks that every key PANE_KEYS lists for a pane changes the state in that pane and every other
+// key leaves it as it is.
 //
 
+import { PaneOrPage, repoExplorerActivePane } from "../../lib/active-pane";
+import { PANE_KEYS } from "../../lib/pane-keys";
 import {
     activatePane,
     BRANCH_LINK_PREFIX,
@@ -185,6 +189,68 @@ describe("isExplorerKey", () => {
         expect(isExplorerKey("a")).toBe(false);
         expect(isExplorerKey("?")).toBe(false);
         expect(isExplorerKey("Tab")).toBe(false);
+    });
+});
+
+//
+// A state for each pane with that pane active, every pane open and an item selected in the
+// middle of each list, so every key that works in the pane changes the state.
+//
+const paneStates: Partial<Record<PaneOrPage, IRepoExplorerState>> = {
+    "repo-details-pane": {
+        ...allOpen,
+        activePaneIndex: 0,
+        selectedLink: "middle",
+    },
+    "commit-pane": {
+        ...allOpen,
+        activePaneIndex: 1,
+    },
+    "commit-details-pane": {
+        ...allOpen,
+        activePaneIndex: 2,
+    },
+    "file-pane": allOpen,
+    "changes-pane": {
+        ...changeFileOpen,
+        activePaneIndex: 1,
+        selectedChange: changeKey(false, "new.txt"),
+    },
+    "working-file-pane": changeFileOpen,
+    "tag-pane": {
+        ...initialRepoExplorerState,
+        selectedLink: tagLink("v1.0"),
+        openLink: tagLink("v1.0"),
+        activePaneIndex: 1,
+    },
+};
+
+//
+// The items for paneStates: three links, three commits, three files and the changes pane's rows,
+// so each selection has an item above and below.
+//
+const paneItems: IRepoExplorerItems = {
+    ...items,
+    links: [COMMITS_LINK, "middle", CHANGES_LINK],
+    filePaths: ["README.md", "notes.txt", "z.txt"],
+};
+
+describe("PANE_KEYS", () => {
+    test("every key listed for a pane changes the state in that pane, and every other key leaves it", () => {
+        const explorerKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", "Enter", "Escape", "m", "c"];
+        for (const [pane, state] of Object.entries(paneStates)) {
+            expect(repoExplorerActivePane(state)).toBe(pane);
+            const listed = (PANE_KEYS[repoExplorerActivePane(state)] ?? []).map(paneKey => paneKey.eventKey);
+            for (const key of explorerKeys) {
+                const next = explorerStateAfterKey(state, key, paneItems);
+                if (listed.includes(key)) {
+                    expect([pane, key, next]).not.toEqual([pane, key, state]);
+                }
+                else {
+                    expect([pane, key, next]).toEqual([pane, key, state]);
+                }
+            }
+        }
     });
 });
 

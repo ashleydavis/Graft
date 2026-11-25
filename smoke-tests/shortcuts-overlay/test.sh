@@ -2,8 +2,8 @@
 
 #
 # Starts the real app with remote control on and presses keys as a user does: `?` shows the
-# keyboard shortcuts overlay, which lists Open repo's shortcut first, with the focus in its search
-# box. `?` typed there types the character, filters the list to the Keyboard Shortcuts action and
+# keyboard shortcuts overlay, which lists Open repo's shortcut first, under the General heading,
+# with the focus in its search box. `?` typed there types the character, filters the list to the Keyboard Shortcuts action and
 # leaves the overlay open. Escape closes it. A click outside the overlay closes it, and so does a
 # click on its close button. Typing "quit" in the search box filters the list to
 # Quit. Then `?` typed in the breadcrumb trail drop-down's search box types the character and leaves
@@ -90,7 +90,8 @@ start_app_on_start_page
 open_repo_with_button "$repo"
 open_sidebar_page about
 
-# `?` shows the overlay, which lists the shortcuts from Ziggy's action list.
+# `?` shows the overlay, which lists the shortcuts from Ziggy's action list in one group headed
+# General, because the About page has no keys of its own.
 press_key "?"
 wait_for_element shortcuts-overlay 30
 wait_for_text shortcuts-overlay-title "Keyboard shortcuts" 30
@@ -100,10 +101,10 @@ wait_for_text shortcut-toggle-shortcuts-overlay-keys "?" 30
 wait_for_element shortcut-quit 30
 first_row="$(control '{"command":"get-text","dataId":"shortcuts-overlay-columns"}' | jq -r '.value')"
 case "$first_row" in
-    "Open repo$open_repo_keys"*)
+    "GeneralOpen repo$open_repo_keys"*)
         ;;
     *)
-        fail "the overlay does not start with Open repo and $open_repo_keys. It shows: $first_row"
+        fail "the overlay does not start with the General group's Open repo and $open_repo_keys. It shows: $first_row"
         ;;
 esac
 

@@ -4,7 +4,7 @@
 // reads the one value.
 //
 
-import { CHANGES_LINK, IRepoExplorerState } from "./repo-explorer";
+import { CHANGES_LINK, IRepoExplorerState, tagNameOfLink } from "./repo-explorer";
 
 //
 // The name of one of Graft's pages or one of the repo explorer's panes.
@@ -19,7 +19,8 @@ export type PaneOrPage =
     | "commit-details-pane"
     | "file-pane"
     | "changes-pane"
-    | "working-file-pane";
+    | "working-file-pane"
+    | "tag-pane";
 
 //
 // The name each pane and page is shown by, such as the heading of the command palette's group of
@@ -37,6 +38,7 @@ export const PANE_OR_PAGE_NAMES: Record<PaneOrPage, string> = {
     "file-pane": "File pane",
     "changes-pane": "Changes pane",
     "working-file-pane": "File pane",
+    "tag-pane": "Tag pane",
 };
 
 //
@@ -48,6 +50,9 @@ export const PANE_OR_PAGE_NAMES: Record<PaneOrPage, string> = {
 export function repoExplorerActivePane(state: IRepoExplorerState): PaneOrPage {
     if (state.activePaneIndex === 0) {
         return "repo-details-pane";
+    }
+    if (tagNameOfLink(state.openLink) !== undefined) {
+        return "tag-pane";
     }
     if (state.openLink === CHANGES_LINK) {
         if (state.activePaneIndex === 1) {

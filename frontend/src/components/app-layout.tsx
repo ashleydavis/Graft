@@ -88,10 +88,10 @@ export function useSavedSwitch(stateKey: string, description: string): [boolean,
 // overlay, so `?` shows it over every page, and the command palette, so Ctrl+Shift+P shows it over
 // every page. It keeps the active pane the page sets through ActivePaneContext and works out the
 // selected pane or page from it and the page the router shows, so the command palette lists that
-// pane or page's commands first and the right sidebar's Help pane shows its help under the Git
-// commands panel. It calls the hook of each feature whose action works on every page, one line per
-// feature, because the layout is inside both the router and the open repo's context for as long as
-// the window is open.
+// pane or page's commands first, the keyboard shortcuts overlay lists its keys first and the right
+// sidebar's Help pane shows its help under the Git commands panel. It calls the hook of each feature
+// whose action works on every page, one line per feature, because the layout is inside both the
+// router and the open repo's context for as long as the window is open.
 //
 export function AppLayout(): JSX.Element {
     const [isLeftSidebarMinimised, toggleLeftSidebar] = useSavedSwitch(leftSidebarMinimisedStateKey, "whether the left sidebar is minimised");
@@ -103,6 +103,7 @@ export function AppLayout(): JSX.Element {
     const [gitCommandHistory, setGitCommandHistory] = useState<ReadonlyMap<string, IPageGitCommands>>(new Map());
     const [paneSteps, setPaneSteps] = useState<ITrailStep[]>([]);
     const [activePane, setActivePane] = useState<PaneOrPage | undefined>(undefined);
+    const paneOrPage = selectedPaneOrPage(location.pathname, activePane);
     usePageZoom();
     useOpenRepoAction();
     useRepoExplorerAction();
@@ -150,8 +151,8 @@ export function AppLayout(): JSX.Element {
                     <HelpPane help={viewHelp(selectedPaneOrPage(location.pathname, activePane))} />
                 </RightSidebar>
             </div>
-            <ShortcutsOverlay />
-            <CommandPalette paneOrPage={selectedPaneOrPage(location.pathname, activePane)} />
+            <ShortcutsOverlay paneOrPage={paneOrPage} />
+            <CommandPalette paneOrPage={paneOrPage} />
         </div>
     );
 }

@@ -2,11 +2,13 @@
 // Tests what the keyboard shortcuts overlay lists: the actions with a shortcut picked from Ziggy's
 // action list, the Ctrl+/ row added after the Keyboard Shortcuts action and the shortcuts a search
 // matches by label or keys. Also tests which key presses are Ctrl+/ and which key events show
-// Control released.
+// Control released, the groups listed for each active pane and the search across the groups.
 //
 
 import type { IActionInfo } from "ziggy";
-import { actionShortcuts, IKeyPress, isControlReleased, isShortcutsOverlayCtrlKey, IShortcut, matchingShortcuts, overlayShortcuts, shortcutKeyNames, shortcutsOverlayCtrlKeys } from "../../lib/shortcuts";
+import { PaneOrPage } from "../../lib/active-pane";
+import { PANE_KEYS } from "../../lib/pane-keys";
+import { actionShortcuts, IKeyPress, isControlReleased, isShortcutsOverlayCtrlKey, IShortcut, matchingGroups, matchingShortcuts, overlayShortcuts, paneShortcuts, shortcutGroups, shortcutKeyNames, shortcutsOverlayCtrlKeys } from "../../lib/shortcuts";
 
 //
 // Makes a shortcut with the name, label and keys, so a test writes each on one line.
@@ -198,5 +200,97 @@ describe("overlayShortcuts", () => {
 
     test("leaves a list without the action as it is", () => {
         expect(overlayShortcuts(listedShortcuts, "not-listed")).toEqual(listedShortcuts);
+    });
+});
+
+//
+// Every pane, in the order PANE_KEYS lists them.
+//
+const everyPane: PaneOrPage[] = ["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane", "changes-pane", "working-file-pane"];
+
+describe("paneShortcuts", () => {
+    test("makes a row for each of the file pane's keys, named after the pane and the key", () => {
+        expect(paneShortcuts("file-pane")).toEqual([
+            makeShortcut("file-pane-arrowleft", "Make the commit details pane active", "Left"),
+            makeShortcut("file-pane-escape", "Close the file pane", "Escape"),
+        ]);
+    });
+
+    test("makes a row for every key of every pane, with the key and label from PANE_KEYS", () => {
+        for (const pane of everyPane) {
+            const shortcuts = paneShortcuts(pane);
+            expect(shortcuts.map(shortcut => shortcut.keys)).toEqual((PANE_KEYS[pane] ?? []).map(paneKey => paneKey.keys));
+            expect(shortcuts.map(shortcut => shortcut.label)).toEqual((PANE_KEYS[pane] ?? []).map(paneKey => paneKey.label));
+            expect(new Set(shortcuts.map(shortcut => shortcut.name)).size).toBe(shortcuts.length);
+        }
+    });
+});
+
+describe("shortcutGroups", () => {
+    test("with a page that has no keys of its own gives the shortcuts alone", () => {
+        expect(shortcutGroups("welcome-page", listedShortcuts).map(group => group.name)).toEqual(["general"]);
+    });
+
+    test("with no selected pane or page gives the shortcuts alone, in a group headed General", () => {
+        expect(shortcutGroups(undefined, listedShortcuts)).toEqual([
+            {
+                name: "general",
+                title: "General",
+                shortcuts: listedShortcuts,
+            },
+        ]);
+    });
+
+    test("puts the selected pane's keys first, under the pane's name, then the General group", () => {
+        expect(shortcutGroups("commit-pane", listedShortcuts)).toEqual([
+            {
+                name: "commit-pane",
+                title: "Commit pane",
+                shortcuts: paneShortcuts("commit-pane"),
+            },
+            {
+                name: "general",
+                title: "General",
+                shortcuts: listedShortcuts,
+            },
+        ]);
+    });
+
+    test("names the group of each pane", () => {
+        const titles = everyPane.map(pane => shortcutGroups(pane, listedShortcuts)[0].title);
+        expect(titles).toEqual(["Repo details pane", "Commit pane", "Commit details pane", "File pane", "Changes pane", "File pane"]);
+    });
+});
+
+describe("matchingGroups", () => {
+    test("with empty search text keeps every group whole", () => {
+        const groups = shortcutGroups("commit-pane", listedShortcuts);
+        expect(matchingGroups(groups, "")).toEqual(groups);
+    });
+
+    test("filters each group by label or keys, ignoring case", () => {
+        const groups = shortcutGroups("commit-pane", listedShortcuts);
+        expect(matchingGroups(groups, "ESC")).toEqual([
+            {
+                name: "commit-pane",
+                title: "Commit pane",
+                shortcuts: [
+                    makeShortcut("commit-pane-escape", "Close the rightmost pane", "Escape"),
+                ],
+            },
+        ]);
+        expect(matchingGroups(groups, "repo").map(group => group.shortcuts.map(shortcut => shortcut.name))).toEqual([
+            ["commit-pane-arrowleft"],
+            ["open-repo"],
+        ]);
+    });
+
+    test("hides a group with no match", () => {
+        const groups = shortcutGroups("commit-pane", listedShortcuts);
+        expect(matchingGroups(groups, "quit").map(group => group.name)).toEqual(["general"]);
+    });
+
+    test("gives no group when nothing matches", () => {
+        expect(matchingGroups(shortcutGroups("file-pane", listedShortcuts), "branch")).toEqual([]);
     });
 });

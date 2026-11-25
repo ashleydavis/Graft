@@ -473,6 +473,24 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
             disablePortal: false,
         },
     },
+    //
+    // A list's heading, as the keyboard shortcuts overlay heads each group, in the style guide's
+    // muted bold text, scrolling with its list.
+    //
+    MuiListSubheader: {
+        styleOverrides: {
+            root: {
+                position: "static",
+                backgroundColor: "transparent",
+                color: "var(--color-text-muted)",
+                fontFamily: "var(--font-sans)",
+                fontSize: "var(--text-sm)",
+                fontWeight: "var(--weight-bold)",
+                lineHeight: "var(--leading-normal)",
+                padding: "var(--space-2) var(--space-3) var(--space-1)",
+            },
+        },
+    },
     MuiListItemButton: {
         styleOverrides: {
             root: {

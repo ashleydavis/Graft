@@ -5,9 +5,10 @@
 
 import { faMagnifyingGlass, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Dialog, DialogTitle, IconButton, Tooltip } from "@mui/material";
+import { Dialog, DialogTitle, IconButton, List, ListSubheader, Tooltip } from "@mui/material";
 import { Fragment, JSX, useEffect, useState } from "react";
-import { actionShortcuts, isControlReleased, isShortcutsOverlayCtrlKey, IShortcut, matchingShortcuts, overlayShortcuts, shortcutKeyNames } from "../lib/shortcuts";
+import { PaneOrPage } from "../lib/active-pane";
+import { actionShortcuts, isControlReleased, isShortcutsOverlayCtrlKey, IShortcut, matchingGroups, overlayShortcuts, shortcutGroups, shortcutKeyNames } from "../lib/shortcuts";
 
 //
 // The name of the backend's Keyboard Shortcuts action (backend/src/features/shortcuts-overlay.zig),
@@ -49,16 +50,27 @@ export function KeyCaps({ keys, dataId }: IKeyCapsProps): JSX.Element {
 }
 
 //
+// What the overlay is given: the pane or page the keys act on.
+//
+export interface IShortcutsOverlayProps {
+    // The selected pane or page, whose keys the overlay lists first, or undefined when there is
+    // none.
+    paneOrPage: PaneOrPage | undefined;
+}
+
+//
 // Shows the keyboard shortcuts overlay while it is open. It lists every shortcut in Ziggy's action
 // list, which it reads once with window.ziggy.listActions, so each shortcut is written only where
-// its action is declared and shows as the platform shows it. The overlay is 520 pixels wide, or
-// narrower when the window is, as the style guide's overlay is. The shortcuts are listed in one
-// column, which scrolls once it is taller than 360 pixels. A search box at the top has the focus
-// when the overlay opens. What is typed there filters the list by label or keys. Each row shows the
-// shortcut's label on one line, a dotted line that leads the eye across and its keys as key caps,
-// as the style guide's overlay does. The search box is a plain input styled with Tailwind, because
-// a MaterialUI TextField on the page takes the padding and borders off the overlay and MaterialUI's
-// other components. It registers the handler of the Keyboard Shortcuts action, so Ziggy runs it
+// its action is declared and shows as the platform shows it. When the selected pane or page has
+// keys of its own, the overlay lists them first, in a group headed by its name, and the shortcuts
+// from the action list follow in a group headed "General", as the style guide's overlay groups its
+// shortcuts. With no keys of its own the General group is the only one. The overlay is 520 pixels
+// wide, or narrower when the window is, as the style guide's overlay is. The groups are listed in
+// one column, which scrolls once it is taller than 360 pixels. A search box at the top has the
+// focus when the overlay opens. What is typed there filters every group by label or keys and hides
+// a group with no match. Each row is a ShortcutRow. The search box is a plain input styled with
+// Tailwind, because a MaterialUI TextField on the page takes the padding and borders off the
+// overlay and MaterialUI's other components. It registers the handler of the Keyboard Shortcuts action, so Ziggy runs it
 // when the user presses `?` outside a text box: the handler opens the overlay when it is closed and
 // closes it when it is open. The search box is a text box, so `?` typed there types a question
 // mark. Escape, a click outside the overlay and the close button at the right of the title close
@@ -73,7 +85,7 @@ export function KeyCaps({ keys, dataId }: IKeyCapsProps): JSX.Element {
 // overlay as the first press left it. The list shows Ctrl+/ in a row of its own after the Keyboard
 // Shortcuts action's `?`.
 //
-export function ShortcutsOverlay(): JSX.Element {
+export function ShortcutsOverlay({ paneOrPage }: IShortcutsOverlayProps): JSX.Element {
     const [isOpen, setOpen] = useState(false);
     const [shortcuts, setShortcuts] = useState<IShortcut[]>([]);
     const [listError, setListError] = useState<string | undefined>(undefined);
@@ -143,7 +155,7 @@ export function ShortcutsOverlay(): JSX.Element {
         };
     }, []);
 
-    const shownShortcuts = matchingShortcuts(shortcuts, searchText);
+    const shownGroups = matchingGroups(shortcutGroups(paneOrPage, shortcuts), searchText);
 
     //
     // The overlay's container covers the window around the overlay, above the dimmed backdrop, so
@@ -207,24 +219,55 @@ export function ShortcutsOverlay(): JSX.Element {
                     Graft could not read its keyboard shortcuts from Ziggy: {listError}. Ziggy's log has the details.
                 </p>
             )}
-            {listError === undefined && shownShortcuts.length === 0 && (
+            {listError === undefined && shownGroups.length === 0 && (
                 <p data-id="shortcuts-overlay-no-match" className="p-[var(--space-4)] text-[length:var(--text-sm)] text-[var(--color-text-muted)]">
                     No shortcut matches "{searchText}".
                 </p>
             )}
             <div data-id="shortcuts-overlay-columns" className="max-h-[360px] overflow-y-auto px-[var(--space-1)] pb-[var(--space-2)]">
-                <ul>
-                    {shownShortcuts.map(shortcut => (
-                        <li key={shortcut.name} data-id={`shortcut-${shortcut.name}`} className="flex items-baseline gap-[var(--space-2)] px-[var(--space-3)] py-[var(--space-1)] text-[length:var(--text-md)]">
-                            <span data-id={`shortcut-${shortcut.name}-label`} className="whitespace-nowrap text-[var(--color-text)]">
-                                {shortcut.label}
-                            </span>
-                            <span aria-hidden="true" className="inline-block h-0 min-w-[var(--space-4)] flex-[1_1_var(--space-4)] border-b border-dotted border-[var(--color-border)]" />
-                            <KeyCaps keys={shortcut.keys} dataId={`shortcut-${shortcut.name}-keys`} />
-                        </li>
-                    ))}
-                </ul>
+                {shownGroups.map(group => (
+                    <List
+                        key={group.name}
+                        data-id={`shortcut-group-${group.name}`}
+                        dense={true}
+                        disablePadding={true}
+                        aria-label={group.title}
+                        subheader={(
+                            <ListSubheader component="div" data-id={`shortcut-group-${group.name}-title`}>
+                                {group.title}
+                            </ListSubheader>
+                        )}
+                    >
+                        {group.shortcuts.map(shortcut => (
+                            <ShortcutRow key={shortcut.name} shortcut={shortcut} />
+                        ))}
+                    </List>
+                ))}
             </div>
         </Dialog>
+    );
+}
+
+//
+// What a row of the overlay is given: the shortcut it shows.
+//
+export interface IShortcutRowProps {
+    // The shortcut, whose name the row's data-ids are built from.
+    shortcut: IShortcut;
+}
+
+//
+// Shows one shortcut of the overlay: its label on one line, a dotted line that leads the eye across
+// and its keys as key caps, as the style guide's overlay does.
+//
+export function ShortcutRow({ shortcut }: IShortcutRowProps): JSX.Element {
+    return (
+        <li data-id={`shortcut-${shortcut.name}`} className="flex items-baseline gap-[var(--space-2)] px-[var(--space-3)] py-[var(--space-1)] text-[length:var(--text-md)]">
+            <span data-id={`shortcut-${shortcut.name}-label`} className="whitespace-nowrap text-[var(--color-text)]">
+                {shortcut.label}
+            </span>
+            <span aria-hidden="true" className="inline-block h-0 min-w-[var(--space-4)] flex-[1_1_var(--space-4)] border-b border-dotted border-[var(--color-border)]" />
+            <KeyCaps keys={shortcut.keys} dataId={`shortcut-${shortcut.name}-keys`} />
+        </li>
     );
 }

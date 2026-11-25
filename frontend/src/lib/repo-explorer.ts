@@ -4,6 +4,7 @@
 // of macOS Finder. The repo explorer page keeps the state and draws it.
 //
 
+import { PANE_KEYS } from "./pane-keys";
 import { IWorkingChanges, IWorkingFile } from "./working-changes";
 
 //
@@ -257,7 +258,8 @@ export function hasKeyModifier(press: IKeyPress): boolean {
 //
 // Returns true when the key, as KeyboardEvent.key names it, is one the repo explorer acts on, so
 // the repo explorer page handles it and keeps it from the rest of the page, which would otherwise
-// scroll on an arrow key.
+// scroll on an arrow key. The keys are those PANE_KEYS lists for any pane, so the keys the page
+// handles and the keys the shortcuts overlay lists come from one table.
 //
 export function isExplorerKey(key: string): boolean {
     if (isMaximiseKey(key)) {
@@ -266,7 +268,7 @@ export function isExplorerKey(key: string): boolean {
     if (isCollapseKey(key)) {
         return true;
     }
-    return ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", "Enter", "Escape"].includes(key);
+    return Object.values(PANE_KEYS).some(paneKeys => paneKeys.some(paneKey => paneKey.eventKey === key));
 }
 
 //

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The keyboard shortcuts overlay is a dialog over Graft's window. It is the place Graft lists its keyboard shortcuts. It is built from Ziggy's action list, so each shortcut is written only where its action is declared, and a search box filters it.
+The keyboard shortcuts overlay is a dialog over Graft's window. It is the place Graft lists its keyboard shortcuts. It is built from Ziggy's action list, so each shortcut is written only where its action is declared, and a search box filters it. On the repo explorer page it lists the keys of the active pane first.
 
 ## Behaviour
 
@@ -15,14 +15,24 @@ The keyboard shortcuts overlay is a dialog over Graft's window. It is the place 
 - The top bar's keyboard shortcuts button, just after that reminder, shows the overlay too. A click runs the Keyboard Shortcuts action, the one `?` runs. Its tooltip shows "Show keyboard shortcuts" and names Ctrl+/ (see [layout](../layout/detail.md)).
 - The overlay reads its shortcuts from `window.ziggy.listActions()`, which gives every action of Graft's and every standard item of its menu with its shortcut as the platform shows it (`Ctrl+O` on Linux and Windows, `⌘O` on macOS). The overlay lists each one that has a shortcut, with its label and its keys, in the order Ziggy lists them, so Graft's own actions come first and the list starts with Open repo's `Ctrl+O`. Straight after the Keyboard Shortcuts action's `?`, the overlay lists Ctrl+/ in a row of its own with the same label. Ctrl+/ is the one shortcut the overlay adds itself, because Ziggy's list holds only action shortcuts. Any tooltip that shows a shortcut reads it from the same list.
 - Every action's shortcut is kept clear of the web view's own keys (reload and the developer tools), as `backend/src/test/actions.test.zig` checks. The zoom keys belong to Graft's own zoom actions (see [zoom](../zoom/detail.md)).
-- The shortcuts are listed in one column, which scrolls when it is taller than the overlay leaves room for.
-- A search box at the top of the overlay has the focus when the overlay opens. Typing there filters the list to the shortcuts whose label or keys contain the text, ignoring case. When none matches, the overlay says no shortcut matches the text. The search is cleared each time the overlay closes.
+- The shortcuts are listed in groups, each under a heading, as the style guide's keyboard shortcuts overlay groups its shortcuts. The shortcuts from Ziggy's action list, Ctrl+/ among them, are in a group headed "General".
+- On the repo explorer page the overlay lists the keys of the active pane first, in a group headed by the pane's name, and the General group follows. The active pane is the one the keys act on (see [repo explorer keys](../repo-explorer/keys/detail.md)). There is a group for each pane: "Repo details pane", "Commit pane", "Commit details pane", "File pane", "Changes pane" and, for the changes pane's file pane, "File pane". Each group lists only the keys that do something in its pane, with what each does there:
+  - Repo details pane: Up and Down select the link above or below, Right makes the pane to the right active, Enter opens the selected link's pane and Escape closes the rightmost pane.
+  - Commit pane: Up and Down select the commit above or below, Left makes the repo details pane active, Right makes the commit details pane active, Enter opens the selected commit's details and Escape closes the rightmost pane.
+  - Commit details pane: Up and Down open the commit above or below, or the file above or below while a file is open, Left makes the commit pane active, Right makes the file pane active, Enter opens the selected file's diff and Escape closes the rightmost pane.
+  - File pane of a commit: Left makes the commit details pane active and Escape closes the file pane.
+  - Changes pane: Up and Down select the changed file above or below, Left makes the repo details pane active, Right makes the file pane active, Enter opens the selected file's diff and Escape closes the rightmost pane.
+  - File pane of a changed file: Left makes the changes pane active and Escape closes the file pane.
+- Each pane's keys are written in one table in the frontend, with what each does in that pane. The repo explorer page takes the keys it handles from the same table.
+- The repo explorer page sets the active pane in the layout each time another pane becomes active, and clears it when the page closes, and the layout keeps the selected pane or page that the command palette reads too, so the overlay opened while another pane is active shows that pane's group first. On every other page, and on the repo explorer page with no repo open, the overlay lists the General group alone.
+- The groups are listed in one column, which scrolls when it is taller than the overlay leaves room for.
+- A search box at the top of the overlay has the focus when the overlay opens. Typing there filters every group to the shortcuts whose label or keys contain the text, ignoring case, and hides a group with no match. When no shortcut in any group matches, the overlay says no shortcut matches the text. The search is cleared each time the overlay closes.
 - The search box is a text box, so `?` typed there types a question mark and the overlay stays open. Escape closes the overlay.
 - When Ziggy cannot give the action list, the overlay shows why in place of the list.
 - A click outside the overlay closes it.
 - The overlay's title row has a close button at its right, an X icon button with the tooltip "Close", as the style guide's overlay has. A click on it closes the overlay.
 - The overlay shows over every page. The page behind it is dimmed.
-- The overlay shows the heading "Keyboard shortcuts" with the close button at its right, then the search box, then the shortcuts.
+- The overlay shows the heading "Keyboard shortcuts" with the close button at its right, then the search box, then the groups of shortcuts.
 
 ## Acceptance criteria
 
@@ -45,6 +55,13 @@ The keyboard shortcuts overlay is a dialog over Graft's window. It is the place 
 - [x] Plain `?` still shows and closes the overlay outside a text box.
 - [x] The top bar has a button, with a tooltip naming Ctrl+/, that opens the overlay.
 - [x] The button follows the Graft style guide.
+- [x] The overlay lists the keys of the active pane first, in a group headed by the pane's name, and every other shortcut follows in a group headed General.
+- [x] On the repo explorer page the first group lists each key that does something in the active pane and what it does there.
+- [x] There is a group for each pane: the repo details pane, the commit pane, the commit details pane, the file pane, the changes pane and the changes pane's file pane.
+- [x] On a page with no keys of its own, the overlay lists the Ziggy shortcuts in one group.
+- [x] Each pane's keys are written in one table in the frontend, with what each does in that pane.
+- [x] The overlay opened while another pane is active shows that pane's group first.
+- [x] The search box filters every group by label or keys, ignoring case, and hides a group with no match. When no shortcut matches, the overlay says so.
 
 ## Open questions
 

@@ -9,13 +9,16 @@
 // Ctrl+/ with its repeats sent as keyups and keydowns with `repeat` false, as WebKitGTK sends
 // them on some Linux desktops, and checks the overlay opens once and stays open, and that releasing
 // Control, a key with Control up or the window losing the focus allow the next Ctrl+/. It also
-// checks the handler and the Ctrl+/ listeners are removed when the overlay goes.
+// checks the handler and the Ctrl+/ listeners are removed when the overlay goes. With an active
+// pane it checks the pane's keys come first under the pane's name, that the search filters both
+// groups and hides an empty one and that another active pane puts its group first.
 //
 
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
-import { createElement } from "react";
+import { createElement, ReactElement } from "react";
 import type { IActionInfo } from "ziggy";
 import { ShortcutsOverlay, shortcutsOverlayAction } from "../../components/shortcuts-overlay";
+import { PaneOrPage } from "../../lib/active-pane";
 import { IFakeActionZiggy, makeFakeActionZiggy } from "../fake-action-ziggy";
 import { installFakeZiggy } from "../fake-ziggy";
 
@@ -56,14 +59,62 @@ const graftActions: IActionInfo[] = [
 
 //
 // Puts a fake action window.ziggy whose listActions gives the action list, or fails with the
-// error, on the window, renders the overlay and returns the fake once the list has been read.
+// error, on the window, renders the overlay with no selected pane or page and returns the fake once the list
+// has been read.
 //
 async function renderShortcutsOverlayWith(actionList: IActionInfo[] | Error): Promise<IFakeActionZiggy> {
     const ziggy = installFakeZiggy(makeFakeActionZiggy(actionList));
     await act(async () => {
-        render(createElement(ShortcutsOverlay));
+        render(createElement(ShortcutsOverlay, {
+            paneOrPage: undefined,
+        }));
     });
     return ziggy;
+}
+
+//
+// The overlay rendered with an active pane, and how to change the pane.
+//
+interface IPaneOverlay {
+    // The fake window.ziggy the overlay reads.
+    ziggy: IFakeActionZiggy;
+
+    // Renders the overlay again with the active pane.
+    setPaneOrPage(pane: PaneOrPage | undefined): void;
+}
+
+//
+// Puts a fake action window.ziggy with Graft's action list on the window and renders the overlay
+// with the active pane. Returns the fake and a function that renders the overlay again with
+// another active pane, as the layout does when the pane changes.
+//
+async function renderShortcutsOverlayForPane(paneOrPage: PaneOrPage): Promise<IPaneOverlay> {
+    const ziggy = installFakeZiggy(makeFakeActionZiggy(graftActions));
+    let rerender = (_element: ReactElement): void => {};
+    await act(async () => {
+        rerender = render(createElement(ShortcutsOverlay, {
+            paneOrPage,
+        })).rerender;
+    });
+    return {
+        ziggy,
+        setPaneOrPage: pane => {
+            act(() => {
+                rerender(createElement(ShortcutsOverlay, {
+                    paneOrPage: pane,
+                }));
+            });
+        },
+    };
+}
+
+//
+// The data-ids of the groups the overlay shows, in order.
+//
+function shownGroups(): string[] {
+    const list = overlayElement("shortcuts-overlay-columns");
+    expect(list).not.toBeUndefined();
+    return Array.from(list?.querySelectorAll("ul") ?? []).map(group => group.getAttribute("data-id") ?? "");
 }
 
 //
@@ -477,7 +528,9 @@ describe("ShortcutsOverlay", () => {
         installFakeZiggy(makeFakeActionZiggy(graftActions));
         let unmount = (): void => {};
         await act(async () => {
-            unmount = render(createElement(ShortcutsOverlay)).unmount;
+            unmount = render(createElement(ShortcutsOverlay, {
+                paneOrPage: undefined,
+            })).unmount;
         });
         unmount();
         expect(pressCtrlSlash(document.body)).toBe(false);
@@ -487,9 +540,73 @@ describe("ShortcutsOverlay", () => {
         const ziggy = installFakeZiggy(makeFakeActionZiggy(graftActions));
         let unmount = (): void => {};
         await act(async () => {
-            unmount = render(createElement(ShortcutsOverlay)).unmount;
+            unmount = render(createElement(ShortcutsOverlay, {
+                paneOrPage: undefined,
+            })).unmount;
         });
         unmount();
         expect(ziggy.hasRegisteredAction(shortcutsOverlayAction)).toBe(false);
+    });
+
+    test("with no active pane lists the shortcuts in one group headed General", async () => {
+        const ziggy = await renderShortcutsOverlay();
+        await pressQuestionMark(ziggy);
+        expect(shownGroups()).toEqual(["shortcut-group-general"]);
+        expect(overlayElement("shortcut-group-general-title")?.textContent).toBe("General");
+        expect(overlayElement("shortcut-group-general")?.getAttribute("aria-label")).toBe("General");
+    });
+
+    test("lists the commit pane's keys first, under its name, then the General group", async () => {
+        const { ziggy } = await renderShortcutsOverlayForPane("commit-pane");
+        await pressQuestionMark(ziggy);
+        expect(shownGroups()).toEqual(["shortcut-group-commit-pane", "shortcut-group-general"]);
+        expect(overlayElement("shortcut-group-commit-pane-title")?.textContent).toBe("Commit pane");
+        expect(shownShortcuts()).toEqual([
+            "shortcut-commits-arrowup",
+            "shortcut-commits-arrowdown",
+            "shortcut-commits-arrowleft",
+            "shortcut-commits-arrowright",
+            "shortcut-commits-enter",
+            "shortcut-commits-escape",
+            "shortcut-open-repo",
+            "shortcut-toggle-shortcuts-overlay",
+            "shortcut-toggle-shortcuts-overlay-ctrl",
+            "shortcut-quit",
+        ]);
+        expect(overlayElement("shortcut-commits-arrowup-label")?.textContent).toBe("Select the commit above");
+        expect(overlayElement("shortcut-commits-arrowup-keys")?.textContent).toBe("Up");
+        expect(overlayElement("shortcut-commits-enter-keys")?.textContent).toBe("Enter");
+    });
+
+    test("another active pane puts its group first", async () => {
+        const { ziggy, setPaneOrPage } = await renderShortcutsOverlayForPane("commit-pane");
+        setPaneOrPage("file-pane");
+        await pressQuestionMark(ziggy);
+        expect(shownGroups()).toEqual(["shortcut-group-file-pane", "shortcut-group-general"]);
+        expect(overlayElement("shortcut-group-file-pane-title")?.textContent).toBe("File pane");
+        expect(shownShortcuts().slice(0, 2)).toEqual(["shortcut-file-arrowleft", "shortcut-file-escape"]);
+        setPaneOrPage(undefined);
+        expect(shownGroups()).toEqual(["shortcut-group-general"]);
+    });
+
+    test("the search filters every group and hides a group with no match", async () => {
+        const { ziggy } = await renderShortcutsOverlayForPane("commit-pane");
+        await pressQuestionMark(ziggy);
+        typeSearch("ENTER");
+        expect(shownGroups()).toEqual(["shortcut-group-commit-pane"]);
+        expect(shownShortcuts()).toEqual(["shortcut-commits-enter"]);
+        typeSearch("o");
+        expect(shownGroups()).toEqual(["shortcut-group-commit-pane", "shortcut-group-general"]);
+        typeSearch("quit");
+        expect(shownGroups()).toEqual(["shortcut-group-general"]);
+        expect(shownShortcuts()).toEqual(["shortcut-quit"]);
+    });
+
+    test("a search that matches no shortcut in any group says so", async () => {
+        const { ziggy } = await renderShortcutsOverlayForPane("commit-pane");
+        await pressQuestionMark(ziggy);
+        typeSearch("branch");
+        expect(shownGroups()).toEqual([]);
+        expect(overlayElement("shortcuts-overlay-no-match")?.textContent).toBe("No shortcut matches \"branch\".");
     });
 });
