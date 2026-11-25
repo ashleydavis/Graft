@@ -1,19 +1,19 @@
 //
 // Tests the commit list: renders it with commits, while a page loads, with an error and once the
-// last page has been read, and checks that the end of list row shows only in its cases and
-// what each row shows, that a header row above the scrolling area names the columns in line with
-// them, that each row is a MaterialUI ListItemButton with the selected commit's set as selected,
-// that the open commit's row has the open bar and a bold title, that the refs sit in their column
-// after the title and that clicking a commit reports its hash. With the scrolling
-// area given a height, it checks the virtual list draws only the rows in view and a few more, calls
-// onNearEnd only once the last drawn row is near the last commit, and scrolls the selected commit's
-// row into view.
+// last page has been read, and checks the placeholder rows it shows while a page loads, that the end
+// of list row shows only in its cases, what each row shows, that a header row above the scrolling
+// area names the columns in line with them, that each row is a MaterialUI ListItemButton with the
+// selected commit's set as selected, that the open commit's row has the open bar and a bold title,
+// that the refs sit in their column after the title and that clicking a commit reports its hash. With
+// the scrolling area given a height, it checks the virtual list draws only the rows in view and a few
+// more, calls onNearEnd only once the last drawn row is near the last commit, and scrolls the
+// selected commit's row into view.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { ICommit } from "../../../../lib/commits";
-import { COMMIT_LIST_PADDING_PX, COMMIT_ROW_HEIGHT_PX, CommitList, hashColumnClasses, lastRowIndex, listEndRow, openRowClass, openRowClasses, titleWeightClass } from "../../../../pages/repo-explorer/components/commit-list";
+import { COMMIT_LIST_PADDING_PX, COMMIT_ROW_HEIGHT_PX, CommitList, hashColumnClasses, LATER_PAGE_PLACEHOLDER_ROW_COUNT, lastRowIndex, listEndRow, openRowClass, openRowClasses, placeholderRowCount, placeholderTitleWidth, scrollAreaHeightPx, titleWeightClass } from "../../../../pages/repo-explorer/components/commit-list";
 import { FAKE_LIST_HEIGHT_PX, IFakeListLayout, installFakeListLayout } from "../../../fake-list-layout";
 
 //
@@ -177,23 +177,67 @@ describe("CommitList", () => {
         expect(screen.getByText("The second commit").className).toContain("font-[var(--weight-normal)]");
     });
 
-    test("shows a loading row under the commits while a page is read", () => {
-        render(createElement(CommitList, {
+    test("shows placeholder rows under the last commit while a later page is read, with the list marked busy", () => {
+        const { container } = render(createElement(CommitList, {
             ...listProps([commit], jest.fn()),
             isLoading: true,
         }));
         expect(screen.getByText("The first commit")).toBeTruthy();
-        expect(screen.getByText("Loading the commits.").getAttribute("data-id")).toBe("commits-loading");
-        expect(screen.getByLabelText("Loading")).toBeTruthy();
+        const placeholder = container.querySelector("[data-id=\"commits-placeholder\"]");
+        expect(placeholder?.previousElementSibling?.getAttribute("data-id")).toBe("commit-list");
+        expect(placeholder?.getAttribute("aria-hidden")).toBe("true");
+        expect(placeholder?.querySelectorAll("[data-id=\"commits-placeholder-row\"]").length).toBe(LATER_PAGE_PLACEHOLDER_ROW_COUNT);
+        expect(container.querySelector("[data-id=\"commit-list\"]")?.getAttribute("aria-busy")).toBe("true");
+        expect(container.querySelector(".MuiCircularProgress-root")).toBeNull();
+        expect(screen.queryByText("Loading the commits.")).toBeNull();
     });
 
-    test("shows only the loading row before the first page is read", () => {
+    test("fills the visible part of the list with placeholder rows before the first page is read", () => {
         const { container } = render(createElement(CommitList, {
             ...listProps([], jest.fn()),
             isLoading: true,
         }));
-        expect(container.querySelectorAll("[data-id^=\"commit-\"][data-id$=\"0\"]").length).toBe(0);
-        expect(screen.getByText("Loading the commits.")).toBeTruthy();
+        expect(container.querySelectorAll("li").length).toBe(0);
+        const rows = container.querySelectorAll("[data-id=\"commits-placeholder-row\"]");
+        expect(rows.length).toBe(Math.ceil(FAKE_LIST_HEIGHT_PX / COMMIT_ROW_HEIGHT_PX));
+        expect(container.querySelector("[data-id=\"commit-list\"]")?.getAttribute("aria-busy")).toBe("true");
+    });
+
+    test("draws each placeholder row the height of a commit row, with grey blocks where the title, author, date and hash go", () => {
+        const { container } = render(createElement(CommitList, {
+            ...listProps([commit], jest.fn()),
+            isLoading: true,
+        }));
+        const commitRow = container.querySelector(`[data-id="commit-${commit.hash}"]`);
+        const row = container.querySelector("[data-id=\"commits-placeholder-row\"]");
+        expect(row?.className).toContain("h-[calc(var(--space-8)+var(--space-1))]");
+        expect(commitRow?.className).toContain("h-[calc(var(--space-8)+var(--space-1))]");
+        const blocks = row?.querySelectorAll(".MuiSkeleton-root");
+        expect(blocks?.length).toBe(4);
+        expect(row?.children[0].className).toContain("flex-1");
+        expect(row?.children[0].firstElementChild?.className).toContain("MuiSkeleton-text");
+        expect(row?.children[0].querySelector<HTMLElement>(".MuiSkeleton-text")?.style.width).toBe("80%");
+        expect(row?.children[1].className).toContain("w-[calc(var(--space-8)*5)]");
+        expect(row?.children[2].className).toContain("w-[80px]");
+        expect(row?.children[3].className).toContain("w-[52px]");
+        expect(row?.children[4].className).toContain("w-[7ch]");
+    });
+
+    test("removes the placeholder rows and the busy mark once the page arrives", () => {
+        const props = {
+            ...listProps([], jest.fn()),
+            isLoading: true,
+        };
+        const { container, rerender } = render(createElement(CommitList, props));
+        expect(container.querySelector("[data-id=\"commits-placeholder\"]")).not.toBeNull();
+        rerender(createElement(CommitList, {
+            ...props,
+            commits: [commit],
+            isLoading: false,
+        }));
+        expect(container.querySelector("[data-id=\"commits-placeholder\"]")).toBeNull();
+        expect(container.querySelector("[data-id=\"commit-list\"]")?.getAttribute("aria-busy")).toBe("false");
+        expect(screen.getByText("The first commit")).toBeTruthy();
     });
 
     test("shows an error row under the commits when a page could not be read", () => {
@@ -203,7 +247,7 @@ describe("CommitList", () => {
         }));
         expect(screen.getByText("The first commit")).toBeTruthy();
         expect(screen.getByText("It broke.").getAttribute("data-id")).toBe("commits-error");
-        expect(screen.queryByText("Loading the commits.")).toBeNull();
+        expect(document.querySelector("[data-id=\"commits-placeholder\"]")).toBeNull();
     });
 
     test("shows \"That is every commit.\" under the last commit once the last page has been read", () => {
@@ -376,6 +420,34 @@ describe("lastRowIndex", () => {
             size: 36,
             lane: 0,
         }])).toBe(4);
+    });
+});
+
+describe("placeholderRowCount", () => {
+    test("fills the list's height before the first page and shows a few rows under the commits after it", () => {
+        expect(placeholderRowCount(0, 360)).toBe(10);
+        expect(placeholderRowCount(0, 370)).toBe(11);
+        expect(placeholderRowCount(0, 0)).toBe(LATER_PAGE_PLACEHOLDER_ROW_COUNT);
+        expect(placeholderRowCount(50, 360)).toBe(LATER_PAGE_PLACEHOLDER_ROW_COUNT);
+    });
+});
+
+describe("scrollAreaHeightPx", () => {
+    test("reads the measured height, or 0 before the virtual list has measured one", () => {
+        expect(scrollAreaHeightPx({
+            width: 200,
+            height: 360,
+        })).toBe(360);
+        expect(scrollAreaHeightPx(null)).toBe(0);
+    });
+});
+
+describe("placeholderTitleWidth", () => {
+    test("cycles through the title widths, row by row", () => {
+        expect(placeholderTitleWidth(0)).toBe("80%");
+        expect(placeholderTitleWidth(1)).toBe("65%");
+        expect(placeholderTitleWidth(2)).toBe("72%");
+        expect(placeholderTitleWidth(3)).toBe("80%");
     });
 });
 

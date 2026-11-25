@@ -493,6 +493,18 @@ export const graftComponents: Components<Omit<Theme, "components">> = {
             },
         },
     },
+    //
+    // A loading placeholder is a block in the border colour with small rounded corners, as the
+    // style guide draws it, so it shows in light and dark mode alike.
+    //
+    MuiSkeleton: {
+        styleOverrides: {
+            root: {
+                backgroundColor: "var(--color-border)",
+                borderRadius: "var(--radius-sm)",
+            },
+        },
+    },
     MuiBreadcrumbs: {
         styleOverrides: {
             root: {

@@ -79,7 +79,7 @@ while true; do
     waited=$((waited + 1))
 done
 wait_for_text "commit-title-$first_hash" "Add the readme" 30
-wait_for_missing_element commits-loading 30
+wait_for_missing_element commits-placeholder 30
 wait_for_missing_element commits-error 5
 wait_for_text commits-end "That is every commit." 30
 wait_for_missing_element commits-none 5

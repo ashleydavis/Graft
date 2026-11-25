@@ -128,7 +128,9 @@ describe("main", () => {
         act(() => {
             elementWithDataId("repo-details-commits")?.click();
         });
-        expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
+        await waitFor(() => {
+            expect(elementWithDataId("commits-placeholder")?.getAttribute("aria-hidden")).toBe("true");
+        });
         expect(ziggy.addTask).toHaveBeenCalledWith(expect.objectContaining({
             taskType: "commits",
             data: {
@@ -161,7 +163,9 @@ describe("main", () => {
         act(() => {
             elementWithDataId("repo-details-commits")?.click();
         });
-        expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
+        await waitFor(() => {
+            expect(elementWithDataId("commits-placeholder")?.getAttribute("aria-hidden")).toBe("true");
+        });
         expect(ziggy.addTask).toHaveBeenCalledWith(expect.objectContaining({
             taskType: "commits",
             data: {

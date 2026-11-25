@@ -25,7 +25,7 @@
 // pane goes at once.
 //
 
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { createElement, JSX } from "react";
 import type { IAddTask, ITaskCompletedEvent } from "ziggy";
@@ -214,6 +214,18 @@ async function clickCommitsLink(): Promise<void> {
 }
 
 //
+// Waits for the commit list's placeholder rows, which it shows while a page of commits is read, and
+// returns the element that holds them.
+//
+async function findCommitsPlaceholder(): Promise<Element | undefined> {
+    return waitFor(() => {
+        const placeholder = document.querySelector("[data-id=\"commits-placeholder\"]") ?? undefined;
+        expect(placeholder).not.toBeUndefined();
+        return placeholder;
+    });
+}
+
+//
 // Ends the commits task the page queued, as the backend does, with the result.
 //
 function completeTask(ziggy: FakeTaskZiggy, result: ITaskCompletedEvent["result"]): void {
@@ -289,7 +301,7 @@ const commitJson = {
 async function openCommitDetails(ziggy: FakeTaskZiggy): Promise<void> {
     renderRepoExplorerPage("/repo");
     await clickCommitsLink();
-    await screen.findByText("Loading the commits.");
+    await findCommitsPlaceholder();
     completeTaskAt(ziggy, 0, {
         commits: [commitJson],
     });
@@ -342,7 +354,7 @@ async function listTwoCommits(ziggy: FakeTaskZiggy): Promise<void> {
     await screen.findByText("Commits");
     pressKey("ArrowDown");
     pressKey("Enter");
-    await screen.findByText("Loading the commits.");
+    await findCommitsPlaceholder();
     completeTaskAt(ziggy, 0, {
         commits: [commitJson, secondCommitJson],
     });
@@ -452,7 +464,7 @@ describe("RepoExplorerPage", () => {
         installFakeTaskZiggy();
         renderRepoExplorerPage("/repo");
         await clickCommitsLink();
-        await screen.findByText("Loading the commits.");
+        await findCommitsPlaceholder();
         const paneIds = paneElements().map(pane => pane.getAttribute("data-id"));
         expect(paneIds).toEqual(["repo-details-pane", "commit-pane"]);
         expect(elementWithDataId("repo-details-commits").className).toContain(openRowClasses);
@@ -470,7 +482,7 @@ describe("RepoExplorerPage", () => {
         expect(document.querySelector("[data-id=\"commit-pane\"]")).toBeNull();
         expect(document.querySelector("[data-id=\"changed-file-README.md\"]")).toBeNull();
         await clickCommitsLink();
-        expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
+        expect((await findCommitsPlaceholder())?.getAttribute("aria-hidden")).toBe("true");
         const calls = (ziggy.addTask as jest.Mock).mock.calls;
         const task: IAddTask = calls[calls.length - 1][0];
         expect(task.taskType).toBe("commits");
@@ -485,7 +497,7 @@ describe("RepoExplorerPage", () => {
         const ziggy = installFakeTaskZiggy();
         renderRepoExplorerPage("/repo");
         await clickCommitsLink();
-        expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
+        expect((await findCommitsPlaceholder())?.getAttribute("aria-hidden")).toBe("true");
         const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[0][0];
         expect(task.taskType).toBe("commits");
         expect(task.data).toEqual({
@@ -499,7 +511,7 @@ describe("RepoExplorerPage", () => {
         const ziggy = installFakeTaskZiggy();
         renderRepoExplorerPage("/repo");
         await clickCommitsLink();
-        await screen.findByText("Loading the commits.");
+        await findCommitsPlaceholder();
         completeTask(ziggy, {
             taskId: "",
             status: "succeeded",
@@ -532,7 +544,7 @@ describe("RepoExplorerPage", () => {
         const ziggy = installFakeTaskZiggy();
         renderRepoExplorerPage("/repo");
         await clickCommitsLink();
-        await screen.findByText("Loading the commits.");
+        await findCommitsPlaceholder();
         completeTask(ziggy, {
             taskId: "",
             status: "failed",
@@ -1017,7 +1029,7 @@ describe("RepoExplorerPage keys", () => {
         pressKey("Escape");
         expect(document.querySelector("[data-id=\"commit-pane\"]")).toBeNull();
         pressKey("Enter");
-        expect((await screen.findByText("Loading the commits.")).getAttribute("data-id")).toBe("commits-loading");
+        expect((await findCommitsPlaceholder())?.getAttribute("aria-hidden")).toBe("true");
         expect((ziggy.addTask as jest.Mock).mock.calls[1][0].taskType).toBe("commits");
         expect(activePaneIds()).toEqual(["commit-pane"]);
     });
@@ -1157,7 +1169,7 @@ function taskDataAt(ziggy: FakeTaskZiggy, index: number): IAddTask["data"] {
 async function listFirstPage(ziggy: FakeTaskZiggy): Promise<void> {
     renderRepoExplorerPage("/repo");
     await clickCommitsLink();
-    await screen.findByText("Loading the commits.");
+    await findCommitsPlaceholder();
     completeTaskAt(ziggy, 0, {
         commits: commitPageJson(0, 50),
     });
@@ -1169,10 +1181,10 @@ describe("RepoExplorerPage commit pages", () => {
         const ziggy = installFakeTaskZiggy();
         await listFirstPage(ziggy);
         expect(ziggy.addTask).toHaveBeenCalledTimes(1);
-        expect(screen.queryByText("Loading the commits.")).toBeNull();
+        expect(document.querySelector("[data-id=\"commits-placeholder\"]")).toBeNull();
     });
 
-    test("reads the next page, skipping the commits read, when the list scrolls near the end, with a loading row while it is read", async () => {
+    test("reads the next page, skipping the commits read, when the list scrolls near the end, with placeholder rows while it is read", async () => {
         const ziggy = installFakeTaskZiggy();
         await listFirstPage(ziggy);
         scrollCommitListToEnd();
@@ -1184,13 +1196,13 @@ describe("RepoExplorerPage commit pages", () => {
                 skipCount: 50,
             },
         });
-        expect(screen.getByText("Loading the commits.").getAttribute("data-id")).toBe("commits-loading");
+        expect(document.querySelector("[data-id=\"commits-placeholder\"]")).not.toBeNull();
         expect(screen.getByText("Commit 49")).toBeTruthy();
 
         completeTaskAt(ziggy, 1, {
             commits: commitPageJson(50, 50),
         });
-        expect(screen.queryByText("Loading the commits.")).toBeNull();
+        expect(document.querySelector("[data-id=\"commits-placeholder\"]")).toBeNull();
         scrollCommitListToEnd();
         expect(screen.getByText("Commit 99")).toBeTruthy();
         expect(taskDataAt(ziggy, 2)).toEqual({
@@ -1212,7 +1224,7 @@ describe("RepoExplorerPage commit pages", () => {
         scrollCommitListToEnd();
         expect(screen.getByText("Commit 52")).toBeTruthy();
         expect(ziggy.addTask).toHaveBeenCalledTimes(2);
-        expect(screen.queryByText("Loading the commits.")).toBeNull();
+        expect(document.querySelector("[data-id=\"commits-placeholder\"]")).toBeNull();
     });
 
     test("shows an error row under the commits read when a later page could not be read, and reads no more", async () => {
@@ -1243,15 +1255,15 @@ describe("RepoExplorerPage commit pages", () => {
         const ziggy = installFakeTaskZiggy();
         renderRepoExplorerPage("/repo");
         await clickCommitsLink();
-        await screen.findByText("Loading the commits.");
+        await findCommitsPlaceholder();
         pressKey("Escape");
         pressKey("Enter");
-        await screen.findByText("Loading the commits.");
+        await findCommitsPlaceholder();
         completeTaskAt(ziggy, 0, {
             commits: commitPageJson(100, 2),
         });
         expect(screen.queryByText("Commit 100")).toBeNull();
-        expect(screen.getByText("Loading the commits.")).toBeTruthy();
+        expect(document.querySelector("[data-id=\"commits-placeholder\"]")).not.toBeNull();
         completeTaskAt(ziggy, 1, {
             commits: commitPageJson(0, 2),
         });

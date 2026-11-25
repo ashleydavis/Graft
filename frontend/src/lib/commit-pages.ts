@@ -50,7 +50,7 @@ export const noCommitPages: ICommitPages = {
 
 //
 // Records that the commits task with the id is reading the next page, so the commit list shows its
-// loading row and no other page is read until this one ends.
+// placeholder rows and no other page is read until this one ends.
 //
 export function commitPagesReading(pages: ICommitPages, taskId: string): ICommitPages {
     return {

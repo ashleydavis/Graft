@@ -90,7 +90,7 @@ while true; do
     waited=$((waited + 1))
 done
 wait_for_text "commit-title-$first_hash" "Add the readme" 30
-wait_for_missing_element commits-loading 30
+wait_for_missing_element commits-placeholder 30
 wait_for_missing_element commits-error 5
 
 # The oldest commit only on the merged branch is listed, just above the test repo's own commits.

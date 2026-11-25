@@ -63,7 +63,7 @@ export function RepoExplorerPage(): JSX.Element {
 // commits, newest first, when the Commits link opens the commit pane, and reads them afresh each
 // time the pane opens. It reads the next page when the commit list scrolls near the last commit
 // read, one page at a time, until the page that ends at the repo's first commit. The commit pane
-// shows a loading row while a page is read and what went wrong when one could not be read. It owns
+// shows placeholder rows while a page is read and what went wrong when one could not be read. It owns
 // the repo explorer's state (lib/repo-explorer.ts): which pane is active, which link, commit and
 // file are selected and which are open, because each pane opens the next: a newly clicked commit
 // closes the file pane and closing a pane closes the panes to its right. Dates are shown in the

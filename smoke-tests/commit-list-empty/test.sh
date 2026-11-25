@@ -15,6 +15,6 @@ start_app_on_start_page
 open_repo_with_button "$repo"
 open_commit_pane
 wait_for_text commits-none "There are no commits." 30
-wait_for_missing_element commits-loading 5
+wait_for_missing_element commits-placeholder 5
 wait_for_missing_element commits-error 5
 wait_for_missing_element commits-end 5
