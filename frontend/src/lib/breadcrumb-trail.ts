@@ -1,7 +1,8 @@
 //
 // Works out the breadcrumb trail the top bar shows for each of Graft's pages: the steps from the
 // repo to the page being shown, which of them are drop-downs of their siblings and how each step's
-// text is shortened, with a step for each pane open in the repo explorer.
+// text is shortened, with a step for each pane open in the repo explorer, and how many steps
+// collapse into one when the trail has too little room.
 //
 
 import { COMMIT_LINK, COMMITS_LINK, IRepoExplorerState } from "./repo-explorer";
@@ -115,6 +116,55 @@ const STEP_LABEL_LENGTH_MAX = 18;
 // smoke tests find that step by this data-id.
 //
 export const PAGE_STEP_DATA_ID = "breadcrumb-page";
+
+//
+// The width of the collapsed step in pixels: the style guide's small icon button, a square of
+// --icon-md (14px) plus --space-3 (12px), as graft-theme.ts sizes it. The trail measures its steps
+// only while every step shows, before the collapsed step is drawn, so its width comes from the
+// tokens.
+//
+export const COLLAPSED_STEP_WIDTH_PX = 14 + 12;
+
+//
+// The widths of a trail drawn in full, which collapsedStepCount works out the collapsed steps
+// from.
+//
+export interface ITrailWidths {
+    // The width of each step in pixels, in the trail's order, with its text as the step shows it.
+    stepWidthsPx: number[];
+
+    // The room in pixels between two steps, which the chevron and its margins take.
+    separatorWidthPx: number;
+}
+
+//
+// Works out how many of the steps after the first the trail collapses into one step, so the
+// trail fits trailWidthPx on one line. It collapses none when the trail fits. Otherwise it
+// collapses the steps after the first one at a time, so the steps nearest the page being shown
+// stay longest, and stops at the first count that fits. The first and last steps never collapse,
+// so when even every step between them collapsed does not fit, it returns that count and the
+// steps left are cut short to fit.
+//
+export function collapsedStepCount(widths: ITrailWidths, trailWidthPx: number): number {
+    const stepCount = widths.stepWidthsPx.length;
+    let shownWidthPx = widths.separatorWidthPx * (stepCount - 1);
+    for (const stepWidthPx of widths.stepWidthsPx) {
+        shownWidthPx += stepWidthPx;
+    }
+    if (shownWidthPx <= trailWidthPx) {
+        return 0;
+    }
+    shownWidthPx += COLLAPSED_STEP_WIDTH_PX + widths.separatorWidthPx;
+    let collapsedCount = 0;
+    while (collapsedCount < stepCount - 2) {
+        shownWidthPx -= widths.stepWidthsPx[1 + collapsedCount] + widths.separatorWidthPx;
+        collapsedCount += 1;
+        if (shownWidthPx <= trailWidthPx) {
+            return collapsedCount;
+        }
+    }
+    return collapsedCount;
+}
 
 //
 // Works out the trail for the page at the path. While a repo is open every trail but the welcome

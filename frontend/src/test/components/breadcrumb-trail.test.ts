@@ -6,11 +6,16 @@
 // the page shown only closes the drop-down. It also renders the repo explorer page's trail from
 // pageTrail with a repo open and with none, and checks the repo step comes before the page only
 // while a repo is open, and with its panes open, and checks a step follows the page for each.
+// Last it lays the trail out at set widths, since jsdom lays nothing out, and checks the steps
+// between the first and last collapse into one step only as far as they must, that the collapsed
+// step's list shows them in order and closes on Escape, that only the trail with every middle step
+// collapsed lets its steps shrink and that the trail measures itself again when the window
+// changes size or its steps change.
 //
 
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
-import { BreadcrumbTrail } from "../../components/breadcrumb-trail";
+import { BreadcrumbTrail, collapsedStepsLabel } from "../../components/breadcrumb-trail";
 import { explorerPaneSteps, ITrailStep, pageTrail } from "../../lib/breadcrumb-trail";
 import { initialRepoExplorerState } from "../../lib/repo-explorer";
 
@@ -300,5 +305,219 @@ describe("BreadcrumbTrail with the trail of the repo explorer page", () => {
         renderTrail(pageTrail("/repo-explorer", undefined, []));
         expect(elementWithDataId("breadcrumb-trail")?.textContent).toBe("Repo explorer");
         expect(elementWithDataId("breadcrumb-repo")).toBeUndefined();
+    });
+});
+
+//
+// The trail of the repo explorer page with every pane open, which the layout tests lay out at
+// widths that need none, some or every middle step collapsed.
+//
+const fullTrail: ITrailStep[] = pageTrail("/repo-explorer", "/repos/graft", explorerPaneSteps({
+    ...initialRepoExplorerState,
+    openLink: "commits",
+    openHash: "0123456789abcdef0123456789abcdef01234567",
+    openPath: "src/notes.txt",
+}, undefined));
+
+//
+// The room in pixels between two laid out steps, which the chevron takes.
+//
+const SEPARATOR_WIDTH_PX = 20;
+
+//
+// Makes the bounds of an element at left that is width pixels wide.
+//
+function boundsAt(left: number, width: number): DOMRect {
+    return {
+        x: left,
+        y: 0,
+        width,
+        height: 24,
+        top: 0,
+        right: left + width,
+        bottom: 24,
+        left,
+        toJSON: () => ({}),
+    };
+}
+
+//
+// The width a laid out element takes: ten pixels a character for a step and SEPARATOR_WIDTH_PX for
+// a chevron, which has no text.
+//
+function laidOutWidth(element: Element): number {
+    if (element.classList.contains("MuiBreadcrumbs-separator")) {
+        return SEPARATOR_WIDTH_PX;
+    }
+    return 10 * (element.textContent ?? "").length;
+}
+
+//
+// Lays the trail out as a browser would at the trail width: the trail is trailWidthPx wide and
+// each step and chevron sits after the one before it. With the trail of fullTrail the steps are
+// 50, 130, 70, 70 and 90 pixels wide, 490 pixels in full with the chevrons.
+//
+function layOutTrail(trailWidthPx: number): void {
+    jest.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function laidOutBounds(this: HTMLElement): DOMRect {
+        if (this.getAttribute("data-id") === "breadcrumb-trail") {
+            return boundsAt(0, trailWidthPx);
+        }
+        if (this.classList.contains("MuiBreadcrumbs-li")) {
+            let left = 0;
+            let sibling = this.previousElementSibling;
+            while (sibling) {
+                left += laidOutWidth(sibling);
+                sibling = sibling.previousElementSibling;
+            }
+            return boundsAt(left, laidOutWidth(this));
+        }
+        return boundsAt(0, 0);
+    });
+}
+
+//
+// The data-ids of the steps the trail shows, in order, the collapsed step among them.
+//
+function shownStepIds(): string[] {
+    const shown = document.querySelectorAll("[data-id=\"breadcrumb-trail\"] .MuiBreadcrumbs-li > [data-id]");
+    return Array.from(shown).map(step => step.getAttribute("data-id") ?? "");
+}
+
+describe("BreadcrumbTrail laid out in the room it has", () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    test("shows every step, none allowed to shrink, when the trail fits", () => {
+        layOutTrail(490);
+        renderTrail(fullTrail);
+        expect(shownStepIds()).toEqual(["breadcrumb-repo", "breadcrumb-page", "breadcrumb-pane-commits", "breadcrumb-pane-commit", "breadcrumb-pane-file"]);
+        expect(elementWithDataId("breadcrumb-collapsed")).toBeUndefined();
+        const steps = document.querySelectorAll(".MuiBreadcrumbs-li");
+        expect(Array.from(steps).every(step => step.classList.contains("shrink-0"))).toBe(true);
+        expect(elementWithDataId("breadcrumb-trail")?.querySelector("ol")?.classList.contains("flex-nowrap")).toBe(true);
+    });
+
+    test("collapses only the step after the first when that is enough", () => {
+        layOutTrail(400);
+        renderTrail(fullTrail);
+        expect(shownStepIds()).toEqual(["breadcrumb-repo", "breadcrumb-collapsed", "breadcrumb-pane-commits", "breadcrumb-pane-commit", "breadcrumb-pane-file"]);
+        expect(elementWithDataId("breadcrumb-collapsed")?.getAttribute("aria-label")).toBe("Show 1 hidden step");
+        expect(elementWithDataId("breadcrumb-repo")?.parentElement?.classList.contains("shrink-0")).toBe(true);
+    });
+
+    test("collapses every step between the first and last when only that fits, and lets the steps left shrink", () => {
+        layOutTrail(250);
+        renderTrail(fullTrail);
+        expect(shownStepIds()).toEqual(["breadcrumb-repo", "breadcrumb-collapsed", "breadcrumb-pane-file"]);
+        expect(elementWithDataId("breadcrumb-collapsed")?.getAttribute("aria-label")).toBe("Show 3 hidden steps");
+        expect(elementWithDataId("breadcrumb-repo")?.parentElement?.classList.contains("min-w-0")).toBe(true);
+        expect(elementWithDataId("breadcrumb-pane-file")?.parentElement?.classList.contains("min-w-0")).toBe(true);
+        expect(elementWithDataId("breadcrumb-pane-file")?.classList.contains("truncate")).toBe(true);
+    });
+
+    test("clicking the collapsed step lists the hidden steps in order with their full text, and Escape closes the list", async () => {
+        layOutTrail(250);
+        renderTrail(fullTrail);
+        expect(elementWithDataId("breadcrumb-collapsed-menu")).toBeUndefined();
+        act(() => {
+            elementWithDataId("breadcrumb-collapsed")?.click();
+        });
+        const list = elementWithDataId("breadcrumb-collapsed-menu");
+        const entries = Array.from(list?.querySelectorAll("li") ?? []);
+        expect(entries.map(entry => entry.getAttribute("data-id"))).toEqual(["breadcrumb-page-collapsed", "breadcrumb-pane-commits-collapsed", "breadcrumb-pane-commit-collapsed"]);
+        expect(entries.map(entry => entry.textContent)).toEqual(["Repo explorer", "Commits", "0123456"]);
+        expect(elementWithDataId("breadcrumb-collapsed")?.getAttribute("aria-expanded")).toBe("true");
+        fireEvent.keyDown(entries[0], {
+            key: "Escape",
+        });
+        await waitFor(() => {
+            expect(elementWithDataId("breadcrumb-collapsed-menu")).toBeUndefined();
+        });
+    });
+
+    test("lists a step's full text, not its shortened text", () => {
+        layOutTrail(250);
+        renderTrail([
+            fullTrail[0],
+            {
+                label: "a-step-with-a-long-name",
+                tooltip: "a-step-with-a-long-name",
+                dataId: "breadcrumb-long",
+                options: [],
+            },
+            fullTrail[4],
+        ]);
+        act(() => {
+            elementWithDataId("breadcrumb-collapsed")?.click();
+        });
+        expect(elementWithDataId("breadcrumb-long-collapsed")?.textContent).toBe("a-step-with-a-long-name");
+    });
+
+    test("widening the window brings the collapsed steps back", () => {
+        layOutTrail(250);
+        renderTrail(fullTrail);
+        expect(elementWithDataId("breadcrumb-collapsed")).not.toBeUndefined();
+        jest.restoreAllMocks();
+        layOutTrail(490);
+        act(() => {
+            window.dispatchEvent(new Event("resize"));
+        });
+        expect(elementWithDataId("breadcrumb-collapsed")).toBeUndefined();
+        expect(shownStepIds()).toEqual(["breadcrumb-repo", "breadcrumb-page", "breadcrumb-pane-commits", "breadcrumb-pane-commit", "breadcrumb-pane-file"]);
+    });
+
+    test("narrowing the window collapses steps", () => {
+        layOutTrail(490);
+        renderTrail(fullTrail);
+        expect(elementWithDataId("breadcrumb-collapsed")).toBeUndefined();
+        jest.restoreAllMocks();
+        layOutTrail(300);
+        act(() => {
+            window.dispatchEvent(new Event("resize"));
+        });
+        expect(shownStepIds()).toEqual(["breadcrumb-repo", "breadcrumb-collapsed", "breadcrumb-pane-commit", "breadcrumb-pane-file"]);
+    });
+
+    test("measures itself again when its steps change", () => {
+        layOutTrail(250);
+        const onNavigate = jest.fn();
+        const { rerender } = render(createElement(BreadcrumbTrail, {
+            steps: fullTrail,
+            onNavigate,
+        }));
+        expect(elementWithDataId("breadcrumb-collapsed")).not.toBeUndefined();
+        rerender(createElement(BreadcrumbTrail, {
+            steps: fullTrail.slice(0, 2),
+            onNavigate,
+        }));
+        expect(elementWithDataId("breadcrumb-collapsed")).toBeUndefined();
+        expect(shownStepIds()).toEqual(["breadcrumb-repo", "breadcrumb-page"]);
+    });
+
+    test("stops measuring when the window changes size once it is gone", () => {
+        layOutTrail(490);
+        const { unmount } = render(createElement(BreadcrumbTrail, {
+            steps: fullTrail,
+            onNavigate: jest.fn(),
+        }));
+        const removeListener = jest.spyOn(window, "removeEventListener");
+        unmount();
+        expect(removeListener).toHaveBeenCalledWith("resize", expect.any(Function));
+    });
+
+    test("shows an empty trail for a page with no steps", () => {
+        renderTrail([]);
+        expect(elementWithDataId("breadcrumb-trail")?.textContent).toBe("");
+    });
+});
+
+describe("collapsedStepsLabel", () => {
+    test("names one hidden step in the singular", () => {
+        expect(collapsedStepsLabel(1)).toBe("Show 1 hidden step");
+    });
+
+    test("names several hidden steps in the plural", () => {
+        expect(collapsedStepsLabel(2)).toBe("Show 2 hidden steps");
     });
 });

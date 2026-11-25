@@ -2,11 +2,11 @@
 // Tests the breadcrumb trail's rules: works out the trail for each of Graft's pages and for any
 // other path, with the repo explorer's pane steps after its page step. Works out the pane steps for
 // each combination of open panes. Checks which steps are drop-downs, which option is ticked, how
-// the repo's name is read from its path, how long steps are cut short and how the search narrows
-// options.
+// the repo's name is read from its path, how long steps are cut short, how the search narrows
+// options and how many steps collapse for the room the trail has.
 //
 
-import { clipStepLabel, explorerPaneSteps, fileStep, ITrailOption, ITrailStep, pageTrail, repoName, searchMatches } from "../../lib/breadcrumb-trail";
+import { clipStepLabel, COLLAPSED_STEP_WIDTH_PX, collapsedStepCount, explorerPaneSteps, fileStep, ITrailOption, ITrailStep, ITrailWidths, pageTrail, repoName, searchMatches } from "../../lib/breadcrumb-trail";
 import { initialRepoExplorerState } from "../../lib/repo-explorer";
 
 //
@@ -313,5 +313,58 @@ describe("searchMatches", () => {
 
     test("matches no option when no name contains the text", () => {
         expect(searchMatches(options, "commits")).toEqual([]);
+    });
+});
+
+//
+// A trail of five steps, 50, 130, 70, 70 and 90 pixels wide, with 20 pixels between two steps:
+// 490 pixels in full.
+//
+const fiveStepWidths: ITrailWidths = {
+    stepWidthsPx: [50, 130, 70, 70, 90],
+    separatorWidthPx: 20,
+};
+
+describe("collapsedStepCount", () => {
+    test("collapses no step when the trail fits, exactly or with room to spare", () => {
+        expect(collapsedStepCount(fiveStepWidths, 490)).toBe(0);
+        expect(collapsedStepCount(fiveStepWidths, 1000)).toBe(0);
+    });
+
+    test("collapses only the step after the first when that is enough to fit", () => {
+        const oneCollapsedWidthPx = 490 - 130 - 20 + COLLAPSED_STEP_WIDTH_PX + 20;
+        expect(collapsedStepCount(fiveStepWidths, oneCollapsedWidthPx)).toBe(1);
+        expect(collapsedStepCount(fiveStepWidths, 489)).toBe(1);
+    });
+
+    test("collapses the steps after the first in order until the trail fits", () => {
+        const twoCollapsedWidthPx = 490 - 130 - 70 - 40 + COLLAPSED_STEP_WIDTH_PX + 20;
+        expect(collapsedStepCount(fiveStepWidths, twoCollapsedWidthPx)).toBe(2);
+        expect(collapsedStepCount(fiveStepWidths, twoCollapsedWidthPx + 1)).toBe(2);
+    });
+
+    test("collapses every step between the first and last when only that fits", () => {
+        const everyCollapsedWidthPx = 50 + 90 + 40 + COLLAPSED_STEP_WIDTH_PX;
+        expect(collapsedStepCount(fiveStepWidths, everyCollapsedWidthPx)).toBe(3);
+    });
+
+    test("collapses every step between the first and last, and never those two, when even that does not fit", () => {
+        expect(collapsedStepCount(fiveStepWidths, 10)).toBe(3);
+        expect(collapsedStepCount(fiveStepWidths, 0)).toBe(3);
+    });
+
+    test("collapses no step of a trail of two steps or fewer, which has no step between its first and last", () => {
+        expect(collapsedStepCount({
+            stepWidthsPx: [100, 100],
+            separatorWidthPx: 20,
+        }, 50)).toBe(0);
+        expect(collapsedStepCount({
+            stepWidthsPx: [100],
+            separatorWidthPx: 0,
+        }, 50)).toBe(0);
+        expect(collapsedStepCount({
+            stepWidthsPx: [],
+            separatorWidthPx: 0,
+        }, 0)).toBe(0);
     });
 });

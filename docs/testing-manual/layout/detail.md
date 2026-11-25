@@ -58,12 +58,21 @@ bun run macos
 32. Start Graft again. Check the left sidebar is minimised to its strip of icons and the right sidebar is open.
 33. Click the menu button to expand the left sidebar and click the right sidebar's button to close it. Close the window.
 34. Start Graft again. Check the left sidebar is expanded and the right sidebar is closed.
+35. Choose File, then "Open repo", and choose `/tmp/graft/test-repo`. On the repo explorer page click "Commits", then the commit "Change the note", then "notes.txt" in the commit details pane. Check the trail reads "test-repo", "Repo explorer", "Commits", the commit's short hash, "notes.txt", on one line.
+36. Press Ctrl+Plus, one press at a time, until the trail has too little room. Check "Repo explorer" is replaced by a "…" button after "test-repo", the trail stays on one line inside the top bar and "test-repo" and "notes.txt" still show. Hover over "…" and check its tooltip gives how many steps it hides, such as "Show 1 hidden step".
+37. Click "…". Check a list opens under it with the hidden steps in the trail's order, starting with "Repo explorer", each in full. Press Escape and check the list closes. Click "…" again, then click outside the list, and check it closes.
+38. Press Ctrl+Plus a few more times. Check "…" hides more steps, one at a time, until only "test-repo", "…" and "notes.txt" show, all on one line inside the top bar. Press Ctrl+Plus again until "test-repo" or "notes.txt" has less room than its text. Check its text is cut short with an ellipsis and hovering over it shows its full text.
+39. Press Ctrl+0. Check "…" goes and every step of the trail is back, on one line.
+40. Choose Dark from the theme menu and repeat steps 36 and 37. Check the trail, the "…" button and its list are drawn in dark colours. Press Ctrl+0 and choose System from the theme menu.
+41. Click "Help" in the left sidebar and press Ctrl+Plus until the window is as zoomed in as in step 38. Check the trail reads "test-repo" then the "Help" drop-down, on one line inside the top bar. Press Ctrl+0.
 
 ## Expected result
 
 Every page shows in the main content area, between the left sidebar and the right sidebar, under the top bar.
 
 The top bar's breadcrumb trail names the open repo and the page shown, with the page's step larger and bolder as its title. On the repo explorer page it has a step for each open pane after the page's step, up to the rightmost. On the Help and About pages its drop-down switches between them.
+
+The trail stays on one line inside the top bar at every window size. When it has too little room it keeps its first and last steps, collapses the steps after the first into a "…" button whose list shows them and cuts text short with an ellipsis when even that does not fit. Widening the window brings the collapsed steps back.
 
 The left sidebar's Welcome link opens the welcome page from every page. The menu button minimises and expands the left sidebar, and its links work in both states. The button at the far right of the top bar slides the right sidebar in and out.
 
