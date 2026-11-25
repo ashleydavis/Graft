@@ -341,6 +341,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                 <AnimatedPane openId={paneIds.changesPane}>
                     {isChangesOpen && (
                         <ChangesPane
+                            repoPath={repoPath}
                             changes={changes}
                             error={changesError}
                             stageError={stageError}

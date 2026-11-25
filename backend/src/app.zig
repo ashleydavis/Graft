@@ -9,6 +9,7 @@ const ziggy = @import("ziggy");
 const repo_explorer = @import("features/repo-explorer.zig");
 const changes = @import("features/changes.zig");
 const open_repo = @import("features/open-repo.zig");
+const open_file = @import("features/open-file.zig");
 const zoom = @import("features/zoom.zig");
 const actions = @import("lib/actions.zig");
 const menu = @import("lib/menu.zig");
@@ -30,6 +31,7 @@ pub const app = ziggy.core.App(.{
         repo_explorer.tasks,
         changes.tasks,
         open_repo.tasks,
+        open_file.tasks,
     }),
     .menu = menu.menu,
     .actions = actions.actions,

@@ -56,5 +56,5 @@ export function WorkingFilePane({ repoPath, file, isStaged, isActive, onClose }:
         });
     }, [repoPath, file.path, file.status, isStaged]);
 
-    return <FileDiffCard path={file.path} diff={diff} error={error} isActive={isActive} onClose={onClose} />;
+    return <FileDiffCard repoPath={repoPath} path={file.path} diff={diff} error={error} isActive={isActive} onClose={onClose} />;
 }

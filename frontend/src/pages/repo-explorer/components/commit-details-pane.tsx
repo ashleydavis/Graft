@@ -14,6 +14,7 @@ import { activePaneClass } from "./active-pane-style";
 import { openRowClass } from "./commit-list";
 import { FileIcon } from "./file-icon";
 import { FilePath } from "./file-path";
+import { FilePathMenu, filePathMenuRowStyle } from "./file-path-menu";
 import { CloseButton, PaneHeader } from "./pane-header";
 
 //
@@ -93,7 +94,7 @@ export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isAc
         <section data-id="commit-details-pane" aria-label="Commit details" className={`flex w-[450px] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
             <PaneHeader title={title} titleDataId="commit-details-heading" action={<CloseButton paneLabel="Commit details" dataId="commit-details-close" onClose={onClose} />} />
             <div data-id={SCROLL_AREA_DATA_ID} className="min-h-0 flex-1 overflow-auto">
-                <CommitDetailsContent details={details} error={error} selectedPath={selectedPath} openPath={openPath} onSelectFile={onSelectFile} />
+                <CommitDetailsContent repoPath={repoPath} details={details} error={error} selectedPath={selectedPath} openPath={openPath} onSelectFile={onSelectFile} />
             </div>
         </section>
     );
@@ -103,6 +104,9 @@ export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isAc
 // What the content of the commit details pane shows.
 //
 export interface ICommitDetailsContentProps {
+    // The path of the repo the commit is in, for the file path menus of its changed files.
+    repoPath: string;
+
     // The commit and its changed files, or undefined until they are read.
     details: ICommitDetails | undefined;
 
@@ -127,7 +131,7 @@ export interface ICommitDetailsContentProps {
 // the commit changed under a "Files changed" heading, as the style guide's commit details pane
 // does, or shows that the commit is loading or why it could not be read.
 //
-export function CommitDetailsContent({ details, error, selectedPath, openPath, onSelectFile }: ICommitDetailsContentProps): JSX.Element {
+export function CommitDetailsContent({ repoPath, details, error, selectedPath, openPath, onSelectFile }: ICommitDetailsContentProps): JSX.Element {
     if (error !== undefined) {
         return <p data-id="commit-details-error" className="m-3 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[var(--color-text)]">{error}</p>;
     }
@@ -147,7 +151,7 @@ export function CommitDetailsContent({ details, error, selectedPath, openPath, o
             )}
             <List data-id="changed-files" disablePadding={true} className="px-1 pb-2">
                 {details.changedFiles.map(file => (
-                    <ChangedFileRow key={file.path} file={file} isSelected={file.path === selectedPath} isOpen={file.path === openPath} onSelectFile={onSelectFile} />
+                    <ChangedFileRow key={file.path} repoPath={repoPath} file={file} isSelected={file.path === selectedPath} isOpen={file.path === openPath} onSelectFile={onSelectFile} />
                 ))}
             </List>
         </div>
@@ -304,6 +308,9 @@ export function FileTip({ file }: IFileTipProps): JSX.Element {
 // What one row of the changed files shows and what it reports.
 //
 export interface IChangedFileRowProps {
+    // The path of the repo the file is in, for the file path menu.
+    repoPath: string;
+
     // The changed file.
     file: IChangedFile;
 
@@ -318,13 +325,13 @@ export interface IChangedFileRowProps {
 }
 
 //
-// Shows one changed file as the style guide's file rows do: its icon and its path, with its change
-// type and line counts in the tooltip on the path. The row is a MaterialUI ListItemButton, so a
-// selected file shows the selected background. When the row becomes selected it scrolls itself
-// into view, so the highlighted file stays visible as Up and Down move through a list longer than
-// the pane.
+// Shows one changed file as the style guide's file rows do: its icon, its path and its file path
+// menu, with its change type and line counts in the tooltip on the path. The row is a MaterialUI
+// ListItemButton, so a selected file shows the selected background. When the row becomes selected
+// it scrolls itself into view, so the highlighted file stays visible as Up and Down move through a
+// list longer than the pane.
 //
-export function ChangedFileRow({ file, isSelected, isOpen, onSelectFile }: IChangedFileRowProps): JSX.Element {
+export function ChangedFileRow({ repoPath, file, isSelected, isOpen, onSelectFile }: IChangedFileRowProps): JSX.Element {
     const rowRef = useRef<HTMLLIElement>(null);
 
     useEffect(() => {
@@ -343,6 +350,7 @@ export function ChangedFileRow({ file, isSelected, isOpen, onSelectFile }: IChan
             aria-current={isOpen ? "true" : undefined}
             onClick={() => onSelectFile(file.path)}
             className={`flex items-center gap-2 px-2 text-[length:var(--text-sm)] ${openRowClass(isOpen)}`}
+            sx={filePathMenuRowStyle}
         >
             <FileIcon path={file.path} />
             <Tooltip title={<FileTip file={file} />} enterDelay={500}>
@@ -350,6 +358,7 @@ export function ChangedFileRow({ file, isSelected, isOpen, onSelectFile }: IChan
                     <FilePath path={file.path} />
                 </span>
             </Tooltip>
+            <FilePathMenu repoPath={repoPath} path={file.path} dataId={`changed-file-menu-${file.path}`} />
         </ListItemButton>
     );
 }

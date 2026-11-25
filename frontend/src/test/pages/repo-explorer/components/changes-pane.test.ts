@@ -70,6 +70,7 @@ interface IRenderOptions {
 //
 function renderPane(options: IRenderOptions): void {
     render(createElement(ChangesPane, {
+        repoPath: "/repo",
         changes: options.changes,
         error: options.error,
         stageError: options.stageError,

@@ -16,12 +16,16 @@ import { activePaneClass } from "./active-pane-style";
 import { openRowClass } from "./commit-list";
 import { FileIcon } from "./file-icon";
 import { FilePath } from "./file-path";
+import { FilePathMenu, filePathMenuRowStyle } from "./file-path-menu";
 import { PaneHeader } from "./pane-header";
 
 //
 // What the changes pane shows and what it reports.
 //
 export interface IChangesPaneProps {
+    // The path of the repo the changes are in, for the file path menus of its files.
+    repoPath: string;
+
     // The working tree's changes, or undefined until they are read.
     changes: IWorkingChanges | undefined;
 
@@ -71,7 +75,7 @@ export interface IChangesPaneProps {
 // as it opens and closes. The commit section sits at the bottom of the card, under the lists, as
 // the style guide's Commit pane sits under its Changes pane.
 //
-export function ChangesPane({ changes, error, stageError, selectedKey, openKey, isActive, onSelectChange, onToggleStaged, commitMessage, commitError, isCommitting, onCommitMessageChange, onCommit }: IChangesPaneProps): JSX.Element {
+export function ChangesPane({ repoPath, changes, error, stageError, selectedKey, openKey, isActive, onSelectChange, onToggleStaged, commitMessage, commitError, isCommitting, onCommitMessageChange, onCommit }: IChangesPaneProps): JSX.Element {
     let stagedCount = 0;
     if (changes) {
         stagedCount = changes.staged.length;
@@ -89,7 +93,7 @@ export function ChangesPane({ changes, error, stageError, selectedKey, openKey, 
                 <p data-id="changes-stage-error" className="m-2 mb-0 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[length:var(--text-sm)] text-[var(--color-text)]">{stageError}</p>
             )}
             <div className="flex min-h-0 flex-1 flex-col">
-                <ChangesContent changes={changes} error={error} selectedKey={selectedKey} openKey={openKey} onSelectChange={onSelectChange} onToggleStaged={onToggleStaged} />
+                <ChangesContent repoPath={repoPath} changes={changes} error={error} selectedKey={selectedKey} openKey={openKey} onSelectChange={onSelectChange} onToggleStaged={onToggleStaged} />
             </div>
             <CommitSection message={commitMessage} stagedCount={stagedCount} error={commitError} isCommitting={isCommitting} onMessageChange={onCommitMessageChange} onCommit={onCommit} />
         </section>
@@ -119,6 +123,9 @@ export function changesSummary(changes: IWorkingChanges | undefined): string {
 // What the content of the changes pane shows and what it reports.
 //
 export interface IChangesContentProps {
+    // The path of the repo the changes are in, for the file path menus of its files.
+    repoPath: string;
+
     // The working tree's changes, or undefined until they are read.
     changes: IWorkingChanges | undefined;
 
@@ -143,7 +150,7 @@ export interface IChangesContentProps {
 // changes are loading, why they could not be read or that the working tree has no changes, as the
 // style guide's Commit page does.
 //
-export function ChangesContent({ changes, error, selectedKey, openKey, onSelectChange, onToggleStaged }: IChangesContentProps): JSX.Element {
+export function ChangesContent({ repoPath, changes, error, selectedKey, openKey, onSelectChange, onToggleStaged }: IChangesContentProps): JSX.Element {
     if (error !== undefined) {
         return <p data-id="changes-error" className="m-3 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[var(--color-text)]">{error}</p>;
     }
@@ -160,8 +167,8 @@ export function ChangesContent({ changes, error, selectedKey, openKey, onSelectC
     }
     return (
         <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
-            <ChangeList title="Unstaged" files={changes.unstaged} isStaged={false} emptyText="Everything is staged." selectedKey={selectedKey} openKey={openKey} onSelectChange={onSelectChange} onToggleStaged={onToggleStaged} />
-            <ChangeList title="Staged" files={changes.staged} isStaged={true} emptyText="Nothing staged yet." selectedKey={selectedKey} openKey={openKey} onSelectChange={onSelectChange} onToggleStaged={onToggleStaged} />
+            <ChangeList repoPath={repoPath} title="Unstaged" files={changes.unstaged} isStaged={false} emptyText="Everything is staged." selectedKey={selectedKey} openKey={openKey} onSelectChange={onSelectChange} onToggleStaged={onToggleStaged} />
+            <ChangeList repoPath={repoPath} title="Staged" files={changes.staged} isStaged={true} emptyText="Nothing staged yet." selectedKey={selectedKey} openKey={openKey} onSelectChange={onSelectChange} onToggleStaged={onToggleStaged} />
         </div>
     );
 }
@@ -170,6 +177,9 @@ export function ChangesContent({ changes, error, selectedKey, openKey, onSelectC
 // What one of the two lists shows and what it reports.
 //
 export interface IChangeListProps {
+    // The path of the repo the files are in, for their file path menus.
+    repoPath: string;
+
     // The list's heading, "Unstaged" or "Staged".
     title: string;
 
@@ -200,7 +210,7 @@ export interface IChangeListProps {
 // then its rows, scrolling on its own when they do not fit, or what it shows when it is empty, as
 // the style guide's Staged and Unstaged panels are drawn.
 //
-export function ChangeList({ title, files, isStaged, emptyText, selectedKey, openKey, onSelectChange, onToggleStaged }: IChangeListProps): JSX.Element {
+export function ChangeList({ repoPath, title, files, isStaged, emptyText, selectedKey, openKey, onSelectChange, onToggleStaged }: IChangeListProps): JSX.Element {
     const listId = title.toLowerCase();
     return (
         <section data-id={`changes-${listId}`} aria-label={`${title} files`} className="flex min-h-[120px] flex-1 flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)]">
@@ -217,7 +227,7 @@ export function ChangeList({ title, files, isStaged, emptyText, selectedKey, ope
                     <List data-id={`changes-${listId}-list`} aria-label={`${title} files`} disablePadding={true} className="p-1">
                         {files.map(file => {
                             const key = changeKey(isStaged, file.path);
-                            return <ChangeRow key={key} file={file} isStaged={isStaged} isSelected={key === selectedKey} isOpen={key === openKey} onSelect={() => onSelectChange(key)} onToggleStaged={onToggleStaged} />;
+                            return <ChangeRow key={key} repoPath={repoPath} file={file} isStaged={isStaged} isSelected={key === selectedKey} isOpen={key === openKey} onSelect={() => onSelectChange(key)} onToggleStaged={onToggleStaged} />;
                         })}
                     </List>
                 )}
@@ -230,6 +240,9 @@ export function ChangeList({ title, files, isStaged, emptyText, selectedKey, ope
 // What one row of a list shows and what it reports.
 //
 export interface IChangeRowProps {
+    // The path of the repo the file is in, for its file path menu.
+    repoPath: string;
+
     // The changed file.
     file: IWorkingFile;
 
@@ -251,11 +264,11 @@ export interface IChangeRowProps {
 
 //
 // Shows one changed file as the style guide's file rows do: the stage or unstage button at its
-// left, then the file's icon and its path. The row is a MaterialUI ListItemButton, so a selected
-// file shows the selected background. Its data-id holds the list and the path, because a file
-// with staged and unstaged changes has a row in each list.
+// left, then the file's icon, its path and its file path menu. The row is a MaterialUI
+// ListItemButton, so a selected file shows the selected background. Its data-id holds the list and
+// the path, because a file with staged and unstaged changes has a row in each list.
 //
-export function ChangeRow({ file, isStaged, isSelected, isOpen, onSelect, onToggleStaged }: IChangeRowProps): JSX.Element {
+export function ChangeRow({ repoPath, file, isStaged, isSelected, isOpen, onSelect, onToggleStaged }: IChangeRowProps): JSX.Element {
     let listName = "unstaged";
     if (isStaged) {
         listName = "staged";
@@ -273,12 +286,14 @@ export function ChangeRow({ file, isStaged, isSelected, isOpen, onSelect, onTogg
             aria-current={current}
             onClick={onSelect}
             className={`flex items-center gap-2 px-2 text-[length:var(--text-sm)] ${openRowClass(isOpen)}`}
+            sx={filePathMenuRowStyle}
         >
             <StageButton path={file.path} isStaged={isStaged} onClick={() => onToggleStaged(file, isStaged)} />
             <FileIcon path={file.path} />
             <span className="min-w-0 flex-1 truncate">
                 <FilePath path={file.path} />
             </span>
+            <FilePathMenu repoPath={repoPath} path={file.path} dataId={`change-${listName}-menu-${file.path}`} />
         </ListItemButton>
     );
 }
