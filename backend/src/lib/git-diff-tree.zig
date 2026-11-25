@@ -104,8 +104,9 @@ pub const FileDiffRequest = struct {
 // with `--numstat` for its line counts, because git writes only one of the two when given both.
 // git lists no files for a merge commit, as `git log` shows none. The list and its strings are
 // allocated with the allocator, so the caller passes an arena. When git fails, what it wrote goes
-// to the task's log and the function returns error.GitDiffTreeFailed. The help panel shows the
-// command without `-z`, so git lists one file to a line.
+// to the task's log and the function returns error.GitDiffTreeFailed. The hash is followed by
+// `--`, so git reads it as a commit even when a file in the repo has the hash as its name. The help
+// panel shows the command without `-z`, so git lists one file to a line.
 //
 pub fn read_changed_files(
     io: std.Io,
@@ -134,6 +135,7 @@ pub fn read_changed_files(
             "--no-commit-id",
             "--name-status",
             request.hash,
+            "--",
         },
     });
     const files = parse_name_status_output(allocator, name_status) catch |err| {
@@ -152,6 +154,7 @@ pub fn read_changed_files(
             "--no-commit-id",
             "--numstat",
             request.hash,
+            "--",
         },
     });
     parse_numstat_output(files, numstat) catch |err| {
@@ -227,9 +230,10 @@ pub fn read_file_diff(
     assert(request.path.len > 0);
 
     //
-    // The path follows `--`, so git reads it as a path even when it starts with a dash, and it
-    // starts with `:(literal)`, so git reads `*`, `?` and `[` in it as those characters and the
-    // path matches that one file alone.
+    // The `--` after the hash makes git read the hash as a commit even when a file has the hash as
+    // its name, and the path after it as a path even when it starts with a dash. The path starts
+    // with `:(literal)`, so git reads `*`, `?` and `[` in it as those characters and the path
+    // matches that one file alone.
     //
     const literal_path = try std.mem.concat(allocator, u8, &.{
         git_interface.literal_path_prefix,

@@ -11,7 +11,9 @@
 // builds give output its parser reads when the repo has `log.showSignature` set and a signed
 // commit. It checks git reads a hash the `log` wrapper puts before `--` as a commit when a file
 // has the same name, that a branch with the same name as a short hash still wins over the commit
-// and that a full hash is read as a commit even when a branch has its name.
+// and that a full hash is read as a commit even when a branch has its name. It checks git reads a
+// hash the `diff-tree` wrapper puts before `--` as a commit when a file has the hash as its name,
+// and that without the `--` git refuses the hash as ambiguous.
 //
 
 const std = @import("std");
@@ -1307,4 +1309,201 @@ test "the log wrapper's commands read a signed commit when log.showSignature is 
         }),
         "A signed commit",
     );
+}
+
+//
+// The length of a full SHA-1 commit hash in hexadecimal, as `git rev-parse HEAD` writes it, which
+// the `git diff-tree` tests below read and name a file after.
+//
+const diff_tree_hash_length = std.crypto.hash.Sha1.digest_length * 2;
+
+comptime {
+    std.debug.assert(diff_tree_hash_length == 40);
+}
+
+//
+// Writes the text to the file with the name in the test repo's working tree, so a test can commit
+// it or leave it untracked beside the commits.
+//
+fn write_repo_file(directory: *const TestDirectory, name: []const u8, data: []const u8) !void {
+    std.debug.assert(name.len > 0);
+
+    var path_buffer: [128]u8 = undefined;
+    const path = try std.fmt.bufPrint(&path_buffer, "{s}/{s}", .{
+        directory.path(),
+        name,
+    });
+    std.debug.assert(path.len > directory.path().len);
+    try std.Io.Dir.cwd().writeFile(io, .{
+        .sub_path = path,
+        .data = data,
+        .flags = .{},
+    });
+}
+
+//
+// Makes a test repo whose one commit adds notes.txt with one line, and an untracked empty file
+// named after that commit's full hash, and reads the hash into `hash`, so the `git diff-tree` tests
+// read a commit whose hash is also a file's name.
+//
+fn make_repo_with_hash_named_file(
+    directory: *const TestDirectory,
+    hash: *[diff_tree_hash_length]u8,
+) !void {
+    try init_repo(directory);
+    try write_repo_file(directory, "notes.txt", "The first note.\n");
+    try run_git_successfully(&.{
+        "-C",
+        directory.path(),
+        "add",
+        "--",
+        "notes.txt",
+    });
+    try commit(directory, "Add the notes");
+
+    const result = try git_interface.start_git(io, std.testing.allocator, &.{
+        "-C",
+        directory.path(),
+        "rev-parse",
+        "HEAD",
+    });
+    defer std.testing.allocator.free(result.stdout);
+    defer std.testing.allocator.free(result.stderr);
+
+    try std.testing.expectEqual(@as(?u8, 0), result.exit_code);
+    try std.testing.expectEqual(@as(usize, diff_tree_hash_length + 1), result.stdout.len);
+    @memcpy(hash, result.stdout[0..diff_tree_hash_length]);
+    try write_repo_file(directory, hash, "");
+}
+
+//
+// The arguments of a `git diff-tree` for a commit's changed files in a test. An options struct,
+// because the list argument and the hash are both strings a call could swap.
+//
+const ChangedFilesDiffTreeOptions = struct {
+    //
+    // `--name-status` or `--numstat`, the list the `diff-tree` wrapper asks git for.
+    //
+    list_arg: []const u8,
+
+    //
+    // The commit's full hash, which is also the name of a file in the test repo.
+    //
+    hash: []const u8,
+
+    //
+    // Whether `--` follows the hash, as the `diff-tree` wrapper puts it, so a test can show git
+    // refusing the hash without it.
+    //
+    ends_with_separator: bool,
+};
+
+//
+// Runs `git diff-tree` in the test repo with the arguments the `diff-tree` wrapper builds for a
+// commit's changed files, with the list argument, the hash and the `--` the options give, and
+// returns git's result. The caller frees its output.
+//
+fn run_changed_files_diff_tree(
+    directory: *const TestDirectory,
+    options: ChangedFilesDiffTreeOptions,
+) !git_interface.GitResult {
+    std.debug.assert(options.list_arg.len > 0);
+    std.debug.assert(options.hash.len == diff_tree_hash_length);
+
+    const args = [_][]const u8{
+        "-C",
+        directory.path(),
+        "diff-tree",
+        "-r",
+        "-z",
+        "--root",
+        "--no-commit-id",
+        options.list_arg,
+        options.hash,
+        "--",
+    };
+    if (options.ends_with_separator) {
+        return git_interface.start_git(io, std.testing.allocator, &args);
+    } else {
+        return git_interface.start_git(io, std.testing.allocator, args[0 .. args.len - 1]);
+    }
+}
+
+test "git diff-tree with -- after a hash lists its changed files when a file has its name" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    var hash: [diff_tree_hash_length]u8 = undefined;
+    try make_repo_with_hash_named_file(&directory, &hash);
+
+    const name_status = try run_changed_files_diff_tree(&directory, .{
+        .list_arg = "--name-status",
+        .hash = &hash,
+        .ends_with_separator = true,
+    });
+    defer std.testing.allocator.free(name_status.stdout);
+    defer std.testing.allocator.free(name_status.stderr);
+
+    try std.testing.expectEqual(@as(?u8, 0), name_status.exit_code);
+    try std.testing.expectEqualStrings("A\x00notes.txt\x00", name_status.stdout);
+
+    const numstat = try run_changed_files_diff_tree(&directory, .{
+        .list_arg = "--numstat",
+        .hash = &hash,
+        .ends_with_separator = true,
+    });
+    defer std.testing.allocator.free(numstat.stdout);
+    defer std.testing.allocator.free(numstat.stderr);
+
+    try std.testing.expectEqual(@as(?u8, 0), numstat.exit_code);
+    try std.testing.expectEqualStrings("1\t0\tnotes.txt\x00", numstat.stdout);
+}
+
+test "git diff-tree without -- after the hash fails when a file has the hash's name" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    var hash: [diff_tree_hash_length]u8 = undefined;
+    try make_repo_with_hash_named_file(&directory, &hash);
+
+    const result = try run_changed_files_diff_tree(&directory, .{
+        .list_arg = "--name-status",
+        .hash = &hash,
+        .ends_with_separator = false,
+    });
+    defer std.testing.allocator.free(result.stdout);
+    defer std.testing.allocator.free(result.stderr);
+
+    try std.testing.expectEqual(@as(?u8, 128), result.exit_code);
+    try std.testing.expectEqualStrings("", result.stdout);
+    try std.testing.expect(std.mem.indexOf(u8, result.stderr, "ambiguous argument") != null);
+}
+
+test "git diff-tree with -- after a hash reads a file's diff when a file has the hash's name" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    var hash: [diff_tree_hash_length]u8 = undefined;
+    try make_repo_with_hash_named_file(&directory, &hash);
+
+    const result = try git_interface.start_git(io, std.testing.allocator, &.{
+        "-C",
+        directory.path(),
+        "diff-tree",
+        "-r",
+        "-p",
+        "--root",
+        "--no-commit-id",
+        &hash,
+        "--",
+        "notes.txt",
+    });
+    defer std.testing.allocator.free(result.stdout);
+    defer std.testing.allocator.free(result.stderr);
+
+    try std.testing.expectEqual(@as(?u8, 0), result.exit_code);
+    try std.testing.expect(std.mem.indexOf(u8, result.stdout, "+The first note.\n") != null);
 }

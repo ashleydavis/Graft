@@ -30,6 +30,7 @@ const changed_files_args: []const []const u8 = &.{
     "--no-commit-id",
     "--name-status",
     commit_hash,
+    "--",
 };
 
 //
@@ -42,6 +43,7 @@ const changed_files_shown_args: []const []const u8 = &.{
     "--no-commit-id",
     "--name-status",
     commit_hash,
+    "--",
 };
 
 //
@@ -58,6 +60,7 @@ const numstat_args: []const []const u8 = &.{
     "--no-commit-id",
     "--numstat",
     commit_hash,
+    "--",
 };
 
 //
@@ -70,6 +73,7 @@ const numstat_shown_args: []const []const u8 = &.{
     "--no-commit-id",
     "--numstat",
     commit_hash,
+    "--",
 };
 
 //

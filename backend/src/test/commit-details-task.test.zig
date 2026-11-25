@@ -68,6 +68,7 @@ const diff_tree_args: []const []const u8 = &.{
     "--no-commit-id",
     "--name-status",
     commit_hash,
+    "--",
 };
 
 //
@@ -80,6 +81,7 @@ const diff_tree_shown_args: []const []const u8 = &.{
     "--no-commit-id",
     "--name-status",
     commit_hash,
+    "--",
 };
 
 //
@@ -97,6 +99,7 @@ const numstat_call: git_mock.MockGitOptions = .{
         "--no-commit-id",
         "--numstat",
         commit_hash,
+        "--",
     },
     .expected_shown_args = &.{
         "diff-tree",
@@ -105,6 +108,7 @@ const numstat_call: git_mock.MockGitOptions = .{
         "--no-commit-id",
         "--numstat",
         commit_hash,
+        "--",
     },
     .exit_code = 0,
     .stdout = "1\t0\tREADME.md\x00",

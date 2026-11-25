@@ -109,20 +109,20 @@ run_shown_commands
 wait_for_element "commit-$head_hash" 30
 click "commit-$head_hash"
 wait_for_element commit-details 30
-wait_for_text git-command-0-text "git diff-tree -r --root --no-commit-id --numstat $head_hash" 30
-wait_for_text git-command-1-text "git diff-tree -r --root --no-commit-id --name-status $head_hash" 30
+wait_for_text git-command-0-text "git diff-tree -r --root --no-commit-id --numstat $head_hash --" 30
+wait_for_text git-command-1-text "git diff-tree -r --root --no-commit-id --name-status $head_hash --" 30
 wait_for_missing_element git-command-2 30
 
 click changed-file-notes.txt
 wait_for_element file-diff 30
 wait_for_text git-command-0-text "git diff-tree -r -p --root --no-commit-id $head_hash -- notes.txt" 30
-wait_for_text git-command-1-text "git diff-tree -r --root --no-commit-id --numstat $head_hash" 30
+wait_for_text git-command-1-text "git diff-tree -r --root --no-commit-id --numstat $head_hash --" 30
 wait_for_missing_element git-command-2 30
 
 click commit-details-close
 wait_for_missing_element commit-details-pane 30
 wait_for_text git-command-0-text "git diff-tree -r -p --root --no-commit-id $head_hash -- notes.txt" 30
-wait_for_text git-command-1-text "git diff-tree -r --root --no-commit-id --numstat $head_hash" 30
+wait_for_text git-command-1-text "git diff-tree -r --root --no-commit-id --numstat $head_hash --" 30
 wait_for_missing_element git-command-2 30
 check_durations
 

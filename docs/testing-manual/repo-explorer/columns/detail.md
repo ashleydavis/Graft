@@ -77,7 +77,14 @@ bun run macos
 15. Choose Dark from the theme menu in the top bar and repeat steps 3 to 8. Check every column is drawn in dark colours and its text is readable.
 16. Choose File, then "Open repo", and choose `/tmp/graft/merge-repo`. Click the "Commits" link and scroll the commit list to its end. Check every "Side" and "Main" commit from 30 down to 1 is listed once, the two taking turns, the list ends with "Add the readme" and no loading row is left under it. Open the right sidebar and check the most recent command is `git log --no-show-signature --max-count=50 --skip=50 <hash> --`, where the hash is the one of "Merge side", the first commit listed. Close the sidebar.
 17. Close the window. Turn on reduced motion in the system's settings (Reduce Animation in GNOME's Accessibility settings, Animation effects off in Windows' Accessibility settings, Reduce motion in macOS's Accessibility Display settings), run Graft again and open the test repo. Open the commit list, a commit and a file, then close them with their X buttons. Check each column appears and goes at once. Turn reduced motion off again and close the window.
-18. Add a commit with two files whose names git could read as a pattern:
+18. Add an empty file to the test repo named after the full hash of "Change the note":
+
+    ```bash
+    touch "/tmp/graft/test-repo/$(git -C /tmp/graft/test-repo rev-parse HEAD)"
+    ```
+
+    Run Graft again, open the test repo and click its "Commits" link. Click "Change the note" and check the third column shows its title, description and facts as in step 5 and notes.txt under "Files changed (1)", with no error. Click notes.txt and check the fourth column shows its diff as in step 8. Close the window and delete the file.
+19. Add a commit with two files whose names git could read as a pattern:
 
     ```bash
     printf 'The bracket file.\n' > '/tmp/graft/test-repo/foo[1].txt'
@@ -96,8 +103,8 @@ bun run macos
     ```
 
     Run Graft again, open `/tmp/graft/test-repo` and the commit list, click "Add the two files" and check "Files changed (2)" lists foo1.txt and foo[1].txt. Click foo[1].txt and check the fourth column shows only the green row "The bracket file.", with no row "The plain file.".
-19. From the repo root, run `bash smoke-tests/run-desktop.sh refused-task-data`, which sends the commits, commit details and file diff tasks an empty repo path, data outside what the window sends. Check it ends with `PASSED: refused-task-data`, so each task failed with "The repo path is empty. Give the path of the repo to read." and Graft kept running.
-20. Close the window. Add an empty file to the test repo named after the short hash of "Change the note":
+20. From the repo root, run `bash smoke-tests/run-desktop.sh refused-task-data`, which sends the commits, commit details and file diff tasks an empty repo path, data outside what the window sends. Check it ends with `PASSED: refused-task-data`, so each task failed with "The repo path is empty. Give the path of the repo to read." and Graft kept running.
+21. Close the window. Add an empty file to the test repo named after the short hash of "Change the note":
 
     ```bash
     touch "/tmp/graft/test-repo/$(git -C /tmp/graft/test-repo rev-parse --short HEAD~1)"
@@ -107,4 +114,4 @@ bun run macos
 
 ## Expected result
 
-Each commit row shows its title, refs, author, date and short hash, the title never hidden by badges, and a commit with more badges than fit shows a "…" whose drop-down lists them all. Clicking a commit opens its full message, author, committer, dates, parents and changed files with their line counts to the right of the commit list, clicking a changed file opens its diff to the right of that, the commit list reads each page after the first from the first commit listed so a merge's commits from both sides are each listed once, the page scrolls each new column into view and each new column closes with its X button, in the light and dark themes. Each column fades in as it opens and fades and narrows away as it closes while the keys and clicks keep working, and opens and closes at once under reduced motion. A file whose name has `[` in it shows its own diff alone. The backend refuses an empty repo path with an error and keeps running. A commit's details show even when a file is named after the commit's short hash.
+Each commit row shows its title, refs, author, date and short hash, the title never hidden by badges, and a commit with more badges than fit shows a "…" whose drop-down lists them all. Clicking a commit opens its full message, author, committer, dates, parents and changed files with their line counts to the right of the commit list, clicking a changed file opens its diff to the right of that, the commit list reads each page after the first from the first commit listed so a merge's commits from both sides are each listed once, the page scrolls each new column into view and each new column closes with its X button, in the light and dark themes. Each column fades in as it opens and fades and narrows away as it closes while the keys and clicks keep working, and opens and closes at once under reduced motion. A file whose name has `[` in it shows its own diff alone. The backend refuses an empty repo path with an error and keeps running. A commit's details show even when a file is named after the commit's short hash. A commit's details, changed files and diffs show even when a file is named after the commit's full hash.
