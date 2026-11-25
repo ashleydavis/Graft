@@ -225,6 +225,18 @@ click() {
 }
 
 #
+# Gives the element with the data-id the keyboard focus, so the keys a test presses next go to it,
+# as when a user clicks into a text box. Usage: focus_element <data-id>
+#
+focus_element() {
+    local answer
+    answer="$(control "{\"command\":\"focus\",\"dataId\":\"$1\"}")"
+    if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
+        fail "focus $1 failed: $answer"
+    fi
+}
+
+#
 # Opens a page with its link in the left sidebar, as a user does, and waits until the page shows,
 # so a change to the sidebar's links is one edit here. <page> is the page's name as it appears in
 # the link's data-id, left-sidebar-<page>-link, and in the page's own data-id, <page>-page.

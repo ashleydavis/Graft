@@ -8,7 +8,9 @@
 // panes to its right, and that the page scrolls each pane that opens into view.
 // It presses the repo explorer's keys on the page and checks how they move the selection, change
 // the active pane, open and close panes, and that they are left alone in a text box, outside the
-// page and with Ctrl held. Dates are checked against the browser's own locale and time zone, which
+// page and with Ctrl held. Ctrl+C copies the active pane's selected item, a commit's full hash or a
+// file's path, copies nothing with no item selected and leaves the key to a text box and to text
+// the user selected. Dates are checked against the browser's own locale and time zone, which
 // the page passes on. The page reads the open repo from a RepoProvider: it shows when no repo is
 // open and reads another repo afresh when one is opened in its place. It checks the page starts
 // with its panes, or with the message that no repo is open, because the breadcrumb trail names it.
@@ -1127,6 +1129,112 @@ describe("RepoExplorerPage keys", () => {
             capture: true,
         });
         removeEventListener.mockRestore();
+    });
+});
+
+//
+// Puts a fake clipboard on the navigator whose writeText is a Jest mock that resolves, because
+// jsdom has none, and returns the mock, so a test reads what the page copied.
+//
+function installFakeClipboard(): jest.Mock {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+        value: {
+            writeText,
+        },
+        configurable: true,
+    });
+    return writeText;
+}
+
+//
+// Presses Ctrl+C on the element, as a user does, and returns the event, so a test reads whether
+// the page kept the key from Ziggy's Copy shortcut.
+//
+function pressCopyKey(target: Element): KeyboardEvent {
+    const event = new KeyboardEvent("keydown", {
+        key: "c",
+        ctrlKey: true,
+        bubbles: true,
+        cancelable: true,
+    });
+    act(() => {
+        target.dispatchEvent(event);
+    });
+    return event;
+}
+
+describe("RepoExplorerPage copy key", () => {
+    test("Ctrl+C copies the selected commit's full hash with the commit pane active", async () => {
+        const writeText = installFakeClipboard();
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        const row = elementWithDataId(`commit-${secondCommitJson.hash}`);
+        fireEvent.click(row);
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        const event = pressCopyKey(row);
+        expect(writeText).toHaveBeenCalledWith(secondCommitJson.hash);
+        expect(event.defaultPrevented).toBe(true);
+    });
+
+    test("Ctrl+C copies the selected file's path with the commit details pane active", async () => {
+        const writeText = installFakeClipboard();
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        completeCommitDetails(ziggy, 1);
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        fireEvent.click(elementWithDataId("changed-file-notes.txt"));
+        pressCopyKey(document.body);
+        expect(writeText).toHaveBeenCalledWith("notes.txt");
+    });
+
+    test("Ctrl+C copies the selected file's path with the changes pane active", async () => {
+        const writeText = installFakeClipboard();
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        fireEvent.click(elementWithDataId("change-staged-old.txt"));
+        expect(activePaneIds()).toEqual(["changes-pane"]);
+        pressCopyKey(document.body);
+        expect(writeText).toHaveBeenCalledWith("old.txt");
+    });
+
+    test("Ctrl+C copies nothing with no item selected in the active pane and keeps the key from Ziggy's Copy", async () => {
+        const writeText = installFakeClipboard();
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        const event = pressCopyKey(document.body);
+        expect(writeText).not.toHaveBeenCalled();
+        expect(event.defaultPrevented).toBe(true);
+    });
+
+    test("leaves Ctrl+C to a text box that has the focus", async () => {
+        const writeText = installFakeClipboard();
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        fireEvent.click(elementWithDataId(`commit-${commitJson.hash}`));
+        const textBox = document.createElement("textarea");
+        elementWithDataId("repo-explorer-page").appendChild(textBox);
+        const event = pressCopyKey(textBox);
+        expect(writeText).not.toHaveBeenCalled();
+        expect(event.defaultPrevented).toBe(false);
+        textBox.remove();
+    });
+
+    test("leaves Ctrl+C to text the user has selected on the page", async () => {
+        const writeText = installFakeClipboard();
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        const row = elementWithDataId(`commit-${commitJson.hash}`);
+        fireEvent.click(row);
+        const selection = document.getSelection();
+        selection?.selectAllChildren(elementWithDataId(`commit-title-${commitJson.hash}`));
+        const event = pressCopyKey(row);
+        selection?.removeAllRanges();
+        expect(writeText).not.toHaveBeenCalled();
+        expect(event.defaultPrevented).toBe(false);
     });
 });
 

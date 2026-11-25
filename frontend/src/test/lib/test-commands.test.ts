@@ -18,6 +18,9 @@ interface IFakeElement extends IFoundElement {
     // How many times it was clicked.
     clicks: number;
 
+    // How many times it was given the focus.
+    focuses: number;
+
     // The events dispatched on it.
     events: Event[];
 }
@@ -53,11 +56,13 @@ function makePlacedElement(text: string | null, value: string | undefined, bound
         textContent: text,
         value,
         clicks: 0,
+        focuses: 0,
         events: [],
         click(): void {
             element.clicks += 1;
         },
         focus(): void {
+            element.focuses += 1;
         },
         dispatchEvent(event: Event): boolean {
             element.events.push(event);
@@ -210,6 +215,17 @@ describe("performTestCommand", () => {
         }
         expect(clicksAtMouseUp).toBe(0);
         expect(element.clicks).toBe(1);
+    });
+
+    test("focus gives the element the focus", () => {
+        const element = makeElement("", undefined);
+        expect(performTestCommand(makeFinder(element), {
+            command: "focus",
+            dataId: "target",
+        })).toEqual({
+            ok: true,
+        });
+        expect(element.focuses).toBe(1);
     });
 
     test("type sets the value and sends an input event", () => {

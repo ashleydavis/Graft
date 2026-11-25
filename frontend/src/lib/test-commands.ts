@@ -10,8 +10,8 @@ import type { IAddTask, IJsonObject, IJsonValue, ITaskCompletedEvent } from "zig
 // A command from the remote control connection.
 //
 export interface ITestCommand {
-    // What to do: ready, click, type, key-down, get-value, get-text, exists, in-view, in-view-of,
-    // scroll-to-end, insert, viewport, drop-file or run-task.
+    // What to do: ready, click, focus, type, key-down, get-value, get-text, exists, in-view,
+    // in-view-of, scroll-to-end, insert, viewport, drop-file or run-task.
     command: string;
 
     // The data-id of the element to act on.
@@ -155,6 +155,12 @@ export function performTestCommand(finder: IElementFinder, command: ITestCommand
     if (command.command === "click") {
         clickElement(element);
         return { ok: true };
+    }
+    if (command.command === "focus") {
+        element.focus();
+        return {
+            ok: true,
+        };
     }
     if (command.command === "type") {
         if (command.text === undefined) {

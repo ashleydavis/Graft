@@ -22,7 +22,7 @@ bun run windows
 bun run macos
 ```
 
-On macOS press Cmd+1 wherever these steps say Ctrl+1.
+On macOS press Cmd+1 wherever these steps say Ctrl+1, Cmd+C wherever they say Ctrl+C and Cmd+V wherever they say Ctrl+V.
 
 ## Steps
 
@@ -47,8 +47,21 @@ On macOS press Cmd+1 wherever these steps say Ctrl+1.
 
     Back in Graft press Ctrl+1, press Escape until only the repo details pane is open, then press Enter to open the commit list. Press Down and Enter on "Change two files". README.md is selected as the file list opens, so press Enter and check the file pane shows its diff. Press Left so the commit details pane has the blue border. Press Down. Check notes.txt is selected and the file pane shows its diff at once, without Enter, while the commit details pane keeps the blue border. Press Up and check the file pane shows README.md's diff again. Press Down, then Enter. Check the blue border moves to the file pane. Press Up and check the file pane still shows notes.txt.
 13. Press Left so the commit details pane has the blue border, then press Up twice. Check the "Commit details" row at the top of the commit details pane is selected and the "Commit details" pane opens in place of the file pane at once, with "Change two files" in bold, while the commit details pane keeps the blue border. Press Down and check README.md is selected and its diff opens in place of the "Commit details" pane. Press Up and check the "Commit details" pane opens again. Press Escape and check the "Commit details" pane closes and the commit details pane has the blue border with the "Commit details" row still selected. Press Enter and check the "Commit details" pane opens and has the blue border. Click inside the commit details pane, then inside the "Commit details" pane, and check the blue border follows each click.
-14. Close the window.
+14. Copy key. Press Ctrl+1, press Escape until only the repo details pane is open, then press Enter to open the commit list. Press Down to select "Change two files" and press Ctrl+C. Press `?` to show the keyboard shortcuts overlay, press Ctrl+V in its search box and check it holds the commit's full hash, the same as `git -C /tmp/graft/test-repo rev-parse HEAD` prints. Press Escape to close the overlay.
+15. Press Enter to open the commit's details, with README.md selected, and press Ctrl+C. Paste into the overlay's search box as in step 13 and check it holds README.md.
+16. In a terminal, change a file and stage a new file in a directory:
+
+    ```bash
+    printf 'A changed note.\n' > /tmp/graft/test-repo/notes.txt
+    mkdir -p /tmp/graft/test-repo/docs
+    printf 'A new file.\n' > /tmp/graft/test-repo/docs/new.txt
+    git -C /tmp/graft/test-repo add docs/new.txt
+    ```
+
+    Back in Graft press Escape until only the repo details pane is open, press Down to select "Changes" and Enter to open the changes pane. With no row selected press Ctrl+C, paste into the overlay's search box and check it still holds README.md. Press Down to select notes.txt in the Unstaged list, press Ctrl+C and check the paste holds notes.txt. Press Down to select docs/new.txt in the Staged list, press Ctrl+C and check the paste holds docs/new.txt.
+17. Click the commit message box, type "Fix the copy key", select the text with Ctrl+A and press Ctrl+C. Delete the text, press Ctrl+V and check the box holds "Fix the copy key" again. Then click the repo details pane's Commits link, click a commit to open its details, drag the mouse over part of the commit's description, press Ctrl+C, paste into the overlay's search box as in step 13 and check it holds that text.
+18. Close the window.
 
 ## Expected result
 
-On the repo explorer page Up and Down move the selection. While a commit's details are open, Up and Down in the commit list, and in the commit details pane while no file's diff is open, show the newly selected commit at once. While a file's diff or the "Commit details" pane is open, Up and Down in the commit details pane show the newly selected file's diff, or the "Commit details" pane for the "Commit details" row above the first file, at once. Enter on the "Commit details" row opens the "Commit details" pane and Escape closes it. Left and Right move the active pane. Enter opens the selected Commits link, commit or file in the pane to the right and makes it active. Escape closes the rightmost pane. Clicking anywhere in a pane makes it the active pane. The selected item shows MaterialUI's selection styling and the active pane has a border in the theme's primary colour, in the light and dark themes. Ctrl+1 opens the repo explorer page from any page. The arrow keys still move the cursor in a text box.
+On the repo explorer page Up and Down move the selection. While a commit's details are open, Up and Down in the commit list, and in the commit details pane while no file's diff is open, show the newly selected commit at once. While a file's diff or the "Commit details" pane is open, Up and Down in the commit details pane show the newly selected file's diff, or the "Commit details" pane for the "Commit details" row above the first file, at once. Enter on the "Commit details" row opens the "Commit details" pane and Escape closes it. Left and Right move the active pane. Enter opens the selected Commits link, commit or file in the pane to the right and makes it active. Escape closes the rightmost pane. Clicking anywhere in a pane makes it the active pane. The selected item shows MaterialUI's selection styling and the active pane has a border in the theme's primary colour, in the light and dark themes. Ctrl+1 opens the repo explorer page from any page. Ctrl+C copies the selected commit's full hash or the selected file's path from the root of the repo, leaves the clipboard as it was with no item selected and still copies the selected text in a text box. The arrow keys still move the cursor in a text box.

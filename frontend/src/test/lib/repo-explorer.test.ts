@@ -1,6 +1,8 @@
 //
 // Tests the repo explorer's state: what each key and each click does to the open panes, the
 // active pane and the selection in each pane, and which key presses are the explorer's to handle.
+// It also checks which key presses are the copy key, what the copy key copies from each pane and
+// when the page holds text the user selected.
 //
 
 import {
@@ -18,9 +20,12 @@ import {
     explorerStateAfterKey,
     findChange,
     followMovedChange,
+    hasSelectedText,
     initialRepoExplorerState,
+    IKeyPress,
     IRepoExplorerItems,
     IRepoExplorerState,
+    isCopyKey,
     isExplorerKey,
     isExplorerKeyTarget,
     itemAfterMove,
@@ -35,6 +40,7 @@ import {
     selectFile,
     selectFirstFile,
     selectLink,
+    selectedItemText,
 } from "../../lib/repo-explorer";
 
 //
@@ -930,5 +936,164 @@ describe("the Commit details row", () => {
             activePaneIndex: 2,
             openPath: undefined,
         });
+    });
+});
+
+//
+// Makes a key press of the key with no modifier held, for a test to add the modifiers it needs.
+//
+function keyPress(key: string): IKeyPress {
+    return {
+        key,
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false,
+        shiftKey: false,
+    };
+}
+
+describe("isCopyKey", () => {
+    test("is Ctrl+C or Cmd+C, whatever the case of the key", () => {
+        expect(isCopyKey({
+            ...keyPress("c"),
+            ctrlKey: true,
+        })).toBe(true);
+        expect(isCopyKey({
+            ...keyPress("c"),
+            metaKey: true,
+        })).toBe(true);
+        expect(isCopyKey({
+            ...keyPress("C"),
+            ctrlKey: true,
+        })).toBe(true);
+    });
+
+    test("is not C alone, another key or C with Alt or Shift also held", () => {
+        expect(isCopyKey(keyPress("c"))).toBe(false);
+        expect(isCopyKey({
+            ...keyPress("v"),
+            ctrlKey: true,
+        })).toBe(false);
+        expect(isCopyKey({
+            ...keyPress("c"),
+            ctrlKey: true,
+            altKey: true,
+        })).toBe(false);
+        expect(isCopyKey({
+            ...keyPress("C"),
+            ctrlKey: true,
+            shiftKey: true,
+        })).toBe(false);
+    });
+});
+
+describe("selectedItemText", () => {
+    //
+    // The commit pane open, with a commit and one of its files selected.
+    //
+    const commitsState: IRepoExplorerState = {
+        ...initialRepoExplorerState,
+        selectedLink: "commits",
+        openLink: "commits",
+        selectedHash: "1111111111111111111111111111111111111111",
+        openHash: "1111111111111111111111111111111111111111",
+        selectedPath: "docs/readme.md",
+    };
+
+    //
+    // The changes pane open, with the staged old.txt selected.
+    //
+    const changesState: IRepoExplorerState = {
+        ...initialRepoExplorerState,
+        selectedLink: "changes",
+        openLink: "changes",
+        activePaneIndex: 1,
+        selectedChange: "staged:old.txt",
+    };
+
+    test("is the selected commit's full hash in the commit pane", () => {
+        expect(selectedItemText({
+            ...commitsState,
+            activePaneIndex: 1,
+        }, undefined)).toBe("1111111111111111111111111111111111111111");
+    });
+
+    test("is the selected file's path in the commit details pane", () => {
+        expect(selectedItemText({
+            ...commitsState,
+            activePaneIndex: 2,
+        }, undefined)).toBe("docs/readme.md");
+    });
+
+    test("is the selected file's path in the changes pane, in either list", () => {
+        expect(selectedItemText(changesState, changesJson)).toBe("old.txt");
+        expect(selectedItemText({
+            ...changesState,
+            selectedChange: "unstaged:notes.txt",
+        }, changesJson)).toBe("notes.txt");
+    });
+
+    test("is none with no item selected in the active pane", () => {
+        expect(selectedItemText({
+            ...commitsState,
+            activePaneIndex: 1,
+            selectedHash: undefined,
+        }, undefined)).toBeUndefined();
+        expect(selectedItemText({
+            ...commitsState,
+            activePaneIndex: 2,
+            selectedPath: undefined,
+        }, undefined)).toBeUndefined();
+        expect(selectedItemText({
+            ...changesState,
+            selectedChange: undefined,
+        }, changesJson)).toBeUndefined();
+        expect(selectedItemText(changesState, undefined)).toBeUndefined();
+    });
+
+    test("is none for the \"Commit details\" row", () => {
+        expect(selectedItemText({
+            ...commitsState,
+            activePaneIndex: 2,
+            selectedPath: COMMIT_DETAILS_PATH,
+        }, undefined)).toBeUndefined();
+    });
+
+    test("is none in the repo details pane and the file pane", () => {
+        expect(selectedItemText(initialRepoExplorerState, undefined)).toBeUndefined();
+        expect(selectedItemText({
+            ...commitsState,
+            activePaneIndex: 0,
+        }, undefined)).toBeUndefined();
+        expect(selectedItemText({
+            ...commitsState,
+            openPath: "docs/readme.md",
+            activePaneIndex: 3,
+        }, undefined)).toBeUndefined();
+        expect(selectedItemText({
+            ...changesState,
+            openChange: "staged:old.txt",
+            activePaneIndex: 2,
+        }, changesJson)).toBeUndefined();
+        expect(selectedItemText({
+            ...changesState,
+            activePaneIndex: 0,
+        }, changesJson)).toBeUndefined();
+    });
+});
+
+describe("hasSelectedText", () => {
+    test("is true only when the selection holds text", () => {
+        const paragraph = document.createElement("p");
+        paragraph.textContent = "The commit's description.";
+        document.body.appendChild(paragraph);
+        const selection = document.getSelection();
+        selection?.removeAllRanges();
+        expect(hasSelectedText(selection)).toBe(false);
+        selection?.selectAllChildren(paragraph);
+        expect(hasSelectedText(selection)).toBe(true);
+        selection?.removeAllRanges();
+        paragraph.remove();
+        expect(hasSelectedText(null)).toBe(false);
     });
 });

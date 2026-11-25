@@ -11,6 +11,7 @@
 
 import { JSX, MouseEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useActivePane } from "../../components/active-pane";
+import { copyText } from "../../components/copy-button";
 import { usePaneTrail } from "../../components/pane-trail";
 import { useRepo } from "../../components/repo-context";
 import { repoExplorerActivePane } from "../../lib/active-pane";
@@ -19,7 +20,7 @@ import { commitStagedFiles } from "../../lib/commit";
 import { canReadNextPage, COMMIT_PAGE_SIZE, commitPagesAfterRead, commitPagesReading, ICommitPages, nextPageStart, noCommitPages } from "../../lib/commit-pages";
 import { ICommit, ICommitPageStart, readCommitPage } from "../../lib/commits";
 import { openPaneIds } from "../../lib/pane-animation";
-import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, closeLinkPane, COMMIT_DETAILS_PATH, CHANGES_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, initialRepoExplorerState, IRepoExplorerState, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
+import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, closeLinkPane, COMMIT_DETAILS_PATH, CHANGES_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, hasSelectedText, initialRepoExplorerState, IRepoExplorerState, isCopyKey, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectedItemText, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
 import { toggleFileStaged } from "../../lib/stage-file";
 import { IWorkingChanges, IWorkingFile, readWorkingChanges } from "../../lib/working-changes";
 import { AnimatedPane } from "./components/animated-pane";
@@ -72,7 +73,8 @@ export function RepoExplorerPage(): JSX.Element {
 // edge of the window. While the page is shown it handles the arrow keys, Enter and Escape itself,
 // on the document in the capture phase, so the key reaches it before a focused row's own Enter
 // handling and the page does not also scroll. It leaves the keys to a text box, link, button, menu
-// or dialog that has the focus. It takes the focus when it opens, so the keys work at once after
+// or dialog that has the focus. Ctrl+C (Cmd+C on macOS) copies the active pane's selected item in
+// the same listener. It takes the focus when it opens, so the keys work at once after
 // the left sidebar's link or Ctrl+1 opened it, while the focus would otherwise stay on the link
 // outside the page. It takes the focus and sets up the key listener with the items just drawn as
 // React draws them (in layout effects), before the browser paints, so a key pressed as soon as the
@@ -255,6 +257,10 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
         };
 
         function onKeyDown(event: KeyboardEvent): void {
+            if (isCopyKey(event)) {
+                copySelectedItem(event);
+                return;
+            }
             if (!isExplorerKey(event.key)) {
                 return;
             }
@@ -267,13 +273,36 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
             setExplorer(state => explorerStateAfterKey(state, event.key, items));
         }
 
+        //
+        // Copies the active pane's selected item, as selectedItemText picks it, when the copy key
+        // is pressed on the page, and keeps the key from Ziggy's Copy shortcut, so the clipboard
+        // holds the item, or keeps what it held when no item is selected. The key is left to a text
+        // box, link, button, menu or dialog with the focus and to text the user has selected on the
+        // page, so Ziggy's Copy copies that text as usual.
+        //
+        function copySelectedItem(event: KeyboardEvent): void {
+            if (!isExplorerKeyTarget(event.target, pageRef.current, false)) {
+                return;
+            }
+            if (hasSelectedText(document.getSelection())) {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            const text = selectedItemText(explorer, changes);
+            if (text === undefined) {
+                return;
+            }
+            copyText(text, () => undefined);
+        }
+
         document.addEventListener("keydown", onKeyDown, {
             capture: true,
         });
         return () => document.removeEventListener("keydown", onKeyDown, {
             capture: true,
         });
-    }, [commitPages.commits, filePaths, changes]);
+    }, [commitPages.commits, filePaths, changes, explorer]);
 
     const openChange = findChange(changes, explorer.openChange);
     const changedFilePath = openChange?.file.path;

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The repo explorer is the repo explorer page's columns: the repo details pane (see [repo-details](../repo-details/detail.md)), the commit pane, the commit details pane and the file pane or the "Commit details" pane in its place (see [columns](../columns/detail.md)), or the changes pane and its file pane (see [changes](../changes/detail.md)). Its keys work as in the column view of macOS Finder: Left and Right move between the panes, Up and Down move between the items in a pane, Enter opens and Escape goes back. Ctrl+1 (Cmd+1 on macOS) returns to the repo explorer from any page.
+The repo explorer is the repo explorer page's columns: the repo details pane (see [repo-details](../repo-details/detail.md)), the commit pane, the commit details pane and the file pane or the "Commit details" pane in its place (see [columns](../columns/detail.md)), or the changes pane and its file pane (see [changes](../changes/detail.md)). Its keys work as in the column view of macOS Finder: Left and Right move between the panes, Up and Down move between the items in a pane, Enter opens and Escape goes back. Ctrl+C (Cmd+C on macOS) copies the selected item. Ctrl+1 (Cmd+1 on macOS) returns to the repo explorer from any page.
 
 ## Behaviour
 
@@ -21,6 +21,8 @@ The repo explorer is the repo explorer page's columns: the repo details pane (se
 - Clicking anywhere in a pane, its title bar, an item, a button or its empty space, makes it the active pane, in every pane: the repo details pane, the commit pane, the commit details pane, the "Commit details" pane, the changes pane and the file pane. A click on an item or a button still does what it does, and where that sets the active pane itself, as a click on a commit or a close button does, that pane is the one left active. A click in the space between the panes leaves the active pane as it is.
 - The repo explorer page takes the keyboard focus when it opens, so the keys work at once after the left sidebar's link or Ctrl+1 opened it.
 - The arrow keys, Enter and Escape are the repo explorer page's own keys, apart from Ziggy's shortcuts. The page handles them itself while it is shown and keeps them from the rest of the page, so an arrow key moves the selection and leaves the page's scroll as it is. It leaves them alone while a text box, link, button, menu or dialog has the focus or Ctrl, Alt or Cmd is held.
+- Ctrl+C (Cmd+C on macOS) copies the selected item of the active pane to the clipboard: the selected commit's full hash in the commit pane, and the selected file's path from the root of the repo in the commit details pane and in the changes pane, in the Unstaged and the Staged lists. In the repo details pane, on the "Commit details" row, in the file pane and in a pane with no item selected, Ctrl+C leaves the clipboard holding what it held. The page handles the key on the document in the capture phase, as it does its other keys, so it runs before the Edit menu's Copy shortcut, which it keeps from running.
+- Ctrl+C is left to the Edit menu's Copy, which copies the selected text as usual, while a text box, link, button, menu or dialog has the focus, such as the commit message box, and while the user has selected text on the page, such as part of a commit's description.
 - Returning to the repo explorer is Graft's Repo Explorer action, a Ziggy action named `open-repo-explorer` with the shortcut `CmdOrCtrl+1`. Its handler opens the repo explorer page. Ziggy runs it from any page, also while a text box has the focus, because the shortcut holds Ctrl or Cmd.
 
 ## Acceptance criteria
@@ -42,6 +44,11 @@ The repo explorer is the repo explorer page's columns: the repo details pane (se
 - [x] Clicking anywhere in a pane (title bar, body, empty space) makes it the active pane, in every pane, the changes pane among them. A click on an item or button still does what it did.
 - [x] Ctrl+1 returns to the repo explorer from any page. It is a Ziggy action with the shortcut `CmdOrCtrl+1`.
 - [x] The repo explorer page handles the arrow keys, Enter and Escape itself while it is shown, apart from Ziggy's shortcuts. It leaves them to a text box that has the focus.
+- [x] With a commit selected in the commit pane and that pane active, Ctrl+C (Cmd+C on macOS) copies the commit's full hash to the clipboard.
+- [x] With a file selected in the commit details pane and that pane active, Ctrl+C copies the file's path from the root of the repo.
+- [x] With a file selected in the changes pane (Unstaged or Staged) and that pane active, Ctrl+C copies the file's path from the root of the repo.
+- [x] With no item selected in the active pane, Ctrl+C leaves the clipboard holding what it held.
+- [x] Ctrl+C in a text box, such as the commit message box, still copies the text selected in the box.
 
 ## Open questions
 

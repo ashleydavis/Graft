@@ -589,6 +589,85 @@ export function isExplorerKeyTarget(target: EventTarget | null, page: Element | 
 }
 
 //
+// A key press as isCopyKey reads it: the key and the modifiers held with it. A KeyboardEvent has
+// these fields, so the repo explorer page passes its key events straight in.
+//
+export interface IKeyPress {
+    // The key, as KeyboardEvent.key names it, such as "c".
+    key: string;
+
+    // Whether Ctrl is held.
+    ctrlKey: boolean;
+
+    // Whether Cmd is held on macOS, or the Windows key elsewhere.
+    metaKey: boolean;
+
+    // Whether Alt, or Option on macOS, is held.
+    altKey: boolean;
+
+    // Whether Shift is held.
+    shiftKey: boolean;
+}
+
+//
+// Returns true when the key press is Ctrl+C, or Cmd+C on macOS, the copy key, so the repo explorer
+// page copies the selected item. The key is matched in either case, so it works with Caps Lock on,
+// as Ziggy's own shortcuts do. A press that also holds Alt or Shift is another shortcut.
+//
+export function isCopyKey(press: IKeyPress): boolean {
+    if (press.key.toLowerCase() !== "c") {
+        return false;
+    }
+    if (press.altKey) {
+        return false;
+    }
+    if (press.shiftKey) {
+        return false;
+    }
+    if (press.ctrlKey) {
+        return true;
+    }
+    return press.metaKey;
+}
+
+//
+// Picks the text the copy key copies from the active pane: the full hash of the selected commit in
+// the commit pane, and the path from the root of the repo of the selected file in the commit
+// details pane or the changes pane, because those are what a user pastes into a terminal or a
+// message. It returns undefined for the repo details pane's links, the "Commit details" row, the
+// file pane and a pane with no item selected, so the copy key leaves the clipboard as it is.
+//
+export function selectedItemText(state: IRepoExplorerState, changes: IWorkingChanges | undefined): string | undefined {
+    if (state.openLink === COMMITS_LINK) {
+        if (state.activePaneIndex === 1) {
+            return state.selectedHash;
+        }
+        if (state.activePaneIndex === 2 && state.selectedPath !== COMMIT_DETAILS_PATH) {
+            return state.selectedPath;
+        }
+        return undefined;
+    }
+    if (state.openLink === CHANGES_LINK) {
+        if (state.activePaneIndex === 1) {
+            return findChange(changes, state.selectedChange)?.file.path;
+        }
+        return undefined;
+    }
+    return undefined;
+}
+
+//
+// Returns true when the user has selected text on the page, as with a drag of the mouse over a
+// commit's description, so the copy key copies that text as usual instead of the selected item.
+//
+export function hasSelectedText(selection: Selection | null): boolean {
+    if (!selection) {
+        return false;
+    }
+    return selection.toString() !== "";
+}
+
+//
 // Makes the keys of the changes pane's rows, the unstaged files then the staged files, as the pane
 // lists them, or none before the changes are read, for the keys to move through and to drop a row
 // that has gone.
