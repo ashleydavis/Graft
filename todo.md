@@ -3,6 +3,17 @@
 ## Now
 
 - Reduce merge conflicts again. infra-1 halved them (about one per two approved tickets on 2026-11-23, from about one per ticket before), but they still happen. The causes are in `docs/reducing-conflicts.md` under "Session of 2026-11-23".
+- Repo pane: show one "Branches" entry, not a list of every branch. Clicking it opens a Branches pane to its right that lists the branches. Opening a branch there shows its commit log.
+- Branches: moving through the branches with Up and Down updates the Branch Commits pane to show the newly selected branch's commits.
+- Branches: the Branch Commits pane's title names the branch with a "Branch" prefix, for example "Branch worktrees/git-interface-7", not the bare branch name.
+- Commits: moving between commits in the Commits pane with Up and Down makes a noticeable flash as the commit details pane changes from one commit to the next. Cross-fade from one commit's details to the next instead, with a smooth, fast, non-linear transition.
+- Repo pane: show one "Tags" entry, not a list of every tag. Clicking it opens a Tags pane to its right that lists the tags. The Tags pane has a close button. Opening a tag there shows its details.
+- Repo pane: clicking the Commits link or the Changes link (named Commit before the rename) opens its pane but leaves the repo details pane active. The newly opened pane must become the active pane.
+- Repo pane: moving between its items with Up and Down shows each item's pane to its right at once (Commits, Changes, Branches, Tags) without making it active: the repo details pane stays active. Enter opens the selected item's pane and makes it the active pane. A click on an item opens its pane and makes it the active pane.
+- Right sidebar: Git commands and Help are separate tabs, not one panel above the other.
+- Command palette: moving the highlight with Up and Down does not scroll the list, so the highlighted command can be below the visible area. Scroll the highlighted command into view as it moves.
+- Repo explorer: the rightmost pane touches the right edge of the Graft window. Leave a gap there, the same as the gap between panes.
+- Toolbar: add a Sync button next to Push and Pull that pulls and then pushes in one click.
 
 ## Code Review
 
@@ -88,6 +99,12 @@
 - Rows that do not match a search are faded, not hidden, as on the style guide's overview page.
 - File icons chosen by whole file name for `Cargo.lock`, `Dockerfile` and `LICENSE`, as in the style guide.
 - File diff: Up/down: should navigate hunks or lines (depending on mode). From the first hunk/link up goes to the last in the prev file. From the last hunk/link down goes to the first in the next file.
+- Command palette: when a command is highlighted, a popup to the right of it explains what the command does. Hovering a command with the mouse opens, changes and closes the popup the same way. The popup opens and closes with a smooth animation and cross-fades from one command's popup to the next with a non-linear transition.
+- Shortcuts overlay: Up and Down select each shortcut in turn, and the selected shortcut shows a popup to its right that explains it. Hovering a shortcut with the mouse opens, changes and closes the popup the same way. The popup opens and closes with a smooth animation and cross-fades from one shortcut's popup to the next with a non-linear transition.
+- Let the user choose the editor that "Open in editor" uses, for example VS Code, from Graft's settings rather than only by editing the `editor` setting in the config file by hand.
+- Every piece of information Graft shows that can be copied (hashes, paths, names, messages, dates, Git commands and the like) has the style guide's copy button beside it.
+- Commits pane: End selects only the last commit loaded so far, and more commits then load after it. End should load the last page of commits and select the repo's very last commit. Home should do the same the other way: from the end of the list, it goes to the very first commit.
+- Commits pane: Page Up and Page Down move too far. Make each press move about half as many rows as it does now.
 
 ## Handling multiple repos
 

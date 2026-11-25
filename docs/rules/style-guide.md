@@ -9,3 +9,6 @@ These apply to every change.
 - Don't add features to Graft just because they are in the style guide. The style guide shows components and pages for features Graft may later grow, and Graft grows only by the features its tickets ask for.
 - Every feature you are asked to add or change follows the standard set in the style guide: its design tokens, its rules for using them and its UX rules. This keeps every part of Graft looking and behaving the same way.
 - The style guide gives every style a light and a dark version. The light/dark mode rule in [coding-style.md](coding-style.md) sets which of them Graft uses.
+- Every pane that can be closed has a close button in its header.
+- Clicking an item in a pane that opens a new pane makes the new pane the active pane.
+- Moving between the items of a pane with Up and Down leaves that pane active, even when the move opens or changes a pane to its right.
