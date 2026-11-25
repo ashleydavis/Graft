@@ -62,6 +62,7 @@ while [ "$position" -le "$FILE_COUNT" ]; do
 done
 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -C "$repo" add . || fail "could not stage the files in the test repo"
 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_AUTHOR_NAME="Ada Author" GIT_AUTHOR_EMAIL="ada@example.com" GIT_COMMITTER_NAME="Cy Committer" GIT_COMMITTER_EMAIL="cy@example.com" git -C "$repo" commit --quiet --message "Add many files" || fail "could not commit the files in the test repo"
+head_hash="$(git -C "$repo" rev-parse HEAD)" || fail "could not read the test repo's newest commit"
 
 start_app_on_start_page
 open_repo_with_button "$repo"
@@ -74,7 +75,7 @@ wait_for_text commit-list "Add many files" 30
 press_key Down
 press_key Enter
 wait_for_element commit-details 30
-wait_for_text commit-details-title "Add many files" 30
+wait_for_text commit-details-heading "${head_hash:0:7}" 30
 wait_for_text changed-files-heading "Files changed ($FILE_COUNT)" 30
 
 # The first file is highlighted and in view when the file list opens.

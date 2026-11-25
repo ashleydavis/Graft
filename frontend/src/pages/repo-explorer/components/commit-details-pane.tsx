@@ -1,13 +1,15 @@
 //
 // The commit details pane: the column that opens to the right of the commit pane when a commit is
-// clicked, with the commit's full message, author, committer, dates, hash and parents and the files
-// it changed, each with its change type and line counts in its tooltip.
+// clicked, with a "Commit details" row that opens the commit's message and facts in a pane of their
+// own and the files it changed, each with its change type and line counts in its tooltip.
 //
 
+import { faMessage } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { List, ListItemButton, Tooltip } from "@mui/material";
-import { JSX, ReactNode, useEffect, useRef, useState } from "react";
+import { JSX, useEffect, useRef, useState } from "react";
 import { IChangedFile, ICommitDetails, readCommitDetails } from "../../../lib/commit-details";
-import { formatDateTime, IDateFormatOptions } from "../../../lib/date-format";
+import { COMMIT_DETAILS_PATH } from "../../../lib/repo-explorer";
 import { activePaneClass } from "./active-pane-style";
 import { openRowClass } from "./commit-list";
 import { FileIcon } from "./file-icon";
@@ -30,25 +32,25 @@ export interface ICommitDetailsPaneProps {
     // The hash of the commit to show.
     hash: string;
 
-    // The path of the selected changed file, which the pane shows as selected, or undefined.
+    // The path of the selected changed file, which the pane shows as selected,
+    // COMMIT_DETAILS_PATH for the "Commit details" row, or undefined.
     selectedPath: string | undefined;
 
-    // The path of the changed file whose diff is open, which the pane marks with a bar at the
-    // row's left edge, or undefined.
+    // The path of the changed file whose diff is open, or COMMIT_DETAILS_PATH while the "Commit
+    // details" pane is open, which the pane marks with a bar at the row's left edge, or undefined.
     openPath: string | undefined;
 
     // Whether the pane is the repo explorer's active pane, which its border shows.
     isActive: boolean;
 
-    // The locale and time zone the commit's dates are shown in.
-    dateFormat: IDateFormatOptions;
-
-    // Called with the path of the changed file the user clicks.
+    // Called with the path of the changed file the user clicks, or COMMIT_DETAILS_PATH for the
+    // "Commit details" row.
     onSelectFile(path: string): void;
 
-    // Called with the paths of the commit's changed files, in the order the pane lists them, once
-    // the task has read them, so the repo explorer page can move the selection through them.
-    onReadFiles(paths: string[]): void;
+    // Called with the commit and its changed files once the task has read them, so the repo
+    // explorer page can move the selection through the files and show the commit in the "Commit
+    // details" pane without reading it again.
+    onReadCommit(details: ICommitDetails): void;
 
     // Called when the user closes the pane.
     onClose(): void;
@@ -61,7 +63,7 @@ export interface ICommitDetailsPaneProps {
 // read. The card's border is in the style guide's active pane colour while the pane is active. The
 // page's AnimatedPane column animates it as it opens and closes.
 //
-export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isActive, dateFormat, onSelectFile, onReadFiles, onClose }: ICommitDetailsPaneProps): JSX.Element {
+export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isActive, onSelectFile, onReadCommit, onClose }: ICommitDetailsPaneProps): JSX.Element {
     const [details, setDetails] = useState<ICommitDetails | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
 
@@ -73,7 +75,7 @@ export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isAc
         }, result => {
             if (result.ok) {
                 setDetails(result.value);
-                onReadFiles(result.value.changedFiles.map(file => file.path));
+                onReadCommit(result.value);
             }
             else {
                 setError(result.error.message);
@@ -91,7 +93,7 @@ export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isAc
         <section data-id="commit-details-pane" aria-label="Commit details" className={`flex w-[450px] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
             <PaneHeader title={title} titleDataId="commit-details-heading" action={<CloseButton paneLabel="Commit details" dataId="commit-details-close" onClose={onClose} />} />
             <div data-id={SCROLL_AREA_DATA_ID} className="min-h-0 flex-1 overflow-auto">
-                <CommitDetailsContent details={details} error={error} selectedPath={selectedPath} openPath={openPath} dateFormat={dateFormat} onSelectFile={onSelectFile} />
+                <CommitDetailsContent details={details} error={error} selectedPath={selectedPath} openPath={openPath} onSelectFile={onSelectFile} />
             </div>
         </section>
     );
@@ -107,59 +109,36 @@ export interface ICommitDetailsContentProps {
     // Why the commit could not be read, or undefined.
     error: string | undefined;
 
-    // The path of the selected changed file, which the content shows as selected, or undefined.
+    // The path of the selected changed file, which the content shows as selected,
+    // COMMIT_DETAILS_PATH for the "Commit details" row, or undefined.
     selectedPath: string | undefined;
 
-    // The path of the changed file whose diff is open, which the content marks as open, or
-    // undefined.
+    // The path of the changed file whose diff is open, or COMMIT_DETAILS_PATH while the "Commit
+    // details" pane is open, which the content marks as open, or undefined.
     openPath: string | undefined;
 
-    // The locale and time zone the commit's dates are shown in.
-    dateFormat: IDateFormatOptions;
-
-    // Called with the path of the changed file the user clicks.
+    // Called with the path of the changed file the user clicks, or COMMIT_DETAILS_PATH for the
+    // "Commit details" row.
     onSelectFile(path: string): void;
 }
 
 //
-// Shows the commit's message, then its facts in a column of labels and a column of values, as the
-// style guide's commit details lay them out: who wrote it and when, who made it and when, its hash
-// and its parents. Then it lists the files the commit changed under a "Files changed" heading, or
-// shows that the commit is loading or why it could not be read. The description shows only when the
-// message has more than a title.
+// Shows the "Commit details" row, which opens the commit's message and facts, then lists the files
+// the commit changed under a "Files changed" heading, as the style guide's commit details pane
+// does, or shows that the commit is loading or why it could not be read.
 //
-export function CommitDetailsContent({ details, error, selectedPath, openPath, dateFormat, onSelectFile }: ICommitDetailsContentProps): JSX.Element {
+export function CommitDetailsContent({ details, error, selectedPath, openPath, onSelectFile }: ICommitDetailsContentProps): JSX.Element {
     if (error !== undefined) {
         return <p data-id="commit-details-error" className="m-3 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[var(--color-text)]">{error}</p>;
     }
     if (details === undefined) {
         return <p data-id="commit-details-loading" className="px-4 py-2 text-[length:var(--text-sm)] text-[var(--color-text-muted)]">Loading the commit.</p>;
     }
-    const commit = details.commit;
     return (
         <div data-id="commit-details">
-            <div className="flex flex-col gap-4 border-b border-[var(--color-border)] p-4">
-                <div className="flex flex-col gap-2">
-                    <h3 data-id="commit-details-title" className="text-[length:var(--text-lg)] font-[var(--weight-bold)] leading-[var(--leading-tight)] text-[var(--color-text)]">{commit.title}</h3>
-                    {commit.description !== "" && (
-                        <p data-id="commit-details-description" className="whitespace-pre-wrap text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{commit.description}</p>
-                    )}
-                </div>
-                <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-4 gap-y-2">
-                    <Fact label="Authored" dataId="commit-details-author">
-                        <PersonAndDate name={commit.authorName} email={commit.authorEmail} date={formatDateTime(commit.authorDate, dateFormat)} />
-                    </Fact>
-                    <Fact label="Committed" dataId="commit-details-committer">
-                        <PersonAndDate name={commit.committerName} email={commit.committerEmail} date={formatDateTime(commit.committerDate, dateFormat)} />
-                    </Fact>
-                    <Fact label="Hash" dataId="commit-details-hash">
-                        <code className="break-all font-[family-name:var(--font-mono)]">{commit.hash}</code>
-                    </Fact>
-                    <Fact label={parentsLabel(commit.parentHashes)} dataId="commit-details-parents">
-                        <Parents parentHashes={commit.parentHashes} />
-                    </Fact>
-                </dl>
-            </div>
+            <List disablePadding={true} className="px-1 pt-1">
+                <CommitDetailsRow isSelected={selectedPath === COMMIT_DETAILS_PATH} isOpen={openPath === COMMIT_DETAILS_PATH} onSelectFile={onSelectFile} />
+            </List>
             <p data-id="changed-files-heading" className="px-4 pt-3 pb-2 text-[length:var(--text-sm)] font-[var(--weight-bold)] leading-[var(--leading-normal)] text-[var(--color-text-muted)]">
                 Files changed ({details.changedFiles.length})
             </p>
@@ -176,96 +155,53 @@ export function CommitDetailsContent({ details, error, selectedPath, openPath, d
 }
 
 //
-// What one of the commit's facts shows.
+// What the "Commit details" row shows and what it reports.
 //
-export interface IFactProps {
-    // The fact's label, as in "Hash".
-    label: string;
+export interface ICommitDetailsRowProps {
+    // Whether the row is selected, which it shows on the selected background.
+    isSelected: boolean;
 
-    // The data-id of the fact's value, so a smoke test can read it.
-    dataId: string;
+    // Whether the "Commit details" pane is open, which the row shows with a bar at its left edge.
+    isOpen: boolean;
 
-    // The fact's value.
-    children: ReactNode;
+    // Called with COMMIT_DETAILS_PATH when the user clicks the row.
+    onSelectFile(path: string): void;
 }
 
 //
-// Shows one labelled fact of the commit: the label small and muted in the column of labels, the
-// value beside it, as the style guide's commit details do.
+// Shows the "Commit details" row as the style guide's commit details pane does: the message icon
+// and "Commit details" in medium weight. The row is a MaterialUI ListItemButton like the file rows,
+// so it has their hover and selected colours and their open bar. When it becomes selected it
+// scrolls itself into view, as a file row does.
 //
-export function Fact({ label, dataId, children }: IFactProps): JSX.Element {
-    return (
-        <>
-            <dt className="text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{label}</dt>
-            <dd data-id={dataId} className="min-w-0 text-[length:var(--text-sm)] text-[var(--color-text)]">{children}</dd>
-        </>
-    );
-}
+export function CommitDetailsRow({ isSelected, isOpen, onSelectFile }: ICommitDetailsRowProps): JSX.Element {
+    const rowRef = useRef<HTMLLIElement>(null);
 
-//
-// What a person and date fact shows.
-//
-export interface IPersonAndDateProps {
-    // The person's name.
-    name: string;
+    useEffect(() => {
+        if (isSelected) {
+            scrollRowIntoView(rowRef.current);
+        }
+    }, [isSelected]);
 
-    // The person's email address.
-    email: string;
-
-    // When they acted, already formatted.
-    date: string;
-}
-
-//
-// Shows a person and when they acted: the name, the email address muted after it and the date
-// muted on the line below, as the style guide's commit details do.
-//
-export function PersonAndDate({ name, email, date }: IPersonAndDateProps): JSX.Element {
-    return (
-        <div className="flex flex-col">
-            <span className="truncate">
-                {name} <span className="text-[var(--color-text-muted)]">&lt;{email}&gt;</span>
-            </span>
-            <span className="text-[var(--color-text-muted)]">{date}</span>
-        </div>
-    );
-}
-
-//
-// Picks the label of the parents fact: "Parent" for one parent and "Parents" for none or several.
-//
-export function parentsLabel(parentHashes: string[]): string {
-    if (parentHashes.length === 1) {
-        return "Parent";
+    let current: "true" | undefined = undefined;
+    if (isOpen) {
+        current = "true";
     }
-    return "Parents";
-}
-
-//
-// What the parents fact shows.
-//
-export interface IParentsProps {
-    // The full hashes of the commit's parents.
-    parentHashes: string[];
-}
-
-//
-// Shows the commit's parents as their short hashes in the code font, or says in muted text that
-// the commit is the first, which has none.
-//
-export function Parents({ parentHashes }: IParentsProps): JSX.Element {
-    if (parentHashes.length === 0) {
-        return <span className="text-[var(--color-text-muted)]">None, this is the first commit</span>;
-    }
-    return <code className="whitespace-pre font-[family-name:var(--font-mono)]">{parentsText(parentHashes)}</code>;
-}
-
-//
-// Writes the commit's parents as their short hashes, two spaces apart, as the style guide's commit
-// details write them.
-//
-export function parentsText(parentHashes: string[]): string {
-    return parentHashes.map(parentHash => parentHash.slice(0, 7)).join("  ");
+    return (
+        <ListItemButton
+            ref={rowRef}
+            component="li"
+            data-id="commit-details-row"
+            aria-label="Commit details"
+            selected={isSelected}
+            aria-current={current}
+            onClick={() => onSelectFile(COMMIT_DETAILS_PATH)}
+            className={`flex items-center gap-2 px-2 text-[length:var(--text-sm)] ${openRowClass(isOpen)}`}
+        >
+            <FontAwesomeIcon icon={faMessage} aria-hidden="true" className="flex-none text-[length:var(--icon-sm)] text-[var(--color-text-muted)]" />
+            <span className="min-w-0 flex-1 truncate font-[var(--weight-medium)]">Commit details</span>
+        </ListItemButton>
+    );
 }
 
 //

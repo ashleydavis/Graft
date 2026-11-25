@@ -40,7 +40,13 @@ click "commit-$head_hash"
 wait_for_element commit-details-pane 30
 wait_for_in_view commit-details-pane 30
 wait_for_element commit-details 30
-wait_for_text commit-details-heading "Commit" 30
+wait_for_text commit-details-heading "${head_hash:0:7}" 30
+wait_for_text commit-details-row "Commit details" 30
+wait_for_missing_element commit-details-title 5
+click commit-details-row
+wait_for_element commit-info-pane 30
+wait_for_in_view commit-info-pane 30
+wait_for_text commit-info-heading "Commit details" 30
 wait_for_text commit-details-title "Change the note" 30
 wait_for_text commit-details-description "The note now says what the second note is." 30
 wait_for_text commit-details-hash "$head_hash" 30
@@ -53,6 +59,7 @@ wait_for_text changed-files-heading "Files changed (1)" 30
 wait_for_text changed-file-notes.txt "notes.txt" 30
 click changed-file-notes.txt
 wait_for_element file-pane 30
+wait_for_missing_element commit-info-pane 30
 wait_for_in_view file-pane 30
 wait_for_text file-pane-path "notes.txt" 30
 wait_for_element file-diff 30

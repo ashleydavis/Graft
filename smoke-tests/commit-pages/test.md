@@ -4,7 +4,7 @@ Smoke test of the commit list's pages. It creates a test repo of its own in its 
 
 It checks the newest commit is listed, then scrolls the list to its end with `scroll_to_end` until the repo's first commit, "Add the readme", is listed, so each scroll near the end reads the next page. It checks the loading row and the error row have gone, and that the right sidebar lists `git log --no-show-signature --max-count=50 --skip=50 --branches --remotes HEAD --`, the command that read the page after the first from every branch and HEAD, as the most recent command.
 
-Then it presses Escape to close the commit pane and Enter to open it again, which reads the first page afresh. It presses Down once for each commit in the repo, waiting before each press for the row it selects, so the selection moves across the pages to the first commit and the list scrolls each selected row into view. Enter then opens the commit details pane for "Add the readme", which shows although a file has the commit's short hash as its name.
+Then it presses Escape to close the commit pane and Enter to open it again, which reads the first page afresh. It presses Down once for each commit in the repo, waiting before each press for the row it selects, so the selection moves across the pages to the first commit and the list scrolls each selected row into view. Enter then opens the commit details pane for "Add the readme", whose heading names it by its short hash, which shows although a file has the commit's short hash as its name.
 
 ## How it is invoked
 

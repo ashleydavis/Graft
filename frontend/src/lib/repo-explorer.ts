@@ -32,11 +32,12 @@ export interface IRepoExplorerState {
     // The hash of the commit whose details pane is open, or undefined when it is closed.
     openHash: string | undefined;
 
-    // The path of the selected file in the commit details pane, or undefined before one is
-    // selected.
+    // The path of the selected file in the commit details pane, COMMIT_DETAILS_PATH while its
+    // "Commit details" row is selected, or undefined before one is selected.
     selectedPath: string | undefined;
 
-    // The path of the file whose file pane is open, or undefined when it is closed.
+    // The path of the file whose file pane is open, COMMIT_DETAILS_PATH while the "Commit details"
+    // pane is open in its place, or undefined when both are closed.
     openPath: string | undefined;
 
     // The key of the selected file in the changes pane, as changeKey makes it, or undefined before
@@ -58,8 +59,9 @@ export interface IRepoExplorerItems {
     // The hashes of the commits in the commit pane, in the order it lists them.
     commitHashes: string[];
 
-    // The paths of the open commit's changed files, in the order the commit details pane lists
-    // them, or none until they are read.
+    // The paths of the commit details pane's rows, COMMIT_DETAILS_PATH for its "Commit details" row
+    // and then the open commit's changed files, in the order the pane lists them, or none until
+    // they are read.
     filePaths: string[];
 
     // The keys of the files in the changes pane, as changeKey makes them, the unstaged files then
@@ -78,6 +80,14 @@ export const COMMITS_LINK = "commits";
 // and the state as COMMITS_LINK is.
 //
 export const CHANGES_LINK = "changes";
+
+//
+// The path that stands for the commit details pane's "Commit details" row, so the row is selected
+// and opened through selectedPath and openPath and Up and Down move through it and the changed
+// files alike. It is empty because every path git lists has at least one character, so no changed
+// file can share it.
+//
+export const COMMIT_DETAILS_PATH = "";
 
 //
 // Makes the key that names one row of the changes pane: the list it is in and the file's path. A
@@ -276,7 +286,8 @@ export function selectFirstFile(state: IRepoExplorerState, filePaths: string[]):
 
 //
 // Selects the changed file and opens its file pane, with the commit details pane active, as a
-// click on the file does.
+// click on the file does. For COMMIT_DETAILS_PATH it selects the "Commit details" row and opens
+// the "Commit details" pane in the file pane's place, as a click on the row does.
 //
 export function selectFile(state: IRepoExplorerState, path: string): IRepoExplorerState {
     return {
@@ -392,8 +403,9 @@ export function targetPaneIndex(columns: Element, target: EventTarget): number |
 // click in it or Right. The commit details pane stays active, so the next Up or Down moves on
 // through the commits.
 //
-// In a commit's file list, while a file pane is open, the file pane shows the newly selected file
-// at once, so the user can read one diff after another with Up and Down alone. The commit details
+// In a commit's file list, while a file pane or the "Commit details" pane is open, the newly
+// selected row opens at once in its place, so the user can read one diff after another with Up and
+// Down alone, the "Commit details" row above the first file among them. The commit details
 // pane stays active, so the next Up or Down moves on through the list.
 //
 export function moveSelection(state: IRepoExplorerState, items: IRepoExplorerItems, step: number): IRepoExplorerState {

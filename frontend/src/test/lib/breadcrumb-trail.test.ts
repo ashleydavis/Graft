@@ -7,7 +7,7 @@
 //
 
 import { clipStepLabel, COLLAPSED_STEP_WIDTH_PX, collapsedStepCount, explorerPaneSteps, fileStep, ITrailOption, ITrailStep, ITrailWidths, pageTrail, repoName, searchMatches } from "../../lib/breadcrumb-trail";
-import { initialRepoExplorerState } from "../../lib/repo-explorer";
+import { COMMIT_DETAILS_PATH, initialRepoExplorerState } from "../../lib/repo-explorer";
 
 //
 // The hash of the commit the pane step tests open, long like a real one so its step is cut short.
@@ -202,6 +202,23 @@ describe("explorerPaneSteps", () => {
                 label: "main.ts",
                 tooltip: "src/main.ts",
                 dataId: "breadcrumb-pane-file",
+                options: [],
+            },
+        ]);
+    });
+
+    test("adds a Commit details step in place of a file's step while the Commit details pane is open", () => {
+        expect(explorerPaneSteps({
+            ...initialRepoExplorerState,
+            openLink: "commits",
+            openHash: HASH,
+            openPath: COMMIT_DETAILS_PATH,
+        }, undefined)).toEqual([
+            ...commitPaneSteps,
+            {
+                label: "Commit details",
+                tooltip: "Commit details",
+                dataId: "breadcrumb-pane-commit-details",
                 options: [],
             },
         ]);

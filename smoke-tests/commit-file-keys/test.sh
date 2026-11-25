@@ -16,6 +16,7 @@ printf '# The test repo\n' > "$repo/README.md" || fail "could not change README.
 printf 'The third note.\n' > "$repo/notes.txt" || fail "could not change notes.txt"
 git -C "$repo" add README.md notes.txt || fail "could not add the two files"
 git -C "$repo" -c user.name="Smoke Test" -c user.email=smoke-test@example.com -c commit.gpgsign=false commit --quiet --message "Change two files" || fail "could not commit the two files"
+head_hash="$(git -C "$repo" rev-parse HEAD)" || fail "could not read the test repo's newest commit"
 
 start_app_on_start_page
 open_repo_with_button "$repo"
@@ -27,7 +28,7 @@ press_key Enter
 wait_for_text commit-list "Change two files" 30
 press_key Down
 press_key Enter
-wait_for_text commit-details-title "Change two files" 30
+wait_for_text commit-details-heading "${head_hash:0:7}" 30
 wait_for_text changed-file-README.md "README.md" 30
 wait_for_text changed-file-notes.txt "notes.txt" 30
 

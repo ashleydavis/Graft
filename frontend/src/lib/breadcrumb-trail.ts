@@ -5,7 +5,7 @@
 // collapse into one when the trail has too little room.
 //
 
-import { CHANGES_LINK, COMMITS_LINK, IRepoExplorerState } from "./repo-explorer";
+import { CHANGES_LINK, COMMIT_DETAILS_PATH, COMMITS_LINK, IRepoExplorerState } from "./repo-explorer";
 
 //
 // One page a drop-down step can switch to.
@@ -235,7 +235,8 @@ export function pageTrail(pathname: string, repoPath: string | undefined, paneSt
 // The commit pane's step is "Commits" and the changes pane's is "Changes", as the repo details
 // pane's links name them. The commit details pane's step is the commit's short hash, as the commit
 // pane shows it, with the full hash in its tooltip. A file pane's step is the file's name, with
-// its path in the tooltip. The changes pane's file pane shows only while its file is listed, so
+// its path in the tooltip, and the "Commit details" pane, open in the file pane's place, has a
+// "Commit details" step. The changes pane's file pane shows only while its file is listed, so
 // the page gives that file's path, or undefined while the pane is closed.
 //
 export function explorerPaneSteps(state: IRepoExplorerState, changedFilePath: string | undefined): ITrailStep[] {
@@ -255,8 +256,18 @@ export function explorerPaneSteps(state: IRepoExplorerState, changedFilePath: st
             dataId: "breadcrumb-pane-commit",
             options: [],
         });
-        if (state.openPath !== undefined) {
-            steps.push(fileStep(state.openPath));
+        if (state.openPath === COMMIT_DETAILS_PATH) {
+            steps.push({
+                label: "Commit details",
+                tooltip: "Commit details",
+                dataId: "breadcrumb-pane-commit-details",
+                options: [],
+            });
+        }
+        else {
+            if (state.openPath !== undefined) {
+                steps.push(fileStep(state.openPath));
+            }
         }
     }
     if (state.openLink === CHANGES_LINK) {

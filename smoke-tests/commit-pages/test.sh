@@ -104,4 +104,4 @@ done
 # Enter opens the selected commit, the repo's first.
 press_key Enter
 wait_for_element commit-details 30
-wait_for_text commit-details-title "Add the readme" 30
+wait_for_text commit-details-heading "${first_hash:0:7}" 30

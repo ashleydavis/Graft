@@ -56,7 +56,8 @@ export interface IOpenPaneIds {
     // The open commit's hash, so another commit's details open afresh.
     commitDetailsPane: string | undefined;
 
-    // The open commit's hash and the open file's path, so another file's diff opens afresh.
+    // The open commit's hash and the open file's path, so another file's diff opens afresh. The
+    // "Commit details" pane opens in the same column, under COMMIT_DETAILS_PATH as its path.
     filePane: string | undefined;
 
     // The changes pane's name while the Changes link is open.

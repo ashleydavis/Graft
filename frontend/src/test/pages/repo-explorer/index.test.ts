@@ -552,7 +552,39 @@ describe("RepoExplorerPage", () => {
         expect(paneIds).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane"]);
         expect(elementWithDataId(`commit-${commitJson.hash}`).className).toContain(openRowClasses);
         expect(elementWithDataId(`commit-${commitJson.hash}`).className).toContain("Mui-selected");
+        expect(elementWithDataId("commit-details-row").textContent).toBe("Commit details");
+        expect(document.querySelector("[data-id=\"commit-details-author\"]")).toBeNull();
+    });
+
+    test("opens the Commit details pane with the commit it read when the Commit details row is clicked, in place of the file pane", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        expect(paneElements().map(pane => pane.getAttribute("data-id"))).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane"]);
+        fireEvent.click(elementWithDataId("commit-details-row"));
+        expect((ziggy.addTask as jest.Mock).mock.calls.length).toBe(3);
+        expect(paneElements().map(pane => pane.getAttribute("data-id"))).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "commit-info-pane"]);
+        expect(isSelected("commit-details-row")).toBe(true);
+        expect(elementWithDataId("commit-details-row").getAttribute("aria-current")).toBe("true");
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        expect(elementWithDataId("commit-details-title").textContent).toBe("The first commit");
         expect(elementWithDataId("commit-details-author").textContent).toContain(formatDateTime(commit.authorDate, Intl.DateTimeFormat().resolvedOptions()));
+        expect(elementWithDataId("commit-details-hash").textContent).toBe(commitJson.hash);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        expect(paneElements().map(pane => pane.getAttribute("data-id"))).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane"]);
+        expect(isSelected("commit-details-row")).toBe(false);
+    });
+
+    test("closes the Commit details pane with its close button and makes the commit details pane active", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("commit-details-row"));
+        fireEvent.click(elementWithDataId("commit-info-heading"));
+        expect(activePaneIds()).toEqual(["commit-info-pane"]);
+        fireEvent.click(elementWithDataId("commit-info-close"));
+        expect(document.querySelector("[data-id=\"commit-info-pane\"]")).toBeNull();
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        expect(isSelected("commit-details-row")).toBe(true);
     });
 
     test("opens the file pane to the right of the commit details pane when a changed file is clicked", async () => {
@@ -687,6 +719,22 @@ describe("RepoExplorerPage breadcrumb trail", () => {
             },
         ]);
         fireEvent.click(screen.getByLabelText("Close file diff"));
+        expect(lastPaneStepIds()).toEqual(["breadcrumb-pane-commits", "breadcrumb-pane-commit"]);
+    });
+
+    test("puts a Commit details step in the trail after the commit's step while the Commit details pane is open", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("commit-details-row"));
+        const calls = setPaneSteps.mock.calls;
+        expect(calls[calls.length - 1][0][2]).toEqual({
+            label: "Commit details",
+            tooltip: "Commit details",
+            dataId: "breadcrumb-pane-commit-details",
+            options: [],
+        });
+        expect(lastPaneStepIds()).toEqual(["breadcrumb-pane-commits", "breadcrumb-pane-commit", "breadcrumb-pane-commit-details"]);
+        fireEvent.click(elementWithDataId("commit-info-close"));
         expect(lastPaneStepIds()).toEqual(["breadcrumb-pane-commits", "breadcrumb-pane-commit"]);
     });
 
@@ -858,6 +906,39 @@ describe("RepoExplorerPage keys", () => {
             path: "README.md",
         });
         expect(activePaneIds()).toEqual(["file-pane"]);
+    });
+
+    test("Up from the first file selects the Commit details row, Enter opens its pane, and Up and Down move between it and the files' diffs", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        completeCommitDetails(ziggy, 1);
+        pressKey("Enter");
+        expect(activePaneIds()).toEqual(["file-pane"]);
+        pressKey("ArrowLeft");
+        pressKey("ArrowUp");
+        expect(isSelected("commit-details-row")).toBe(true);
+        expect(paneElements().map(pane => pane.getAttribute("data-id"))).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "commit-info-pane"]);
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        expect((ziggy.addTask as jest.Mock).mock.calls.length).toBe(3);
+        pressKey("ArrowUp");
+        expect(isSelected("commit-details-row")).toBe(true);
+        pressKey("ArrowDown");
+        expect(isSelected("changed-file-README.md")).toBe(true);
+        const fileTask: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[3][0];
+        expect(fileTask.taskType).toBe("file-diff");
+        expect(paneElements().map(pane => pane.getAttribute("data-id"))).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane"]);
+        pressKey("ArrowUp");
+        expect(elementWithDataId("commit-info-pane")).toBeTruthy();
+        pressKey("Escape");
+        expect(document.querySelector("[data-id=\"commit-info-pane\"]")).toBeNull();
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        expect(isSelected("commit-details-row")).toBe(true);
+        pressKey("Enter");
+        expect(elementWithDataId("commit-info-pane")).toBeTruthy();
+        expect(activePaneIds()).toEqual(["commit-info-pane"]);
+        expect(elementWithDataId("commit-details-title").textContent).toBe("The first commit");
     });
 
     test("Up at the first commit in the commit details pane leaves it open and reads it no more", async () => {

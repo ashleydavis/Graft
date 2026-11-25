@@ -342,16 +342,16 @@ wait_for_text() {
 }
 
 #
-# Waits until the commit details pane shows the commit title, and fails with what it last showed
-# when it never does. Enter on another commit draws the pane afresh, so its title is missing while
-# the commit loads, which wait_for_text reports as a failure at once. Up and Down in the commit pane
-# draw it afresh in the same way. Usage: wait_for_commit_title <title>
+# Waits until the commit details pane's heading shows the commit's short hash, and fails with what
+# it last showed when it never does. Enter on another commit draws the pane afresh, so its heading
+# is missing for a moment, which wait_for_text reports as a failure at once. Up and Down in the
+# commit pane draw it afresh in the same way. Usage: wait_for_commit_heading <short hash>
 #
-wait_for_commit_title() {
+wait_for_commit_heading() {
     local waited=0
     local result=""
     while [ "$waited" -lt 30 ]; do
-        result="$(control '{"command":"get-text","dataId":"commit-details-title"}')"
+        result="$(control '{"command":"get-text","dataId":"commit-details-heading"}')"
         if [ "$(printf '%s' "$result" | jq -r '.ok')" = "true" ]; then
             case "$(printf '%s' "$result" | jq -r '.value')" in
                 *"$1"*)
@@ -362,7 +362,7 @@ wait_for_commit_title() {
         sleep 1
         waited=$((waited + 1))
     done
-    fail "commit-details-title never showed \"$1\". The last result was: $result"
+    fail "commit-details-heading never showed \"$1\". The last result was: $result"
 }
 
 

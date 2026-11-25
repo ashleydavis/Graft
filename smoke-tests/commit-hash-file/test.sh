@@ -30,6 +30,9 @@ open_commit_pane
 wait_for_element "commit-$head_hash" 30
 click "commit-$head_hash"
 wait_for_element commit-details 30
+wait_for_text commit-details-heading "${head_hash:0:7}" 30
+click commit-details-row
+wait_for_element commit-info-pane 30
 wait_for_text commit-details-title "Change the note" 30
 wait_for_text commit-details-hash "$head_hash" 30
 wait_for_text changed-files-heading "Files changed (1)" 30

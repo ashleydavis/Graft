@@ -13,6 +13,7 @@ import {
     closeLinkPane,
     closeRightmostPane,
     CHANGES_LINK,
+    COMMIT_DETAILS_PATH,
     COMMITS_LINK,
     explorerStateAfterKey,
     findChange,
@@ -863,5 +864,71 @@ describe("findChange", () => {
         expect(findChange(changesJson, "staged:notes.txt")).toBeUndefined();
         expect(findChange(changesJson, undefined)).toBeUndefined();
         expect(findChange(undefined, "staged:old.txt")).toBeUndefined();
+    });
+});
+
+describe("the Commit details row", () => {
+    //
+    // The commit details pane's rows as the page lists them: the Commit details row, then the two
+    // changed files.
+    //
+    const rowItems: IRepoExplorerItems = {
+        ...items,
+        filePaths: [COMMIT_DETAILS_PATH, "README.md", "notes.txt"],
+    };
+
+    test("is a path no file git lists can have", () => {
+        expect(COMMIT_DETAILS_PATH).toBe("");
+    });
+
+    test("a click selects it and opens the Commit details pane in the file pane's place, with the commit details pane active", () => {
+        expect(selectFile(allOpen, COMMIT_DETAILS_PATH)).toEqual({
+            ...allOpen,
+            activePaneIndex: 2,
+            selectedPath: COMMIT_DETAILS_PATH,
+            openPath: COMMIT_DETAILS_PATH,
+        });
+        expect(openPaneCount(selectFile(allOpen, COMMIT_DETAILS_PATH))).toBe(4);
+    });
+
+    test("Up from the first file selects it and opens its pane while a file pane is open, and Down from it opens the first file", () => {
+        const readmeOpen: IRepoExplorerState = {
+            ...allOpen,
+            activePaneIndex: 2,
+            selectedPath: "README.md",
+            openPath: "README.md",
+        };
+        const rowOpen = explorerStateAfterKey(readmeOpen, "ArrowUp", rowItems);
+        expect(rowOpen.selectedPath).toBe(COMMIT_DETAILS_PATH);
+        expect(rowOpen.openPath).toBe(COMMIT_DETAILS_PATH);
+        expect(rowOpen.activePaneIndex).toBe(2);
+        expect(explorerStateAfterKey(rowOpen, "ArrowUp", rowItems)).toEqual(rowOpen);
+        expect(explorerStateAfterKey(rowOpen, "ArrowDown", rowItems)).toEqual(readmeOpen);
+    });
+
+    test("Enter on it opens the Commit details pane and makes it active", () => {
+        const rowSelected: IRepoExplorerState = {
+            ...detailsOpen,
+            selectedPath: COMMIT_DETAILS_PATH,
+        };
+        expect(explorerStateAfterKey(rowSelected, "Enter", rowItems)).toEqual({
+            ...rowSelected,
+            activePaneIndex: 3,
+            openPath: COMMIT_DETAILS_PATH,
+        });
+    });
+
+    test("Escape closes the Commit details pane and makes the commit details pane active, with the row still selected", () => {
+        const rowOpen: IRepoExplorerState = {
+            ...detailsOpen,
+            activePaneIndex: 3,
+            selectedPath: COMMIT_DETAILS_PATH,
+            openPath: COMMIT_DETAILS_PATH,
+        };
+        expect(explorerStateAfterKey(rowOpen, "Escape", rowItems)).toEqual({
+            ...rowOpen,
+            activePaneIndex: 2,
+            openPath: undefined,
+        });
     });
 });

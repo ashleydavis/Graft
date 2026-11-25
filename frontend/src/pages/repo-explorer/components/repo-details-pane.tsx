@@ -10,7 +10,7 @@ import { JSX } from "react";
 import { repoName } from "../../../lib/breadcrumb-trail";
 import { CHANGES_LINK, COMMITS_LINK } from "../../../lib/repo-explorer";
 import { activePaneClass } from "./active-pane-style";
-import { Fact } from "./commit-details-pane";
+import { Fact } from "./commit-info-pane";
 import { openRowClass } from "./commit-list";
 import { PaneHeader } from "./pane-header";
 

@@ -47,7 +47,10 @@ wait_for_text "commit-$parent_hash" "Change the note" 30
 wait_for_missing_element commits-error 5
 click "commit-$head_hash"
 wait_for_element commit-details 30
-wait_for_commit_title "Sign the notes"
+wait_for_commit_heading "${head_hash:0:7}"
+click commit-details-row
+wait_for_element commit-info-pane 30
+wait_for_text commit-details-title "Sign the notes" 30
 wait_for_text commit-details-hash "$head_hash" 30
 wait_for_text commit-details-parents "${parent_hash:0:7}" 30
 wait_for_missing_element commit-details-error 5

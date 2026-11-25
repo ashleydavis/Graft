@@ -2,10 +2,11 @@
 // The repo explorer page: shows the open repo in the repo details pane. Clicking its Commits link
 // opens the commit pane to its right with the repo's commits, read a page at a time as the list
 // scrolls, clicking a commit opens the commit details pane to its right and clicking a changed file
-// there opens the file pane to its right, like the column view of a file browser. Its Changes link
-// opens the changes pane in place of the commit pane, with the working tree's unstaged and staged
-// files, and clicking a file there opens its file pane. The arrow keys, Enter and Escape move through the panes as in the
-// column view of macOS Finder. Clicking anywhere in a pane makes it the active pane.
+// there opens the file pane to its right, or its "Commit details" row the "Commit details" pane in
+// the file pane's place, like the column view of a file browser. Its Changes link opens the changes
+// pane in place of the commit pane, with the working tree's unstaged and staged files, and clicking
+// a file there opens its file pane. The arrow keys, Enter and Escape move through the panes as in
+// the column view of macOS Finder. Clicking anywhere in a pane makes it the active pane.
 //
 
 import { JSX, MouseEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -16,14 +17,15 @@ import { repoExplorerActivePane } from "../../lib/active-pane";
 import { explorerPaneSteps } from "../../lib/breadcrumb-trail";
 import { commitStagedFiles } from "../../lib/commit";
 import { canReadNextPage, COMMIT_PAGE_SIZE, commitPagesAfterRead, commitPagesReading, ICommitPages, nextPageStart, noCommitPages } from "../../lib/commit-pages";
-import { ICommitPageStart, readCommitPage } from "../../lib/commits";
+import { ICommit, ICommitPageStart, readCommitPage } from "../../lib/commits";
 import { openPaneIds } from "../../lib/pane-animation";
-import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, closeLinkPane, CHANGES_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, initialRepoExplorerState, IRepoExplorerState, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
+import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, closeLinkPane, COMMIT_DETAILS_PATH, CHANGES_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, initialRepoExplorerState, IRepoExplorerState, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
 import { toggleFileStaged } from "../../lib/stage-file";
 import { IWorkingChanges, IWorkingFile, readWorkingChanges } from "../../lib/working-changes";
 import { AnimatedPane } from "./components/animated-pane";
 import { ChangesPane } from "./components/changes-pane";
 import { CommitDetailsPane } from "./components/commit-details-pane";
+import { CommitInfoPane } from "./components/commit-info-pane";
 import { CommitPane } from "./components/commit-pane";
 import { FilePane } from "./components/file-pane";
 import { RepoDetailsPane } from "./components/repo-details-pane";
@@ -89,6 +91,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const [commitPages, setCommitPages] = useState<ICommitPages>(noCommitPages);
     const [explorer, setExplorer] = useState(initialRepoExplorerState);
     const [filePaths, setFilePaths] = useState<string[]>([]);
+    const [openCommit, setOpenCommit] = useState<ICommit | undefined>(undefined);
     const [changes, setChanges] = useState<IWorkingChanges | undefined>(undefined);
     const [changesError, setChangesError] = useState<string | undefined>(undefined);
     const [stageError, setStageError] = useState<string | undefined>(undefined);
@@ -234,6 +237,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
 
     useEffect(() => {
         setFilePaths([]);
+        setOpenCommit(undefined);
     }, [explorer.openHash]);
 
     useEffect(() => {
@@ -314,10 +318,11 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                             selectedPath={explorer.selectedPath}
                             openPath={explorer.openPath}
                             isActive={explorer.activePaneIndex === 2}
-                            dateFormat={dateFormat}
                             onSelectFile={path => setExplorer(state => selectFile(state, path))}
-                            onReadFiles={paths => {
-                                setFilePaths(paths);
+                            onReadCommit={details => {
+                                const paths = details.changedFiles.map(file => file.path);
+                                setFilePaths([COMMIT_DETAILS_PATH, ...paths]);
+                                setOpenCommit(details.commit);
                                 setExplorer(state => selectFirstFile(state, paths));
                             }}
                             onClose={() => setExplorer(closeCommitDetailsPane)}
@@ -325,7 +330,10 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                     )}
                 </AnimatedPane>
                 <AnimatedPane openId={paneIds.filePane}>
-                    {explorer.openHash !== undefined && explorer.openPath !== undefined && (
+                    {explorer.openPath === COMMIT_DETAILS_PATH && openCommit && (
+                        <CommitInfoPane commit={openCommit} isActive={explorer.activePaneIndex === 3} dateFormat={dateFormat} onClose={() => setExplorer(closeFilePane)} />
+                    )}
+                    {explorer.openHash !== undefined && explorer.openPath !== undefined && explorer.openPath !== COMMIT_DETAILS_PATH && (
                         <FilePane key={`${explorer.openHash} ${explorer.openPath}`} repoPath={repoPath} hash={explorer.openHash} path={explorer.openPath} isActive={explorer.activePaneIndex === 3} onClose={() => setExplorer(closeFilePane)} />
                     )}
                 </AnimatedPane>

@@ -17,6 +17,13 @@ source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
 repo="$ZIGGY_TEST_DIR/repo"
 "$ZIGGY_SMOKE_APP_DIR/scripts/test/create-test-repo.sh" "$repo" || fail "could not create the test repo at $repo"
 
+#
+# The test repo's newest commit, "Change the note", and its parent, "Add the notes", which the
+# commit details pane's heading names by their short hashes.
+#
+head_hash="$(git -C "$repo" rev-parse HEAD)" || fail "could not read the test repo's newest commit"
+notes_hash="$(git -C "$repo" rev-parse HEAD~1)" || fail "could not read the parent of the test repo's newest commit"
+
 start_app_on_start_page
 open_repo_with_button "$repo"
 open_sidebar_page about
@@ -48,39 +55,39 @@ press_key Down
 press_key Down
 press_key Enter
 wait_for_element commit-details 30
-wait_for_text commit-details-title "Add the notes" 30
+wait_for_commit_heading "${notes_hash:0:7}"
 
 # Left returns to the commit pane. Up selects the newest commit and the commit details pane shows
 # it at once, then Down and Up move the details back and forth.
 press_key Left
 press_key Up
-wait_for_commit_title "Change the note"
+wait_for_commit_heading "${head_hash:0:7}"
 press_key Down
-wait_for_commit_title "Add the notes"
+wait_for_commit_heading "${notes_hash:0:7}"
 press_key Up
-wait_for_commit_title "Change the note"
+wait_for_commit_heading "${head_hash:0:7}"
 
 # Enter makes the commit details pane active. With no file pane open, Down and Up there open the
 # commit below and above, as they do in the commit pane, and the commit details pane stays active.
 press_key Enter
-wait_for_commit_title "Change the note"
+wait_for_commit_heading "${head_hash:0:7}"
 press_key Down
-wait_for_commit_title "Add the notes"
+wait_for_commit_heading "${notes_hash:0:7}"
 press_key Up
-wait_for_commit_title "Change the note"
+wait_for_commit_heading "${head_hash:0:7}"
 
 # A click in the commit details pane makes it active, and Down there opens the commit below.
 press_key Left
-click commit-details-title
+click commit-details-heading
 press_key Down
-wait_for_commit_title "Add the notes"
+wait_for_commit_heading "${notes_hash:0:7}"
 
 # Right from the commit pane makes the commit details pane active, and Up there opens the commit
 # above.
 press_key Left
 press_key Right
 press_key Up
-wait_for_commit_title "Change the note"
+wait_for_commit_heading "${head_hash:0:7}"
 wait_for_text changed-file-notes.txt "notes.txt" 30
 
 # The commit details pane is still active, so Enter opens its one changed file, which is selected
