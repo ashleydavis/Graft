@@ -6,12 +6,14 @@
 // names the command with how long it ran, and how that command is written for a shell. It checks
 // git runs with the environment Ziggy gives the calling thread, or with the process's own, and that
 // git reads a path after `:(literal)` as itself. It also runs the `log` wrapper's page command
-// against a real repo with a merge, because only real git shows whether paging by a start commit
-// and a skip count lists every commit once, and checks the `git log` commands the `log` wrapper
-// builds give output its parser reads when the repo has `log.showSignature` set and a signed
-// commit. It checks git reads a hash the `log` wrapper puts before `--` as a commit when a file
-// has the same name, that a branch with the same name as a short hash still wins over the commit
-// and that a full hash is read as a commit even when a branch has its name. It checks git reads a
+// against a real repo with a merge, a branch of its own, a remote-tracking branch, a detached HEAD
+// and a stash, because only real git shows whether paging every branch and HEAD by a skip count
+// lists every commit once and leaves the stash out, and checks the `git log` commands the `log`
+// wrapper builds give output its parser reads when the repo has `log.showSignature` set and a
+// signed commit. It checks git reads a hash the `log` wrapper puts before `--` as a commit when a
+// file has the same name, that HEAD before `--` is read as a commit when a file is named HEAD,
+// that a branch with the same name as a short hash still wins over the commit and that a full
+// hash is read as a commit even when a branch has its name. It checks git reads a
 // hash the `diff-tree` wrapper puts before `--` as a commit when a file has the hash as its name,
 // and that without the `--` git refuses the hash as ambiguous.
 //
@@ -363,7 +365,7 @@ test "git log with -- after a full hash reads that commit when a file has the ha
     try expect_log_lists_only(&directory, &.{&first_hash}, &first_hash);
 }
 
-test "git log with -- after --skip=1 and a hash reads the next page when a file has its name" {
+test "git log with -- after --skip=1 and every branch reads the next page with a file named HEAD" {
     var directory: TestDirectory = undefined;
     try make_test_directory(&directory);
     defer delete_test_directory(&directory);
@@ -373,11 +375,13 @@ test "git log with -- after --skip=1 and a hash reads the next page when a file 
     try commit(&directory, "The second commit");
     var first_hash: [full_hash_length]u8 = undefined;
     try read_commit_hash(&directory, "HEAD~1", &first_hash);
-    var second_hash: [full_hash_length]u8 = undefined;
-    try read_commit_hash(&directory, "HEAD", &second_hash);
-    try write_empty_file(&directory, &second_hash);
+    try write_empty_file(&directory, "HEAD");
 
-    try expect_log_lists_only(&directory, &.{ "--skip=1", &second_hash }, &first_hash);
+    try expect_log_lists_only(
+        &directory,
+        &.{ "--skip=1", "--branches", "--remotes", "HEAD" },
+        &first_hash,
+    );
 }
 
 test "git log with -- after a short hash still reads a branch with the hash's name" {
@@ -1004,7 +1008,7 @@ test "is_plain_shell_word accepts only words a shell reads as they are" {
 
 //
 // The page size the paging test reads with. It is small so the test repo's few commits fill
-// several pages, and a page boundary falls between the merged branch's commits and the merge.
+// several pages, and page boundaries fall between the branches' commits.
 //
 const test_page_size: u32 = 2;
 
@@ -1075,20 +1079,38 @@ fn read_page(
     return commits;
 }
 
-test "every page read from the start commit lists the commits of one git log, merge included" {
-    var directory: TestDirectory = undefined;
-    try make_test_directory(&directory);
-    defer delete_test_directory(&directory);
-
-    // The side branch's commits are dated between the main line's, so git log mixes them in.
-    try init_repo(&directory);
-    try commit_at_date(&directory, "Main 1", "2026-01-01T00:00:00+00:00");
-    try run_git_successfully(&.{ "-C", directory.path(), "switch", "--quiet", "--create", "side" });
-    try commit_at_date(&directory, "Side 1", "2026-01-02T00:00:00+00:00");
-    try commit_at_date(&directory, "Side 2", "2026-01-04T00:00:00+00:00");
+//
+// Makes an empty commit with the message at the date on a new branch with the name, then switches
+// back to main.
+//
+fn commit_on_branch_at_date(
+    directory: *const TestDirectory,
+    branch: []const u8,
+    message: []const u8,
+    date: []const u8,
+) !void {
+    try run_git_successfully(&.{ "-C", directory.path(), "switch", "--quiet", "--create", branch });
+    try commit_at_date(directory, message, date);
     try run_git_successfully(&.{ "-C", directory.path(), "switch", "--quiet", "main" });
-    try commit_at_date(&directory, "Main 2", "2026-01-03T00:00:00+00:00");
-    try commit_at_date(&directory, "Main 3", "2026-01-05T00:00:00+00:00");
+}
+
+//
+// Makes the paging test's repo: a main line with a merged side branch, a branch "other" with
+// commits only it reaches, a remote-tracking branch "origin/feature" with a commit only it
+// reaches, a branch "empty" pointing at a commit on main, a detached HEAD with a commit only HEAD
+// reaches, a stash and an untracked file named HEAD. Each commit has its own date, so git log
+// lists them in the order of their dates.
+//
+fn make_branches_repo(directory: *const TestDirectory) !void {
+    // The side branch's commits are dated between the main line's, so git log mixes them in.
+    try init_repo(directory);
+    try commit_at_date(directory, "Main 1", "2026-01-01T00:00:00+00:00");
+    try run_git_successfully(&.{ "-C", directory.path(), "switch", "--quiet", "--create", "side" });
+    try commit_at_date(directory, "Side 1", "2026-01-02T00:00:00+00:00");
+    try commit_at_date(directory, "Side 2", "2026-01-04T00:00:00+00:00");
+    try run_git_successfully(&.{ "-C", directory.path(), "switch", "--quiet", "main" });
+    try commit_at_date(directory, "Main 2", "2026-01-03T00:00:00+00:00");
+    try commit_at_date(directory, "Main 3", "2026-01-05T00:00:00+00:00");
     try run_git_at_date("2026-01-06T00:00:00+00:00", &.{
         "-C",
         directory.path(),
@@ -1107,33 +1129,94 @@ test "every page read from the start commit lists the commits of one git log, me
         "side",
     });
 
+    try run_git_successfully(&.{
+        "-C",
+        directory.path(),
+        "switch",
+        "--quiet",
+        "--create",
+        "other",
+    });
+    try commit_at_date(directory, "Other 1", "2026-01-07T00:00:00+00:00");
+    try commit_at_date(directory, "Other 2", "2026-01-08T00:00:00+00:00");
+    try run_git_successfully(&.{ "-C", directory.path(), "switch", "--quiet", "main" });
+
+    try commit_on_branch_at_date(directory, "feature", "Feature 1", "2026-01-09T00:00:00+00:00");
+    try run_git_successfully(&.{
+        "-C",
+        directory.path(),
+        "update-ref",
+        "refs/remotes/origin/feature",
+        "feature",
+    });
+    try run_git_successfully(&.{ "-C", directory.path(), "branch", "--quiet", "-D", "feature" });
+    try run_git_successfully(&.{ "-C", directory.path(), "branch", "empty", "main~1" });
+
+    try run_git_successfully(&.{ "-C", directory.path(), "switch", "--quiet", "--detach", "main" });
+    try commit_at_date(directory, "Detached 1", "2026-01-10T00:00:00+00:00");
+
+    try write_repo_file(directory, "notes.txt", "A note to stash.\n");
+    try run_git_successfully(&.{ "-C", directory.path(), "add", "notes.txt" });
+    try run_git_at_date("2026-01-11T00:00:00+00:00", &.{
+        "-C",
+        directory.path(),
+        "-c",
+        "user.name=Graft Test",
+        "-c",
+        "user.email=graft-test@example.com",
+        "-c",
+        "commit.gpgsign=false",
+        "stash",
+        "--quiet",
+    });
+    try write_empty_file(directory, "HEAD");
+}
+
+test "every page read from every branch and HEAD lists each of their commits once, stash left out" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    try make_branches_repo(&directory);
+
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_state.deinit();
 
     const arena = arena_state.allocator();
+    var titles: std.ArrayList([]const u8) = .empty;
     var hashes: std.ArrayList([]const u8) = .empty;
-    const first_page = try read_page(arena, &directory, null);
-    try std.testing.expectEqual(@as(usize, test_page_size), first_page.len);
-    for (first_page) |page_commit| {
-        try hashes.append(arena, page_commit.hash);
-    }
-    const start_hash = first_page[0].hash;
-
-    // A commit made on top after the first page is read does not shift the later pages.
-    try commit_at_date(&directory, "Main 4", "2026-01-07T00:00:00+00:00");
+    var start: ?git_log.LogPageStart = null;
     for (0..16) |_| {
-        const page = try read_page(arena, &directory, .{
-            .hash = start_hash,
-            .skip_count = @intCast(hashes.items.len),
-        });
+        const page = try read_page(arena, &directory, start);
         for (page) |page_commit| {
+            try titles.append(arena, page_commit.title);
             try hashes.append(arena, page_commit.hash);
         }
         if (page.len < test_page_size) {
             break;
         }
+        start = .{
+            .skip_count = @intCast(hashes.items.len),
+        };
     } else {
         return error.PagesNeverEnded;
+    }
+
+    const expected_titles = [_][]const u8{
+        "Detached 1",
+        "Feature 1",
+        "Other 2",
+        "Other 1",
+        "Merge side",
+        "Main 3",
+        "Side 2",
+        "Main 2",
+        "Side 1",
+        "Main 1",
+    };
+    try std.testing.expectEqual(expected_titles.len, titles.items.len);
+    for (expected_titles, titles.items) |expected_title, title| {
+        try std.testing.expectEqualStrings(expected_title, title);
     }
 
     const whole_log = try git_interface.start_git(io, arena, &.{
@@ -1141,7 +1224,10 @@ test "every page read from the start commit lists the commits of one git log, me
         directory.path(),
         "log",
         "--format=%H",
-        start_hash,
+        "--branches",
+        "--remotes",
+        "HEAD",
+        "--",
     });
     try std.testing.expectEqual(@as(?u8, 0), whole_log.exit_code);
     var expected_hashes: std.ArrayList([]const u8) = .empty;
@@ -1149,7 +1235,6 @@ test "every page read from the start commit lists the commits of one git log, me
     while (lines.next()) |line| {
         try expected_hashes.append(arena, line);
     }
-    try std.testing.expectEqual(@as(usize, 6), expected_hashes.items.len);
     try std.testing.expectEqual(expected_hashes.items.len, hashes.items.len);
     for (expected_hashes.items, hashes.items) |expected_hash, hash| {
         try std.testing.expectEqualStrings(expected_hash, hash);

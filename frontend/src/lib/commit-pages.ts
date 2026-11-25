@@ -29,7 +29,8 @@ export interface ICommitPages {
     // The id of the commits task reading the next page, or undefined while no page is being read.
     readTaskId: string | undefined;
 
-    // Whether the last page read held the repo's first commit, so it was the last page.
+    // Whether the last page read ended at the first commit of every branch's history, so it was the
+    // last page.
     hasReadLastPage: boolean;
 
     // Why the last page could not be read, or undefined.
@@ -60,10 +61,11 @@ export function commitPagesReading(pages: ICommitPages, taskId: string): ICommit
 
 //
 // Adds the page the commits task with the id read to the pages, or records why it could not be
-// read. A page with fewer commits than the page size ends at the repo's first commit, so it is the
-// last. The result of any other task, such as one queued before the commit pane closed and opened
-// again, leaves the pages as they are, so the list holds only the pages read since the pane last
-// opened.
+// read. A page with fewer commits than the page size ends at the first commit of every branch's
+// history, so it is the last. A commit already listed is left out, so each commit is listed once
+// even when a branch moved on between the pages and git lists a commit again. The result of any
+// other task, such as one queued before the commit pane closed and opened again, leaves the pages
+// as they are, so the list holds only the pages read since the pane last opened.
 //
 export function commitPagesAfterRead(pages: ICommitPages, taskId: string, result: Result<ICommit[], IReadCommitsError>): ICommitPages {
     if (pages.readTaskId !== taskId) {
@@ -76,8 +78,10 @@ export function commitPagesAfterRead(pages: ICommitPages, taskId: string, result
             error: result.error.message,
         };
     }
+    const listedHashes = new Set(pages.commits.map(commit => commit.hash));
+    const newCommits = result.value.filter(commit => !listedHashes.has(commit.hash));
     return {
-        commits: [...pages.commits, ...result.value],
+        commits: [...pages.commits, ...newCommits],
         readTaskId: undefined,
         hasReadLastPage: result.value.length < COMMIT_PAGE_SIZE,
         error: undefined,
@@ -100,16 +104,14 @@ export function canReadNextPage(pages: ICommitPages): boolean {
 }
 
 //
-// Works out where the next page starts: from the first page's first commit, which the pane keeps
-// as the start commit, skipping every commit read so far. Undefined before any commit is read, so
-// the first page starts from HEAD.
+// Works out where the next page starts: skipping every commit read so far. Undefined before any
+// commit is read, so the first page skips none.
 //
 export function nextPageStart(pages: ICommitPages): ICommitPageStart | undefined {
     if (pages.commits.length === 0) {
         return undefined;
     }
     return {
-        hash: pages.commits[0].hash,
         skipCount: pages.commits.length,
     };
 }

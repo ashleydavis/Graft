@@ -114,19 +114,16 @@ export interface ICommitPageRequest {
     // The most commits to read.
     pageSize: number;
 
-    // Where a later page starts, or undefined for the first page, which starts from HEAD.
+    // Where a later page starts, or undefined for the first page.
     start: ICommitPageStart | undefined;
 }
 
 //
-// Where a later page of commits starts: every page after the first runs git log from the same
-// start commit and skips the commits already read, so the commits from the other side of a merge
-// are listed and a commit made on top of the history does not shift the pages.
+// Where a later page of commits starts: every page runs git log from every local branch, every
+// remote-tracking branch and HEAD, and a later page skips the commits already read, so the
+// commits only another branch reaches are listed.
 //
 export interface ICommitPageStart {
-    // The hash of the first page's first commit.
-    hash: string;
-
     // How many commits the commit pane has read so far, which git log skips.
     skipCount: number;
 }
@@ -135,7 +132,7 @@ export interface ICommitPageStart {
 // Reads a page of commits from the repo, the first page or the page the request's start names:
 // queues the commits task as interactive, because the user is waiting on it, and calls onRead with
 // the commits or with why they could not be read once the task ends. The first page sends start as
-// null, which the task reads as starting from HEAD.
+// null, which the task reads as skipping no commits.
 //
 export function readCommitPage(request: ICommitPageRequest, onRead: (result: Result<ICommit[], IReadCommitsError>) => void): void {
     function onTaskCompleted(event: ITaskCompletedEvent): void {
@@ -150,7 +147,6 @@ export function readCommitPage(request: ICommitPageRequest, onRead: (result: Res
     let start: IJsonObject | null = null;
     if (request.start) {
         start = {
-            hash: request.start.hash,
             skipCount: request.start.skipCount,
         };
     }

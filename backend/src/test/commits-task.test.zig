@@ -127,11 +127,19 @@ test "the commits task reads the first page and gives it as its result" {
             "--no-show-signature",
             "--max-count=50",
             format_arg,
+            "--branches",
+            "--remotes",
+            "HEAD",
+            "--",
         },
         .expected_shown_args = &.{
             "log",
             "--no-show-signature",
             "--max-count=50",
+            "--branches",
+            "--remotes",
+            "HEAD",
+            "--",
         },
         .exit_code = 0,
         .stdout = one_commit_output,
@@ -146,7 +154,7 @@ test "the commits task reads the first page and gives it as its result" {
     );
 }
 
-test "the commits task reads a later page from the start hash, skipping the count it is given" {
+test "the commits task reads a later page from every branch and HEAD, skipping the count given" {
     const mock = comptime git_mock.mock_git(.{
         .expected_args = &.{
             "-C",
@@ -157,7 +165,9 @@ test "the commits task reads a later page from the start hash, skipping the coun
             "--max-count=5",
             format_arg,
             "--skip=10",
-            "abc123",
+            "--branches",
+            "--remotes",
+            "HEAD",
             "--",
         },
         .expected_shown_args = &.{
@@ -165,7 +175,9 @@ test "the commits task reads a later page from the start hash, skipping the coun
             "--no-show-signature",
             "--max-count=5",
             "--skip=10",
-            "abc123",
+            "--branches",
+            "--remotes",
+            "HEAD",
             "--",
         },
         .exit_code = 0,
@@ -176,12 +188,12 @@ test "the commits task reads a later page from the start hash, skipping the coun
     try expect_task_message(
         mock,
         "{\"repoPath\":\"/repo\",\"pageSize\":5," ++
-            "\"start\":{\"hash\":\"abc123\",\"skipCount\":10}}",
+            "\"start\":{\"skipCount\":10}}",
         "\"status\":\"succeeded\"",
     );
 }
 
-test "the commits task reads the first page from HEAD when the start is null" {
+test "the commits task reads the first page from every branch and HEAD when the start is null" {
     const mock = comptime git_mock.mock_git(.{
         .expected_args = &.{
             "-C",
@@ -191,8 +203,20 @@ test "the commits task reads the first page from HEAD when the start is null" {
             "--no-show-signature",
             "--max-count=50",
             format_arg,
+            "--branches",
+            "--remotes",
+            "HEAD",
+            "--",
         },
-        .expected_shown_args = &.{ "log", "--no-show-signature", "--max-count=50" },
+        .expected_shown_args = &.{
+            "log",
+            "--no-show-signature",
+            "--max-count=50",
+            "--branches",
+            "--remotes",
+            "HEAD",
+            "--",
+        },
         .exit_code = 0,
         .stdout = one_commit_output,
         .stderr = "",
@@ -202,23 +226,6 @@ test "the commits task reads the first page from HEAD when the start is null" {
         mock,
         "{\"repoPath\":\"/repo\",\"pageSize\":50,\"start\":null}",
         "\"status\":\"succeeded\"",
-    );
-}
-
-test "the commits task refuses a start hash that is not hexadecimal without starting git" {
-    const mock = comptime git_mock.mock_git(.{
-        .expected_args = &.{},
-        .expected_shown_args = &.{},
-        .exit_code = 0,
-        .stdout = "",
-        .stderr = "",
-        .start_error = error.GitStartedWhenItShouldNotBe,
-    });
-    try expect_task_message(
-        mock,
-        "{\"repoPath\":\"/repo\",\"pageSize\":5," ++
-            "\"start\":{\"hash\":\"--all\",\"skipCount\":10}}",
-        "A commit was asked for by a hash that is not hexadecimal.",
     );
 }
 
@@ -232,11 +239,19 @@ test "the commits task fails with a description of the error when git log fails"
             "--no-show-signature",
             "--max-count=50",
             format_arg,
+            "--branches",
+            "--remotes",
+            "HEAD",
+            "--",
         },
         .expected_shown_args = &.{
             "log",
             "--no-show-signature",
             "--max-count=50",
+            "--branches",
+            "--remotes",
+            "HEAD",
+            "--",
         },
         .exit_code = 128,
         .stdout = "",

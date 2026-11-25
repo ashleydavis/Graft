@@ -2,8 +2,8 @@
 // Tests the paging of the commit list: builds pages of commits, reads them in with the results of
 // commits tasks and checks the next page is wanted only near the end of the commits read, never
 // while a page is being read, after the last page or after a failed read, that a stale task's
-// result is dropped and that each page after the first starts from the first page's first commit
-// and skips every commit read.
+// result is dropped, that each page after the first skips every commit read and that a commit
+// already listed is not listed again.
 //
 
 import { canReadNextPage, COMMIT_PAGE_SIZE, commitPagesAfterRead, commitPagesReading, isNearEnd, NEAR_END_ROW_COUNT, nextPageStart, noCommitPages } from "../../lib/commit-pages";
@@ -44,7 +44,7 @@ describe("commit pages", () => {
         expect(canReadNextPage(reading)).toBe(false);
     });
 
-    test("add a full page and want the next one, which starts from the first commit and skips the page", () => {
+    test("add a full page and want the next one, which skips the page", () => {
         const firstPage = makeCommits(0, COMMIT_PAGE_SIZE);
         const pages = commitPagesAfterRead(commitPagesReading(noCommitPages, "t1"), "t1", {
             ok: true,
@@ -55,12 +55,11 @@ describe("commit pages", () => {
         expect(pages.hasReadLastPage).toBe(false);
         expect(canReadNextPage(pages)).toBe(true);
         expect(nextPageStart(pages)).toEqual({
-            hash: firstPage[0].hash,
             skipCount: COMMIT_PAGE_SIZE,
         });
     });
 
-    test("keep the first page's first commit as the start and skip every commit read after more pages", () => {
+    test("skip every commit read after more pages", () => {
         const firstPage = makeCommits(0, COMMIT_PAGE_SIZE);
         const secondPage = makeCommits(COMMIT_PAGE_SIZE, COMMIT_PAGE_SIZE);
         const afterFirst = commitPagesAfterRead(commitPagesReading(noCommitPages, "t1"), "t1", {
@@ -73,7 +72,6 @@ describe("commit pages", () => {
         });
         expect(canReadNextPage(afterSecond)).toBe(true);
         expect(nextPageStart(afterSecond)).toEqual({
-            hash: firstPage[0].hash,
             skipCount: 2 * COMMIT_PAGE_SIZE,
         });
     });
@@ -92,6 +90,24 @@ describe("commit pages", () => {
         expect(afterLast.commits).toEqual([...firstPage, ...lastPage]);
         expect(afterLast.hasReadLastPage).toBe(true);
         expect(canReadNextPage(afterLast)).toBe(false);
+    });
+
+    test("leave out a commit already listed when a branch moved on between the pages, and still want the next page after a full one", () => {
+        const firstPage = makeCommits(0, COMMIT_PAGE_SIZE);
+        const shiftedPage = makeCommits(COMMIT_PAGE_SIZE - 1, COMMIT_PAGE_SIZE);
+        const afterFirst = commitPagesAfterRead(commitPagesReading(noCommitPages, "t1"), "t1", {
+            ok: true,
+            value: firstPage,
+        });
+        const afterShifted = commitPagesAfterRead(commitPagesReading(afterFirst, "t2"), "t2", {
+            ok: true,
+            value: shiftedPage,
+        });
+        expect(afterShifted.commits).toEqual([...firstPage, ...shiftedPage.slice(1)]);
+        expect(afterShifted.hasReadLastPage).toBe(false);
+        expect(nextPageStart(afterShifted)).toEqual({
+            skipCount: 2 * COMMIT_PAGE_SIZE - 1,
+        });
     });
 
     test("stop after an empty page, which follows a last page that was exactly full", () => {

@@ -7,8 +7,8 @@
 # page until the repo's first commit shows, and the right sidebar lists the git log that read the
 # page after the first. Then it opens the commit pane again and presses Down once per commit, so
 # the selection moves across the pages to the first commit, and Enter opens that commit's details.
-# The repo holds files named after the hash every later page starts from and the first commit's
-# short hash, so the later pages and the details are read with a file of the same name in the repo.
+# The repo holds a file named HEAD, which every page names, and one named after the first commit's
+# short hash, so the pages and the details are read with a file of the same name in the repo.
 # See test.md.
 #
 
@@ -45,14 +45,12 @@ commit_count="${#hashes[@]}"
 [ "$commit_count" -gt "$PAGE_SIZE" ] || fail "the test repo has $commit_count commits, which fit on one page"
 first_hash="${hashes[$((commit_count - 1))]}"
 
-# An empty file named after the hash of the first page's first commit, which every later page
-# starts from, and one named after the short hash of the first commit, whose details the test
-# opens. The `--` after the hash makes git log read a hash that is also a file's name as a
-# commit. The first commit's file is named after its short hash only, because git diff-tree, which
-# reads the commit's changed files, is given the full hash and reads it as ambiguous when a file
-# has that name.
-page_hash="${hashes[0]}"
-touch "$repo/$page_hash" || fail "could not add a file named $page_hash to the test repo"
+# An empty file named HEAD, which every page names after the branches, and one named after the
+# short hash of the first commit, whose details the test opens. The `--` after HEAD and after the
+# hash makes git log read each as a commit when a file has its name. The first commit's file is
+# named after its short hash only, because git diff-tree, which reads the commit's changed files,
+# is given the full hash and reads it as ambiguous when a file has that name.
+touch "$repo/HEAD" || fail "could not add a file named HEAD to the test repo"
 first_short_hash="$(git -C "$repo" rev-parse --short "$first_hash")" || fail "could not read the short hash of $first_hash"
 touch "$repo/$first_short_hash" || fail "could not add a file named $first_short_hash to the test repo"
 
@@ -84,9 +82,9 @@ wait_for_missing_element commits-loading 30
 wait_for_missing_element commits-error 5
 
 # The right sidebar lists the git log that read the page after the first, the most recent command:
-# from the first page's first commit, skipping the page already read, with `--` after the hash.
+# from every branch and HEAD, skipping the page already read, with `--` after HEAD.
 click right-sidebar-toggle
-wait_for_text git-command-0-text "git log --no-show-signature --max-count=$PAGE_SIZE --skip=$PAGE_SIZE ${hashes[0]} --" 30
+wait_for_text git-command-0-text "git log --no-show-signature --max-count=$PAGE_SIZE --skip=$PAGE_SIZE --branches --remotes HEAD --" 30
 click right-sidebar-toggle
 
 # Escape closes the commit pane and Enter on the selected Commits link opens it again, reading the

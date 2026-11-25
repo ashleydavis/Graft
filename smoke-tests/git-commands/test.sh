@@ -78,7 +78,7 @@ run_shown_commands() {
         output="$(cd "$ZIGGY_TEST_DIR" && GIT_PAGER=cat bash -c "$directory_command"$'\n'"$command" 2>&1)" \
             || fail "the shown command \"$command\" failed after \"$directory_command\": $output"
         case "$command" in
-            "git log --no-show-signature --max-count=50")
+            "git log --no-show-signature --max-count=50 --branches --remotes HEAD --")
                 case "$output" in
                     *"Change the note"*)
                         ;;
@@ -102,7 +102,7 @@ wait_for_text git-commands-empty "This page has run no Git commands." 30
 open_repo_with_button "$repo"
 wait_for_text git-commands-empty "This page has run no Git commands." 30
 open_commit_pane
-wait_for_text git-command-0-text "git log --no-show-signature --max-count=50" 30
+wait_for_text git-command-0-text "git log --no-show-signature --max-count=50 --branches --remotes HEAD --" 30
 wait_for_text git-commands-directory "cd $repo" 30
 run_shown_commands
 

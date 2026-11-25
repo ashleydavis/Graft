@@ -36,16 +36,10 @@ pub const CommitsTaskRequest = struct {
 };
 
 //
-// Where a later page starts, as the frontend sends it: the start commit's hash and how many
-// commits the commit pane has read so far. The field names are camelCase for the same reason as
-// `CommitsTaskRequest`'s.
+// Where a later page starts, as the frontend sends it: how many commits the commit pane has read
+// so far. The field names are camelCase for the same reason as `CommitsTaskRequest`'s.
 //
 pub const CommitsTaskStart = struct {
-    //
-    // The hash of the first page's first commit.
-    //
-    hash: []const u8,
-
     //
     // How many commits the commit pane has read so far.
     //
@@ -90,7 +84,6 @@ pub fn commits_task_handler(comptime run_git: git_interface.RunGit) CommitsTaskH
             var start: ?git_log.LogPageStart = null;
             if (payload.start) |payload_start| {
                 start = .{
-                    .hash = payload_start.hash,
                     .skip_count = payload_start.skipCount,
                 };
             }

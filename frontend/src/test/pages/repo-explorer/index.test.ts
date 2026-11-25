@@ -1045,7 +1045,7 @@ describe("RepoExplorerPage commit pages", () => {
         expect(screen.queryByText("Loading the commits.")).toBeNull();
     });
 
-    test("reads the next page from the first commit, skipping the commits read, when the list scrolls near the end, with a loading row while it is read", async () => {
+    test("reads the next page, skipping the commits read, when the list scrolls near the end, with a loading row while it is read", async () => {
         const ziggy = installFakeTaskZiggy();
         await listFirstPage(ziggy);
         scrollCommitListToEnd();
@@ -1054,7 +1054,6 @@ describe("RepoExplorerPage commit pages", () => {
             repoPath: "/repo",
             pageSize: 50,
             start: {
-                hash: commitPageJson(0, 1)[0].hash,
                 skipCount: 50,
             },
         });
@@ -1071,7 +1070,6 @@ describe("RepoExplorerPage commit pages", () => {
             repoPath: "/repo",
             pageSize: 50,
             start: {
-                hash: commitPageJson(0, 1)[0].hash,
                 skipCount: 100,
             },
         });

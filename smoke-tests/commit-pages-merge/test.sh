@@ -5,8 +5,8 @@
 # commit list, the merged branch's commits dated between the main line's so git log mixes them in.
 # It starts the real app with remote control on, opens that repo with the welcome page's Open repo
 # button, scrolls the commit list to its end and checks a commit only on the merged branch is
-# listed and the right sidebar lists the git log that read the second page from the first page's
-# first commit. Then it presses Down once per commit git rev-list counts, so every commit is listed
+# listed and the right sidebar lists the git log that read the second page from every branch and
+# HEAD. Then it presses Down once per commit git rev-list counts, so every commit is listed
 # once, in git's order, and Enter opens the repo's first commit. See test.md.
 #
 
@@ -96,10 +96,10 @@ wait_for_missing_element commits-error 5
 # The oldest commit only on the merged branch is listed, just above the test repo's own commits.
 wait_for_text "commit-title-$side_hash" "Side 1" 30
 
-# The right sidebar lists the git log that read the second page: from the first page's first
-# commit, skipping the page already read, with `--` after the hash.
+# The right sidebar lists the git log that read the second page: from every branch and HEAD,
+# skipping the page already read, with `--` after HEAD.
 click right-sidebar-toggle
-wait_for_text git-command-0-text "git log --no-show-signature --max-count=$PAGE_SIZE --skip=$PAGE_SIZE ${hashes[0]} --" 30
+wait_for_text git-command-0-text "git log --no-show-signature --max-count=$PAGE_SIZE --skip=$PAGE_SIZE --branches --remotes HEAD --" 30
 click right-sidebar-toggle
 
 # Escape closes the commit pane and Enter on the selected Commits link opens it again, reading the

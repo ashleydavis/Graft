@@ -1,7 +1,8 @@
 //
 // Tests the `log` wrapper with the mock of the Git interface function in place of `git`: the
-// arguments it starts git with for the first page, for a later page and for one commit, how it
-// parses git's output into commits, and every way the request or git's output can be refused.
+// arguments it starts git with for the first page and a later page, which both name every branch
+// and HEAD, and for one commit, how it parses git's output into commits, and every way the
+// request or git's output can be refused.
 //
 
 const std = @import("std");
@@ -48,6 +49,10 @@ const first_page_args: []const []const u8 = &.{
     "--no-show-signature",
     "--max-count=50",
     format_arg,
+    "--branches",
+    "--remotes",
+    "HEAD",
+    "--",
 };
 
 //
@@ -57,6 +62,10 @@ const first_page_shown_args: []const []const u8 = &.{
     "log",
     "--no-show-signature",
     "--max-count=50",
+    "--branches",
+    "--remotes",
+    "HEAD",
+    "--",
 };
 
 //
@@ -82,7 +91,7 @@ const first_page_request: git_log.LogPageRequest = .{
     .start = null,
 };
 
-test "read_log_page reads the first page from HEAD and parses every field of each commit" {
+test "read_log_page reads the first page from every branch and HEAD and parses each commit" {
     var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
@@ -120,7 +129,7 @@ test "read_log_page reads the first page from HEAD and parses every field of eac
     try std.testing.expectEqualStrings("", first.description);
 }
 
-test "read_log_page starts a later page from the start commit and skips the commits read, with -- after its hash" {
+test "read_log_page reads a later page from every branch and HEAD, skipping the commits read" {
     var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
@@ -135,7 +144,9 @@ test "read_log_page starts a later page from the start commit and skips the comm
             "--max-count=1",
             format_arg,
             "--skip=7",
-            second_hash,
+            "--branches",
+            "--remotes",
+            "HEAD",
             "--",
         },
         .expected_shown_args = &.{
@@ -143,7 +154,9 @@ test "read_log_page starts a later page from the start commit and skips the comm
             "--no-show-signature",
             "--max-count=1",
             "--skip=7",
-            second_hash,
+            "--branches",
+            "--remotes",
+            "HEAD",
             "--",
         },
         .exit_code = 0,
@@ -162,7 +175,6 @@ test "read_log_page starts a later page from the start commit and skips the comm
             .repo_path = "repo",
             .page_size = 1,
             .start = .{
-                .hash = second_hash,
                 .skip_count = 7,
             },
         },
@@ -236,36 +248,6 @@ test "read_log_page refuses a page size of 0 without starting git" {
     ));
     try std.testing.expectEqualStrings(
         "The commits were asked for with a page size of 0. Ask for at least one commit.",
-        task.failure.?,
-    );
-}
-
-test "read_log_page refuses a start hash that git could read as an option" {
-    var task = git_mock.mock_task();
-    const mock = comptime git_mock.mock_git(.{
-        .expected_args = &.{},
-        .expected_shown_args = &.{},
-        .exit_code = 0,
-        .stdout = "",
-        .stderr = "",
-        .start_error = error.GitStartedWhenItShouldNotBe,
-    });
-    try std.testing.expectError(error.InvalidCommitHash, git_log.read_log_page(
-        io,
-        git_mock.mock_services(&task),
-        std.testing.allocator,
-        mock,
-        .{
-            .repo_path = "repo",
-            .page_size = 10,
-            .start = .{
-                .hash = "--all",
-                .skip_count = 10,
-            },
-        },
-    ));
-    try std.testing.expectEqualStrings(
-        "A commit was asked for by a hash that is not hexadecimal. Give the hash of a commit.",
         task.failure.?,
     );
 }
@@ -389,9 +371,9 @@ test "read_log_page frees everything when an allocation fails" {
 }
 
 //
-// Reads a later page of `two_commits_output` with the allocator, from the start commit skipping
-// the commits read, for the allocation failure test of the later page's `--skip` argument. The
-// page is allocated in an arena over the allocator, as a task's is.
+// Reads a later page of `two_commits_output` with the allocator, from every branch and HEAD
+// skipping the commits read, for the allocation failure test of the later page's `--skip`
+// argument. The page is allocated in an arena over the allocator, as a task's is.
 //
 fn read_later_page(allocator: std.mem.Allocator) !void {
     var task = git_mock.mock_task();
@@ -408,7 +390,9 @@ fn read_later_page(allocator: std.mem.Allocator) !void {
             "--max-count=50",
             format_arg,
             "--skip=50",
-            second_hash,
+            "--branches",
+            "--remotes",
+            "HEAD",
             "--",
         },
         .expected_shown_args = &.{
@@ -416,7 +400,9 @@ fn read_later_page(allocator: std.mem.Allocator) !void {
             "--no-show-signature",
             "--max-count=50",
             "--skip=50",
-            second_hash,
+            "--branches",
+            "--remotes",
+            "HEAD",
             "--",
         },
         .exit_code = 0,
@@ -433,7 +419,6 @@ fn read_later_page(allocator: std.mem.Allocator) !void {
             .repo_path = "repo",
             .page_size = 50,
             .start = .{
-                .hash = second_hash,
                 .skip_count = 50,
             },
         },
@@ -816,13 +801,51 @@ test "read_log_page_command passes --no-show-signature for the first page and a 
             .repo_path = "repo",
             .page_size = 50,
             .start = .{
-                .hash = second_hash,
                 .skip_count = 50,
             },
         },
         "--max-count=50",
     );
     try expect_no_show_signature(later_page.args);
+}
+
+//
+// Checks every page of the commit list covers every branch, by building the first page's command
+// and a later page's command and checking each ends with every local branch, every
+// remote-tracking branch and HEAD, then `--`.
+//
+test "read_log_page_command names every branch and HEAD for the first page and a later page" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const refs = [_][]const u8{ "--branches", "--remotes", "HEAD", "--" };
+    const first_page = try git_log.read_log_page_command(
+        arena.allocator(),
+        first_page_request,
+        "--max-count=50",
+    );
+    try std.testing.expectEqualStrings("repo", first_page.repo_path);
+    try std.testing.expectEqual(@as(usize, 9), first_page.args.len);
+    for (refs, first_page.args[5..]) |expected, arg| {
+        try std.testing.expectEqualStrings(expected, arg);
+    }
+
+    const later_page = try git_log.read_log_page_command(
+        arena.allocator(),
+        .{
+            .repo_path = "repo",
+            .page_size = 50,
+            .start = .{
+                .skip_count = 120,
+            },
+        },
+        "--max-count=50",
+    );
+    try std.testing.expectEqual(@as(usize, 10), later_page.args.len);
+    try std.testing.expectEqualStrings("--skip=120", later_page.args[5]);
+    for (refs, later_page.args[6..]) |expected, arg| {
+        try std.testing.expectEqualStrings(expected, arg);
+    }
 }
 
 //

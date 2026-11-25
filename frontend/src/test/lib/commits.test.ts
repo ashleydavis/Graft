@@ -94,14 +94,13 @@ describe("readCommitPage", () => {
 });
 
 describe("readCommitPage later pages", () => {
-    test("queues the commits task for the page from the start hash, skipping the count it is given", () => {
+    test("queues the commits task for the page, skipping the count it is given", () => {
         const ziggy = installFakeTaskZiggy();
         readCommitPage({
             taskId: "t2",
             repoPath: "/repo",
             pageSize: 50,
             start: {
-                hash: "1111111111111111111111111111111111111111",
                 skipCount: 100,
             },
         }, jest.fn());
@@ -113,7 +112,6 @@ describe("readCommitPage later pages", () => {
                 repoPath: "/repo",
                 pageSize: 50,
                 start: {
-                    hash: "1111111111111111111111111111111111111111",
                     skipCount: 100,
                 },
             },

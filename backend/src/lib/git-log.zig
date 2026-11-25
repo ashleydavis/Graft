@@ -146,23 +146,17 @@ pub const LogPageRequest = struct {
     page_size: u32,
 
     //
-    // Where a later page starts, or null for the first page, which starts from HEAD.
+    // Where a later page starts, or null for the first page.
     //
     start: ?LogPageStart,
 };
 
 //
-// Where a later page of commits starts: every page after the first runs `git log` from the same
-// commit and skips the commits already read. Starting each page from the last commit read would
-// list only that commit's ancestors and lose the other side of a merge, and starting from HEAD
-// would shift the pages when a commit is made on top of the history.
+// Where a later page of commits starts: every page runs `git log` from every local branch, every
+// remote-tracking branch and HEAD, and a later page skips the commits already read, so a later
+// page still reaches the commits that only another branch reaches.
 //
 pub const LogPageStart = struct {
-    //
-    // The hash of the first page's first commit, which the commit pane keeps as the start commit.
-    //
-    hash: []const u8,
-
     //
     // How many commits the commit pane has read so far. Passed to `--skip`.
     //
@@ -190,12 +184,6 @@ pub fn read_log_page(
         services.fail_with("The commits were asked for with a page size of 0. Ask for at least " ++
             "one commit.");
         return error.InvalidPageSize;
-    }
-    if (request.start) |start| {
-        if (!is_commit_hash(start.hash)) {
-            services.fail_with(invalid_commit_hash_text);
-            return error.InvalidCommitHash;
-        }
     }
     assert(request.repo_path.len > 0);
     assert(request.page_size > 0);
@@ -321,14 +309,16 @@ pub fn read_commit_command(
 }
 
 //
-// Builds the command `read_log_page` runs: the first page starts from HEAD, and a later page
-// starts from the start commit and skips the commits already read, with `--` after the hash so git
-// reads it only as a commit, even when a file has the same name. `--no-show-signature` stops a
-// `log.showSignature` in the user's git config adding signature text that the parser cannot read.
-// The help panel shows it without `-z` and the format, as
-// `git log --no-show-signature --max-count=<page size>` or
-// `git log --no-show-signature --max-count=<page size> --skip=<count read> <start hash> --`,
-// which lists the same commits in git's own layout.
+// Builds the command `read_log_page` runs: every page lists the commits reachable from every local
+// branch, every remote-tracking branch and HEAD, newest first, each once, and a later page skips
+// the commits already read. `--branches --remotes HEAD` names only the branches and HEAD, so
+// stashes and other refs are left out. The `--` after HEAD makes git read it only as a
+// commit, even when a file has the same name. `--no-show-signature` stops a `log.showSignature` in
+// the user's git config adding signature text that the parser cannot read. The help panel shows
+// it without `-z` and the format, as
+// `git log --no-show-signature --max-count=<page size> --branches --remotes HEAD --`, with
+// `--skip=<count read>` before `--branches` for a later page, which lists the same commits in
+// git's own layout.
 //
 pub fn read_log_page_command(
     allocator: std.mem.Allocator,
@@ -338,29 +328,29 @@ pub fn read_log_page_command(
     assert(request.repo_path.len > 0);
     assert(std.mem.startsWith(u8, max_count, "--max-count="));
 
-    const first_page_args = [_][]const u8{
+    const options = [_][]const u8{
         "log",
         "-z",
         "--no-show-signature",
         max_count,
         log_format,
     };
+    const refs = [_][]const u8{
+        "--branches",
+        "--remotes",
+        "HEAD",
+        "--",
+    };
     if (request.start) |start| {
-        assert(is_commit_hash(start.hash));
         const skip = try std.fmt.allocPrint(allocator, "--skip={d}", .{start.skip_count});
-        const later_page_args = [_][]const u8{
-            skip,
-            start.hash,
-            "--",
-        };
         return .{
             .repo_path = request.repo_path,
-            .args = try allocator.dupe([]const u8, &(first_page_args ++ later_page_args)),
+            .args = try allocator.dupe([]const u8, &(options ++ [_][]const u8{skip} ++ refs)),
         };
     } else {
         return .{
             .repo_path = request.repo_path,
-            .args = try allocator.dupe([]const u8, &first_page_args),
+            .args = try allocator.dupe([]const u8, &(options ++ refs)),
         };
     }
 }
