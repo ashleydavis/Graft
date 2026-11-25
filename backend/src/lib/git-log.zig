@@ -149,6 +149,13 @@ pub const LogPageRequest = struct {
     // Where a later page starts, or null for the first page.
     //
     start: ?LogPageStart,
+
+    //
+    // The name of the local branch whose commits to read, as in "feature/x", or null to read every
+    // branch and HEAD. Every page of the branch pane names its branch. It is null unless set,
+    // because only the branch pane reads a branch's commits.
+    //
+    branch: ?[]const u8 = null,
 };
 
 //
@@ -187,6 +194,13 @@ pub fn read_log_page(
         services.fail_with("The commits were asked for with a page size of 0. Ask for at least " ++
             "one commit.");
         return error.InvalidPageSize;
+    }
+    if (request.branch) |branch| {
+        if (!is_branch_name(branch)) {
+            services.fail_with("A branch's commits were asked for by a name git could read as " ++
+                "an option. Give the name of a branch the repo has.");
+            return error.InvalidBranchName;
+        }
     }
     assert(request.repo_path.len > 0);
     assert(request.page_size > 0);
@@ -348,15 +362,17 @@ pub fn read_commit_command(
 
 //
 // Builds the command `read_log_page` runs: every page lists the commits reachable from every local
-// branch, every remote-tracking branch and HEAD, newest first, each once, and a later page skips
-// the commits already read. `--branches --remotes HEAD` names only the branches and HEAD, so
-// stashes and other refs are left out. The `--` after HEAD makes git read it only as a
-// commit, even when a file has the same name. `--no-show-signature` stops a `log.showSignature` in
-// the user's git config adding signature text that the parser cannot read. The help panel shows
-// it without `-z` and the format, as
-// `git log --no-show-signature --max-count=<page size> --branches --remotes HEAD --`, with
-// `--skip=<count read>` before `--branches` for a later page, which lists the same commits in
-// git's own layout.
+// branch, every remote-tracking branch and HEAD, newest first, each once, or only those reachable
+// from the branch's full ref name under `refs/heads/` when the request names a branch, and a later
+// page skips the commits already read. `--branches --remotes HEAD` names only the branches and
+// HEAD, so stashes and other refs are left out. The `--` after HEAD or the branch makes git read it
+// only as a commit, even when a file has the same name. `--no-show-signature` stops a
+// `log.showSignature` in the user's git config adding signature text that the parser cannot read.
+// The help panel shows it without `-z` and the format, as
+// `git log --no-show-signature --max-count=<page size> --branches --remotes HEAD --` or
+// `git log --no-show-signature --max-count=<page size> refs/heads/<branch> --`, with
+// `--skip=<count read>` before the refs for a later page, which lists the same commits in git's
+// own layout.
 //
 pub fn read_log_page_command(
     allocator: std.mem.Allocator,
@@ -373,24 +389,58 @@ pub fn read_log_page_command(
         max_count,
         log_format,
     };
-    const refs = [_][]const u8{
+    const all_refs = [_][]const u8{
         "--branches",
         "--remotes",
         "HEAD",
         "--",
     };
+    if (request.branch) |branch| {
+        assert(is_branch_name(branch));
+        const branch_ref = try std.fmt.allocPrint(allocator, "refs/heads/{s}", .{branch});
+        const branch_refs = [_][]const u8{
+            branch_ref,
+            "--",
+        };
+        if (request.start) |start| {
+            const skip = try std.fmt.allocPrint(allocator, "--skip={d}", .{start.skip_count});
+            return .{
+                .repo_path = request.repo_path,
+                .args = try allocator.dupe(
+                    []const u8,
+                    &(options ++ [_][]const u8{skip} ++ branch_refs),
+                ),
+            };
+        }
+        return .{
+            .repo_path = request.repo_path,
+            .args = try allocator.dupe([]const u8, &(options ++ branch_refs)),
+        };
+    }
     if (request.start) |start| {
         const skip = try std.fmt.allocPrint(allocator, "--skip={d}", .{start.skip_count});
         return .{
             .repo_path = request.repo_path,
-            .args = try allocator.dupe([]const u8, &(options ++ [_][]const u8{skip} ++ refs)),
-        };
-    } else {
-        return .{
-            .repo_path = request.repo_path,
-            .args = try allocator.dupe([]const u8, &(options ++ refs)),
+            .args = try allocator.dupe([]const u8, &(options ++ [_][]const u8{skip} ++ all_refs)),
         };
     }
+    return .{
+        .repo_path = request.repo_path,
+        .args = try allocator.dupe([]const u8, &(options ++ all_refs)),
+    };
+}
+
+//
+// Whether the text can be a branch's name: not empty and not starting with "-". Checked before the
+// name is passed to git, as a hash is, so git never reads it as an option. The commits task also
+// checks git listed the branch before asking for its commits.
+//
+pub fn is_branch_name(text: []const u8) bool {
+    if (text.len == 0) {
+        return false;
+    }
+    assert(text.len > 0);
+    return text[0] != '-';
 }
 
 //

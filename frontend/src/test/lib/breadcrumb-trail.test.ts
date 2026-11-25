@@ -7,7 +7,7 @@
 //
 
 import { clipStepLabel, COLLAPSED_STEP_WIDTH_PX, collapsedStepCount, explorerPaneSteps, fileStep, ITrailOption, ITrailStep, ITrailWidths, pageTrail, repoName, searchMatches } from "../../lib/breadcrumb-trail";
-import { COMMIT_DETAILS_PATH, initialRepoExplorerState } from "../../lib/repo-explorer";
+import { branchLink, COMMIT_DETAILS_PATH, initialRepoExplorerState } from "../../lib/repo-explorer";
 
 //
 // The hash of the commit the pane step tests open, long like a real one so its step is cut short.
@@ -179,6 +179,26 @@ describe("explorerPaneSteps", () => {
             openLink: "commits",
             selectedHash: HASH,
         }, undefined)).toEqual([commitPaneSteps[0]]);
+    });
+
+    test("has the branch's step, named after the branch, while the branch pane is open", () => {
+        expect(explorerPaneSteps({
+            ...initialRepoExplorerState,
+            openLink: branchLink("feature/x"),
+        }, undefined)).toEqual([{
+            label: "feature/x",
+            tooltip: "feature/x",
+            dataId: "breadcrumb-pane-branch",
+            options: [],
+        }]);
+    });
+
+    test("adds the commit's short hash after the branch's step while one of its commits is open", () => {
+        expect(explorerPaneSteps({
+            ...initialRepoExplorerState,
+            openLink: branchLink("feature/x"),
+            openHash: HASH,
+        }, undefined).map(step => step.dataId)).toEqual(["breadcrumb-pane-branch", "breadcrumb-pane-commit"]);
     });
 
     test("adds the commit's short hash, with its full hash in the tooltip, while the commit is open", () => {

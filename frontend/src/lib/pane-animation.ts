@@ -5,7 +5,7 @@
 // reduced motion setting is on.
 //
 
-import { CHANGES_LINK, COMMITS_LINK, IRepoExplorerState } from "./repo-explorer";
+import { CHANGES_LINK, COMMITS_LINK, IRepoExplorerState, linkBranch } from "./repo-explorer";
 
 //
 // The media query that matches while the system's reduced motion setting is on. The panes read it
@@ -50,7 +50,8 @@ export function paneAnimationClass(isClosing: boolean, isReducedMotion: boolean)
 // name appears, closes when it goes and opens afresh when it changes.
 //
 export interface IOpenPaneIds {
-    // The commit pane's name while the Commits link is open.
+    // The commit pane's name while the Commits link is open, or the open branch's row name while
+    // a branch is open, so another branch's pane opens afresh.
     commitPane: string | undefined;
 
     // The open commit's hash, so another commit's details open afresh.
@@ -84,6 +85,9 @@ export function openPaneIds(explorer: IRepoExplorerState, hasOpenChange: boolean
     };
     if (explorer.openLink === COMMITS_LINK) {
         ids.commitPane = COMMITS_LINK;
+    }
+    if (linkBranch(explorer.openLink) !== undefined) {
+        ids.commitPane = explorer.openLink;
     }
     if (explorer.openHash !== undefined) {
         if (explorer.openPath !== undefined) {

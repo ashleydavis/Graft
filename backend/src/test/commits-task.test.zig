@@ -311,3 +311,126 @@ test "the commits task refuses an empty repo path and the backend keeps running"
         "The repo path is empty. Give the path of the repo to read.",
     );
 }
+
+//
+// The call to `git for-each-ref` the commits task makes for a branch's first page, answered with
+// main and feature/x, so the task finds feature/x among the repo's branches.
+//
+const branch_call: git_mock.MockGitOptions = .{
+    .expected_args = &.{
+        "-C",
+        "/repo",
+        "for-each-ref",
+        "--sort=refname",
+        "--format=%(HEAD) %(refname)",
+        "refs/heads/",
+    },
+    .expected_shown_args = &.{
+        "for-each-ref",
+        "--sort=refname",
+        "--format=%(HEAD) %(refname)",
+        "refs/heads/",
+    },
+    .exit_code = 0,
+    .stdout = "  refs/heads/feature/x\n* refs/heads/main\n",
+    .stderr = "",
+    .start_error = null,
+};
+
+test "the commits task reads a listed branch's first page from the branch's full ref name" {
+    const mock = comptime git_mock.mock_git_calls(&.{
+        branch_call,
+        .{
+            .expected_args = &.{
+                "-C",
+                "/repo",
+                "log",
+                "-z",
+                "--no-show-signature",
+                "--max-count=50",
+                format_arg,
+                "refs/heads/feature/x",
+                "--",
+            },
+            .expected_shown_args = &.{
+                "log",
+                "--no-show-signature",
+                "--max-count=50",
+                "refs/heads/feature/x",
+                "--",
+            },
+            .exit_code = 0,
+            .stdout = one_commit_output,
+            .stderr = "",
+            .start_error = null,
+        },
+    });
+    try expect_task_message(
+        mock,
+        "{\"repoPath\":\"/repo\",\"pageSize\":50,\"start\":null,\"branch\":\"feature/x\"}",
+        "\"status\":\"succeeded\",\"outputs\":{\"commits\":[{\"hash\":\"" ++ commit_hash,
+    );
+}
+
+test "the commits task refuses a branch git does not list without running git log" {
+    const mock = comptime git_mock.mock_git_calls(&.{branch_call});
+    try expect_task_refused(
+        mock,
+        "{\"repoPath\":\"/repo\",\"pageSize\":50,\"branch\":\"--all\"}",
+        "The commits of a branch the repo does not have were asked for.",
+    );
+}
+
+test "the commits task fails when the branches cannot be read for a branch's page" {
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = branch_call.expected_args,
+        .expected_shown_args = branch_call.expected_shown_args,
+        .exit_code = 128,
+        .stdout = "",
+        .stderr = "fatal: not a git repository\n",
+        .start_error = null,
+    });
+    try expect_task_message(
+        mock,
+        "{\"repoPath\":\"/repo\",\"pageSize\":50,\"branch\":\"main\"}",
+        "Running git for-each-ref failed, so the repo's branches could not be read.",
+    );
+}
+
+test "the commits task reads a listed branch's later page after --skip" {
+    const mock = comptime git_mock.mock_git_calls(&.{
+        branch_call,
+        .{
+            .expected_args = &.{
+                "-C",
+                "/repo",
+                "log",
+                "-z",
+                "--no-show-signature",
+                "--max-count=50",
+                format_arg,
+                "--skip=10",
+                "refs/heads/main",
+                "--",
+            },
+            .expected_shown_args = &.{
+                "log",
+                "--no-show-signature",
+                "--max-count=50",
+                "--skip=10",
+                "refs/heads/main",
+                "--",
+            },
+            .exit_code = 0,
+            .stdout = one_commit_output,
+            .stderr = "",
+            .start_error = null,
+        },
+    });
+    try expect_task_message(
+        mock,
+        "{\"repoPath\":\"/repo\",\"pageSize\":50,\"start\":{\"skipCount\":10}," ++
+            "\"branch\":\"main\"}",
+        "\"status\":\"succeeded\",\"outputs\":{\"commits\":[{\"hash\":\"" ++ commit_hash,
+    );
+}

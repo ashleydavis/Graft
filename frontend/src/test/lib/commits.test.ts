@@ -56,6 +56,7 @@ describe("readCommitPage", () => {
             repoPath: "/repo",
             pageSize: 50,
             start: undefined,
+            branch: undefined,
         }, onRead);
         expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t1",
@@ -65,6 +66,7 @@ describe("readCommitPage", () => {
                 repoPath: "/repo",
                 pageSize: 50,
                 start: null,
+                branch: null,
             },
             priority: "interactive",
         });
@@ -103,6 +105,7 @@ describe("readCommitPage later pages", () => {
             start: {
                 skipCount: 100,
             },
+            branch: undefined,
         }, jest.fn());
         expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t2",
@@ -114,6 +117,59 @@ describe("readCommitPage later pages", () => {
                 start: {
                     skipCount: 100,
                 },
+                branch: null,
+            },
+            priority: "interactive",
+        });
+    });
+});
+
+describe("readCommitPage branch pages", () => {
+    test("queues the commits task for a branch's later page with the branch's name and the skip", () => {
+        const ziggy = installFakeTaskZiggy();
+        readCommitPage({
+            taskId: "t4",
+            repoPath: "/repo",
+            pageSize: 50,
+            start: {
+                skipCount: 50,
+            },
+            branch: "feature/x",
+        }, jest.fn());
+        expect(ziggy.addTask).toHaveBeenCalledWith({
+            taskId: "t4",
+            taskType: "commits",
+            source: "repo-explorer-page",
+            data: {
+                repoPath: "/repo",
+                pageSize: 50,
+                start: {
+                    skipCount: 50,
+                },
+                branch: "feature/x",
+            },
+            priority: "interactive",
+        });
+    });
+
+    test("queues the commits task for a branch's first page with the branch's name", () => {
+        const ziggy = installFakeTaskZiggy();
+        readCommitPage({
+            taskId: "t3",
+            repoPath: "/repo",
+            pageSize: 50,
+            start: undefined,
+            branch: "feature/x",
+        }, jest.fn());
+        expect(ziggy.addTask).toHaveBeenCalledWith({
+            taskId: "t3",
+            taskType: "commits",
+            source: "repo-explorer-page",
+            data: {
+                repoPath: "/repo",
+                pageSize: 50,
+                start: null,
+                branch: "feature/x",
             },
             priority: "interactive",
         });

@@ -139,6 +139,7 @@ describe("main", () => {
                 repoPath: "/repos/welcome",
                 pageSize: 50,
                 start: null,
+                branch: null,
             },
         }));
         expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("welcome");
@@ -176,6 +177,7 @@ describe("main", () => {
                 repoPath: "/repos/graft",
                 pageSize: 50,
                 start: null,
+                branch: null,
             },
         }));
         expect(elementWithDataId("breadcrumb-repo")?.textContent).toBe("graft");

@@ -36,6 +36,9 @@
 // active pane's border, Up and Down still act on it, a pane that closes while collapsed opens again
 // in full and C is left to a text box and to Shift, Ctrl, Alt and Cmd. The collapse button is hidden
 // while a pane is maximised.
+// It checks the page reads the repo's branches as it opens, lists them in the repo details pane, and
+// that a branch opens the branch pane titled with its name, reading its first page from the branch,
+// with the keys moving through the branch rows and Escape closing the branch pane.
 //
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -242,11 +245,48 @@ async function findCommitsPlaceholder(): Promise<Element | undefined> {
 }
 
 //
+// Lists the indexes of window.ziggy's addTask calls for the tasks the panes queue, leaving out the
+// branches tasks the page queues for the repo details pane, so a test counts and ends the panes'
+// tasks in the order they were queued. Each task registers its own listener at the same index.
+//
+function paneTaskIndexes(ziggy: FakeTaskZiggy): number[] {
+    const calls: IAddTask[][] = (ziggy.addTask as jest.Mock).mock.calls;
+    const indexes: number[] = [];
+    calls.forEach((call, index) => {
+        if (call[0].taskType !== "branches") {
+            indexes.push(index);
+        }
+    });
+    return indexes;
+}
+
+//
+// Reads the task a pane queued at the index among the panes' tasks.
+//
+function paneTask(ziggy: FakeTaskZiggy, index: number): IAddTask {
+    return (ziggy.addTask as jest.Mock).mock.calls[paneTaskIndexes(ziggy)[index]][0];
+}
+
+//
+// Reads the listener the task a pane queued at the index among the panes' tasks registered.
+//
+function paneTaskListener(ziggy: FakeTaskZiggy, index: number): (event: ITaskCompletedEvent) => void {
+    return (ziggy.onTaskCompleted as jest.Mock).mock.calls[paneTaskIndexes(ziggy)[index]][0];
+}
+
+//
+// Counts the tasks the panes have queued.
+//
+function paneTaskCount(ziggy: FakeTaskZiggy): number {
+    return paneTaskIndexes(ziggy).length;
+}
+
+//
 // Ends the commits task the page queued, as the backend does, with the result.
 //
 function completeTask(ziggy: FakeTaskZiggy, result: ITaskCompletedEvent["result"]): void {
-    const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[0][0];
-    const onTaskCompleted = (ziggy.onTaskCompleted as jest.Mock).mock.calls[0][0];
+    const task: IAddTask = paneTask(ziggy, 0);
+    const onTaskCompleted = paneTaskListener(ziggy, 0);
     act(() => {
         onTaskCompleted({
             taskId: task.taskId,
@@ -259,12 +299,12 @@ function completeTask(ziggy: FakeTaskZiggy, result: ITaskCompletedEvent["result"
 }
 
 //
-// Ends the task the page queued at the index of window.ziggy's addTask calls, as the backend does,
-// with the outputs. Each task registers its own listener, at the same index.
+// Ends the task a pane queued at the index among the panes' tasks, as the backend does, with the
+// outputs.
 //
 function completeTaskAt(ziggy: FakeTaskZiggy, index: number, outputs: ITaskCompletedEvent["result"]["outputs"]): void {
-    const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[index][0];
-    const onTaskCompleted = (ziggy.onTaskCompleted as jest.Mock).mock.calls[index][0];
+    const task: IAddTask = paneTask(ziggy, index);
+    const onTaskCompleted = paneTaskListener(ziggy, index);
     act(() => {
         onTaskCompleted({
             taskId: task.taskId,
@@ -378,7 +418,7 @@ async function listTwoCommits(ziggy: FakeTaskZiggy): Promise<void> {
 }
 
 //
-// Ends the commit details task the page queued at the index of window.ziggy's addTask calls, with
+// Ends the commit details task the page queued at the index among the panes' tasks, with
 // README.md and notes.txt as the commit's changed files.
 //
 function completeCommitDetails(ziggy: FakeTaskZiggy, index: number): void {
@@ -464,7 +504,7 @@ describe("RepoExplorerPage", () => {
         expect(elementWithDataId("repo-explorer-page").firstElementChild).toBe(elementWithDataId("repo-explorer-columns"));
     });
 
-    test("opens on the repo details pane alone, with the repo's name and path and the Commits link, and queues no task", async () => {
+    test("opens on the repo details pane alone, with the repo's name and path and the Commits link, and queues no task for the panes to its right", async () => {
         const ziggy = installFakeTaskZiggy();
         renderRepoExplorerPage("/repos/graft");
         expect((await screen.findByText("/repos/graft")).closest("[data-id=\"repo-details-path\"]")).not.toBeNull();
@@ -473,7 +513,7 @@ describe("RepoExplorerPage", () => {
         expect(elementWithDataId("repo-details-commits").textContent).toBe("Commits");
         const paneIds = paneElements().map(pane => pane.getAttribute("data-id"));
         expect(paneIds).toEqual(["repo-details-pane"]);
-        expect(ziggy.addTask).not.toHaveBeenCalled();
+        expect(paneTaskCount(ziggy)).toBe(0);
     });
 
     test("opens the commit pane to the right of the repo details pane when the Commits link is clicked", async () => {
@@ -499,13 +539,13 @@ describe("RepoExplorerPage", () => {
         expect(document.querySelector("[data-id=\"changed-file-README.md\"]")).toBeNull();
         await clickCommitsLink();
         expect((await findCommitsPlaceholder())?.getAttribute("aria-hidden")).toBe("true");
-        const calls = (ziggy.addTask as jest.Mock).mock.calls;
-        const task: IAddTask = calls[calls.length - 1][0];
+        const task: IAddTask = paneTask(ziggy, paneTaskCount(ziggy) - 1);
         expect(task.taskType).toBe("commits");
         expect(task.data).toEqual({
             repoPath: "/other-repo",
             pageSize: 50,
             start: null,
+            branch: null,
         });
     });
 
@@ -514,12 +554,13 @@ describe("RepoExplorerPage", () => {
         renderRepoExplorerPage("/repo");
         await clickCommitsLink();
         expect((await findCommitsPlaceholder())?.getAttribute("aria-hidden")).toBe("true");
-        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[0][0];
+        const task: IAddTask = paneTask(ziggy, 0);
         expect(task.taskType).toBe("commits");
         expect(task.data).toEqual({
             repoPath: "/repo",
             pageSize: 50,
             start: null,
+            branch: null,
         });
     });
 
@@ -574,7 +615,7 @@ describe("RepoExplorerPage", () => {
     test("opens the commit details pane to the right of the commit pane when a commit is clicked", async () => {
         const ziggy = installFakeTaskZiggy();
         await openCommitDetails(ziggy);
-        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[1][0];
+        const task: IAddTask = paneTask(ziggy, 1);
         expect(task.taskType).toBe("commit-details");
         const paneIds = paneElements().map(pane => pane.getAttribute("data-id"));
         expect(paneIds).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane"]);
@@ -619,7 +660,7 @@ describe("RepoExplorerPage", () => {
         const ziggy = installFakeTaskZiggy();
         await openCommitDetails(ziggy);
         fireEvent.click(elementWithDataId("changed-file-README.md"));
-        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[2][0];
+        const task: IAddTask = paneTask(ziggy, 2);
         expect(task.taskType).toBe("file-diff");
         expect(task.data).toEqual({
             repoPath: "/repo",
@@ -850,7 +891,7 @@ describe("RepoExplorerPage keys", () => {
         pressKey("ArrowDown");
         expect(isSelected("repo-details-commits")).toBe(true);
         pressKey("Enter");
-        expect((ziggy.addTask as jest.Mock).mock.calls[0][0].taskType).toBe("commits");
+        expect(paneTask(ziggy, 0).taskType).toBe("commits");
         expect(activePaneIds()).toEqual(["commit-pane"]);
     });
 
@@ -881,7 +922,7 @@ describe("RepoExplorerPage keys", () => {
         pressKey("ArrowDown");
         pressKey("ArrowDown");
         pressKey("Enter");
-        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[1][0];
+        const task: IAddTask = paneTask(ziggy, 1);
         expect(task.taskType).toBe("commit-details");
         expect(task.data).toEqual({
             repoPath: "/repo",
@@ -906,7 +947,7 @@ describe("RepoExplorerPage keys", () => {
         completeCommitDetails(ziggy, 1);
         expect(isSelected("changed-file-README.md")).toBe(true);
         pressKey("ArrowDown");
-        const downTask: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[2][0];
+        const downTask: IAddTask = paneTask(ziggy, 2);
         expect(downTask.taskType).toBe("commit-details");
         expect(downTask.data).toEqual({
             repoPath: "/repo",
@@ -915,7 +956,7 @@ describe("RepoExplorerPage keys", () => {
         expect(isSelected(`commit-${secondCommitJson.hash}`)).toBe(true);
         expect(activePaneIds()).toEqual(["commit-details-pane"]);
         pressKey("ArrowUp");
-        const upTask: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[3][0];
+        const upTask: IAddTask = paneTask(ziggy, 3);
         expect(upTask.taskType).toBe("commit-details");
         expect(upTask.data).toEqual({
             repoPath: "/repo",
@@ -926,7 +967,7 @@ describe("RepoExplorerPage keys", () => {
         completeCommitDetails(ziggy, 3);
         expect(isSelected("changed-file-README.md")).toBe(true);
         pressKey("Enter");
-        const fileTask: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[4][0];
+        const fileTask: IAddTask = paneTask(ziggy, 4);
         expect(fileTask.taskType).toBe("file-diff");
         expect(fileTask.data).toEqual({
             repoPath: "/repo",
@@ -976,7 +1017,7 @@ describe("RepoExplorerPage keys", () => {
         pressKey("Enter");
         completeCommitDetails(ziggy, 1);
         pressKey("ArrowUp");
-        expect((ziggy.addTask as jest.Mock).mock.calls.length).toBe(2);
+        expect(paneTaskCount(ziggy)).toBe(2);
         expect(isSelected(`commit-${commitJson.hash}`)).toBe(true);
         expect(isSelected("changed-file-README.md")).toBe(true);
         expect(activePaneIds()).toEqual(["commit-details-pane"]);
@@ -1046,7 +1087,7 @@ describe("RepoExplorerPage keys", () => {
         expect(document.querySelector("[data-id=\"commit-pane\"]")).toBeNull();
         pressKey("Enter");
         expect((await findCommitsPlaceholder())?.getAttribute("aria-hidden")).toBe("true");
-        expect((ziggy.addTask as jest.Mock).mock.calls[1][0].taskType).toBe("commits");
+        expect(paneTask(ziggy, 1).taskType).toBe("commits");
         expect(activePaneIds()).toEqual(["commit-pane"]);
     });
 
@@ -1194,7 +1235,7 @@ describe("RepoExplorerPage keys", () => {
             });
         });
         expect(activePaneIds()).toEqual(["commit-details-pane"]);
-        expect((ziggy.addTask as jest.Mock).mock.calls.length).toBe(2);
+        expect(paneTaskCount(ziggy)).toBe(2);
     });
 
     test("clicking a changed file selects it and makes the commit details pane active", async () => {
@@ -1356,10 +1397,10 @@ function scrollCommitListToEnd(): void {
 }
 
 //
-// Reads the data of the task the page queued at the index of window.ziggy's addTask calls.
+// Reads the data of the task a pane queued at the index among the panes' tasks.
 //
 function taskDataAt(ziggy: FakeTaskZiggy, index: number): IAddTask["data"] {
-    return (ziggy.addTask as jest.Mock).mock.calls[index][0].data;
+    return paneTask(ziggy, index).data;
 }
 
 //
@@ -1380,7 +1421,7 @@ describe("RepoExplorerPage commit pages", () => {
     test("reads no further page until the list scrolls near the end of the first", async () => {
         const ziggy = installFakeTaskZiggy();
         await listFirstPage(ziggy);
-        expect(ziggy.addTask).toHaveBeenCalledTimes(1);
+        expect(paneTaskCount(ziggy)).toBe(1);
         expect(document.querySelector("[data-id=\"commits-placeholder\"]")).toBeNull();
     });
 
@@ -1388,13 +1429,14 @@ describe("RepoExplorerPage commit pages", () => {
         const ziggy = installFakeTaskZiggy();
         await listFirstPage(ziggy);
         scrollCommitListToEnd();
-        expect(ziggy.addTask).toHaveBeenCalledTimes(2);
+        expect(paneTaskCount(ziggy)).toBe(2);
         expect(taskDataAt(ziggy, 1)).toEqual({
             repoPath: "/repo",
             pageSize: 50,
             start: {
                 skipCount: 50,
             },
+            branch: null,
         });
         expect(document.querySelector("[data-id=\"commits-placeholder\"]")).not.toBeNull();
         expect(screen.getByText("Commit 49")).toBeTruthy();
@@ -1411,6 +1453,7 @@ describe("RepoExplorerPage commit pages", () => {
             start: {
                 skipCount: 100,
             },
+            branch: null,
         });
     });
 
@@ -1423,7 +1466,7 @@ describe("RepoExplorerPage commit pages", () => {
         });
         scrollCommitListToEnd();
         expect(screen.getByText("Commit 52")).toBeTruthy();
-        expect(ziggy.addTask).toHaveBeenCalledTimes(2);
+        expect(paneTaskCount(ziggy)).toBe(2);
         expect(document.querySelector("[data-id=\"commits-placeholder\"]")).toBeNull();
     });
 
@@ -1431,8 +1474,8 @@ describe("RepoExplorerPage commit pages", () => {
         const ziggy = installFakeTaskZiggy();
         await listFirstPage(ziggy);
         scrollCommitListToEnd();
-        const onTaskCompleted = (ziggy.onTaskCompleted as jest.Mock).mock.calls[1][0];
-        const taskId: string = (ziggy.addTask as jest.Mock).mock.calls[1][0].taskId;
+        const onTaskCompleted = paneTaskListener(ziggy, 1);
+        const taskId: string = paneTask(ziggy, 1).taskId;
         act(() => {
             onTaskCompleted({
                 taskId,
@@ -1448,7 +1491,7 @@ describe("RepoExplorerPage commit pages", () => {
         expect(screen.getByText("Running git log failed.").getAttribute("data-id")).toBe("commits-error");
         expect(screen.getByText("Commit 49")).toBeTruthy();
         scrollCommitListToEnd();
-        expect(ziggy.addTask).toHaveBeenCalledTimes(2);
+        expect(paneTaskCount(ziggy)).toBe(2);
     });
 
     test("drops a page read before the commit pane closed and opened again", async () => {
@@ -1770,10 +1813,10 @@ const changesJson = {
 };
 
 //
-// Reads the task type of window.ziggy's addTask call at the index.
+// Reads the task type of the task a pane queued at the index among the panes' tasks.
 //
 function taskTypeAt(ziggy: FakeTaskZiggy, index: number): string {
-    return (ziggy.addTask as jest.Mock).mock.calls[index][0].taskType;
+    return paneTask(ziggy, index).taskType;
 }
 
 //
@@ -1793,7 +1836,7 @@ describe("RepoExplorerPage changes pane", () => {
         const ziggy = installFakeTaskZiggy();
         await openChanges(ziggy);
         expect(taskTypeAt(ziggy, 0)).toBe("working-changes");
-        expect((ziggy.addTask as jest.Mock).mock.calls[0][0].data).toEqual({
+        expect(paneTask(ziggy, 0).data).toEqual({
             repoPath: "/repo",
         });
         const paneIds = paneElements().map(pane => pane.getAttribute("data-id"));
@@ -1823,7 +1866,7 @@ describe("RepoExplorerPage changes pane", () => {
         await openChanges(ziggy);
         fireEvent.click(elementWithDataId("change-unstaged-notes.txt"));
         expect(taskTypeAt(ziggy, 1)).toBe("working-file-diff");
-        expect((ziggy.addTask as jest.Mock).mock.calls[1][0].data).toEqual({
+        expect(paneTask(ziggy, 1).data).toEqual({
             repoPath: "/repo",
             path: "notes.txt",
             isStaged: false,
@@ -1850,7 +1893,7 @@ describe("RepoExplorerPage changes pane", () => {
         fireEvent.click(elementWithDataId("change-unstaged-notes.txt"));
         fireEvent.click(elementWithDataId("stage-notes.txt"));
         expect(taskTypeAt(ziggy, 2)).toBe("stage-file");
-        expect((ziggy.addTask as jest.Mock).mock.calls[2][0].data).toEqual({
+        expect(paneTask(ziggy, 2).data).toEqual({
             repoPath: "/repo",
             path: "notes.txt",
         });
@@ -1876,7 +1919,9 @@ describe("RepoExplorerPage changes pane", () => {
         expect(isSelected("change-staged-notes.txt")).toBe(true);
         expect(elementWithDataId("change-staged-notes.txt").getAttribute("aria-current")).toBe("true");
         expect(taskTypeAt(ziggy, 4)).toBe("working-file-diff");
-        expect((ziggy.addTask as jest.Mock).mock.calls[4][0].data.isStaged).toBe(true);
+        expect(taskDataAt(ziggy, 4)).toMatchObject({
+            isStaged: true,
+        });
     });
 
     test("unstages a file and closes no pane when another file was open", async () => {
@@ -1927,8 +1972,8 @@ describe("RepoExplorerPage changes pane", () => {
         const ziggy = installFakeTaskZiggy();
         await openChanges(ziggy);
         fireEvent.click(elementWithDataId("stage-notes.txt"));
-        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[1][0];
-        const onTaskCompleted = (ziggy.onTaskCompleted as jest.Mock).mock.calls[1][0];
+        const task: IAddTask = paneTask(ziggy, 1);
+        const onTaskCompleted = paneTaskListener(ziggy, 1);
         act(() => {
             onTaskCompleted({
                 taskId: task.taskId,
@@ -1943,7 +1988,7 @@ describe("RepoExplorerPage changes pane", () => {
         });
         expect(elementWithDataId("changes-stage-error").textContent).toBe("Running git add failed.");
         expect(elementWithDataId("change-unstaged-notes.txt")).not.toBeNull();
-        expect((ziggy.addTask as jest.Mock).mock.calls.length).toBe(2);
+        expect(paneTaskCount(ziggy)).toBe(2);
     });
 
     test("the keys open the changes pane, move through its rows, open a file and close the panes", async () => {
@@ -1962,7 +2007,9 @@ describe("RepoExplorerPage changes pane", () => {
         expect(isSelected("change-staged-old.txt")).toBe(true);
         pressKey("Enter");
         expect(activePaneIds()).toEqual(["file-pane"]);
-        expect((ziggy.addTask as jest.Mock).mock.calls[1][0].data.isStaged).toBe(true);
+        expect(taskDataAt(ziggy, 1)).toMatchObject({
+            isStaged: true,
+        });
         pressKey("ArrowDown");
         expect(isSelected("change-staged-old.txt")).toBe(true);
         pressKey("Escape");
@@ -1993,7 +2040,7 @@ describe("RepoExplorerPage commit section", () => {
         expect(elementWithDataId("commit-button").textContent).toBe("Commit 1 file");
         fireEvent.click(elementWithDataId("commit-button"));
         expect(taskTypeAt(ziggy, 1)).toBe("commit");
-        expect((ziggy.addTask as jest.Mock).mock.calls[1][0].data).toEqual({
+        expect(paneTask(ziggy, 1).data).toEqual({
             repoPath: "/repo",
             message: "Remove the old file",
         });
@@ -2017,8 +2064,8 @@ describe("RepoExplorerPage commit section", () => {
         await openChanges(ziggy);
         typeCommitMessage("Remove the old file");
         fireEvent.click(elementWithDataId("commit-button"));
-        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[1][0];
-        const onTaskCompleted = (ziggy.onTaskCompleted as jest.Mock).mock.calls[1][0];
+        const task: IAddTask = paneTask(ziggy, 1);
+        const onTaskCompleted = paneTaskListener(ziggy, 1);
         act(() => {
             onTaskCompleted({
                 taskId: task.taskId,
@@ -2034,7 +2081,7 @@ describe("RepoExplorerPage commit section", () => {
         expect(elementWithDataId("commit-error").textContent).toBe("Git did not make the commit:\nThe pre-commit hook found a problem.");
         expect(elementWithDataId("commit-message")).toHaveProperty("value", "Remove the old file");
         expect(elementWithDataId("commit-button")).toHaveProperty("disabled", false);
-        expect((ziggy.addTask as jest.Mock).mock.calls.length).toBe(2);
+        expect(paneTaskCount(ziggy)).toBe(2);
 
         fireEvent.click(elementWithDataId("commit-button"));
         completeTaskAt(ziggy, 2, {
@@ -2132,6 +2179,40 @@ function shownPaneIds(): (string | null)[] {
 function clickMaximise(dataId: string): void {
     act(() => {
         fireEvent.click(elementWithDataId(dataId));
+    });
+}
+
+//
+// Lists the indexes of window.ziggy's addTask calls for the branches tasks the page queued for the
+// repo details pane, in the order it queued them.
+//
+function branchesTaskIndexes(ziggy: FakeTaskZiggy): number[] {
+    const calls: IAddTask[][] = (ziggy.addTask as jest.Mock).mock.calls;
+    const indexes: number[] = [];
+    calls.forEach((call, index) => {
+        if (call[0].taskType === "branches") {
+            indexes.push(index);
+        }
+    });
+    return indexes;
+}
+
+//
+// Ends the branches task the page queued at the index among its branches tasks, as the backend
+// does, with the result.
+//
+function completeBranchesTask(ziggy: FakeTaskZiggy, index: number, result: ITaskCompletedEvent["result"]): void {
+    const callIndex = branchesTaskIndexes(ziggy)[index];
+    const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[callIndex][0];
+    const onTaskCompleted = (ziggy.onTaskCompleted as jest.Mock).mock.calls[callIndex][0];
+    act(() => {
+        onTaskCompleted({
+            taskId: task.taskId,
+            result: {
+                ...result,
+                taskId: task.taskId,
+            },
+        });
     });
 }
 
@@ -2695,5 +2776,182 @@ describe("RepoExplorerPage resize handles", () => {
         expect(styleWidth("commit-pane")).toBe("640px");
         expect(styleWidth("commit-details-pane")).toBe("500px");
         expect(ziggy.setState).not.toHaveBeenCalled();
+    });
+});
+
+// The result of a branches task that read feature/x and main, with main checked out.
+//
+const twoBranchesResult: ITaskCompletedEvent["result"] = {
+    taskId: "",
+    status: "succeeded",
+    outputs: {
+        branches: [
+            {
+                name: "feature/x",
+                isCheckedOut: false,
+            },
+            {
+                name: "main",
+                isCheckedOut: true,
+            },
+        ],
+    },
+    type: "branches",
+    inputs: null,
+};
+
+//
+// Shows the repo explorer page for /repo and ends its branches task with feature/x and main.
+//
+async function listTwoBranches(ziggy: FakeTaskZiggy): Promise<void> {
+    renderRepoExplorerPage("/repo");
+    await screen.findByText("Loading the branches.");
+    completeBranchesTask(ziggy, 0, twoBranchesResult);
+    await screen.findByText("feature/x");
+}
+
+describe("RepoExplorerPage branches", () => {
+    test("reads the repo's branches as it opens and lists them in the repo details pane", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoBranches(ziggy);
+        const task: IAddTask = (ziggy.addTask as jest.Mock).mock.calls[branchesTaskIndexes(ziggy)[0]][0];
+        expect(task.data).toEqual({
+            repoPath: "/repo",
+        });
+        expect(elementWithDataId("repo-details-branches-count").textContent).toBe("2");
+        expect(elementWithDataId("repo-details-branch-main").textContent).toBe("mainHEAD");
+        expect(paneTaskCount(ziggy)).toBe(0);
+    });
+
+    test("shows why the branches could not be read when the task failed", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        await screen.findByText("Loading the branches.");
+        completeBranchesTask(ziggy, 0, {
+            taskId: "",
+            status: "failed",
+            errorMessage: "Running git for-each-ref failed.",
+            type: "branches",
+            inputs: null,
+        });
+        expect((await screen.findByText("Running git for-each-ref failed.")).getAttribute("data-id")).toBe("repo-details-branches-error");
+    });
+
+    test("shows the Branches heading with no rows and no error for a repo with no branches", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        await screen.findByText("Loading the branches.");
+        completeBranchesTask(ziggy, 0, {
+            ...twoBranchesResult,
+            outputs: {
+                branches: [],
+            },
+        });
+        expect((await screen.findByText("Branches")).getAttribute("data-id")).toBe("repo-details-branches-heading");
+        expect(elementWithDataId("repo-details-branch-list").children.length).toBe(0);
+        expect(document.querySelector("[data-id=\"repo-details-branches-error\"]")).toBeNull();
+    });
+
+    test("clicking a branch opens its branch pane, titled with its name, and reads its first page from the branch", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoBranches(ziggy);
+        fireEvent.click(elementWithDataId("repo-details-branch-feature/x"));
+        await findCommitsPlaceholder();
+        expect(taskTypeAt(ziggy, 0)).toBe("commits");
+        expect(taskDataAt(ziggy, 0)).toEqual({
+            repoPath: "/repo",
+            pageSize: 50,
+            start: null,
+            branch: "feature/x",
+        });
+        const paneIds = paneElements().map(pane => pane.getAttribute("data-id"));
+        expect(paneIds).toEqual(["repo-details-pane", "commit-pane"]);
+        expect(elementWithDataId("commit-pane-heading").textContent).toBe("feature/x");
+        expect(elementWithDataId("commit-pane").getAttribute("aria-label")).toBe("feature/x");
+        expect(isSelected("repo-details-branch-feature/x")).toBe(true);
+        expect(elementWithDataId("repo-details-branch-feature/x").className).toContain(openRowClasses);
+        expect(lastPaneStepIds()).toEqual(["breadcrumb-pane-branch"]);
+    });
+
+    test("opening a commit in the branch pane opens the commit details pane and then the file pane", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoBranches(ziggy);
+        fireEvent.click(elementWithDataId("repo-details-branch-feature/x"));
+        completeTaskAt(ziggy, 0, {
+            commits: [commitJson],
+        });
+        fireEvent.click(await screen.findByText("The first commit"));
+        expect(taskTypeAt(ziggy, 1)).toBe("commit-details");
+        completeCommitDetails(ziggy, 1);
+        fireEvent.click(await screen.findByText("README.md"));
+        const paneIds = paneElements().map(pane => pane.getAttribute("data-id"));
+        expect(paneIds).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane"]);
+        expect(lastPaneStepIds()).toEqual(["breadcrumb-pane-branch", "breadcrumb-pane-commit", "breadcrumb-pane-file"]);
+    });
+
+    test("reads the branch pane's later pages with the branch and how many commits it has read", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoBranches(ziggy);
+        fireEvent.click(elementWithDataId("repo-details-branch-feature/x"));
+        completeTaskAt(ziggy, 0, {
+            commits: commitPageJson(0, 50),
+        });
+        await screen.findByText("Commit 0");
+        scrollCommitListToEnd();
+        expect(taskDataAt(ziggy, 1)).toEqual({
+            repoPath: "/repo",
+            pageSize: 50,
+            start: {
+                skipCount: 50,
+            },
+            branch: "feature/x",
+        });
+    });
+
+    test("opening another branch reads its commits afresh and drops the other branch's", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoBranches(ziggy);
+        fireEvent.click(elementWithDataId("repo-details-branch-feature/x"));
+        completeTaskAt(ziggy, 0, {
+            commits: [commitJson],
+        });
+        await screen.findByText("The first commit");
+        fireEvent.click(elementWithDataId("repo-details-branch-main"));
+        expect(taskDataAt(ziggy, 1)).toMatchObject({
+            branch: "main",
+        });
+        expect(await findCommitsPlaceholder()).not.toBeUndefined();
+        expect(screen.queryByText("The first commit")).toBeNull();
+        expect(elementWithDataId("commit-pane-heading").textContent).toBe("main");
+    });
+
+    test("Down moves past the links onto the branches, Enter opens the branch pane and Escape closes it", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoBranches(ziggy);
+        pressKey("ArrowDown");
+        pressKey("ArrowDown");
+        pressKey("ArrowDown");
+        expect(isSelected("repo-details-branch-feature/x")).toBe(true);
+        pressKey("ArrowDown");
+        expect(isSelected("repo-details-branch-main")).toBe(true);
+        pressKey("Enter");
+        expect(taskDataAt(ziggy, 0)).toMatchObject({
+            branch: "main",
+        });
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        completeTaskAt(ziggy, 0, {
+            commits: [commitJson, secondCommitJson],
+        });
+        await screen.findByText("The second commit");
+        pressKey("ArrowDown");
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(true);
+        pressKey("ArrowLeft");
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+        pressKey("ArrowRight");
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        pressKey("Escape");
+        expect(document.querySelector("[data-id=\"commit-pane\"]")).toBeNull();
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+        expect(isSelected("repo-details-branch-main")).toBe(true);
     });
 });

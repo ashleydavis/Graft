@@ -5,7 +5,7 @@
 //
 
 import { closingPaneId, openPaneIds, paneAnimationClass } from "../../lib/pane-animation";
-import { changeKey, CHANGES_LINK, COMMITS_LINK, initialRepoExplorerState, IRepoExplorerState } from "../../lib/repo-explorer";
+import { branchLink, changeKey, CHANGES_LINK, COMMITS_LINK, initialRepoExplorerState, IRepoExplorerState } from "../../lib/repo-explorer";
 
 describe("closingPaneId", () => {
     test("closes the pane that was open when no pane takes its place", () => {
@@ -63,6 +63,25 @@ describe("openPaneIds", () => {
             changesPane: undefined,
             workingFilePane: undefined,
         });
+    });
+
+    test("names the commit pane's column after the open branch, so another branch's pane opens afresh", () => {
+        const explorer: IRepoExplorerState = {
+            ...initialRepoExplorerState,
+            openLink: branchLink("feature/x"),
+            openHash: "abc",
+        };
+        expect(openPaneIds(explorer, false)).toEqual({
+            commitPane: branchLink("feature/x"),
+            commitDetailsPane: "abc",
+            filePane: undefined,
+            changesPane: undefined,
+            workingFilePane: undefined,
+        });
+        expect(openPaneIds({
+            ...explorer,
+            openLink: branchLink("main"),
+        }, false).commitPane).toBe(branchLink("main"));
     });
 
     test("names no file pane while no commit is open", () => {

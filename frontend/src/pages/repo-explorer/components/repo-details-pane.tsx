@@ -1,15 +1,17 @@
 //
 // The repo details pane: the first column of the repo explorer, with the open repo's name and
-// path and the links that open the panes about the repo to its right: Commits and Commit.
+// path, the links that open the panes about the repo to its right, Commits and Commit, and the
+// repo's local branches, each of which opens its branch pane to the right.
 //
 
-import { faCodeCommit, faPenToSquare, IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { faCodeBranch, faCodeCommit, faPenToSquare, IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { List, ListItemButton } from "@mui/material";
+import { Chip, List, ListItemButton } from "@mui/material";
 import { JSX } from "react";
+import { IBranch } from "../../../lib/branches";
 import { repoName } from "../../../lib/breadcrumb-trail";
 import { paneWidthStyle } from "../../../lib/pane-widths";
-import { CHANGES_LINK, COMMITS_LINK } from "../../../lib/repo-explorer";
+import { branchLink, CHANGES_LINK, COMMITS_LINK } from "../../../lib/repo-explorer";
 import { activePaneClass } from "./active-pane-style";
 import { CollapsedStrip } from "./collapse";
 import { Fact } from "./commit-info-pane";
@@ -24,10 +26,17 @@ export interface IRepoDetailsPaneProps {
     // The path of the open repo.
     repoPath: string;
 
-    // The name of the selected link, which the pane shows as selected, or undefined.
+    // The repo's local branches in the order of their names, or undefined while they are read.
+    branches: IBranch[] | undefined;
+
+    // Why the branches could not be read, or undefined.
+    branchesError: string | undefined;
+
+    // The name of the selected row, a link or a branch as branchLink names it, which the pane shows
+    // as selected, or undefined.
     selectedLink: string | undefined;
 
-    // The name of the link whose pane is open, which the pane marks with a bar at the row's left
+    // The name of the row whose pane is open, which the pane marks with a bar at the row's left
     // edge, or undefined.
     openLink: string | undefined;
 
@@ -50,7 +59,7 @@ export interface IRepoDetailsPaneProps {
     // Called when the user clicks the collapse button or the strip's restore button.
     onToggleCollapse(): void;
 
-    // Called with the name of the link the user clicks.
+    // Called with the name of the row the user clicks, a link or a branch as branchLink names it.
     onSelectLink(link: string): void;
 
     // The width its resize handle set, in pixels, or undefined for its usual width.
@@ -58,16 +67,16 @@ export interface IRepoDetailsPaneProps {
 }
 
 //
-// Shows the repo in a rounded card headed "Repo" and the repo's name: its name and its full path
-// as labelled facts, laid out as the commit details pane lays out a commit's facts, then the
-// Commits link, which opens the commit pane, and the Changes link, which opens the changes pane.
-// The card never shrinks, so the panes that open to its right never hide it, and fills the repo
-// explorer while it is maximised. It is 360 pixels wide, or the width its resize handle set. The
-// card's border is in the style guide's active pane colour while the pane is active. The header's
-// button maximises the pane and restores it. While it is collapsed it draws the strip with "Repo"
-// and the repo's name down it in its place.
+// Shows the repo in a rounded card headed "Repo" and the repo's name: its name and its full path as
+// labelled facts, laid out as the commit details pane lays out a commit's facts, then the Commits
+// link, which opens the commit pane, and the Changes link, which opens the changes pane, then the
+// Branches list, each branch opening its branch pane. The card never shrinks, so the panes that
+// open to its right never hide it, and fills the repo explorer while it is maximised. It is 360
+// pixels wide, or the width its resize handle set. The card's border is in the style guide's active
+// pane colour while the pane is active. The header's button maximises the pane and restores it.
+// While it is collapsed it draws the strip with "Repo" and the repo's name down it in its place.
 //
-export function RepoDetailsPane({ repoPath, selectedLink, openLink, isActive, isMaximised, onToggleMaximise, isHidden, isCollapsed, onToggleCollapse, onSelectLink, width }: IRepoDetailsPaneProps): JSX.Element {
+export function RepoDetailsPane({ repoPath, branches, branchesError, selectedLink, openLink, isActive, isMaximised, onToggleMaximise, isHidden, isCollapsed, onToggleCollapse, onSelectLink, width }: IRepoDetailsPaneProps): JSX.Element {
     const name = repoName(repoPath);
     if (isCollapsed && !isHidden) {
         return <CollapsedStrip paneLabel="Repo details" title={`Repo ${name}`} paneDataId="repo-details-pane" isActive={isActive} onRestore={onToggleCollapse} />;
@@ -98,8 +107,107 @@ export function RepoDetailsPane({ repoPath, selectedLink, openLink, isActive, is
                     <LinkRow link={COMMITS_LINK} label="Commits" icon={faCodeCommit} dataId="repo-details-commits" selectedLink={selectedLink} openLink={openLink} onSelectLink={onSelectLink} />
                     <LinkRow link={CHANGES_LINK} label="Changes" icon={faPenToSquare} dataId="repo-details-changes" selectedLink={selectedLink} openLink={openLink} onSelectLink={onSelectLink} />
                 </List>
+                <BranchList branches={branches} error={branchesError} selectedLink={selectedLink} openLink={openLink} onSelectLink={onSelectLink} />
             </div>
         </section>
+    );
+}
+
+//
+// What the repo details pane's Branches list shows and what it reports.
+//
+export interface IBranchListProps {
+    // The repo's local branches, or undefined while they are read.
+    branches: IBranch[] | undefined;
+
+    // Why the branches could not be read, or undefined.
+    error: string | undefined;
+
+    // The name of the selected row, or undefined.
+    selectedLink: string | undefined;
+
+    // The name of the row whose pane is open, or undefined.
+    openLink: string | undefined;
+
+    // Called with the branch's row name, as branchLink names it, when the user clicks a branch.
+    onSelectLink(link: string): void;
+}
+
+//
+// Shows the "Branches" heading with the number of branches beside it, as the style guide's sidebar
+// heads its Branches group, then one row per branch. While the branches are read it shows that they
+// are loading, and when they could not be read it shows why. A repo with no commits has no
+// branches, so it shows the heading with a count of 0 and no rows.
+//
+export function BranchList({ branches, error, selectedLink, openLink, onSelectLink }: IBranchListProps): JSX.Element {
+    return (
+        <section data-id="repo-details-branches" aria-label="Branches" className="border-t border-[var(--color-border)] px-1 py-2">
+            <div className="flex items-center gap-2 px-2 py-1">
+                <h3 data-id="repo-details-branches-heading" className="min-w-0 flex-1 truncate text-[length:var(--text-sm)] font-[var(--weight-bold)] text-[var(--color-text-muted)]">Branches</h3>
+                {branches && <Chip variant="count" data-id="repo-details-branches-count" label={branches.length} component="span" />}
+            </div>
+            {error !== undefined && (
+                <p data-id="repo-details-branches-error" className="m-2 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[length:var(--text-sm)] text-[var(--color-text)]">{error}</p>
+            )}
+            {error === undefined && !branches && (
+                <p data-id="repo-details-branches-loading" className="px-2 py-1 text-[length:var(--text-sm)] text-[var(--color-text-muted)]">Loading the branches.</p>
+            )}
+            {branches && (
+                <List data-id="repo-details-branch-list" aria-label="Branches" disablePadding={true}>
+                    {branches.map(branch => <BranchRow key={branch.name} branch={branch} selectedLink={selectedLink} openLink={openLink} onSelectLink={onSelectLink} />)}
+                </List>
+            )}
+        </section>
+    );
+}
+
+//
+// What one branch's row shows and what it reports.
+//
+export interface IBranchRowProps {
+    // The branch the row shows.
+    branch: IBranch;
+
+    // The name of the selected row, or undefined.
+    selectedLink: string | undefined;
+
+    // The name of the row whose pane is open, or undefined.
+    openLink: string | undefined;
+
+    // Called with the branch's row name, as branchLink names it, when the user clicks the row.
+    onSelectLink(link: string): void;
+}
+
+//
+// Shows one branch as a row with the branch icon and the branch's name in the monospace font, as
+// the style guide's sidebar lists a branch. It is a MaterialUI ListItemButton, as the links are,
+// so the keys move to it and open it as they do a link: it shows the selected background while
+// selected and a bar at its left edge while its pane is open. The checked-out branch has a HEAD
+// badge after its name in the colour of the commit list's checked-out branch badge.
+//
+export function BranchRow({ branch, selectedLink, openLink, onSelectLink }: IBranchRowProps): JSX.Element {
+    const link = branchLink(branch.name);
+    const isOpen = openLink === link;
+    let current: "true" | undefined = undefined;
+    if (isOpen) {
+        current = "true";
+    }
+    return (
+        <ListItemButton
+            component="li"
+            data-id={`repo-details-branch-${branch.name}`}
+            aria-label={branch.name}
+            selected={selectedLink === link}
+            aria-current={current}
+            onClick={() => onSelectLink(link)}
+            className={`flex items-center gap-2 px-2 ${openRowClass(isOpen)}`}
+        >
+            <span className="flex w-[var(--space-6)] shrink-0 items-center text-[length:var(--icon-md)] text-[var(--color-text-muted)]">
+                <FontAwesomeIcon icon={faCodeBranch} fixedWidth={true} />
+            </span>
+            <span className="min-w-0 flex-1 truncate font-[family-name:var(--font-mono)] text-[length:var(--text-sm)] text-[var(--color-text)]">{branch.name}</span>
+            {branch.isCheckedOut && <Chip variant="current" size="small" data-id="repo-details-branch-checked-out" label="HEAD" component="span" />}
+        </ListItemButton>
     );
 }
 

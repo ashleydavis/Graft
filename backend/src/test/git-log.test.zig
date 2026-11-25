@@ -1020,3 +1020,149 @@ test "read_commit_command passes --no-show-signature" {
     try expect_no_show_signature(command.args);
     try std.testing.expectEqualStrings("repo", command.repo_path);
 }
+
+//
+// Reads the first page of the branch feature/x with the allocator, with a mock that checks git
+// is started from the branch's full ref name with `--` after it. It is used by the test of the
+// branch's page and by its allocation failure test, and allocates the page in an arena over the
+// allocator, as a task's is.
+//
+fn read_branch_page(allocator: std.mem.Allocator) !void {
+    var task = git_mock.mock_task();
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = &.{
+            "-C",
+            "repo",
+            "log",
+            "-z",
+            "--no-show-signature",
+            "--max-count=50",
+            format_arg,
+            "refs/heads/feature/x",
+            "--",
+        },
+        .expected_shown_args = &.{
+            "log",
+            "--no-show-signature",
+            "--max-count=50",
+            "refs/heads/feature/x",
+            "--",
+        },
+        .exit_code = 0,
+        .stdout = two_commits_output,
+        .stderr = "",
+        .start_error = null,
+    });
+    const page = try git_log.read_log_page(
+        io,
+        git_mock.mock_services(&task),
+        arena.allocator(),
+        mock,
+        .{
+            .repo_path = "repo",
+            .page_size = 50,
+            .start = null,
+            .branch = "feature/x",
+        },
+    );
+    try std.testing.expectEqual(@as(usize, 2), page.commits.len);
+    try std.testing.expectEqualStrings(second_hash, page.commits[0].hash);
+}
+
+test "read_log_page reads a branch's first page from the branch's full ref name, with -- after it" {
+    try read_branch_page(std.testing.allocator);
+}
+
+test "read_log_page frees everything on a branch's page when an allocation fails" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, read_branch_page, .{});
+}
+
+//
+// A mock for the requests the `log` wrapper refuses before it starts git, which fails the test
+// when git is started.
+//
+const refused_mock = git_mock.mock_git(.{
+    .expected_args = &.{},
+    .expected_shown_args = &.{},
+    .exit_code = 0,
+    .stdout = "",
+    .stderr = "",
+    .start_error = error.GitStartedWhenItShouldNotBe,
+});
+
+test "read_log_page refuses a branch name git could read as an option" {
+    var task = git_mock.mock_task();
+    try std.testing.expectError(error.InvalidBranchName, git_log.read_log_page(
+        io,
+        git_mock.mock_services(&task),
+        std.testing.allocator,
+        refused_mock,
+        .{
+            .repo_path = "repo",
+            .page_size = 10,
+            .start = null,
+            .branch = "--all",
+        },
+    ));
+    try std.testing.expect(std.mem.indexOf(
+        u8,
+        task.failure.?,
+        "A branch's commits were asked for by a name git could read as an option.",
+    ) != null);
+}
+
+test "read_log_page reads a branch's later page from the branch's full ref name, after --skip" {
+    var task = git_mock.mock_task();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = &.{
+            "-C",
+            "repo",
+            "log",
+            "-z",
+            "--no-show-signature",
+            "--max-count=10",
+            format_arg,
+            "--skip=10",
+            "refs/heads/main",
+            "--",
+        },
+        .expected_shown_args = &.{
+            "log",
+            "--no-show-signature",
+            "--max-count=10",
+            "--skip=10",
+            "refs/heads/main",
+            "--",
+        },
+        .exit_code = 0,
+        .stdout = two_commits_output,
+        .stderr = "",
+        .start_error = null,
+    });
+    const page = try git_log.read_log_page(
+        io,
+        git_mock.mock_services(&task),
+        arena.allocator(),
+        mock,
+        .{
+            .repo_path = "repo",
+            .page_size = 10,
+            .start = .{ .skip_count = 10 },
+            .branch = "main",
+        },
+    );
+    try std.testing.expectEqual(@as(usize, 2), page.commits.len);
+}
+
+test "is_branch_name accepts a name and refuses an empty one or one starting with -" {
+    try std.testing.expect(git_log.is_branch_name("main"));
+    try std.testing.expect(git_log.is_branch_name("feature/x"));
+    try std.testing.expect(!git_log.is_branch_name(""));
+    try std.testing.expect(!git_log.is_branch_name("--all"));
+}

@@ -117,6 +117,10 @@ export interface ICommitPageRequest {
 
     // Where a later page starts, or undefined for the first page.
     start: ICommitPageStart | undefined;
+
+    // The name of the local branch whose commits the branch pane reads, on every page, or undefined
+    // for the commit pane.
+    branch: string | undefined;
 }
 
 //
@@ -133,7 +137,8 @@ export interface ICommitPageStart {
 // Reads a page of commits from the repo, the first page or the page the request's start names:
 // queues the commits task as interactive, because the user is waiting on it, and calls onRead with
 // the commits or with why they could not be read once the task ends. The first page sends start as
-// null, which the task reads as skipping no commits.
+// null, which the task reads as skipping no commits. A request with no branch sends branch as
+// null.
 //
 export function readCommitPage(request: ICommitPageRequest, onRead: (result: Result<ICommit[], IReadCommitsError>) => void): void {
     function onTaskCompleted(event: ITaskCompletedEvent): void {
@@ -151,6 +156,10 @@ export function readCommitPage(request: ICommitPageRequest, onRead: (result: Res
             skipCount: request.start.skipCount,
         };
     }
+    let branch: string | null = null;
+    if (request.branch !== undefined) {
+        branch = request.branch;
+    }
     const task: IAddTask = {
         taskId: request.taskId,
         taskType: "commits",
@@ -159,6 +168,7 @@ export function readCommitPage(request: ICommitPageRequest, onRead: (result: Res
             repoPath: request.repoPath,
             pageSize: request.pageSize,
             start,
+            branch,
         },
         priority: "interactive",
     };

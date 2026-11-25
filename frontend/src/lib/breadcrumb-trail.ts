@@ -5,7 +5,7 @@
 // collapse into one when the trail has too little room.
 //
 
-import { CHANGES_LINK, COMMIT_DETAILS_PATH, COMMITS_LINK, IRepoExplorerState } from "./repo-explorer";
+import { CHANGES_LINK, COMMIT_DETAILS_PATH, COMMITS_LINK, IRepoExplorerState, linkBranch } from "./repo-explorer";
 
 //
 // One page a drop-down step can switch to.
@@ -233,11 +233,12 @@ export function pageTrail(pathname: string, repoPath: string | undefined, paneSt
 // Works out the steps for the panes open in the repo explorer to the right of its repo details
 // pane, in the order the page shows them, for pageTrail to put after the repo explorer page's step.
 // The commit pane's step is "Commits" and the changes pane's is "Changes", as the repo details
-// pane's links name them. The commit details pane's step is the commit's short hash, as the commit
-// pane shows it, with the full hash in its tooltip. A file pane's step is the file's name, with
-// its path in the tooltip, and the "Commit details" pane, open in the file pane's place, has a
-// "Commit details" step. The changes pane's file pane shows only while its file is listed, so
-// the page gives that file's path, or undefined while the pane is closed.
+// pane's links name them, and the branch pane's step is the branch's name, as its title shows it.
+// The commit details pane's step is the commit's short hash, as the commit pane shows it, with the
+// full hash in its tooltip. A file pane's step is the file's name, with its path in the tooltip,
+// and the "Commit details" pane, open in the file pane's place, has a "Commit details" step. The
+// changes pane's file pane shows only while its file is listed, so the page gives that file's
+// path, or undefined while the pane is closed.
 //
 export function explorerPaneSteps(state: IRepoExplorerState, changedFilePath: string | undefined): ITrailStep[] {
     const steps: ITrailStep[] = [];
@@ -246,6 +247,15 @@ export function explorerPaneSteps(state: IRepoExplorerState, changedFilePath: st
             label: "Commits",
             tooltip: "Commits",
             dataId: "breadcrumb-pane-commits",
+            options: [],
+        });
+    }
+    const branchName = linkBranch(state.openLink);
+    if (branchName !== undefined) {
+        steps.push({
+            label: branchName,
+            tooltip: branchName,
+            dataId: "breadcrumb-pane-branch",
             options: [],
         });
     }

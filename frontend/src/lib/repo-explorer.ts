@@ -9,18 +9,21 @@ import { IWorkingChanges, IWorkingFile } from "./working-changes";
 //
 // The repo explorer's panes, their selections, which are collapsed and which is maximised. The
 // open panes are the repo details pane, then the commit pane while the Commits link is open, then
-// the commit details pane while a commit is open, then the file pane while a file is open. While
-// the Changes link is open the changes pane follows the repo details pane in place of the commit
-// pane, then the file pane while a changed file is open.
+// the commit details pane while a commit is open, then the file pane while a file is open. While a
+// branch is open the branch pane takes the commit pane's place, listing only that branch's
+// commits, and the panes to its right are the same. While the Changes link is open the changes
+// pane follows the repo details pane in place of the commit pane, then the file pane while a
+// changed file is open.
 //
 export interface IRepoExplorerState {
     // The position of the active pane among the open panes: 0 for the repo details pane, 1 for
-    // the commit pane, 2 for the commit details pane and 3 for the file pane, or 1 for the changes
-    // pane and 2 for the file pane while the Changes link is open. The keys act on this pane.
+    // the commit pane or the branch pane, 2 for the commit details pane and 3 for the file pane,
+    // or 1 for the changes pane and 2 for the file pane while the Changes link is open. The keys
+    // act on this pane.
     activePaneIndex: number;
 
-    // The name of the selected link in the repo details pane, as in "commits", or undefined before
-    // one is selected.
+    // The name of the selected row in the repo details pane, a link as in "commits" or a branch as
+    // branchLink names it, or undefined before one is selected.
     selectedLink: string | undefined;
 
     // The name of the link whose pane is open, or undefined while the repo details pane is alone.
@@ -62,7 +65,8 @@ export interface IRepoExplorerState {
 // What the panes list, which Up, Down, Home and End move through.
 //
 export interface IRepoExplorerItems {
-    // The names of the links in the repo details pane, in the order it lists them.
+    // The names of the rows in the repo details pane, its links then its branches as branchLink
+    // names them, in the order it lists them.
     links: string[];
 
     // The hashes of the commits in the commit pane, in the order it lists them.
@@ -102,6 +106,34 @@ export const CHANGES_LINK = "changes";
 // file can share it.
 //
 export const COMMIT_DETAILS_PATH = "";
+
+//
+// What the name of a branch's row in the repo details pane starts with, before the branch's name.
+// Git refuses a branch name with a colon in it, so no branch's row has the name of a link.
+//
+export const BRANCH_LINK_PREFIX = "branch:";
+
+//
+// Makes the name the explorer's state records for the branch's row in the repo details pane, so a
+// branch is selected and opened as a link is, and its pane takes the commit pane's place.
+//
+export function branchLink(branchName: string): string {
+    return `${BRANCH_LINK_PREFIX}${branchName}`;
+}
+
+//
+// Reads the branch's name from the name of a row in the repo details pane, so the page knows which
+// branch's commits to read and the branch pane's title. A link's name, or no name, names no branch.
+//
+export function linkBranch(link: string | undefined): string | undefined {
+    if (link === undefined) {
+        return undefined;
+    }
+    if (!link.startsWith(BRANCH_LINK_PREFIX)) {
+        return undefined;
+    }
+    return link.slice(BRANCH_LINK_PREFIX.length);
+}
 
 //
 // Makes the key that names one row of the changes pane: the list it is in and the file's path. A
@@ -458,10 +490,10 @@ export function closeCommitDetailsPane(state: IRepoExplorerState): IRepoExplorer
 }
 
 //
-// Closes the pane the open link opened, the commit pane or the changes pane, and every pane to its
-// right, as Escape and the commit pane's close button do, and makes the repo details pane active.
-// The link stays selected, and its pane opens afresh when it opens again. Only the repo details
-// pane stays collapsed, when it was.
+// Closes the pane the open link or branch opened, the commit pane, the branch pane or the changes
+// pane, and every pane to its right, as Escape and the commit pane's close button do, and makes
+// the repo details pane active. The link stays selected, and its pane opens afresh when it opens
+// again. Only the repo details pane stays collapsed, when it was.
 //
 export function closeLinkPane(state: IRepoExplorerState): IRepoExplorerState {
     return keepOpenPanesCollapsed({

@@ -5,10 +5,12 @@
 // there opens the file pane to its right, or its "Commit details" row the "Commit details" pane in
 // the file pane's place, like the column view of a file browser. Its Changes link opens the changes
 // pane in place of the commit pane, with the working tree's unstaged and staged files, and clicking
-// a file there opens its file pane. The arrow keys, Page Up, Page Down, Enter and Escape move through the panes as in
-// the column view of macOS Finder. Clicking anywhere in a pane makes it the active pane. Each pane's
-// maximise button, or M, makes the pane fill the page with the other panes hidden, and restores
-// them. Each pane's collapse button, or C, folds it into a narrow strip with its title down it.
+// a file there opens its file pane. Clicking one of the repo's branches, listed in the repo details
+// pane, opens the branch pane in place of the commit pane, with only that branch's commits. The
+// arrow keys, Page Up, Page Down, Enter and Escape move through the panes as in the column view of
+// macOS Finder. Clicking anywhere in a pane makes it the active pane. Each pane's maximise button,
+// or M, makes the pane fill the page with the other panes hidden, and restores them. Each pane's
+// collapse button, or C, folds it into a narrow strip with its title down it.
 //
 
 import { JSX, MouseEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -20,10 +22,11 @@ import { repoExplorerActivePane } from "../../lib/active-pane";
 import { explorerPaneSteps } from "../../lib/breadcrumb-trail";
 import { commitStagedFiles } from "../../lib/commit";
 import { canReadNextPage, COMMIT_PAGE_SIZE, commitPagesAfterRead, commitPagesReading, ICommitPages, nextPageStart, noCommitPages } from "../../lib/commit-pages";
+import { IBranch, readBranches } from "../../lib/branches";
 import { ICommit, ICommitPageStart, readCommitPage } from "../../lib/commits";
 import { openPaneIds } from "../../lib/pane-animation";
 import { PANE_LIMITS } from "../../lib/pane-widths";
-import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, closeLinkPane, COMMIT_DETAILS_PATH, CHANGES_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, hasKeyModifier, hasSelectedText, initialRepoExplorerState, IRepoExplorerState, isCopyKey, isExplorerKey, isExplorerKeyTarget, isPaneCollapsed, isResizeHandleKey, keepListedChanges, keepMaximisedPaneShown, measurePageRowCount, selectChange, selectedItemText, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex, toggleCollapsedPane, toggleMaximise } from "../../lib/repo-explorer";
+import { activatePane, branchLink, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, closeLinkPane, COMMIT_DETAILS_PATH, CHANGES_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, hasKeyModifier, hasSelectedText, initialRepoExplorerState, IRepoExplorerState, isCopyKey, isExplorerKey, isExplorerKeyTarget, isPaneCollapsed, isResizeHandleKey, keepListedChanges, keepMaximisedPaneShown, linkBranch, measurePageRowCount, selectChange, selectedItemText, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex, toggleCollapsedPane, toggleMaximise } from "../../lib/repo-explorer";
 import { toggleFileStaged } from "../../lib/stage-file";
 import { IWorkingChanges, IWorkingFile, readWorkingChanges } from "../../lib/working-changes";
 import { AnimatedPane, openColumnClass } from "./components/animated-pane";
@@ -100,7 +103,10 @@ export function RepoExplorerPage(): JSX.Element {
 // pane changes, and clears it when the page closes, so the command palette lists the active
 // pane's commands first. Each pane with a pane open to its right has a resize handle in the gap
 // between them, which sets the pane's width and saves it in Graft's state file, and the page leaves
-// Left and Right to a focused handle. A pane that is collapsed or maximised has no handle.
+// Left and Right to a focused handle. A pane that is collapsed or maximised has no handle. It reads
+// the repo's local branches for the repo details pane when it opens. A branch opens the branch
+// pane, which is the commit pane titled with the branch's name: every page is read from the
+// branch, and it reads afresh each time another branch opens.
 //
 export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const [commitPages, setCommitPages] = useState<ICommitPages>(noCommitPages);
@@ -114,11 +120,14 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const [commitMessage, setCommitMessage] = useState("");
     const [commitError, setCommitError] = useState<string | undefined>(undefined);
     const [isCommitting, setIsCommitting] = useState(false);
+    const [branches, setBranches] = useState<IBranch[] | undefined>(undefined);
+    const [branchesError, setBranchesError] = useState<string | undefined>(undefined);
     const pageRef = useRef<HTMLElement>(null);
     const columnsRef = useRef<HTMLDivElement>(null);
     const wasMaximisedRef = useRef(false);
     const dateFormat = Intl.DateTimeFormat().resolvedOptions();
-    const isCommitsOpen = explorer.openLink === COMMITS_LINK;
+    const openBranch = linkBranch(explorer.openLink);
+    const isCommitsOpen = explorer.openLink === COMMITS_LINK || openBranch !== undefined;
     const isChangesOpen = explorer.openLink === CHANGES_LINK;
     const { setPaneSteps } = usePaneTrail();
     const { setActivePane } = useActivePane();
@@ -176,6 +185,24 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
             return undefined;
         }
         return width;
+    }
+
+    //
+    // Reads the repo's local branches and shows them in the repo details pane, or shows why they
+    // could not be read.
+    //
+    function readBranchList(): void {
+        readBranches({
+            taskId: `branches-${Date.now()}-${Math.random()}`,
+            repoPath,
+        }, result => {
+            if (!result.ok) {
+                setBranchesError(result.error.message);
+                return;
+            }
+            setBranchesError(undefined);
+            setBranches(result.value);
+        });
     }
 
     //
@@ -267,9 +294,10 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     }, [repoPath, isChangesOpen]);
 
     //
-    // Reads the page of commits the start names, or the first page for undefined, and adds it to
-    // the pages once the commits task ends. The pages record the task's id, so a page read before
-    // the commit pane closed and opened again is dropped.
+    // Reads the page of commits the start names, or the first page for undefined, from the open
+    // branch when the branch pane is open, and adds it to the pages once the commits task ends.
+    // The pages record the task's id, so a page read before the commit pane closed and opened
+    // again is dropped.
     //
     function readPage(start: ICommitPageStart | undefined): void {
         const taskId = `commits-${Date.now()}-${Math.random()}`;
@@ -279,6 +307,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
             repoPath,
             pageSize: COMMIT_PAGE_SIZE,
             start,
+            branch: openBranch,
         }, result => setCommitPages(pages => commitPagesAfterRead(pages, taskId, result)));
     }
 
@@ -298,7 +327,11 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
             return;
         }
         readPage(undefined);
-    }, [repoPath, isCommitsOpen]);
+    }, [repoPath, explorer.openLink]);
+
+    useEffect(() => {
+        readBranchList();
+    }, [repoPath]);
 
     useLayoutEffect(() => {
         pageRef.current?.focus({
@@ -331,7 +364,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
 
     useLayoutEffect(() => {
         const items = {
-            links: [COMMITS_LINK, CHANGES_LINK],
+            links: [COMMITS_LINK, CHANGES_LINK, ...(branches ?? []).map(branch => branchLink(branch.name))],
             commitHashes: commitPages.commits.map(commit => commit.hash),
             filePaths,
             changeKeys: changeKeysOf(changes),
@@ -388,7 +421,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
         return () => document.removeEventListener("keydown", onKeyDown, {
             capture: true,
         });
-    }, [commitPages.commits, filePaths, changes, explorer]);
+    }, [commitPages.commits, filePaths, changes, explorer, branches]);
 
     const openChange = findChange(changes, explorer.openChange);
     const changedFilePath = openChange?.file.path;
@@ -416,7 +449,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
         <main ref={pageRef} tabIndex={-1} data-id="repo-explorer-page" className={`graft-page-in outline-none flex h-full ${pageWidthClass(explorer.maximisedPaneIndex !== undefined)} flex-col gap-4 bg-[var(--color-bg)] p-6`}>
             <div ref={columnsRef} data-id="repo-explorer-columns" onClickCapture={onColumnsClickCapture} className="flex min-h-0 flex-1 items-stretch gap-3">
                 <div className={`relative ${openColumnClass(isPaneHidden(0), explorer.maximisedPaneIndex === 0, false)}`}>
-                    <RepoDetailsPane repoPath={repoPath} selectedLink={explorer.selectedLink} openLink={explorer.openLink} isActive={explorer.activePaneIndex === 0} isMaximised={explorer.maximisedPaneIndex === 0} onToggleMaximise={() => onToggleMaximise(0)} isHidden={isPaneHidden(0)} isCollapsed={isPaneCollapsed(explorer, 0)} onToggleCollapse={() => onToggleCollapse(0)} onSelectLink={link => setExplorer(() => selectLink(link))} width={paneWidthOf(0, repoDetailsWidth.width)} />
+                    <RepoDetailsPane repoPath={repoPath} branches={branches} branchesError={branchesError} selectedLink={explorer.selectedLink} openLink={explorer.openLink} isActive={explorer.activePaneIndex === 0} isMaximised={explorer.maximisedPaneIndex === 0} onToggleMaximise={() => onToggleMaximise(0)} isHidden={isPaneHidden(0)} isCollapsed={isPaneCollapsed(explorer, 0)} onToggleCollapse={() => onToggleCollapse(0)} onSelectLink={link => setExplorer(() => selectLink(link))} width={paneWidthOf(0, repoDetailsWidth.width)} />
                     {explorer.openLink !== undefined && hasResizeHandle(0) && (
                         <ResizeHandle label="repo details pane" dataId="repo-details-pane-resize-handle" limits={PANE_LIMITS.repoDetails} onWidth={repoDetailsWidth.changeWidth} onReset={repoDetailsWidth.resetWidth} />
                     )}
@@ -425,6 +458,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                     {isCommitsOpen && (
                         <>
                             <CommitPane
+                                title={openBranch ?? "Commits"}
                                 commits={commitPages.commits}
                                 isLoading={commitPages.readTaskId !== undefined}
                                 error={commitPages.error}

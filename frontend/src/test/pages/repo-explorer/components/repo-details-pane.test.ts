@@ -2,7 +2,10 @@
 // Tests the repo details pane: renders it for a repo and checks that it shows the repo's name and
 // path in a card headed "Repo" that never shrinks, shows the Commits and Changes links as selected
 // and open as it is told, marks the pane active with a border in the style guide's active pane
-// colour and that clicking each link reports its name.
+// colour and that clicking each link reports its name. It checks the Branches list: the heading
+// and count, a row per branch with its icon and name, the checked-out branch's HEAD badge, the
+// selected and open branch, a click reporting the branch's row name, the loading text, the error
+// text and a repo with no branches.
 // It checks the maximise button reports a click, the card fills the repo explorer while maximised
 // and the pane is hidden, still drawn, while another pane is maximised.
 // It checks the collapse button and the strip drawn while the pane is collapsed.
@@ -10,19 +13,47 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
-import { CHANGES_LINK, COMMITS_LINK } from "../../../../lib/repo-explorer";
+import { IBranch } from "../../../../lib/branches";
+import { branchLink, CHANGES_LINK, COMMITS_LINK } from "../../../../lib/repo-explorer";
 import { maximisedPaneClasses } from "../../../../pages/repo-explorer/components/pane-width";
 import { activePaneClasses } from "../../../../pages/repo-explorer/components/active-pane-style";
 import { openRowClasses } from "../../../../pages/repo-explorer/components/commit-list";
 import { RepoDetailsPane } from "../../../../pages/repo-explorer/components/repo-details-pane";
 
 //
+// The branches the pane lists in most tests: feature/x, then main, which is checked out.
+//
+const twoBranches: IBranch[] = [
+    {
+        name: "feature/x",
+        isCheckedOut: false,
+    },
+    {
+        name: "main",
+        isCheckedOut: true,
+    },
+];
+
+//
 // Renders the pane for the repo at /repos/graft with the link selected and open as given, active or
-// not, with the callback.
+// not, with the callback, listing twoBranches.
 //
 function renderPane(options: { link: string | undefined; isActive: boolean; onSelectLink: jest.Mock }): HTMLElement {
+    return renderPaneWithBranches({
+        ...options,
+        branches: twoBranches,
+        branchesError: undefined,
+    });
+}
+
+//
+// Renders the pane as renderPane does, with the branches and the branches error given.
+//
+function renderPaneWithBranches(options: { link: string | undefined; isActive: boolean; onSelectLink: jest.Mock; branches: IBranch[] | undefined; branchesError: string | undefined }): HTMLElement {
     const { container } = render(createElement(RepoDetailsPane, {
         repoPath: "/repos/graft",
+        branches: options.branches,
+        branchesError: options.branchesError,
         selectedLink: options.link,
         openLink: options.link,
         isActive: options.isActive,
@@ -166,6 +197,8 @@ describe("RepoDetailsPane maximise button", () => {
     function renderSized(options: { isMaximised: boolean; isHidden: boolean; onToggleMaximise: jest.Mock }): HTMLElement {
         const { container } = render(createElement(RepoDetailsPane, {
             repoPath: "/repos/graft",
+            branches: undefined,
+            branchesError: undefined,
             selectedLink: undefined,
             openLink: undefined,
             isActive: true,
@@ -216,6 +249,8 @@ describe("RepoDetailsPane collapse", () => {
         const onToggleCollapse = jest.fn();
         const { container } = render(createElement(RepoDetailsPane, {
             repoPath: "/repos/graft",
+            branches: undefined,
+            branchesError: undefined,
             selectedLink: undefined,
             openLink: undefined,
             isActive: false,
@@ -235,6 +270,8 @@ describe("RepoDetailsPane collapse", () => {
         const onToggleCollapse = jest.fn();
         const { container } = render(createElement(RepoDetailsPane, {
             repoPath: "/repos/graft",
+            branches: undefined,
+            branchesError: undefined,
             selectedLink: undefined,
             openLink: undefined,
             isActive: true,
@@ -252,5 +289,99 @@ describe("RepoDetailsPane collapse", () => {
         expect(elementIn(container, "repo-details-pane-strip-title").textContent).toBe("Repo graft");
         fireEvent.click(elementIn(container, "repo-details-pane-restore"));
         expect(onToggleCollapse).toHaveBeenCalledTimes(1);
+    });
+
+    test("lists each branch under a Branches heading with its count, its icon and its name", () => {
+        const container = renderPane({
+            link: undefined,
+            isActive: false,
+            onSelectLink: jest.fn(),
+        });
+        expect(elementIn(container, "repo-details-branches-heading").textContent).toBe("Branches");
+        expect(elementIn(container, "repo-details-branches-count").textContent).toBe("2");
+        const rows = Array.from(elementIn(container, "repo-details-branch-list").children).map(row => row.getAttribute("data-id"));
+        expect(rows).toEqual(["repo-details-branch-feature/x", "repo-details-branch-main"]);
+        const row = elementIn(container, "repo-details-branch-feature/x");
+        expect(row.textContent).toBe("feature/x");
+        expect(row.querySelector("svg[data-icon=\"code-branch\"]")).not.toBeNull();
+        expect(row.className).toContain("MuiListItemButton-root");
+        expect(row.className).not.toContain("Mui-selected");
+        expect(row.getAttribute("aria-current")).toBeNull();
+    });
+
+    test("marks only the checked-out branch with a HEAD badge", () => {
+        const container = renderPane({
+            link: undefined,
+            isActive: false,
+            onSelectLink: jest.fn(),
+        });
+        expect(elementIn(container, "repo-details-branch-main").querySelector("[data-id=\"repo-details-branch-checked-out\"]")?.textContent).toBe("HEAD");
+        expect(elementIn(container, "repo-details-branch-feature/x").querySelector("[data-id=\"repo-details-branch-checked-out\"]")).toBeNull();
+    });
+
+    test("shows a branch as selected and open while its branch pane is open", () => {
+        const container = renderPane({
+            link: branchLink("feature/x"),
+            isActive: false,
+            onSelectLink: jest.fn(),
+        });
+        const row = elementIn(container, "repo-details-branch-feature/x");
+        expect(row.className).toContain("Mui-selected");
+        expect(row.className).toContain(openRowClasses);
+        expect(row.getAttribute("aria-current")).toBe("true");
+        expect(elementIn(container, "repo-details-branch-main").className).not.toContain("Mui-selected");
+        expect(elementIn(container, "repo-details-commits").className).not.toContain("Mui-selected");
+    });
+
+    test("reports the branch's row name when the user clicks a branch", () => {
+        const onSelectLink = jest.fn();
+        renderPane({
+            link: undefined,
+            isActive: false,
+            onSelectLink,
+        });
+        fireEvent.click(screen.getByText("feature/x"));
+        expect(onSelectLink).toHaveBeenCalledWith(branchLink("feature/x"));
+    });
+
+    test("shows the heading and that the branches are loading while they are read", () => {
+        const container = renderPaneWithBranches({
+            link: undefined,
+            isActive: false,
+            onSelectLink: jest.fn(),
+            branches: undefined,
+            branchesError: undefined,
+        });
+        expect(elementIn(container, "repo-details-branches-heading").textContent).toBe("Branches");
+        expect(elementIn(container, "repo-details-branches-loading").textContent).toBe("Loading the branches.");
+        expect(container.querySelector("[data-id=\"repo-details-branches-count\"]")).toBeNull();
+        expect(container.querySelector("[data-id=\"repo-details-branch-list\"]")).toBeNull();
+    });
+
+    test("shows why the branches could not be read, and no loading text", () => {
+        const container = renderPaneWithBranches({
+            link: undefined,
+            isActive: false,
+            onSelectLink: jest.fn(),
+            branches: undefined,
+            branchesError: "Running git for-each-ref failed.",
+        });
+        expect(elementIn(container, "repo-details-branches-error").textContent).toBe("Running git for-each-ref failed.");
+        expect(container.querySelector("[data-id=\"repo-details-branches-loading\"]")).toBeNull();
+    });
+
+    test("shows the heading with a count of 0, no rows and no error for a repo with no branches", () => {
+        const container = renderPaneWithBranches({
+            link: undefined,
+            isActive: false,
+            onSelectLink: jest.fn(),
+            branches: [],
+            branchesError: undefined,
+        });
+        expect(elementIn(container, "repo-details-branches-heading").textContent).toBe("Branches");
+        expect(elementIn(container, "repo-details-branches-count").textContent).toBe("0");
+        expect(elementIn(container, "repo-details-branch-list").children.length).toBe(0);
+        expect(container.querySelector("[data-id=\"repo-details-branches-error\"]")).toBeNull();
+        expect(container.querySelector("[data-id=\"repo-details-branches-loading\"]")).toBeNull();
     });
 });

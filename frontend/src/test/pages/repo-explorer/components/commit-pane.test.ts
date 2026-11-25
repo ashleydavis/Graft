@@ -1,8 +1,9 @@
 //
 // Tests the commit pane: renders it with commits and checks that it holds the commit list in a
-// card headed "Commits" that never shrinks, passes the selected and open commits on to the list,
-// marks the pane active with a border in the style guide's active pane colour, that clicking a
-// commit reports its hash and that its close button reports a close.
+// card headed "Commits", or the branch's name as the branch pane, that never shrinks, passes the
+// selected and open commits on to the list, marks the pane active with a border in the style
+// guide's active pane colour, that clicking a commit reports its hash and that its close button
+// reports a close.
 // It checks the maximise button reports a click and the card fills the repo explorer while
 // maximised.
 // It checks the collapse button and the strip drawn while the pane is collapsed.
@@ -53,6 +54,7 @@ const commit: ICommit = {
 //
 function renderPane(isActive: boolean, onSelectCommit: jest.Mock, onClose: jest.Mock): HTMLElement {
     const { container } = render(createElement(CommitPane, {
+        title: "Commits",
         commits: [commit],
         isLoading: false,
         error: undefined,
@@ -87,6 +89,34 @@ describe("CommitPane", () => {
         // The badge column holds a hidden copy of the badges it measures, so "main" is in it twice.
         //
         expect(pane?.querySelector("[data-id=\"commit-list\"]")?.textContent).toBe("The first commitmainmainAda AuthorJan 11111111");
+    });
+
+    test("is headed and labelled with the branch's name as the branch pane", () => {
+        const { container } = render(createElement(CommitPane, {
+            title: "feature/x",
+            commits: [commit],
+            isLoading: false,
+            error: undefined,
+            hasReadLastPage: false,
+            selectedHash: undefined,
+            openHash: undefined,
+            isActive: false,
+            isMaximised: false,
+            onToggleMaximise: jest.fn(),
+            isCollapsed: false,
+            onToggleCollapse: jest.fn(),
+            width: undefined,
+            dateFormat: {
+                locale: "en-US",
+                timeZone: "UTC",
+            },
+            onSelectCommit: jest.fn(),
+            onNearEnd: jest.fn(),
+            onClose: jest.fn(),
+        }));
+        const pane = container.querySelector("[data-id=\"commit-pane\"]");
+        expect(pane?.getAttribute("aria-label")).toBe("feature/x");
+        expect(pane?.querySelector("[data-id=\"commit-pane-heading\"]")?.textContent).toBe("feature/x");
     });
 
     test("shows the selected commit as selected and the open commit as open", () => {
@@ -135,6 +165,7 @@ describe("CommitPane maximise button", () => {
     test("reports a click and fills the repo explorer while the pane is maximised", () => {
         const onToggleMaximise = jest.fn();
         const { container } = render(createElement(CommitPane, {
+            title: "Commits",
             commits: [commit],
             isLoading: false,
             error: undefined,
@@ -168,6 +199,7 @@ describe("CommitPane collapse", () => {
     test("reports a click on its collapse button in its header", () => {
         const onToggleCollapse = jest.fn();
         const { container } = render(createElement(CommitPane, {
+            title: "Commits",
             commits: [commit],
             isLoading: false,
             error: undefined,
@@ -202,6 +234,7 @@ describe("CommitPane collapse", () => {
     test("draws the strip with Commits down it in its place while it is collapsed, and reports a click on its restore button", () => {
         const onToggleCollapse = jest.fn();
         const { container } = render(createElement(CommitPane, {
+            title: "Commits",
             commits: [commit],
             isLoading: false,
             error: undefined,

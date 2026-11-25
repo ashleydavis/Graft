@@ -1,7 +1,7 @@
 //
 // The commit pane: the repo explorer's column to the right of the repo details pane, a card headed
-// "Commits" that holds the commit list, with a button that closes it. It never shrinks, so the
-// panes that open to its right never hide or cut it off.
+// "Commits", or a branch's name as the branch pane, that holds the commit list, with a button that
+// closes it. It never shrinks, so the panes that open to its right never hide or cut it off.
 //
 
 import { JSX } from "react";
@@ -18,6 +18,9 @@ import { paneWidthClass } from "./pane-width";
 // What the commit pane shows and what it reports.
 //
 export interface ICommitPaneProps {
+    // The pane's title: "Commits" for the commit pane, or the branch's name for the branch pane.
+    title: string;
+
     // The commits read so far, newest first.
     commits: ICommit[];
 
@@ -77,16 +80,16 @@ export interface ICommitPaneProps {
 // restore it, and close it. While it is collapsed it draws the strip with "Commits" down it in its
 // place.
 //
-export function CommitPane({ commits, isLoading, error, hasReadLastPage, selectedHash, openHash, isActive, isMaximised, onToggleMaximise, isCollapsed, onToggleCollapse, dateFormat, onSelectCommit, onNearEnd, onClose, width }: ICommitPaneProps): JSX.Element {
+export function CommitPane({ title, commits, isLoading, error, hasReadLastPage, selectedHash, openHash, isActive, isMaximised, onToggleMaximise, isCollapsed, onToggleCollapse, dateFormat, onSelectCommit, onNearEnd, onClose, width }: ICommitPaneProps): JSX.Element {
     if (isCollapsed) {
-        return <CollapsedStrip paneLabel="Commits" title="Commits" paneDataId="commit-pane" isActive={isActive} onRestore={onToggleCollapse} />;
+        return <CollapsedStrip paneLabel={title} title={title} paneDataId="commit-pane" isActive={isActive} onRestore={onToggleCollapse} />;
     }
     return (
-        <section data-id="commit-pane" aria-label="Commits" style={paneWidthStyle(width)} className={`flex ${paneWidthClass("w-[min(850px,calc(100cqw-var(--space-6)*2))]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
-            <PaneHeader title="Commits" titleDataId="commit-pane-heading" collapseDataId="commit-pane-collapse" onCollapse={collapseHandler(isMaximised, onToggleCollapse)} action={(
+        <section data-id="commit-pane" aria-label={title} style={paneWidthStyle(width)} className={`flex ${paneWidthClass("w-[min(850px,calc(100cqw-var(--space-6)*2))]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
+            <PaneHeader title={title} titleDataId="commit-pane-heading" collapseDataId="commit-pane-collapse" onCollapse={collapseHandler(isMaximised, onToggleCollapse)} action={(
                 <>
                     <MaximiseButton isMaximised={isMaximised} dataId="commit-pane-maximise" onToggleMaximise={onToggleMaximise} />
-                    <CloseButton paneLabel="Commits" dataId="commit-pane-close" onClose={onClose} />
+                    <CloseButton paneLabel={title} dataId="commit-pane-close" onClose={onClose} />
                 </>
             )} />
             <CommitList commits={commits} isLoading={isLoading} error={error} hasReadLastPage={hasReadLastPage} selectedHash={selectedHash} openHash={openHash} dateFormat={dateFormat} onSelectCommit={onSelectCommit} onNearEnd={onNearEnd} />

@@ -9,10 +9,14 @@
 // being active.
 // It checks C and the collapsed panes: collapsing and restoring a pane, the panes that stay
 // collapsed as panes close and moving through a collapsed pane with the keys.
+// It checks a branch's row is selected, opened and closed as a link is, and that its branch pane
+// takes the commit pane's place.
 //
 
 import {
     activatePane,
+    BRANCH_LINK_PREFIX,
+    branchLink,
     changeKey,
     changeKeysOf,
     closeChangeFilePane,
@@ -47,6 +51,7 @@ import {
     pageRowCount,
     measurePageRowCount,
     keepListedChanges,
+    linkBranch,
     openSelection,
     targetPaneIndex,
     selectChange,
@@ -1353,6 +1358,25 @@ describe("the Commit details row", () => {
     });
 });
 
+describe("branchLink", () => {
+    test("names a branch's row with the branch prefix before the branch's name", () => {
+        expect(branchLink("feature/x")).toBe("branch:feature/x");
+        expect(branchLink("main").startsWith(BRANCH_LINK_PREFIX)).toBe(true);
+    });
+});
+
+describe("linkBranch", () => {
+    test("reads the branch's name from a branch's row name", () => {
+        expect(linkBranch(branchLink("feature/x"))).toBe("feature/x");
+    });
+
+    test("finds no branch in a link's name or in no name", () => {
+        expect(linkBranch(COMMITS_LINK)).toBeUndefined();
+        expect(linkBranch(CHANGES_LINK)).toBeUndefined();
+        expect(linkBranch(undefined)).toBeUndefined();
+    });
+});
+
 //
 // Makes a key press of the key with no modifier held, for a test to add the modifiers it needs.
 //
@@ -1850,5 +1874,84 @@ describe("explorerStateAfterKey with C", () => {
         expect(after.openHash).toBe("bbb");
         expect(after.activePaneIndex).toBe(2);
         expect(after.collapsedPanes).toEqual([1]);
+    });
+});
+
+//
+// The items the panes list with two branches after the links, feature/x then main.
+//
+const branchItems: IRepoExplorerItems = {
+    ...items,
+    links: [COMMITS_LINK, CHANGES_LINK, branchLink("feature/x"), branchLink("main")],
+};
+
+describe("branch rows", () => {
+    test("Down moves from the Commit link to the first branch and on to the last, where it stays", () => {
+        let state: IRepoExplorerState = {
+            ...initialRepoExplorerState,
+            selectedLink: CHANGES_LINK,
+        };
+        state = explorerStateAfterKey(state, "ArrowDown", branchItems);
+        expect(state.selectedLink).toBe(branchLink("feature/x"));
+        state = explorerStateAfterKey(state, "ArrowDown", branchItems);
+        expect(state.selectedLink).toBe(branchLink("main"));
+        state = explorerStateAfterKey(state, "ArrowDown", branchItems);
+        expect(state.selectedLink).toBe(branchLink("main"));
+        state = explorerStateAfterKey(state, "ArrowUp", branchItems);
+        expect(state.selectedLink).toBe(branchLink("feature/x"));
+    });
+
+    test("Enter on a branch opens its branch pane and makes it active, as a click opens it with the repo details pane active", () => {
+        const selected: IRepoExplorerState = {
+            ...initialRepoExplorerState,
+            selectedLink: branchLink("feature/x"),
+        };
+        const opened = explorerStateAfterKey(selected, "Enter", branchItems);
+        expect(opened.openLink).toBe(branchLink("feature/x"));
+        expect(opened.activePaneIndex).toBe(1);
+        expect(openPaneCount(opened)).toBe(2);
+        const clicked = selectLink(branchLink("feature/x"));
+        expect(clicked.openLink).toBe(branchLink("feature/x"));
+        expect(clicked.activePaneIndex).toBe(0);
+    });
+
+    test("the branch pane's commits open the commit details pane and then the file pane, as the commit pane's do", () => {
+        let state = selectLink(branchLink("feature/x"));
+        state = explorerStateAfterKey(state, "ArrowRight", branchItems);
+        expect(state.activePaneIndex).toBe(1);
+        state = explorerStateAfterKey(state, "ArrowDown", branchItems);
+        expect(state.selectedHash).toBe("aaa");
+        state = explorerStateAfterKey(state, "Enter", branchItems);
+        expect(state.openHash).toBe("aaa");
+        expect(state.activePaneIndex).toBe(2);
+        state = selectFirstFile(state, branchItems.filePaths);
+        state = explorerStateAfterKey(state, "Enter", branchItems);
+        expect(state.openPath).toBe("README.md");
+        expect(state.activePaneIndex).toBe(3);
+        expect(openPaneCount(state)).toBe(4);
+        state = explorerStateAfterKey(state, "ArrowLeft", branchItems);
+        expect(state.activePaneIndex).toBe(2);
+    });
+
+    test("Escape closes the panes right to left and then the branch pane, keeping the branch selected", () => {
+        let state = selectCommit(selectLink(branchLink("feature/x")), "aaa");
+        state = explorerStateAfterKey(state, "Escape", branchItems);
+        expect(state.openHash).toBeUndefined();
+        expect(state.openLink).toBe(branchLink("feature/x"));
+        expect(state.activePaneIndex).toBe(1);
+        state = explorerStateAfterKey(state, "Escape", branchItems);
+        expect(state.openLink).toBeUndefined();
+        expect(state.selectedLink).toBe(branchLink("feature/x"));
+        expect(state.activePaneIndex).toBe(0);
+        expect(openPaneCount(state)).toBe(1);
+    });
+
+    test("opening another branch opens its pane afresh, with no commit open", () => {
+        const state = selectCommit(selectLink(branchLink("feature/x")), "aaa");
+        const other = selectLink(branchLink("main"));
+        expect(state.openHash).toBe("aaa");
+        expect(other.openLink).toBe(branchLink("main"));
+        expect(other.openHash).toBeUndefined();
+        expect(other.selectedHash).toBeUndefined();
     });
 });

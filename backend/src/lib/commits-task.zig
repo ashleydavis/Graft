@@ -1,10 +1,11 @@
 //
 // The commits task: the background task that reads a page of a repo's commits with the `log`
-// wrapper for the repo explorer's commit pane.
+// wrapper for the repo explorer's commit pane and branch pane.
 //
 
 const std = @import("std");
 const ziggy = @import("ziggy");
+const git_branch = @import("git-branch.zig");
 const git_interface = @import("git-interface.zig");
 const git_log = @import("git-log.zig");
 
@@ -33,6 +34,12 @@ pub const CommitsTaskRequest = struct {
     // it defaults to null.
     //
     start: ?CommitsTaskStart = null,
+
+    //
+    // The name of the local branch whose commits the branch pane reads, on every page. The frontend
+    // sends null or leaves it out for the commit pane, so it defaults to null.
+    //
+    branch: ?[]const u8 = null,
 };
 
 //
@@ -68,7 +75,9 @@ pub const CommitsTaskHandler = fn (
 pub fn commits_task_handler(comptime run_git: git_interface.RunGit) CommitsTaskHandler {
     return struct {
         //
-        // Reads the page of commits the payload asks for, in the task's arena.
+        // Reads the page of commits the payload names, in the task's arena. A branch's name
+        // comes from the frontend, so the handler first reads the repo's branches and passes the
+        // name to git only when git listed it.
         //
         fn commits_task_handler_run(
             services: TaskServices,
@@ -87,10 +96,27 @@ pub fn commits_task_handler(comptime run_git: git_interface.RunGit) CommitsTaskH
                     .skip_count = payload_start.skipCount,
                 };
             }
+            if (payload.branch) |branch| {
+                const branches = try git_branch.read_branches(
+                    io,
+                    services,
+                    allocator,
+                    run_git,
+                    payload.repoPath,
+                );
+                if (!git_branch.is_listed_branch(branches, branch)) {
+                    services.fail_with("The commits of a branch the repo does not have " ++
+                        "were asked for. The branch may have been deleted or renamed, so close " ++
+                        "the branch's pane and open the repo explorer again.");
+                    return error.UnlistedBranch;
+                }
+                assert(branch.len > 0);
+            }
             const page = try git_log.read_log_page(io, services, allocator, run_git, .{
                 .repo_path = payload.repoPath,
                 .page_size = payload.pageSize,
                 .start = start,
+                .branch = payload.branch,
             });
             assert(page.commits.len <= payload.pageSize);
             return page;

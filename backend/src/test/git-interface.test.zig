@@ -15,11 +15,15 @@
 // that a branch with the same name as a short hash still wins over the commit and that a full
 // hash is read as a commit even when a branch has its name. It checks git reads a
 // hash the `diff-tree` wrapper puts before `--` as a commit when a file has the hash as its name,
-// and that without the `--` git refuses the hash as ambiguous.
+// and that without the `--` git refuses the hash as ambiguous. It runs the `branch` wrapper's
+// command against real repos, because only real git shows how it writes each branch and the
+// checked-out one, and checks the `log` wrapper's command for a branch's page lists only the
+// branch's commits when a tag has the branch's name.
 //
 
 const std = @import("std");
 const ziggy = @import("ziggy");
+const git_branch = @import("../lib/git-branch.zig");
 const git_interface = @import("../lib/git-interface.zig");
 const git_log = @import("../lib/git-log.zig");
 const test_environment = @import("test-environment.zig");
@@ -1591,4 +1595,111 @@ test "git diff-tree with -- after a hash reads a file's diff when a file has the
 
     try std.testing.expectEqual(@as(?u8, 0), result.exit_code);
     try std.testing.expect(std.mem.indexOf(u8, result.stdout, "+The first note.\n") != null);
+}
+
+//
+// Runs the `branch` wrapper's command in the test repo and parses what git writes, in the arena.
+//
+fn read_test_repo_branches(
+    arena: std.mem.Allocator,
+    directory: *const TestDirectory,
+) ![]const git_branch.Branch {
+    const args = try std.mem.concat(arena, []const u8, &.{
+        &.{
+            "-C",
+            directory.path(),
+        },
+        git_branch.read_branches_args,
+    });
+    const result = try git_interface.start_git(io, arena, args);
+    try std.testing.expectEqual(@as(?u8, 0), result.exit_code);
+    return git_branch.parse_branch_output(arena, result.stdout);
+}
+
+test "the branch wrapper's command lists each local branch and marks the checked-out one" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    try init_repo(&directory);
+    try commit(&directory, "The first commit");
+    try run_git_successfully(&.{
+        "-C",
+        directory.path(),
+        "branch",
+        "feature/x",
+    });
+
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const branches = try read_test_repo_branches(arena.allocator(), &directory);
+    try std.testing.expectEqual(@as(usize, 2), branches.len);
+    try std.testing.expectEqualStrings("feature/x", branches[0].name);
+    try std.testing.expect(!branches[0].isCheckedOut);
+    try std.testing.expectEqualStrings("main", branches[1].name);
+    try std.testing.expect(branches[1].isCheckedOut);
+}
+
+test "the branch wrapper's command lists no branch in a repo with no commits" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    try init_repo(&directory);
+
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const branches = try read_test_repo_branches(arena.allocator(), &directory);
+    try std.testing.expectEqual(@as(usize, 0), branches.len);
+}
+
+test "the log wrapper's branch page lists only the branch's commits when a tag has its name" {
+    var directory: TestDirectory = undefined;
+    try make_test_directory(&directory);
+    defer delete_test_directory(&directory);
+
+    try init_repo(&directory);
+    try commit(&directory, "The first commit");
+    try run_git_successfully(&.{
+        "-C",
+        directory.path(),
+        "branch",
+        "feature/x",
+    });
+    try commit(&directory, "The second commit");
+    try run_git_successfully(&.{
+        "-C",
+        directory.path(),
+        "tag",
+        "feature/x",
+    });
+
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const command = try git_log.read_log_page_command(
+        arena.allocator(),
+        .{
+            .repo_path = directory.path(),
+            .page_size = 50,
+            .start = null,
+            .branch = "feature/x",
+        },
+        "--max-count=50",
+    );
+    const args = try std.mem.concat(arena.allocator(), []const u8, &.{
+        &.{
+            "-C",
+            directory.path(),
+        },
+        command.args,
+    });
+    const result = try git_interface.start_git(io, arena.allocator(), args);
+    try std.testing.expectEqual(@as(?u8, 0), result.exit_code);
+
+    const commits = try git_log.parse_log_output(arena.allocator(), result.stdout, 50);
+    try std.testing.expectEqual(@as(usize, 1), commits.len);
+    try std.testing.expectEqualStrings("The first commit", commits[0].title);
 }
