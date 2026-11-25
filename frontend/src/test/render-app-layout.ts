@@ -10,6 +10,7 @@ import { createMemoryHistory, createRootRoute, createRoute, createRouter, Router
 import { createElement, JSX } from "react";
 import type { ITaskEvent, IZiggyBridge } from "ziggy";
 import { AppLayout } from "../components/app-layout";
+import { useActivePane } from "../components/active-pane";
 import { AppTheme, systemDarkQuery } from "../components/app-theme";
 import { usePaneTrail } from "../components/pane-trail";
 import { RepoProvider } from "../components/repo-context";
@@ -55,10 +56,12 @@ export function sendTaskEvent(event: ITaskEvent<unknown>): void {
 //
 // A mock of the repo explorer page, with a button that puts the commit pane's step in the
 // breadcrumb trail as the page does when the commit pane opens, so a test can check the layout
-// draws the pane steps a page sets.
+// draws the pane steps a page sets, and a button that makes the commit pane the active pane, so a
+// test can check the command palette lists the active pane's commands first.
 //
 export function MockRepoExplorerPage(): JSX.Element {
     const { setPaneSteps } = usePaneTrail();
+    const { setActivePane } = useActivePane();
     return createElement("div", null,
         createElement("p", null, "The repo explorer page"),
         createElement("button", {
@@ -72,6 +75,10 @@ export function MockRepoExplorerPage(): JSX.Element {
                 },
             ]),
         }, "Open a pane"),
+        createElement("button", {
+            "data-id": "mock-activate-pane",
+            onClick: () => setActivePane("commit-pane"),
+        }, "Make the commit pane active"),
     );
 }
 

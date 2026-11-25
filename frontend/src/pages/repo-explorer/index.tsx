@@ -9,8 +9,10 @@
 //
 
 import { JSX, MouseEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useActivePane } from "../../components/active-pane";
 import { usePaneTrail } from "../../components/pane-trail";
 import { useRepo } from "../../components/repo-context";
+import { repoExplorerActivePane } from "../../lib/active-pane";
 import { explorerPaneSteps } from "../../lib/breadcrumb-trail";
 import { commitStagedFiles } from "../../lib/commit";
 import { canReadNextPage, COMMIT_PAGE_SIZE, commitPagesAfterRead, commitPagesReading, ICommitPages, nextPageStart, noCommitPages } from "../../lib/commit-pages";
@@ -79,7 +81,9 @@ export function RepoExplorerPage(): JSX.Element {
 // clears the message and reads the changes again, so the staged list empties. The commit pane
 // shows the new commit because it reads the commits afresh each time it opens. It puts a step
 // for each open pane in the breadcrumb trail each time a pane opens or closes, and takes them out
-// when the page closes, so the trail always ends with the rightmost pane.
+// when the page closes, so the trail always ends with the rightmost pane. It sets the layout's
+// active pane each time the active pane changes, and clears it when the page closes, so the
+// command palette lists the active pane's commands first.
 //
 export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const [commitPages, setCommitPages] = useState<ICommitPages>(noCommitPages);
@@ -98,6 +102,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const isCommitsOpen = explorer.openLink === COMMITS_LINK;
     const isChangesOpen = explorer.openLink === COMMIT_LINK;
     const { setPaneSteps } = usePaneTrail();
+    const { setActivePane } = useActivePane();
 
     //
     // Reads the working tree's changes and shows them, then works out the explorer's state from
@@ -273,6 +278,11 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
         setPaneSteps(explorerPaneSteps(explorer, changedFilePath));
         return () => setPaneSteps([]);
     }, [explorer.openLink, explorer.openHash, explorer.openPath, changedFilePath]);
+
+    useEffect(() => {
+        setActivePane(repoExplorerActivePane(explorer));
+        return () => setActivePane(undefined);
+    }, [explorer.activePaneIndex, explorer.openLink]);
     const paneIds = openPaneIds(explorer, openChange !== undefined);
 
     return (

@@ -1,14 +1,18 @@
 //
 // The app's layout: the top bar across the window, the left sidebar, the main content area that
-// shows the current page, the right sidebar and the keyboard shortcuts overlay over them.
+// shows the current page, the right sidebar and the keyboard shortcuts overlay and the command
+// palette over them.
 //
 
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { JSX, useEffect, useState } from "react";
 import type { ITaskEvent } from "ziggy";
+import { PaneOrPage, selectedPaneOrPage } from "../lib/active-pane";
 import { ITrailStep, pageTrail } from "../lib/breadcrumb-trail";
 import { addGitCommand, IPageGitCommands, isGitCommandEvent, pageGitCommands } from "../lib/git-commands";
 import { openPage } from "../lib/navigation";
+import { ActivePaneContext } from "./active-pane";
+import { CommandPalette } from "./command-palette";
 import { useRepoExplorerAction } from "./repo-explorer-action";
 import { GitCommandsPanel } from "./git-commands-panel";
 import { LeftSidebar } from "./left-sidebar";
@@ -78,7 +82,10 @@ export function useSavedSwitch(stateKey: string, description: string): [boolean,
 // Git commands every page has run for as long as the app runs, listening whether the right sidebar
 // is open or not, so closing a pane or the sidebar or moving to another page loses none, and the
 // right sidebar shows the commands of the page that is open. It holds the keyboard shortcuts
-// overlay, so `?` shows it over every page. It calls the hook of each feature whose action works on
+// overlay, so `?` shows it over every page, and the command palette, so Ctrl+Shift+P shows it over
+// every page. It keeps the active pane the page sets through ActivePaneContext and works out the
+// selected pane or page from it and the page the router shows, so the command palette lists that
+// pane or page's commands first. It calls the hook of each feature whose action works on
 // every page, one line per feature, because the layout is inside both the router and the open
 // repo's context for as long as the window is open.
 //
@@ -91,6 +98,7 @@ export function AppLayout(): JSX.Element {
     const { repoPath } = useRepo();
     const [gitCommandHistory, setGitCommandHistory] = useState<ReadonlyMap<string, IPageGitCommands>>(new Map());
     const [paneSteps, setPaneSteps] = useState<ITrailStep[]>([]);
+    const [activePane, setActivePane] = useState<PaneOrPage | undefined>(undefined);
     usePageZoom();
     useOpenRepoAction();
     useRepoExplorerAction();
@@ -126,7 +134,11 @@ export function AppLayout(): JSX.Element {
                     <PaneTrailContext.Provider value={{
                         setPaneSteps,
                     }}>
-                        <Outlet />
+                        <ActivePaneContext.Provider value={{
+                            setActivePane,
+                        }}>
+                            <Outlet />
+                        </ActivePaneContext.Provider>
                     </PaneTrailContext.Provider>
                 </div>
                 <RightSidebar isOpen={isRightSidebarOpen}>
@@ -134,6 +146,7 @@ export function AppLayout(): JSX.Element {
                 </RightSidebar>
             </div>
             <ShortcutsOverlay />
+            <CommandPalette paneOrPage={selectedPaneOrPage(location.pathname, activePane)} />
         </div>
     );
 }

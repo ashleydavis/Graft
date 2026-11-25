@@ -6,6 +6,7 @@
 //
 
 const ziggy = @import("ziggy");
+const command_palette = @import("../features/command-palette.zig");
 const repo_explorer = @import("../features/repo-explorer.zig");
 const new_window = @import("../features/new-window.zig");
 const open_repo = @import("../features/open-repo.zig");
@@ -19,6 +20,7 @@ const zoom = @import("../features/zoom.zig");
 pub const actions: []const ziggy.action.Action =
     open_repo.actions ++
     shortcuts_overlay.actions ++
+    command_palette.actions ++
     repo_explorer.actions ++
     zoom.actions ++
     new_window.actions;

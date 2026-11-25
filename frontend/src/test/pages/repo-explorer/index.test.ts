@@ -17,7 +17,8 @@
 // with the file's pane following the file to the other list. The commit section commits the
 // staged files with the typed message, clears it and reads the changes again, or shows git's error
 // text and keeps it. It checks the page puts a step in the breadcrumb trail for each open pane as
-// panes open and close, and takes them out when it closes.
+// panes open and close, and takes them out when it closes, and that it sets the layout's active
+// pane as the active pane changes and clears it when it closes.
 // Each pane after the repo details pane fades in as it opens, and as it closes stays drawn, inert,
 // in a column that fades and narrows until its animation ends, while the keys and clicks still act
 // on the other panes. Under reduced motion the columns have an empty animation class and a closed
@@ -28,6 +29,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { createElement, JSX } from "react";
 import type { IAddTask, ITaskCompletedEvent } from "ziggy";
+import { ActivePaneContext } from "../../../components/active-pane";
 import { PaneTrailContext } from "../../../components/pane-trail";
 import { RepoProvider, useRepo } from "../../../components/repo-context";
 import { ITrailStep } from "../../../lib/breadcrumb-trail";
@@ -64,6 +66,11 @@ Element.prototype.scrollIntoView = scrollIntoView;
 const setPaneSteps = jest.fn();
 
 //
+// Records the active pane the page sets, in place of the layout that keeps it.
+//
+const setActivePane = jest.fn();
+
+//
 // The fake layout each test runs with, so the commit list has a height to draw its rows in.
 //
 let layout: IFakeListLayout;
@@ -71,6 +78,7 @@ let layout: IFakeListLayout;
 beforeEach(() => {
     scrollIntoView.mockClear();
     setPaneSteps.mockClear();
+    setActivePane.mockClear();
     layout = installFakeListLayout();
 });
 
@@ -154,7 +162,8 @@ function OpenOtherRepoButton(): JSX.Element {
 //
 // Shows the repo explorer page as the only page of a router, as the app does, inside a RepoProvider
 // with the repo the test gives open, or none for undefined, beside a button that opens another
-// repo. The layout's PaneTrailContext around the router gives the page the setPaneSteps mock.
+// repo. The layout's PaneTrailContext and ActivePaneContext around the router give the page the
+// setPaneSteps and setActivePane mocks.
 //
 function renderRepoExplorerPage(repoPath: string | undefined): void {
     const rootRoute = createRootRoute();
@@ -183,8 +192,13 @@ function renderRepoExplorerPage(repoPath: string | undefined): void {
                 value: {
                     setPaneSteps,
                 },
-                children: createElement(RouterProvider, {
-                    router,
+                children: createElement(ActivePaneContext.Provider, {
+                    value: {
+                        setActivePane,
+                    },
+                    children: createElement(RouterProvider, {
+                        router,
+                    }),
                 }),
             }),
         ],
@@ -690,6 +704,38 @@ describe("RepoExplorerPage breadcrumb trail", () => {
         expect(lastPaneStepIds()).toEqual(["breadcrumb-pane-commits"]);
         cleanup();
         expect(lastPaneStepIds()).toEqual([]);
+    });
+});
+
+describe("RepoExplorerPage active pane", () => {
+    //
+    // The active pane the page last set.
+    //
+    function lastActivePane(): string | undefined {
+        const calls = setActivePane.mock.calls;
+        return calls[calls.length - 1][0];
+    }
+
+    test("sets the layout's active pane as the active pane changes, and clears it when the page closes", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        await screen.findByText("Commits");
+        expect(lastActivePane()).toBe("repo-details-pane");
+        await clickCommitsLink();
+        completeTaskAt(ziggy, 0, {
+            commits: [commitJson],
+        });
+        fireEvent.click(await screen.findByText("The first commit"));
+        expect(lastActivePane()).toBe("commit-pane");
+        cleanup();
+        expect(lastActivePane()).toBeUndefined();
+    });
+
+    test("sets the changes pane while the Commit link is open", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        fireEvent.click(elementWithDataId("change-unstaged-notes.txt"));
+        expect(lastActivePane()).toBe("changes-pane");
     });
 });
 

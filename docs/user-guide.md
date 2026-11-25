@@ -50,6 +50,10 @@ Choose **File**, then **New window**, or press Ctrl+N (Command+N on macOS), to o
 
 Press `?` or Ctrl+/ to show the keyboard shortcuts overlay over the page. It lists every keyboard shortcut of Graft's, with its keys as your platform shows them, in one column. Type in the search box at its top to show only the shortcuts whose name or keys match. The search box has the focus, so `?` typed there types the character. Press Escape to close the overlay. While you type in any other text box, such as the search box of the breadcrumb trail's drop-down, `?` types the character instead of showing the overlay. Ctrl+/ works everywhere, text boxes included, and leaves the text in a text box as it was: press it to show the overlay and again to close it. Holding the keys down shows or closes the overlay once. Let go of Ctrl before you press Ctrl+/ again. It is Ctrl on macOS too. The top bar always shows "Ctrl+/: Show hotkeys" to remind you, and the keyboard button just after it shows the overlay too.
 
+### Command palette
+
+Press Ctrl+Shift+P (Command+Shift+P on macOS) to show the command palette near the top of the window, from any page and from a text box too. It lists every command of Graft's, with its keys when it has a shortcut. The commands for what you are working on come first, under the name of the pane you last clicked in on the repo explorer page or of the page you are on, and every other command follows under "Other commands". Type in its search box to show only the commands whose name holds the text. Up and Down move the highlight, and Enter runs the highlighted command. A click runs the command you click. Running a command closes the palette. Press Escape to close it without running a command.
+
 ### Zoom
 
 Press Ctrl+Plus or Ctrl+= to make everything in the window bigger, Ctrl+Minus to make it smaller and Ctrl+0 to put it back to its normal size (Command in place of Ctrl on macOS). The **View** menu's **Zoom In**, **Zoom Out** and **Actual Size** items do the same. Graft remembers the zoom and starts at it the next time it opens.

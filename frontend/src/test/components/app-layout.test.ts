@@ -8,16 +8,19 @@
 // are saved in Graft's state file and restored from it, that the top bar's breadcrumb trail
 // follows the page shown and its drop-down opens another page and that the right sidebar shows the
 // Git commands the page shown has run. It checks the trail ends with the pane steps the repo
-// explorer page sets. It also checks that with no repo open the trail has no repo
+// explorer page sets, and that the Command Palette action shows the command palette with the
+// commands of the page shown, or of the active pane the repo explorer page sets, first. It also
+// checks that with no repo open the trail has no repo
 // step and the Repo explorer link is hidden. The actions of the feature hooks the layout calls are
 // tested beside each hook.
 //
 
 import { act, cleanup, screen, waitFor } from "@testing-library/react";
 import { leftSidebarMinimisedStateKey, rightSidebarOpenStateKey } from "../../components/app-layout";
+import { commandPaletteAction } from "../../components/command-palette";
 import { shortcutsOverlayAction } from "../../components/shortcuts-overlay";
 import { makeFakeThemeZiggy } from "../fake-theme-ziggy";
-import { makeFakeActionZiggy } from "../fake-action-ziggy";
+import { IFakeActionZiggy, makeFakeActionZiggy } from "../fake-action-ziggy";
 import { elementWithDataId, renderAppLayout, renderAppLayoutWithZiggy, renderFakedAppLayout, sendTaskEvent, taskEventListeners } from "../render-app-layout";
 
 describe("AppLayout", () => {
@@ -272,6 +275,63 @@ describe("AppLayout's pane steps", () => {
         });
         expect(elementWithDataId(container, "breadcrumb-trail")?.textContent).toBe("graftRepo explorerCommits");
         expect(elementWithDataId(container, "breadcrumb-pane-commits")?.textContent).toBe("Commits");
+    });
+});
+
+describe("AppLayout's command palette", () => {
+    //
+    // Renders the layout with an action list holding Open repo and Copy, so the About page's
+    // group and the commit pane's group each have a command, and returns the container and the
+    // fake that runs the Command Palette action.
+    //
+    async function renderWithCommands(): Promise<[HTMLElement, IFakeActionZiggy]> {
+        const actionZiggy = makeFakeActionZiggy([
+            {
+                name: "open-repo",
+                label: "Open repo",
+                shortcut: "Ctrl+O",
+            },
+            {
+                name: "copy",
+                label: "Copy",
+                shortcut: "Ctrl+C",
+            },
+        ]);
+        const { container } = await renderFakedAppLayout({
+            ...makeFakeThemeZiggy({
+                systemTheme: "light",
+            }),
+            ...actionZiggy,
+        }, "/repos/graft");
+        return [container, actionZiggy];
+    }
+
+    //
+    // Runs the Command Palette action and returns the heading of the palette's first group.
+    //
+    async function firstGroupTitle(ziggy: IFakeActionZiggy): Promise<string | null | undefined> {
+        await act(async () => {
+            await ziggy.runRegisteredAction(commandPaletteAction);
+        });
+        return elementWithDataId(document.body, "command-palette-list")?.querySelector("[data-id$=\"-title\"]")?.textContent;
+    }
+
+    test("the Command Palette action shows the palette with the page's commands first", async () => {
+        const [, ziggy] = await renderWithCommands();
+        expect(await firstGroupTitle(ziggy)).toBe("About page");
+        expect(elementWithDataId(document.body, "command-palette-group-relevant")?.textContent).toContain("Copy");
+    });
+
+    test("lists the commands of the active pane the repo explorer page sets first", async () => {
+        const [container, ziggy] = await renderWithCommands();
+        act(() => {
+            elementWithDataId(container, "left-sidebar-repo-explorer-link")?.click();
+        });
+        await screen.findByText("The repo explorer page");
+        act(() => {
+            elementWithDataId(container, "mock-activate-pane")?.click();
+        });
+        expect(await firstGroupTitle(ziggy)).toBe("Commit pane");
     });
 });
 

@@ -1,10 +1,11 @@
 //
 // Tests Graft's actions, each found by its name. It checks Open repo is declared with the shortcut
-// CmdOrCtrl+O, the Keyboard Shortcuts action with the shortcut `?`, the Repo Explorer action with
-// the shortcut `CmdOrCtrl+1`, Zoom In, Zoom Out and Actual Size with the usual zoom keys and New
-// window with the shortcut CmdOrCtrl+N. It checks every action's shortcut is clear of the web
-// view's own keys. It checks running Keyboard Shortcuts and Repo Explorer, as their shortcuts and
-// the frontend do, sends the frontend the action event naming each, and that the File menu's New
+// CmdOrCtrl+O, the Keyboard Shortcuts action with the shortcut `?`, the Command Palette action with
+// the shortcut CmdOrCtrl+Shift+P, the Repo Explorer action with the shortcut `CmdOrCtrl+1`, Zoom
+// In, Zoom Out and Actual Size with the usual zoom keys and New window with the shortcut
+// CmdOrCtrl+N. It checks every action's shortcut is clear of the web view's own keys. It checks
+// running Keyboard Shortcuts, Command Palette and Repo Explorer, as their shortcuts and the
+// frontend do, sends the frontend the action event naming each, and that the File menu's New
 // window item and its shortcut send the frontend New window's action event. Each running test
 // starts the backend with Ziggy's fake native app and sends the system message the native app or
 // the frontend would.
@@ -172,6 +173,14 @@ test "no action's shortcut is one of the web view's own keys" {
     }
 }
 
+test "Command Palette is an action with the shortcut CmdOrCtrl+Shift+P" {
+    try expect_action(.{
+        .name = "show-command-palette",
+        .label = "Command Palette",
+        .shortcut = "CmdOrCtrl+Shift+P",
+    });
+}
+
 test "Repo Explorer is an action with the shortcut CmdOrCtrl+1" {
     try expect_action(.{
         .name = "open-repo-explorer",
@@ -205,6 +214,15 @@ test "the shortcut of Repo Explorer sends the frontend the action event naming i
         .message = "{\"kind\":\"system\",\"id\":1,\"name\":\"menu-action\"," ++
             "\"data\":{\"action\":\"open-repo-explorer\"}}",
         .event = repo_explorer_event,
+    });
+}
+
+test "the shortcut of Command Palette sends the frontend the action event naming it" {
+    try expect_action_event(.{
+        .message = "{\"kind\":\"system\",\"id\":1,\"name\":\"menu-action\"," ++
+            "\"data\":{\"action\":\"show-command-palette\"}}",
+        .event = "{\"kind\":\"system\",\"name\":\"action\"," ++
+            "\"data\":{\"action\":\"show-command-palette\"}}",
     });
 }
 
