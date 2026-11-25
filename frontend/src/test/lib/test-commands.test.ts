@@ -2,13 +2,14 @@
 // Tests the commands the smoke tests send through the remote control connection: each command is
 // performed on a fake element finder, and each result is checked, including every failure and how
 // a result is turned into JSON. The type command is also performed on a text box React controls,
-// to check React sees the typed value. The run-task command queues a task on a fake window.ziggy.
+// to check React sees the typed value. The width command reads an element's width in whole pixels.
+// The run-task command queues a task on a fake window.ziggy.
 //
 
 import { render } from "@testing-library/react";
 import { ChangeEvent, createElement } from "react";
 import type { ITaskCompletedEvent, ITaskResult } from "ziggy";
-import { elementInsideResult, elementInViewResult, IBounds, IElementFinder, IFoundElement, performTestCommand, runTaskCommand, testResultToJson } from "../../lib/test-commands";
+import { elementInsideResult, elementInViewResult, elementWidthResult, IBounds, IElementFinder, IFoundElement, performTestCommand, runTaskCommand, testResultToJson } from "../../lib/test-commands";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../fake-ziggy";
 
 //
@@ -18,7 +19,7 @@ interface IFakeElement extends IFoundElement {
     // How many times it was clicked.
     clicks: number;
 
-    // How many times it was given the focus.
+    // How many times it was given the keyboard focus.
     focuses: number;
 
     // The events dispatched on it.
@@ -217,7 +218,21 @@ describe("performTestCommand", () => {
         expect(element.clicks).toBe(1);
     });
 
-    test("focus gives the element the focus", () => {
+    test("double-click dispatches a bubbling dblclick on the element", () => {
+        const element = makeElement("", undefined);
+        expect(performTestCommand(makeFinder(element), {
+            command: "double-click",
+            dataId: "target",
+        })).toEqual({
+            ok: true,
+        });
+        expect(element.events).toHaveLength(1);
+        expect(element.events[0].type).toBe("dblclick");
+        expect(element.events[0].bubbles).toBe(true);
+        expect(element.clicks).toBe(0);
+    });
+
+    test("focus gives the element the keyboard focus", () => {
         const element = makeElement("", undefined);
         expect(performTestCommand(makeFinder(element), {
             command: "focus",
@@ -226,6 +241,23 @@ describe("performTestCommand", () => {
             ok: true,
         });
         expect(element.focuses).toBe(1);
+        expect(element.events).toHaveLength(0);
+    });
+
+    test("width reads the element's width in whole pixels", () => {
+        const element = makePlacedElement("", undefined, {
+            left: 10.4,
+            right: 330.6,
+            top: 0,
+            bottom: 20,
+        });
+        expect(performTestCommand(makeFinder(element), {
+            command: "width",
+            dataId: "target",
+        })).toEqual({
+            ok: true,
+            value: "320",
+        });
     });
 
     test("type sets the value and sends an input event", () => {
@@ -466,6 +498,18 @@ describe("performTestCommand", () => {
         })).toEqual({
             ok: false,
             error: "Unknown test command dance.",
+        });
+    });
+});
+
+describe("elementWidthResult", () => {
+    test("reads the width from the left and right edges", () => {
+        expect(elementWidthResult({
+            left: 100,
+            right: 550,
+        })).toEqual({
+            ok: true,
+            value: "450",
         });
     });
 });

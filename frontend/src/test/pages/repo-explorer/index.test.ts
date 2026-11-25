@@ -20,7 +20,9 @@
 // staged files with the typed message, clears it and reads the changes again, or shows git's error
 // text and keeps it. It checks the page puts a step in the breadcrumb trail for each open pane as
 // panes open and close, and takes them out when it closes, and that it sets the layout's active
-// pane as the active pane changes and clears it when it closes.
+// pane as the active pane changes and clears it when it closes. It checks each pane with a pane to
+// its right has a resize handle, which the keys and a double-click on it resize and reset with the
+// width saved in the state file, and that the panes open at their saved widths.
 // Each pane after the repo details pane fades in as it opens, and as it closes stays drawn, inert,
 // in a column that fades and narrows until its animation ends, while the keys and clicks still act
 // on the other panes. Under reduced motion the columns have an empty animation class and a closed
@@ -54,6 +56,7 @@ import { activeFlatPaneClasses, activePaneClasses } from "../../../pages/repo-ex
 import { openRowClasses } from "../../../pages/repo-explorer/components/commit-list";
 import { IFakeListLayout, installFakeListLayout } from "../../fake-list-layout";
 import { makeFakeMediaQuery } from "../../fake-media-query";
+import { boxOfWidth } from "../../fake-box";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../../fake-ziggy";
 import { RepoOpener } from "../../repo-opener";
 
@@ -1575,7 +1578,8 @@ describe("RepoExplorerPage pane animation", () => {
             expect(columnOf(dataId).className).not.toContain("graft-pane-out");
             expect(columnOf(dataId).hasAttribute("inert")).toBe(false);
         }
-        expect(elementWithDataId("repo-details-pane").parentElement).toBe(elementWithDataId("repo-explorer-columns"));
+        expect(columnOf("repo-details-pane").parentElement).toBe(elementWithDataId("repo-explorer-columns"));
+        expect(columnOf("repo-details-pane").className).not.toContain("graft-pane-in");
     });
 
     test("keeps a closing pane drawn, inert and fading out, until its own animation ends", async () => {
@@ -2519,5 +2523,147 @@ describe("RepoExplorerPage collapse", () => {
             hash: secondCommitJson.hash,
         });
         expect(activePaneIds()).toEqual(["commit-pane-strip"]);
+    });
+});
+
+//
+// Gives the column of the pane with the data-id the width given on screen, because jsdom lays out
+// no page and a resize handle reads its pane's width from the column. It returns the mock, for the
+// test to restore.
+//
+function setColumnWidth(dataId: string, width: number): jest.SpyInstance {
+    return jest.spyOn(columnOf(dataId), "getBoundingClientRect").mockReturnValue(boxOfWidth(width));
+}
+
+//
+// Lists the data-ids of the resize handles the page draws, from left to right.
+//
+function resizeHandleIds(): (string | null)[] {
+    return Array.from(document.querySelectorAll("[role=separator]")).map(handle => handle.getAttribute("data-id"));
+}
+
+//
+// Reads the width the style of the element with the data-id gives it, or an empty string for none.
+//
+function styleWidth(dataId: string): string {
+    const element = elementWithDataId(dataId);
+    if (!(element instanceof HTMLElement)) {
+        return "";
+    }
+    return element.style.width;
+}
+
+describe("RepoExplorerPage resize handles", () => {
+    test("puts a handle in the gap to the right of each pane that has a pane to its right, and none after the file pane", async () => {
+        const ziggy = installFakeTaskZiggy();
+        renderRepoExplorerPage("/repo");
+        await screen.findByText("Commits");
+        expect(resizeHandleIds()).toEqual([]);
+        await clickCommitsLink();
+        expect(resizeHandleIds()).toEqual(["repo-details-pane-resize-handle"]);
+        completeTaskAt(ziggy, 0, {
+            commits: [commitJson],
+        });
+        fireEvent.click(await screen.findByText("The first commit"));
+        expect(resizeHandleIds()).toEqual(["repo-details-pane-resize-handle", "commit-pane-resize-handle"]);
+        completeTaskAt(ziggy, 1, {
+            commit: commitJson,
+            changedFiles: [{
+                status: "A",
+                path: "README.md",
+                linesAdded: 1,
+                linesDeleted: 0,
+                isBinary: false,
+            }],
+        });
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        expect(resizeHandleIds()).toEqual(["repo-details-pane-resize-handle", "commit-pane-resize-handle", "commit-details-pane-resize-handle"]);
+        expect(columnOf("file-pane").querySelector("[role=separator]")).toBeNull();
+        expect(columnOf("commit-pane").contains(elementWithDataId("commit-pane-resize-handle"))).toBe(true);
+        expect(columnOf("commit-pane").className).toContain("relative");
+        expect(columnOf("repo-details-pane").className).toContain("relative");
+        expect(elementWithDataId("commit-pane-resize-handle").getAttribute("aria-label")).toBe("Resize the commit pane");
+        expect(elementWithDataId("repo-details-pane-resize-handle").getAttribute("aria-label")).toBe("Resize the repo details pane");
+        expect(elementWithDataId("commit-details-pane-resize-handle").getAttribute("aria-label")).toBe("Resize the commit details pane");
+    });
+
+    test("puts a handle after the changes pane only while a changed file's pane is open", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        expect(resizeHandleIds()).toEqual(["repo-details-pane-resize-handle"]);
+        fireEvent.click(elementWithDataId("change-unstaged-notes.txt"));
+        expect(resizeHandleIds()).toEqual(["repo-details-pane-resize-handle", "changes-pane-resize-handle"]);
+        expect(elementWithDataId("changes-pane-resize-handle").getAttribute("aria-label")).toBe("Resize the changes pane");
+        expect(elementWithDataId("changes-pane-resize-handle").getAttribute("aria-valuemin")).toBe("300");
+        expect(elementWithDataId("changes-pane-resize-handle").getAttribute("aria-valuemax")).toBe("800");
+    });
+
+    test("Right and Left on a focused handle widen and narrow the pane and save its width, and the repo explorer leaves those keys alone", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        const columnWidth = setColumnWidth("commit-pane", 850);
+        const handle = elementWithDataId("commit-pane-resize-handle");
+        expect(handle).toBeInstanceOf(HTMLElement);
+        act(() => {
+            if (handle instanceof HTMLElement) {
+                handle.focus();
+            }
+        });
+        expect(document.activeElement).toBe(handle);
+        pressKey("ArrowRight");
+        expect(styleWidth("commit-pane")).toBe("866px");
+        expect(ziggy.setState).toHaveBeenLastCalledWith("paneWidths.commits", 866);
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        columnWidth.mockReturnValue(boxOfWidth(866));
+        pressKey("ArrowLeft");
+        columnWidth.mockReturnValue(boxOfWidth(850));
+        pressKey("ArrowLeft");
+        expect(styleWidth("commit-pane")).toBe("834px");
+        expect(ziggy.setState).toHaveBeenLastCalledWith("paneWidths.commits", 834);
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        expect(document.querySelector("[data-id=\"file-pane\"]")).not.toBeNull();
+        columnWidth.mockRestore();
+    });
+
+    test("a double-click on a handle puts the pane back to its usual width and removes the saved width", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        const columnWidth = setColumnWidth("commit-details-pane", 450);
+        fireEvent.keyDown(elementWithDataId("commit-details-pane-resize-handle"), {
+            key: "ArrowRight",
+        });
+        expect(styleWidth("commit-details-pane")).toBe("466px");
+        fireEvent.doubleClick(elementWithDataId("commit-details-pane-resize-handle"));
+        expect(styleWidth("commit-details-pane")).toBe("");
+        expect(ziggy.setState).toHaveBeenLastCalledWith("paneWidths.commitDetails", undefined);
+        columnWidth.mockRestore();
+    });
+
+    test("a click on a handle makes no pane active", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        fireEvent.click(elementWithDataId("file-pane-path"));
+        expect(activePaneIds()).toEqual(["file-pane"]);
+        fireEvent.click(elementWithDataId("commit-pane-resize-handle"));
+        expect(activePaneIds()).toEqual(["file-pane"]);
+    });
+
+    test("opens each pane at the width saved in the state file", async () => {
+        const ziggy = installFakeTaskZiggy();
+        const savedWidths = new Map<string, number>([
+            ["paneWidths.repoDetails", 400],
+            ["paneWidths.commits", 640],
+            ["paneWidths.commitDetails", 500],
+        ]);
+        (ziggy.getState as jest.Mock).mockImplementation((path: string) => Promise.resolve(savedWidths.get(path)));
+        await openCommitDetails(ziggy);
+        expect(styleWidth("repo-details-pane")).toBe("400px");
+        expect(styleWidth("commit-pane")).toBe("640px");
+        expect(styleWidth("commit-details-pane")).toBe("500px");
+        expect(ziggy.setState).not.toHaveBeenCalled();
     });
 });

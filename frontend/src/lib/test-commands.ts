@@ -10,8 +10,8 @@ import type { IAddTask, IJsonObject, IJsonValue, ITaskCompletedEvent } from "zig
 // A command from the remote control connection.
 //
 export interface ITestCommand {
-    // What to do: ready, click, focus, type, key-down, get-value, get-text, exists, in-view,
-    // in-view-of, bounds, scroll-to-end, insert, viewport, drop-file or run-task.
+    // What to do: ready, click, double-click, focus, type, key-down, get-value, get-text, width,
+    // exists, in-view, in-view-of, bounds, scroll-to-end, insert, viewport, drop-file or run-task.
     command: string;
 
     // The data-id of the element to act on.
@@ -156,11 +156,23 @@ export function performTestCommand(finder: IElementFinder, command: ITestCommand
         clickElement(element);
         return { ok: true };
     }
+    if (command.command === "double-click") {
+        element.dispatchEvent(new MouseEvent("dblclick", {
+            bubbles: true,
+            cancelable: true,
+        }));
+        return {
+            ok: true,
+        };
+    }
     if (command.command === "focus") {
         element.focus();
         return {
             ok: true,
         };
+    }
+    if (command.command === "width") {
+        return elementWidthResult(element.getBoundingClientRect());
     }
     if (command.command === "type") {
         if (command.text === undefined) {
@@ -249,6 +261,17 @@ export function testResultToJson(result: ITestResult): IJsonObject {
         json.error = result.error;
     }
     return json;
+}
+
+//
+// Works out the result of the width command: the element's width in whole pixels, from its left
+// and right edges, so a smoke test can check a pane was made wider or narrower.
+//
+export function elementWidthResult(bounds: IHorizontalBounds): ITestResult {
+    return {
+        ok: true,
+        value: String(Math.round(bounds.right - bounds.left)),
+    };
 }
 
 //

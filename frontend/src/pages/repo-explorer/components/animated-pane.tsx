@@ -35,6 +35,7 @@ export interface IAnimatedPaneProps {
 // narrows from the column's width, measured as the animation starts, because a pane's width depends
 // on the window. The opening animation's class comes off the column once the animation ends, so
 // a column hidden while another pane is maximised shows again at once when the panes are restored.
+// The open column is the box a pane's resize handle is placed against, in the gap to its right.
 // Under reduced motion the column has an empty animation class and a closed pane goes at once,
 // because the end of the closing animation is what removes a closed pane, and that animation is
 // off.
@@ -77,7 +78,7 @@ export function AnimatedPane({ openId, isHidden, isMaximised, children }: IAnima
         }
 
         return (
-            <div key={openId} className={`${openColumnClass(isHidden, isMaximised)} ${animationClass}`} onAnimationEnd={onOpenAnimationEnd}>
+            <div key={openId} className={`relative ${openColumnClass(isHidden, isMaximised)} ${animationClass}`} onAnimationEnd={onOpenAnimationEnd}>
                 {children}
             </div>
         );

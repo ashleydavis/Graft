@@ -32,6 +32,7 @@ function renderPane(options: { link: string | undefined; isActive: boolean; onSe
         onToggleCollapse: jest.fn(),
         isHidden: false,
         onSelectLink: options.onSelectLink,
+        width: undefined,
     }));
     return container;
 }
@@ -174,6 +175,7 @@ describe("RepoDetailsPane maximise button", () => {
             isCollapsed: false,
             onToggleCollapse: jest.fn(),
             onSelectLink: jest.fn(),
+            width: undefined,
         }));
         return container;
     }
@@ -223,6 +225,7 @@ describe("RepoDetailsPane collapse", () => {
             isCollapsed: false,
             onToggleCollapse,
             onSelectLink: jest.fn(),
+            width: undefined,
         }));
         fireEvent.click(elementIn(container, "repo-details-pane-collapse"));
         expect(onToggleCollapse).toHaveBeenCalledTimes(1);
@@ -241,6 +244,7 @@ describe("RepoDetailsPane collapse", () => {
             isCollapsed: true,
             onToggleCollapse,
             onSelectLink: jest.fn(),
+            width: undefined,
         }));
         expect(container.querySelector("[data-id=\"repo-details-pane\"]")).toBeNull();
         expect(elementIn(container, "repo-details-pane-strip").getAttribute("aria-label")).toBe("Repo details");

@@ -516,11 +516,16 @@ export function activatePane(state: IRepoExplorerState, paneIndex: number): IRep
 //
 // Finds the position among the columns' panes of the pane that holds the click's target, so the
 // repo explorer page can make the clicked pane active. A click between the panes, outside every
-// pane, finds none.
+// pane, finds none, and so does a click on a resize handle, which sits in the gap beside its pane.
 //
 export function targetPaneIndex(columns: Element, target: EventTarget): number | undefined {
     if (!(target instanceof Node)) {
         return undefined;
+    }
+    if (target instanceof Element) {
+        if (target.closest("[role=separator]")) {
+            return undefined;
+        }
     }
     const paneIndex = Array.from(columns.children).findIndex(pane => pane.contains(target));
     if (paneIndex < 0) {
@@ -1046,6 +1051,23 @@ export function hasSelectedText(selection: Selection | null): boolean {
         return false;
     }
     return selection.toString() !== "";
+}
+
+//
+// Returns true when the key is Left or Right pressed with the focus on a pane's resize handle,
+// which moves the pane's edge with them, so the repo explorer leaves those keys to the handle. The
+// handle is a separator for assistive technology, which is how it is found.
+//
+export function isResizeHandleKey(target: EventTarget | null, key: string): boolean {
+    if (key !== "ArrowLeft") {
+        if (key !== "ArrowRight") {
+            return false;
+        }
+    }
+    if (!(target instanceof Element)) {
+        return false;
+    }
+    return target.closest("[role=separator]") !== null;
 }
 
 //

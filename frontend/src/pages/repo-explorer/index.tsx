@@ -22,16 +22,19 @@ import { commitStagedFiles } from "../../lib/commit";
 import { canReadNextPage, COMMIT_PAGE_SIZE, commitPagesAfterRead, commitPagesReading, ICommitPages, nextPageStart, noCommitPages } from "../../lib/commit-pages";
 import { ICommit, ICommitPageStart, readCommitPage } from "../../lib/commits";
 import { openPaneIds } from "../../lib/pane-animation";
-import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, closeLinkPane, COMMIT_DETAILS_PATH, CHANGES_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, hasKeyModifier, hasSelectedText, initialRepoExplorerState, IRepoExplorerState, isCopyKey, isExplorerKey, isExplorerKeyTarget, isPaneCollapsed, keepListedChanges, keepMaximisedPaneShown, measurePageRowCount, selectChange, selectedItemText, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex, toggleCollapsedPane, toggleMaximise } from "../../lib/repo-explorer";
+import { PANE_LIMITS } from "../../lib/pane-widths";
+import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, closeLinkPane, COMMIT_DETAILS_PATH, CHANGES_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, hasKeyModifier, hasSelectedText, initialRepoExplorerState, IRepoExplorerState, isCopyKey, isExplorerKey, isExplorerKeyTarget, isPaneCollapsed, isResizeHandleKey, keepListedChanges, keepMaximisedPaneShown, measurePageRowCount, selectChange, selectedItemText, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex, toggleCollapsedPane, toggleMaximise } from "../../lib/repo-explorer";
 import { toggleFileStaged } from "../../lib/stage-file";
 import { IWorkingChanges, IWorkingFile, readWorkingChanges } from "../../lib/working-changes";
-import { AnimatedPane } from "./components/animated-pane";
+import { AnimatedPane, openColumnClass } from "./components/animated-pane";
 import { ChangesPane } from "./components/changes-pane";
 import { CommitDetailsPane } from "./components/commit-details-pane";
 import { CommitInfoPane } from "./components/commit-info-pane";
 import { CommitPane } from "./components/commit-pane";
 import { FilePane } from "./components/file-pane";
+import { usePaneWidth } from "./components/pane-width-state";
 import { RepoDetailsPane } from "./components/repo-details-pane";
+import { ResizeHandle } from "./components/resize-handle";
 import { WorkingFilePane } from "./components/working-file-pane";
 
 //
@@ -95,7 +98,9 @@ export function RepoExplorerPage(): JSX.Element {
 // Restoring the panes scrolls the active pane into view, because the page's sideways scroll is
 // lost while it is as wide as the window. It sets the layout's active pane each time the active
 // pane changes, and clears it when the page closes, so the command palette lists the active
-// pane's commands first.
+// pane's commands first. Each pane with a pane open to its right has a resize handle in the gap
+// between them, which sets the pane's width and saves it in Graft's state file, and the page leaves
+// Left and Right to a focused handle. A pane that is collapsed or maximised has no handle.
 //
 export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const [commitPages, setCommitPages] = useState<ICommitPages>(noCommitPages);
@@ -117,6 +122,10 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const isChangesOpen = explorer.openLink === CHANGES_LINK;
     const { setPaneSteps } = usePaneTrail();
     const { setActivePane } = useActivePane();
+    const repoDetailsWidth = usePaneWidth("repoDetails");
+    const commitsWidth = usePaneWidth("commits");
+    const commitDetailsWidth = usePaneWidth("commitDetails");
+    const changesWidth = usePaneWidth("changes");
 
     //
     // Changes the explorer's state with the change, then puts the panes back when the maximised
@@ -145,6 +154,28 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
             return false;
         }
         return explorer.maximisedPaneIndex !== paneIndex;
+    }
+
+    //
+    // Returns true when the pane at the index shows its resize handle: while it is neither collapsed
+    // into a strip nor maximised, because then its width is not the one the handle sets.
+    //
+    function hasResizeHandle(paneIndex: number): boolean {
+        if (isPaneCollapsed(explorer, paneIndex)) {
+            return false;
+        }
+        return explorer.maximisedPaneIndex !== paneIndex;
+    }
+
+    //
+    // Picks the width the pane at the index is drawn at: the width its resize handle set, or none
+    // while the pane is maximised, because a maximised pane fills the repo explorer.
+    //
+    function paneWidthOf(paneIndex: number, width: number | undefined): number | undefined {
+        if (explorer.maximisedPaneIndex === paneIndex) {
+            return undefined;
+        }
+        return width;
     }
 
     //
@@ -317,6 +348,9 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
             if (!isExplorerKeyTarget(event.target, pageRef.current, hasKeyModifier(event))) {
                 return;
             }
+            if (isResizeHandleKey(event.target, event.key)) {
+                return;
+            }
             event.preventDefault();
             event.stopPropagation();
             setExplorer(state => explorerStateAfterKey(state, event.key, {
@@ -381,50 +415,67 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     return (
         <main ref={pageRef} tabIndex={-1} data-id="repo-explorer-page" className={`graft-page-in outline-none flex h-full ${pageWidthClass(explorer.maximisedPaneIndex !== undefined)} flex-col gap-4 bg-[var(--color-bg)] p-6`}>
             <div ref={columnsRef} data-id="repo-explorer-columns" onClickCapture={onColumnsClickCapture} className="flex min-h-0 flex-1 items-stretch gap-3">
-                <RepoDetailsPane repoPath={repoPath} selectedLink={explorer.selectedLink} openLink={explorer.openLink} isActive={explorer.activePaneIndex === 0} isMaximised={explorer.maximisedPaneIndex === 0} onToggleMaximise={() => onToggleMaximise(0)} isHidden={isPaneHidden(0)} isCollapsed={isPaneCollapsed(explorer, 0)} onToggleCollapse={() => onToggleCollapse(0)} onSelectLink={link => setExplorer(() => selectLink(link))} />
+                <div className={`relative ${openColumnClass(isPaneHidden(0), explorer.maximisedPaneIndex === 0)}`}>
+                    <RepoDetailsPane repoPath={repoPath} selectedLink={explorer.selectedLink} openLink={explorer.openLink} isActive={explorer.activePaneIndex === 0} isMaximised={explorer.maximisedPaneIndex === 0} onToggleMaximise={() => onToggleMaximise(0)} isHidden={isPaneHidden(0)} isCollapsed={isPaneCollapsed(explorer, 0)} onToggleCollapse={() => onToggleCollapse(0)} onSelectLink={link => setExplorer(() => selectLink(link))} width={paneWidthOf(0, repoDetailsWidth.width)} />
+                    {explorer.openLink !== undefined && hasResizeHandle(0) && (
+                        <ResizeHandle label="repo details pane" dataId="repo-details-pane-resize-handle" limits={PANE_LIMITS.repoDetails} onWidth={repoDetailsWidth.changeWidth} onReset={repoDetailsWidth.resetWidth} />
+                    )}
+                </div>
                 <AnimatedPane openId={paneIds.commitPane} isHidden={isPaneHidden(1)} isMaximised={explorer.maximisedPaneIndex === 1}>
                     {isCommitsOpen && (
-                        <CommitPane
-                            commits={commitPages.commits}
-                            isLoading={commitPages.readTaskId !== undefined}
-                            error={commitPages.error}
-                            hasReadLastPage={commitPages.hasReadLastPage}
-                            selectedHash={explorer.selectedHash}
-                            openHash={explorer.openHash}
-                            isActive={explorer.activePaneIndex === 1}
-                            isMaximised={explorer.maximisedPaneIndex === 1}
-                            onToggleMaximise={() => onToggleMaximise(1)}
-                            isCollapsed={isPaneCollapsed(explorer, 1)}
-                            onToggleCollapse={() => onToggleCollapse(1)}
-                            dateFormat={dateFormat}
-                            onSelectCommit={hash => setExplorer(state => selectCommit(state, hash))}
-                            onNearEnd={readNextPage}
-                            onClose={() => setExplorer(closeLinkPane)}
-                        />
+                        <>
+                            <CommitPane
+                                commits={commitPages.commits}
+                                isLoading={commitPages.readTaskId !== undefined}
+                                error={commitPages.error}
+                                hasReadLastPage={commitPages.hasReadLastPage}
+                                selectedHash={explorer.selectedHash}
+                                openHash={explorer.openHash}
+                                isActive={explorer.activePaneIndex === 1}
+                                isMaximised={explorer.maximisedPaneIndex === 1}
+                                onToggleMaximise={() => onToggleMaximise(1)}
+                                isCollapsed={isPaneCollapsed(explorer, 1)}
+                                onToggleCollapse={() => onToggleCollapse(1)}
+                                dateFormat={dateFormat}
+                                onSelectCommit={hash => setExplorer(state => selectCommit(state, hash))}
+                                onNearEnd={readNextPage}
+                                onClose={() => setExplorer(closeLinkPane)}
+                                width={paneWidthOf(1, commitsWidth.width)}
+                            />
+                            {explorer.openHash !== undefined && hasResizeHandle(1) && (
+                                <ResizeHandle label="commit pane" dataId="commit-pane-resize-handle" limits={PANE_LIMITS.commits} onWidth={commitsWidth.changeWidth} onReset={commitsWidth.resetWidth} />
+                            )}
+                        </>
                     )}
                 </AnimatedPane>
                 <AnimatedPane openId={paneIds.commitDetailsPane} isHidden={isPaneHidden(2)} isMaximised={explorer.maximisedPaneIndex === 2}>
                     {explorer.openHash !== undefined && (
-                        <CommitDetailsPane
-                            key={explorer.openHash}
-                            repoPath={repoPath}
-                            hash={explorer.openHash}
-                            selectedPath={explorer.selectedPath}
-                            openPath={explorer.openPath}
-                            isActive={explorer.activePaneIndex === 2}
-                            isMaximised={explorer.maximisedPaneIndex === 2}
-                            onToggleMaximise={() => onToggleMaximise(2)}
-                            isCollapsed={isPaneCollapsed(explorer, 2)}
-                            onToggleCollapse={() => onToggleCollapse(2)}
-                            onSelectFile={path => setExplorer(state => selectFile(state, path))}
-                            onReadCommit={details => {
-                                const paths = details.changedFiles.map(file => file.path);
-                                setFilePaths([COMMIT_DETAILS_PATH, ...paths]);
-                                setOpenCommit(details.commit);
-                                setExplorer(state => selectFirstFile(state, paths));
-                            }}
-                            onClose={() => setExplorer(closeCommitDetailsPane)}
-                        />
+                        <>
+                            <CommitDetailsPane
+                                key={explorer.openHash}
+                                repoPath={repoPath}
+                                hash={explorer.openHash}
+                                selectedPath={explorer.selectedPath}
+                                openPath={explorer.openPath}
+                                isActive={explorer.activePaneIndex === 2}
+                                isMaximised={explorer.maximisedPaneIndex === 2}
+                                onToggleMaximise={() => onToggleMaximise(2)}
+                                isCollapsed={isPaneCollapsed(explorer, 2)}
+                                onToggleCollapse={() => onToggleCollapse(2)}
+                                onSelectFile={path => setExplorer(state => selectFile(state, path))}
+                                onReadCommit={details => {
+                                    const paths = details.changedFiles.map(file => file.path);
+                                    setFilePaths([COMMIT_DETAILS_PATH, ...paths]);
+                                    setOpenCommit(details.commit);
+                                    setExplorer(state => selectFirstFile(state, paths));
+                                }}
+                                onClose={() => setExplorer(closeCommitDetailsPane)}
+                                width={paneWidthOf(2, commitDetailsWidth.width)}
+                            />
+                            {explorer.openPath !== undefined && hasResizeHandle(2) && (
+                                <ResizeHandle label="commit details pane" dataId="commit-details-pane-resize-handle" limits={PANE_LIMITS.commitDetails} onWidth={commitDetailsWidth.changeWidth} onReset={commitDetailsWidth.resetWidth} />
+                            )}
+                        </>
                     )}
                 </AnimatedPane>
                 <AnimatedPane openId={paneIds.filePane} isHidden={isPaneHidden(3)} isMaximised={explorer.maximisedPaneIndex === 3}>
@@ -437,26 +488,32 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                 </AnimatedPane>
                 <AnimatedPane openId={paneIds.changesPane} isHidden={isPaneHidden(1)} isMaximised={explorer.maximisedPaneIndex === 1}>
                     {isChangesOpen && (
-                        <ChangesPane
-                            repoPath={repoPath}
-                            changes={changes}
-                            error={changesError}
-                            stageError={stageError}
-                            selectedKey={explorer.selectedChange}
-                            openKey={explorer.openChange}
-                            isActive={explorer.activePaneIndex === 1}
-                            isMaximised={explorer.maximisedPaneIndex === 1}
-                            onToggleMaximise={() => onToggleMaximise(1)}
-                            isCollapsed={isPaneCollapsed(explorer, 1)}
-                            onToggleCollapse={() => onToggleCollapse(1)}
-                            onSelectChange={key => setExplorer(state => selectChange(state, key))}
-                            onToggleStaged={onToggleStaged}
-                            commitMessage={commitMessage}
-                            commitError={commitError}
-                            isCommitting={isCommitting}
-                            onCommitMessageChange={setCommitMessage}
-                            onCommit={onCommit}
-                        />
+                        <>
+                            <ChangesPane
+                                repoPath={repoPath}
+                                changes={changes}
+                                error={changesError}
+                                stageError={stageError}
+                                selectedKey={explorer.selectedChange}
+                                openKey={explorer.openChange}
+                                isActive={explorer.activePaneIndex === 1}
+                                isMaximised={explorer.maximisedPaneIndex === 1}
+                                onToggleMaximise={() => onToggleMaximise(1)}
+                                isCollapsed={isPaneCollapsed(explorer, 1)}
+                                onToggleCollapse={() => onToggleCollapse(1)}
+                                onSelectChange={key => setExplorer(state => selectChange(state, key))}
+                                onToggleStaged={onToggleStaged}
+                                commitMessage={commitMessage}
+                                commitError={commitError}
+                                isCommitting={isCommitting}
+                                onCommitMessageChange={setCommitMessage}
+                                onCommit={onCommit}
+                                width={paneWidthOf(1, changesWidth.width)}
+                            />
+                            {openChange !== undefined && hasResizeHandle(1) && (
+                                <ResizeHandle label="changes pane" dataId="changes-pane-resize-handle" limits={PANE_LIMITS.changes} onWidth={changesWidth.changeWidth} onReset={changesWidth.resetWidth} />
+                            )}
+                        </>
                     )}
                 </AnimatedPane>
                 <AnimatedPane openId={paneIds.workingFilePane} isHidden={isPaneHidden(2)} isMaximised={explorer.maximisedPaneIndex === 2}>

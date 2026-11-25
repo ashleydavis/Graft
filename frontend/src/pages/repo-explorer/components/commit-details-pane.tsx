@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { List, ListItemButton, Tooltip } from "@mui/material";
 import { JSX, useEffect, useRef, useState } from "react";
 import { IChangedFile, ICommitDetails, readCommitDetails } from "../../../lib/commit-details";
+import { paneWidthStyle } from "../../../lib/pane-widths";
 import { COMMIT_DETAILS_PATH } from "../../../lib/repo-explorer";
 import { activePaneClass } from "./active-pane-style";
 import { CollapsedStrip } from "./collapse";
@@ -72,20 +73,23 @@ export interface ICommitDetailsPaneProps {
 
     // Called when the user closes the pane.
     onClose(): void;
+
+    // The width its resize handle set, in pixels, or undefined for its usual width.
+    width: number | undefined;
 }
 
 //
 // Reads the commit's details and changed files with the commit details task and shows them in a
 // rounded card headed "Commit" and the commit's short hash, with a button that maximises the pane
 // and restores it and a button that closes the pane. It shows that it is loading until the task
-// ends and what went wrong when the commit could not be read. The card fills the repo explorer
-// while the pane is maximised. The card's border is in the style guide's active pane colour while
-// the pane is active. The page's AnimatedPane column animates it as it opens and closes. While it
-// is collapsed it draws the strip with "Commit" and the short hash down it in its place, and still
-// reads the commit, so the keys move through its files and it shows them at once when it is
-// restored.
+// ends and what went wrong when the commit could not be read. It is 450 pixels wide, or the width
+// its resize handle set, and fills the repo explorer while the pane is maximised. The card's border
+// is in the style guide's active pane colour while the pane is active. The page's AnimatedPane
+// column animates it as it opens and closes. While it is collapsed it draws the strip with
+// "Commit" and the short hash down it in its place, and still reads the commit, so the keys move
+// through its files and it shows them at once when it is restored.
 //
-export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isActive, isMaximised, onToggleMaximise, isCollapsed, onToggleCollapse, onSelectFile, onReadCommit, onClose }: ICommitDetailsPaneProps): JSX.Element {
+export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isActive, isMaximised, onToggleMaximise, isCollapsed, onToggleCollapse, onSelectFile, onReadCommit, onClose, width }: ICommitDetailsPaneProps): JSX.Element {
     const [details, setDetails] = useState<ICommitDetails | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
 
@@ -115,7 +119,7 @@ export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isAc
         </span>
     );
     return (
-        <section data-id="commit-details-pane" aria-label="Commit details" className={`flex ${paneWidthClass("w-[450px]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
+        <section data-id="commit-details-pane" aria-label="Commit details" style={paneWidthStyle(width)} className={`flex ${paneWidthClass("w-[450px]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
             <PaneHeader title={title} titleDataId="commit-details-heading" collapseDataId="commit-details-pane-collapse" onCollapse={collapseHandler(isMaximised, onToggleCollapse)} action={(
                 <>
                     <MaximiseButton isMaximised={isMaximised} dataId="commit-details-maximise" onToggleMaximise={onToggleMaximise} />

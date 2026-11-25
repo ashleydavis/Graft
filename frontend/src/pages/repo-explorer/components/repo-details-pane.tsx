@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { List, ListItemButton } from "@mui/material";
 import { JSX } from "react";
 import { repoName } from "../../../lib/breadcrumb-trail";
+import { paneWidthStyle } from "../../../lib/pane-widths";
 import { CHANGES_LINK, COMMITS_LINK } from "../../../lib/repo-explorer";
 import { activePaneClass } from "./active-pane-style";
 import { CollapsedStrip } from "./collapse";
@@ -51,6 +52,9 @@ export interface IRepoDetailsPaneProps {
 
     // Called with the name of the link the user clicks.
     onSelectLink(link: string): void;
+
+    // The width its resize handle set, in pixels, or undefined for its usual width.
+    width: number | undefined;
 }
 
 //
@@ -58,11 +62,12 @@ export interface IRepoDetailsPaneProps {
 // as labelled facts, laid out as the commit details pane lays out a commit's facts, then the
 // Commits link, which opens the commit pane, and the Changes link, which opens the changes pane.
 // The card never shrinks, so the panes that open to its right never hide it, and fills the repo
-// explorer while it is maximised. The card's border is in the style guide's active pane colour
-// while the pane is active. The header's button maximises the pane and restores it. While it is
-// collapsed it draws the strip with "Repo" and the repo's name down it in its place.
+// explorer while it is maximised. It is 360 pixels wide, or the width its resize handle set. The
+// card's border is in the style guide's active pane colour while the pane is active. The header's
+// button maximises the pane and restores it. While it is collapsed it draws the strip with "Repo"
+// and the repo's name down it in its place.
 //
-export function RepoDetailsPane({ repoPath, selectedLink, openLink, isActive, isMaximised, onToggleMaximise, isHidden, isCollapsed, onToggleCollapse, onSelectLink }: IRepoDetailsPaneProps): JSX.Element {
+export function RepoDetailsPane({ repoPath, selectedLink, openLink, isActive, isMaximised, onToggleMaximise, isHidden, isCollapsed, onToggleCollapse, onSelectLink, width }: IRepoDetailsPaneProps): JSX.Element {
     const name = repoName(repoPath);
     if (isCollapsed && !isHidden) {
         return <CollapsedStrip paneLabel="Repo details" title={`Repo ${name}`} paneDataId="repo-details-pane" isActive={isActive} onRestore={onToggleCollapse} />;
@@ -78,7 +83,7 @@ export function RepoDetailsPane({ repoPath, selectedLink, openLink, isActive, is
         hiddenClass = "hidden";
     }
     return (
-        <section data-id="repo-details-pane" aria-label="Repo details" className={`${hiddenClass} ${paneWidthClass("w-[360px]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
+        <section data-id="repo-details-pane" aria-label="Repo details" style={paneWidthStyle(width)} className={`${hiddenClass} ${paneWidthClass("w-[360px]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
             <PaneHeader title={title} titleDataId="repo-details-heading" collapseDataId="repo-details-pane-collapse" onCollapse={collapseHandler(isMaximised, onToggleCollapse)} action={<MaximiseButton isMaximised={isMaximised} dataId="repo-details-maximise" onToggleMaximise={onToggleMaximise} />} />
             <div className="min-h-0 flex-1 overflow-auto">
                 <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-4 gap-y-2 border-b border-[var(--color-border)] p-4">

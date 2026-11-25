@@ -225,6 +225,17 @@ click() {
 }
 
 #
+# Double-clicks the element with the data-id. Usage: double_click <data-id>
+#
+double_click() {
+    local answer
+    answer="$(control "{\"command\":\"double-click\",\"dataId\":\"$1\"}")"
+    if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
+        fail "double-click $1 failed: $answer"
+    fi
+}
+
+#
 # Gives the element with the data-id the keyboard focus, so the keys a test presses next go to it,
 # as when a user clicks into a text box. Usage: focus_element <data-id>
 #
@@ -234,6 +245,18 @@ focus_element() {
     if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
         fail "focus $1 failed: $answer"
     fi
+}
+
+#
+# Prints the width in whole pixels of the element with the data-id. Usage: width_of <data-id>
+#
+width_of() {
+    local answer
+    answer="$(control "{\"command\":\"width\",\"dataId\":\"$1\"}")"
+    if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
+        fail "width $1 failed: $answer"
+    fi
+    printf '%s' "$answer" | jq -r '.value'
 }
 
 #

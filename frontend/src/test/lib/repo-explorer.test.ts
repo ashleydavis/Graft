@@ -1,6 +1,7 @@
 //
 // Tests the repo explorer's state: what each key and each click does to the open panes, the
-// active pane and the selection in each pane, and which key presses are the explorer's to handle.
+// active pane and the selection in each pane, and which key presses are the explorer's to handle
+// and which it leaves to a resize handle.
 // It also checks which key presses are the copy key, what the copy key copies from each pane and
 // when the page holds text the user selected.
 // It checks M and the maximise state: maximising and restoring a pane, Left, Right and Escape
@@ -35,6 +36,7 @@ import {
     isExplorerKey,
     isExplorerKeyTarget,
     isPaneCollapsed,
+    isResizeHandleKey,
     itemAfterMove,
     keepOpenPanesCollapsed,
     moveCommitSelection,
@@ -393,6 +395,53 @@ describe("targetPaneIndex", () => {
         expect(targetPaneIndex(columns, columns)).toBeUndefined();
         expect(targetPaneIndex(columns, document.createElement("section"))).toBeUndefined();
         expect(targetPaneIndex(columns, window)).toBeUndefined();
+    });
+
+    test("finds no pane for a resize handle or its line, which sit in the column beside the pane", () => {
+        const columns = document.createElement("div");
+        const column = document.createElement("div");
+        const handle = document.createElement("div");
+        handle.setAttribute("role", "separator");
+        const line = document.createElement("span");
+        handle.append(line);
+        column.append(document.createElement("section"), handle);
+        columns.append(column);
+        expect(targetPaneIndex(columns, handle)).toBeUndefined();
+        expect(targetPaneIndex(columns, line)).toBeUndefined();
+        expect(targetPaneIndex(columns, column)).toBe(0);
+    });
+});
+
+describe("isResizeHandleKey", () => {
+    //
+    // Makes a resize handle with its line in it, as the repo explorer draws it.
+    //
+    function makeHandle(): HTMLElement {
+        const handle = document.createElement("div");
+        handle.setAttribute("role", "separator");
+        handle.append(document.createElement("span"));
+        return handle;
+    }
+
+    test("is true for Left and Right on a resize handle or inside it", () => {
+        const handle = makeHandle();
+        expect(isResizeHandleKey(handle, "ArrowLeft")).toBe(true);
+        expect(isResizeHandleKey(handle, "ArrowRight")).toBe(true);
+        expect(isResizeHandleKey(handle.firstElementChild, "ArrowRight")).toBe(true);
+    });
+
+    test("is false for the repo explorer's other keys on a resize handle", () => {
+        const handle = makeHandle();
+        for (const key of ["ArrowUp", "ArrowDown", "Enter", "Escape"]) {
+            expect(isResizeHandleKey(handle, key)).toBe(false);
+        }
+    });
+
+    test("is false for Left and Right anywhere else", () => {
+        expect(isResizeHandleKey(document.createElement("div"), "ArrowLeft")).toBe(false);
+        expect(isResizeHandleKey(document.body, "ArrowRight")).toBe(false);
+        expect(isResizeHandleKey(window, "ArrowRight")).toBe(false);
+        expect(isResizeHandleKey(null, "ArrowLeft")).toBe(false);
     });
 });
 

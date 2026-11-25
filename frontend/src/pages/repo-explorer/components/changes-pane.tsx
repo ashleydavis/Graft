@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button, IconButton, List, ListItemButton, TextField, Tooltip } from "@mui/material";
 import { JSX, useEffect, useRef } from "react";
 import { canCommit, commitButtonText, commitTip } from "../../../lib/commit";
+import { paneWidthStyle } from "../../../lib/pane-widths";
 import { changeKey } from "../../../lib/repo-explorer";
 import { changedFileCount, IWorkingChanges, IWorkingFile } from "../../../lib/working-changes";
 import { activePaneClass } from "./active-pane-style";
@@ -81,19 +82,23 @@ export interface IChangesPaneProps {
 
     // Called when the user clicks the Commit button.
     onCommit(): void;
+
+    // The width its resize handle set, in pixels, or undefined for its usual width.
+    width: number | undefined;
 }
 
 //
 // Shows the changes in a rounded card headed "Changes", with how many files changed and how many
 // are staged beside it in muted text, as the style guide's Changes pane is headed. The card is as
 // tall as the page's columns and never shrinks, as the other panes, and fills the repo explorer
-// while the pane is maximised. The header's button maximises the pane and restores it. Its border
-// is in the style guide's active pane colour while the pane is active. The page's AnimatedPane
-// column animates it as it opens and closes. The commit section sits at the bottom of the card,
-// under the lists, as the style guide's Commit pane sits under its Changes pane. While it is
-// collapsed it draws the strip with "Changes" down it in its place.
+// while the pane is maximised. It is 420 pixels wide, or the width its resize handle set. The
+// header's button maximises the pane and restores it. Its border is in the style guide's active
+// pane colour while the pane is active. The page's AnimatedPane column animates it as it opens and
+// closes. The commit section sits at the bottom of the card, under the lists, as the style guide's
+// Commit pane sits under its Changes pane. While it is collapsed it draws the strip with "Changes"
+// down it in its place.
 //
-export function ChangesPane({ repoPath, changes, error, stageError, selectedKey, openKey, isActive, isMaximised, onToggleMaximise, isCollapsed, onToggleCollapse, onSelectChange, onToggleStaged, commitMessage, commitError, isCommitting, onCommitMessageChange, onCommit }: IChangesPaneProps): JSX.Element {
+export function ChangesPane({ repoPath, changes, error, stageError, selectedKey, openKey, isActive, isMaximised, onToggleMaximise, isCollapsed, onToggleCollapse, onSelectChange, onToggleStaged, commitMessage, commitError, isCommitting, onCommitMessageChange, onCommit, width }: IChangesPaneProps): JSX.Element {
     if (isCollapsed) {
         return <CollapsedStrip paneLabel="Changes" title="Changes" paneDataId="changes-pane" isActive={isActive} onRestore={onToggleCollapse} />;
     }
@@ -108,7 +113,7 @@ export function ChangesPane({ repoPath, changes, error, stageError, selectedKey,
         </span>
     );
     return (
-        <section data-id="changes-pane" aria-label="Changes" className={`flex ${paneWidthClass("w-[420px]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
+        <section data-id="changes-pane" aria-label="Changes" style={paneWidthStyle(width)} className={`flex ${paneWidthClass("w-[420px]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
             <PaneHeader title={title} titleDataId="changes-heading" collapseDataId="changes-pane-collapse" onCollapse={collapseHandler(isMaximised, onToggleCollapse)} action={<MaximiseButton isMaximised={isMaximised} dataId="changes-maximise" onToggleMaximise={onToggleMaximise} />} />
             {stageError !== undefined && (
                 <p data-id="changes-stage-error" className="m-2 mb-0 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[length:var(--text-sm)] text-[var(--color-text)]">{stageError}</p>

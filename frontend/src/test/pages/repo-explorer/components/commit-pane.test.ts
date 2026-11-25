@@ -71,6 +71,7 @@ function renderPane(isActive: boolean, onSelectCommit: jest.Mock, onClose: jest.
         onSelectCommit,
         onNearEnd: jest.fn(),
         onClose,
+        width: undefined,
     }));
     return container;
 }
@@ -152,6 +153,7 @@ describe("CommitPane maximise button", () => {
             onSelectCommit: jest.fn(),
             onNearEnd: jest.fn(),
             onClose: jest.fn(),
+            width: undefined,
         }));
         expect(container.querySelector("[data-id=\"commit-pane\"]")?.className).toContain(maximisedPaneClasses);
         expect(container.querySelector("[data-id=\"commit-pane-collapse\"]")).toBeNull();
@@ -184,6 +186,7 @@ describe("CommitPane collapse", () => {
             onSelectCommit: jest.fn(),
             onNearEnd: jest.fn(),
             onClose: jest.fn(),
+            width: undefined,
         }));
         const collapse = container.querySelector<HTMLElement>("[data-id=\"commit-pane-collapse\"]");
         expect(collapse).not.toBeNull();
@@ -217,6 +220,7 @@ describe("CommitPane collapse", () => {
             onSelectCommit: jest.fn(),
             onNearEnd: jest.fn(),
             onClose: jest.fn(),
+            width: undefined,
         }));
         expect(container.querySelector("[data-id=\"commit-pane\"]")).toBeNull();
         expect(container.querySelector("[data-id=\"commit-list\"]")).toBeNull();

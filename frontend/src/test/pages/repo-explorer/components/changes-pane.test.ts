@@ -95,6 +95,7 @@ function renderPane(options: IRenderOptions): void {
         isCommitting: options.isCommitting ?? false,
         onCommitMessageChange: options.onCommitMessageChange ?? jest.fn(),
         onCommit: options.onCommit ?? jest.fn(),
+        width: undefined,
     }));
 }
 

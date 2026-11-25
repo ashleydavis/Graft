@@ -235,6 +235,7 @@ function paneElement(selectedPath: string | undefined, onSelectFile: jest.Mock, 
         onSelectFile,
         onReadCommit,
         onClose,
+        width: undefined,
     });
 }
 
@@ -556,6 +557,7 @@ describe("CommitDetailsPane maximise button", () => {
             onSelectFile: jest.fn(),
             onReadCommit: jest.fn(),
             onClose: jest.fn(),
+            width: undefined,
         }));
         expect(container.querySelector("[data-id=\"commit-details-pane\"]")?.className).toContain(maximisedPaneClasses);
         expect(container.querySelector("[data-id=\"commit-details-maximise\"] + [data-id=\"commit-details-close\"]")).not.toBeNull();
@@ -584,6 +586,7 @@ describe("CommitDetailsPane collapse", () => {
             onSelectFile: jest.fn(),
             onReadCommit,
             onClose: jest.fn(),
+            width: undefined,
         });
     }
 

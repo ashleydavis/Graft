@@ -6,9 +6,10 @@
 import type { IZiggyBridge } from "ziggy";
 
 //
-// The calls of window.ziggy that queue a task and report its end, which a fake makes of Jest mocks.
+// The calls of window.ziggy that queue a task and report its end, which a fake makes of Jest mocks,
+// with the state file calls the repo explorer page reads and saves its panes' widths with.
 //
-export type FakeTaskZiggy = Pick<IZiggyBridge, "addTask" | "onTaskCompleted" | "removeTaskCompletedListener">;
+export type FakeTaskZiggy = Pick<IZiggyBridge, "addTask" | "onTaskCompleted" | "removeTaskCompletedListener" | "getState" | "setState">;
 
 //
 // Makes the fake window.ziggy and returns it.
@@ -23,12 +24,15 @@ export function installFakeZiggy<TFake extends Partial<IZiggyBridge>>(fake: TFak
 }
 
 //
-// Makes a fake window.ziggy whose task calls are Jest mocks, and returns it.
+// Makes a fake window.ziggy whose task calls are Jest mocks, and returns it. Its state file holds
+// nothing and takes every write.
 //
 export function installFakeTaskZiggy(): FakeTaskZiggy {
     return installFakeZiggy({
         addTask: jest.fn(),
         onTaskCompleted: jest.fn(),
         removeTaskCompletedListener: jest.fn(),
+        getState: jest.fn().mockResolvedValue(undefined),
+        setState: jest.fn().mockResolvedValue(undefined),
     });
 }

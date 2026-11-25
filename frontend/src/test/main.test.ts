@@ -113,6 +113,8 @@ describe("main", () => {
             addTask: jest.fn(),
             onTaskCompleted: jest.fn(),
             removeTaskCompletedListener: jest.fn(),
+            getState: jest.fn().mockResolvedValue(undefined),
+            setState: jest.fn().mockResolvedValue(undefined),
         };
         Object.defineProperty(window, "ziggy", {
             value: ziggy,
@@ -149,6 +151,8 @@ describe("main", () => {
             addTask: jest.fn(),
             onTaskCompleted: jest.fn(),
             removeTaskCompletedListener: jest.fn(),
+            getState: jest.fn().mockResolvedValue(undefined),
+            setState: jest.fn().mockResolvedValue(undefined),
         };
         Object.defineProperty(window, "ziggy", {
             value: ziggy,
