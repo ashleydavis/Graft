@@ -1582,6 +1582,27 @@ describe("RepoExplorerPage pane animation", () => {
         expect(columnOf("repo-details-pane").className).not.toContain("graft-pane-in");
     });
 
+    test("grows the file pane's column into the width left over and keeps every other column its pane's width", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        expect(columnOf("file-pane").className.split(" ")).toContain("flex-[1_0_auto]");
+        expect(columnOf("file-pane").className.split(" ")).not.toContain("flex-none");
+        for (const dataId of ["commit-pane", "commit-details-pane"]) {
+            expect(columnOf(dataId).className.split(" ")).toContain("flex-none");
+            expect(columnOf(dataId).className.split(" ")).not.toContain("flex-[1_0_auto]");
+        }
+    });
+
+    test("keeps the file pane's column growing while it closes", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        fireEvent.click(elementWithDataId("file-pane-close"));
+        expect(columnOf("file-pane").className).toContain("graft-pane-out");
+        expect(columnOf("file-pane").className.split(" ")).toContain("flex-[1_0_auto]");
+    });
+
     test("keeps a closing pane drawn, inert and fading out, until its own animation ends", async () => {
         const ziggy = installFakeTaskZiggy();
         await openCommitDetails(ziggy);
@@ -1813,6 +1834,14 @@ describe("RepoExplorerPage changes pane", () => {
         expect(isSelected("change-unstaged-notes.txt")).toBe(true);
         fireEvent.click(screen.getByLabelText("Close file diff"));
         expect(document.querySelector("[data-id=\"file-pane\"]")).toBeNull();
+    });
+
+    test("grows the changed file's pane column into the width left over and keeps the changes pane's its own width", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        fireEvent.click(elementWithDataId("change-unstaged-notes.txt"));
+        expect(columnOf("file-pane").className.split(" ")).toContain("flex-[1_0_auto]");
+        expect(columnOf("changes-pane").className.split(" ")).toContain("flex-none");
     });
 
     test("stages a file, reads the changes again and follows the open file to the staged list", async () => {
@@ -2332,9 +2361,10 @@ describe("RepoExplorerPage maximise with motion", () => {
 
 describe("openColumnClass", () => {
     test("hides the column, grows it or keeps it the width of its pane", () => {
-        expect(openColumnClass(true, false)).toBe("hidden");
-        expect(openColumnClass(false, true)).toBe("flex min-w-0 flex-1");
-        expect(openColumnClass(false, false)).toBe("flex flex-none");
+        expect(openColumnClass(true, false, false)).toBe("hidden");
+        expect(openColumnClass(false, true, true)).toBe("flex min-w-0 flex-1");
+        expect(openColumnClass(false, false, false)).toBe("flex flex-none");
+        expect(openColumnClass(false, false, true)).toBe("flex flex-[1_0_auto]");
     });
 });
 

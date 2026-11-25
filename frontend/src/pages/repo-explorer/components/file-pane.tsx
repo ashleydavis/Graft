@@ -13,7 +13,7 @@ import { CollapseButton, CollapsedStrip } from "./collapse";
 import { FileIcon } from "./file-icon";
 import { FilePathMenu } from "./file-path-menu";
 import { CloseButton, MaximiseButton } from "./pane-header";
-import { paneWidthClass } from "./pane-width";
+import { maximisedPaneClasses } from "./pane-width";
 
 //
 // What the file pane is given and what it reports.
@@ -114,12 +114,15 @@ export interface IFileDiffCardProps {
 // guide's file diff card is headed, so the file pane and the changes pane's file pane look the
 // same. The title holds the file's name alone, so it stays short in a narrow pane, and hovering it
 // shows the full path. The file path menu's button sits beside the name. It shows that the diff is
-// loading until it is read and what went wrong when it could not be. The card is 840 pixels wide,
-// or the width of the page's visible area when that is narrower, so the whole diff can be scrolled
-// into view, and fills the repo explorer while the pane is maximised. The card's border is in the
-// style guide's active pane colour while the pane is active. The card has no shadow, as the style
-// guide's file diff card has none. The page's AnimatedPane column animates it as it opens and
-// closes. While it is collapsed it draws the strip with the file's name down it in its place.
+// loading until it is read and what went wrong when it could not be. The card starts at 840 pixels
+// wide, or the width of the page's visible area when that is narrower, so the whole diff can be
+// scrolled into view, and grows to fill its column, which takes the width the panes to its left
+// leave over, as the style guide's diff pane does, and fills the repo explorer while the pane is
+// maximised. The card's width is set rather than left to its content, so a long line wraps instead
+// of widening the page. The card's border is in the style guide's active pane colour while the pane
+// is active. The card has no shadow, as the style guide's file diff card has none. The page's
+// AnimatedPane column animates it as it opens and closes. While it is collapsed it draws the strip
+// with the file's name down it in its place.
 //
 export function FileDiffCard({ repoPath, path, diff, error, isActive, isMaximised, onToggleMaximise, isCollapsed, onToggleCollapse, onClose }: IFileDiffCardProps): JSX.Element {
     const fileName = path.slice(path.lastIndexOf("/") + 1);
@@ -127,7 +130,7 @@ export function FileDiffCard({ repoPath, path, diff, error, isActive, isMaximise
         return <CollapsedStrip paneLabel="File diff" title={fileName} paneDataId="file-pane" isActive={isActive} onRestore={onToggleCollapse} />;
     }
     return (
-        <section data-id="file-pane" aria-label="File diff" className={`flex ${paneWidthClass("w-[min(840px,calc(100cqw-var(--space-6)*2))]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activeFlatPaneClass(isActive)}`}>
+        <section data-id="file-pane" aria-label="File diff" className={`flex ${fileCardWidthClass(isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activeFlatPaneClass(isActive)}`}>
             <div className="flex flex-none items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-panel)] p-2">
                 <span title={path} className="flex min-w-0 flex-1 items-center gap-2 text-[length:var(--text-sm)] font-[var(--weight-medium)] text-[var(--color-text)]">
                     <FileIcon path={path} />
@@ -277,4 +280,15 @@ export function DiffRow({ line }: IDiffRowProps): JSX.Element {
             <span className="min-w-0 flex-1 whitespace-pre-wrap pr-4 [overflow-wrap:anywhere]">{line.text}</span>
         </div>
     );
+}
+
+//
+// Picks the Tailwind classes of the diff card's width: its starting width, which it grows from to
+// fill its column, or the classes of a maximised pane while the pane is maximised.
+//
+export function fileCardWidthClass(isMaximised: boolean): string {
+    if (isMaximised) {
+        return maximisedPaneClasses;
+    }
+    return "w-[min(840px,calc(100cqw-var(--space-6)*2))] flex-[1_0_auto]";
 }

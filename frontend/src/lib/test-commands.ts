@@ -75,7 +75,8 @@ export interface IElementFinder {
 
 //
 // Where an element's left and right edges are, in pixels from the left edge of the window, which
-// the in-view command reads to check the element is inside the window.
+// the in-view command reads to check the element is inside the window and the bounds command
+// returns to a smoke test.
 //
 export interface IHorizontalBounds {
     // The distance of the element's left edge from the window's left edge.

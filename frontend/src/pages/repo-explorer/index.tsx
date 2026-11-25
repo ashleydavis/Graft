@@ -415,13 +415,13 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     return (
         <main ref={pageRef} tabIndex={-1} data-id="repo-explorer-page" className={`graft-page-in outline-none flex h-full ${pageWidthClass(explorer.maximisedPaneIndex !== undefined)} flex-col gap-4 bg-[var(--color-bg)] p-6`}>
             <div ref={columnsRef} data-id="repo-explorer-columns" onClickCapture={onColumnsClickCapture} className="flex min-h-0 flex-1 items-stretch gap-3">
-                <div className={`relative ${openColumnClass(isPaneHidden(0), explorer.maximisedPaneIndex === 0)}`}>
+                <div className={`relative ${openColumnClass(isPaneHidden(0), explorer.maximisedPaneIndex === 0, false)}`}>
                     <RepoDetailsPane repoPath={repoPath} selectedLink={explorer.selectedLink} openLink={explorer.openLink} isActive={explorer.activePaneIndex === 0} isMaximised={explorer.maximisedPaneIndex === 0} onToggleMaximise={() => onToggleMaximise(0)} isHidden={isPaneHidden(0)} isCollapsed={isPaneCollapsed(explorer, 0)} onToggleCollapse={() => onToggleCollapse(0)} onSelectLink={link => setExplorer(() => selectLink(link))} width={paneWidthOf(0, repoDetailsWidth.width)} />
                     {explorer.openLink !== undefined && hasResizeHandle(0) && (
                         <ResizeHandle label="repo details pane" dataId="repo-details-pane-resize-handle" limits={PANE_LIMITS.repoDetails} onWidth={repoDetailsWidth.changeWidth} onReset={repoDetailsWidth.resetWidth} />
                     )}
                 </div>
-                <AnimatedPane openId={paneIds.commitPane} isHidden={isPaneHidden(1)} isMaximised={explorer.maximisedPaneIndex === 1}>
+                <AnimatedPane openId={paneIds.commitPane} isHidden={isPaneHidden(1)} isMaximised={explorer.maximisedPaneIndex === 1} isGrowing={false}>
                     {isCommitsOpen && (
                         <>
                             <CommitPane
@@ -448,7 +448,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                         </>
                     )}
                 </AnimatedPane>
-                <AnimatedPane openId={paneIds.commitDetailsPane} isHidden={isPaneHidden(2)} isMaximised={explorer.maximisedPaneIndex === 2}>
+                <AnimatedPane openId={paneIds.commitDetailsPane} isHidden={isPaneHidden(2)} isMaximised={explorer.maximisedPaneIndex === 2} isGrowing={false}>
                     {explorer.openHash !== undefined && (
                         <>
                             <CommitDetailsPane
@@ -478,7 +478,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                         </>
                     )}
                 </AnimatedPane>
-                <AnimatedPane openId={paneIds.filePane} isHidden={isPaneHidden(3)} isMaximised={explorer.maximisedPaneIndex === 3}>
+                <AnimatedPane openId={paneIds.filePane} isHidden={isPaneHidden(3)} isMaximised={explorer.maximisedPaneIndex === 3} isGrowing={true}>
                     {explorer.openPath === COMMIT_DETAILS_PATH && openCommit && (
                         <CommitInfoPane commit={openCommit} isActive={explorer.activePaneIndex === 3} isMaximised={explorer.maximisedPaneIndex === 3} onToggleMaximise={() => onToggleMaximise(3)} isCollapsed={isPaneCollapsed(explorer, 3)} onToggleCollapse={() => onToggleCollapse(3)} dateFormat={dateFormat} onClose={() => setExplorer(closeFilePane)} />
                     )}
@@ -486,7 +486,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                         <FilePane key={`${explorer.openHash} ${explorer.openPath}`} repoPath={repoPath} hash={explorer.openHash} path={explorer.openPath} isActive={explorer.activePaneIndex === 3} isMaximised={explorer.maximisedPaneIndex === 3} onToggleMaximise={() => onToggleMaximise(3)} isCollapsed={isPaneCollapsed(explorer, 3)} onToggleCollapse={() => onToggleCollapse(3)} onClose={() => setExplorer(closeFilePane)} />
                     )}
                 </AnimatedPane>
-                <AnimatedPane openId={paneIds.changesPane} isHidden={isPaneHidden(1)} isMaximised={explorer.maximisedPaneIndex === 1}>
+                <AnimatedPane openId={paneIds.changesPane} isHidden={isPaneHidden(1)} isMaximised={explorer.maximisedPaneIndex === 1} isGrowing={false}>
                     {isChangesOpen && (
                         <>
                             <ChangesPane
@@ -516,7 +516,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                         </>
                     )}
                 </AnimatedPane>
-                <AnimatedPane openId={paneIds.workingFilePane} isHidden={isPaneHidden(2)} isMaximised={explorer.maximisedPaneIndex === 2}>
+                <AnimatedPane openId={paneIds.workingFilePane} isHidden={isPaneHidden(2)} isMaximised={explorer.maximisedPaneIndex === 2} isGrowing={true}>
                     {isChangesOpen && openChange && (
                         <WorkingFilePane key={`${explorer.openChange} ${changesReadCount}`} repoPath={repoPath} file={openChange.file} isStaged={openChange.isStaged} isActive={explorer.activePaneIndex === 2} isMaximised={explorer.maximisedPaneIndex === 2} onToggleMaximise={() => onToggleMaximise(2)} isCollapsed={isPaneCollapsed(explorer, 2)} onToggleCollapse={() => onToggleCollapse(2)} onClose={() => setExplorer(closeChangeFilePane)} />
                     )}

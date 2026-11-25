@@ -167,6 +167,15 @@ describe("FilePane", () => {
         expect(panes.map(pane => pane.className.includes("--shadow-raised"))).toEqual([false, false]);
     });
 
+    test("starts at 840 pixels wide, or the page's visible area less its margins, and grows to fill its column", () => {
+        installFakeTaskZiggy();
+        renderPane(jest.fn(), false);
+        const classes = document.querySelector<HTMLElement>("[data-id=\"file-pane\"]")?.className.split(" ");
+        expect(classes).toContain("w-[min(840px,calc(100cqw-var(--space-6)*2))]");
+        expect(classes).toContain("flex-[1_0_auto]");
+        expect(classes).not.toContain("flex-none");
+    });
+
     test("keeps its grey border while it is not active", () => {
         installFakeTaskZiggy();
         renderPane(jest.fn(), false);

@@ -23,6 +23,7 @@ What every smoke test uses: it starts the app, talks to it through the remote co
 - `wait_for_element <data-id> <seconds>`: waits until the element with the data-id is on the page.
 - `wait_for_missing_element <data-id> <seconds>`: waits until the element with the data-id has gone from the page.
 - `wait_for_in_view <data-id> <seconds>`: waits until the element's left and right edges are inside the window, so the user can see it.
+- `bounds_of <data-id>`: prints the element's left and right edges in whole pixels from the window's left edge, as `<left> <right>`, so a smoke test can check how wide it is and where it ends.
 - `scroll_to_end <data-id>`: scrolls the element to the end of its content, as a user does with the mouse wheel or the scroll bar.
 - `bounds_of <data-id>`: prints the element's left and right edges in the window, in whole pixels, as `<left> <right>`. A hidden element prints `0 0`.
 - `wait_for_in_view_of <data-id> <container-data-id> <seconds>`: waits until the element's top and bottom edges are inside the visible part of the scrolling element with the container data-id, so the user can see it in that list.

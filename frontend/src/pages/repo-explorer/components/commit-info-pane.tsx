@@ -9,8 +9,9 @@ import { ICommit } from "../../../lib/commits";
 import { formatDateTime, IDateFormatOptions } from "../../../lib/date-format";
 import { activePaneClass } from "./active-pane-style";
 import { CollapsedStrip } from "./collapse";
+import { fileCardWidthClass } from "./file-pane";
 import { CloseButton, collapseHandler, MaximiseButton, PaneHeader } from "./pane-header";
-import { paneWidthClass } from "./pane-width";
+
 
 //
 // What the "Commit details" pane is given and what it reports.
@@ -56,7 +57,7 @@ export function CommitInfoPane({ commit, isActive, isMaximised, onToggleMaximise
         return <CollapsedStrip paneLabel="Full commit details" title="Commit details" paneDataId="commit-info-pane" isActive={isActive} onRestore={onToggleCollapse} />;
     }
     return (
-        <section data-id="commit-info-pane" aria-label="Full commit details" className={`flex ${paneWidthClass("w-[min(840px,calc(100cqw-var(--space-6)*2))]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
+        <section data-id="commit-info-pane" aria-label="Full commit details" className={`flex ${fileCardWidthClass(isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
             <PaneHeader title="Commit details" titleDataId="commit-info-heading" collapseDataId="commit-info-pane-collapse" onCollapse={collapseHandler(isMaximised, onToggleCollapse)} action={(
                 <>
                     <MaximiseButton isMaximised={isMaximised} dataId="commit-info-maximise" onToggleMaximise={onToggleMaximise} />

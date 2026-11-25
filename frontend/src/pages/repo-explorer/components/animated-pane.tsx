@@ -24,6 +24,23 @@ export interface IAnimatedPaneProps {
 
     // The open pane, drawn while openId names it.
     children: ReactNode;
+
+    // Whether the column takes the width the panes to its left leave over, as the file pane's
+    // column does, instead of keeping its pane's own width.
+    isGrowing: boolean;
+}
+
+//
+// Picks the flex classes of a pane's column. A growing column starts at its pane's own width,
+// takes the width the panes to its left leave over and never shrinks, as the style guide's file
+// pane fills the rest of the page but is never narrower than its least width. Every other column
+// keeps its pane's own width.
+//
+export function paneColumnFlexClass(isGrowing: boolean): string {
+    if (isGrowing) {
+        return "flex-[1_0_auto]";
+    }
+    return "flex-none";
 }
 
 //
@@ -35,12 +52,12 @@ export interface IAnimatedPaneProps {
 // narrows from the column's width, measured as the animation starts, because a pane's width depends
 // on the window. The opening animation's class comes off the column once the animation ends, so
 // a column hidden while another pane is maximised shows again at once when the panes are restored.
-// The open column is the box a pane's resize handle is placed against, in the gap to its right.
-// Under reduced motion the column has an empty animation class and a closed pane goes at once,
-// because the end of the closing animation is what removes a closed pane, and that animation is
-// off.
+// The open column is the box a pane's resize handle is placed against, in the gap to its right. A
+// growing column grows while it closes too, so it narrows from the width it had while open. Under
+// reduced motion the column has an empty animation class and a closed pane goes at once, because
+// the end of the closing animation is what removes a closed pane, and that animation is off.
 //
-export function AnimatedPane({ openId, isHidden, isMaximised, children }: IAnimatedPaneProps): JSX.Element | undefined {
+export function AnimatedPane({ openId, isHidden, isMaximised, children, isGrowing }: IAnimatedPaneProps): JSX.Element | undefined {
     const isReducedMotion = window.matchMedia(REDUCED_MOTION_QUERY).matches;
     const [previousOpenId, setPreviousOpenId] = useState(openId);
     const [closingId, setClosingId] = useState<string | undefined>(undefined);
@@ -78,7 +95,7 @@ export function AnimatedPane({ openId, isHidden, isMaximised, children }: IAnima
         }
 
         return (
-            <div key={openId} className={`relative ${openColumnClass(isHidden, isMaximised)} ${animationClass}`} onAnimationEnd={onOpenAnimationEnd}>
+            <div key={openId} className={`relative ${openColumnClass(isHidden, isMaximised, isGrowing)} ${animationClass}`} onAnimationEnd={onOpenAnimationEnd}>
                 {children}
             </div>
         );
@@ -116,7 +133,7 @@ export function AnimatedPane({ openId, isHidden, isMaximised, children }: IAnima
     }
 
     return (
-        <div key={closingId} inert className={`flex flex-none ${paneAnimationClass(true, isReducedMotion)}`} onAnimationStart={onAnimationStart} onAnimationEnd={onAnimationEnd}>
+        <div key={closingId} inert className={`flex ${paneColumnFlexClass(isGrowing)} ${paneAnimationClass(true, isReducedMotion)}`} onAnimationStart={onAnimationStart} onAnimationEnd={onAnimationEnd}>
             {lastPane.current}
         </div>
     );
@@ -127,12 +144,12 @@ export function AnimatedPane({ openId, isHidden, isMaximised, children }: IAnima
 // growing to fill the repo explorer while its own pane is maximised and as wide as its pane
 // otherwise.
 //
-export function openColumnClass(isHidden: boolean, isMaximised: boolean): string {
+export function openColumnClass(isHidden: boolean, isMaximised: boolean, isGrowing: boolean): string {
     if (isHidden) {
         return "hidden";
     }
     if (isMaximised) {
         return "flex min-w-0 flex-1";
     }
-    return "flex flex-none";
+    return `flex ${paneColumnFlexClass(isGrowing)}`;
 }
