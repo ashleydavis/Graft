@@ -54,6 +54,10 @@ wait_for_text changes-staged-empty "Nothing staged yet." 30
 wait_for_text "change-unstaged-notes.txt" "notes.txt" 30
 wait_for_text "change-unstaged-README.md" "README.md" 30
 wait_for_text "change-unstaged-docs/new.txt" "docs/new.txt" 30
+
+# The Commit link's click leaves the repo details pane active, so Right makes the changes pane
+# active for the right sidebar to list its commands.
+press_key Right
 wait_for_text git-command-0-text "git status --porcelain=v1 --untracked-files=all --no-renames" 30
 
 click "change-unstaged-notes.txt"
@@ -62,6 +66,10 @@ wait_for_in_view file-pane 30
 wait_for_text file-pane-path "notes.txt" 30
 wait_for_text file-diff "The second note." 30
 wait_for_text file-diff "The changed note." 30
+
+# The click leaves the changes pane active, so Right makes the file pane active for the right
+# sidebar to list its diff command.
+press_key Right
 wait_for_text git-command-0-text "git diff -- notes.txt" 30
 
 click "stage-notes.txt"
@@ -70,15 +78,26 @@ wait_for_missing_element "change-unstaged-notes.txt" 30
 wait_for_text changes-unstaged-heading "Unstaged (2)" 30
 wait_for_text changes-staged-heading "Staged (1)" 30
 wait_for_staged "M	notes.txt"
-wait_for_text git-command-0-text "git diff --cached -- notes.txt" 30
-wait_for_text git-command-1-text "git status --porcelain=v1 --untracked-files=all --no-renames" 30
+
+# The click makes the changes pane active, so the right sidebar lists its two most recent commands:
+# the status read after the stage above the stage itself.
+wait_for_text git-command-0-text "git status --porcelain=v1 --untracked-files=all --no-renames" 30
+wait_for_text git-command-1-text "git add -- notes.txt" 30
 wait_for_missing_element git-command-2 30
 wait_for_text file-diff "The changed note." 30
+
+# Right makes the file pane active, which lists the staged diff it read again above the unstaged
+# diff it read first.
+press_key Right
+wait_for_text git-command-0-text "git diff --cached -- notes.txt" 30
+wait_for_text git-command-1-text "git diff -- notes.txt" 30
+wait_for_missing_element git-command-2 30
 
 click "change-unstaged-docs/new.txt"
 wait_for_text file-pane-path "new.txt" 30
 [ "$(text_of file-pane-path)" = "new.txt" ] || fail "the file pane's title showed \"$(text_of file-pane-path)\", not the file's name alone"
 wait_for_text file-diff "A new file." 30
+press_key Right
 wait_for_text git-command-0-text "git diff --no-index -- /dev/null docs/new.txt" 30
 
 click "stage-README.md"
@@ -103,7 +122,8 @@ wait_for_text changes-unstaged-heading "Unstaged (1)" 30
 wait_for_text changes-staged-heading "Staged (2)" 30
 wait_for_staged "D	README.md
 A	docs/new.txt"
-wait_for_text git-command-1-text "git status --porcelain=v1 --untracked-files=all --no-renames" 30
+wait_for_text git-command-0-text "git status --porcelain=v1 --untracked-files=all --no-renames" 30
+wait_for_text git-command-1-text "git restore --staged -- notes.txt" 30
 wait_for_missing_element git-command-2 30
 wait_for_text file-pane-path "README.md" 30
 

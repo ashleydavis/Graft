@@ -1,7 +1,8 @@
 //
-// Tests the Git commands panel: what it says when the page has run no commands, and that it shows
-// the cd into the repo above the page's most recent commands, at most two, each with a copy button
-// that copies it and how long it took, with the total time of every command the page ran.
+// Tests the Git commands panel: what it says when the pane or page has run no commands, that its
+// text names a pane for a pane's commands, and that it shows the cd into the repo above the most
+// recent commands, at most two, each with a copy button that copies it and how long it took, with
+// the total time of every command the pane or page ran.
 //
 
 import { act, render } from "@testing-library/react";
@@ -27,9 +28,31 @@ function elementWithDataId(container: HTMLElement, dataId: string): HTMLElement 
 }
 
 describe("GitCommandsPanel", () => {
+    test("says the pane has run no Git commands when the selected pane has none", () => {
+        const { container } = render(createElement(GitCommandsPanel, {
+            isPane: true,
+            commands: undefined,
+        }));
+        expect(elementWithDataId(container, "git-commands-empty")?.textContent).toBe("This pane has run no Git commands.");
+        expect(container.textContent).toContain("The Git commands this pane ran. Copy one to run it in a terminal.");
+    });
+
+    test("names the pane in its line on what it shows for a pane's commands", () => {
+        const { container } = render(createElement(GitCommandsPanel, {
+            isPane: true,
+            commands: {
+                directoryCommand: "cd /repo",
+                commands: commandRuns(["git log --max-count=50"]),
+            },
+        }));
+        expect(container.textContent).toContain("The Git commands this pane ran. Copy one to run it in a terminal.");
+        expect(elementWithDataId(container, "git-command-0-text")?.textContent).toBe("git log --max-count=50");
+    });
+
     test("says the page has run no Git commands when it has none", () => {
         const { container } = render(createElement(GitCommandsPanel, {
-            pageCommands: undefined,
+            isPane: false,
+            commands: undefined,
         }));
         expect(elementWithDataId(container, "git-commands-heading")?.textContent).toBe("Git commands");
         expect(elementWithDataId(container, "git-commands-empty")?.textContent).toBe("This page has run no Git commands.");
@@ -39,7 +62,8 @@ describe("GitCommandsPanel", () => {
 
     test("shows the cd into the repo above the commands, the most recent first", () => {
         const { container } = render(createElement(GitCommandsPanel, {
-            pageCommands: {
+            isPane: false,
+            commands: {
                 directoryCommand: "cd /repo",
                 commands: commandRuns(["git diff-tree abc", "git log --max-count=50"]),
             },
@@ -59,7 +83,8 @@ describe("GitCommandsPanel", () => {
 
     test("shows how long each command took and the total time of them all", () => {
         const { container } = render(createElement(GitCommandsPanel, {
-            pageCommands: {
+            isPane: false,
+            commands: {
                 directoryCommand: "cd /repo",
                 commands: [
                     {
@@ -82,7 +107,8 @@ describe("GitCommandsPanel", () => {
 
     test("lists only the two most recent commands and totals every command the page ran", () => {
         const { container } = render(createElement(GitCommandsPanel, {
-            pageCommands: {
+            isPane: false,
+            commands: {
                 directoryCommand: "cd /repo",
                 commands: [
                     {
@@ -120,7 +146,8 @@ describe("GitCommandsPanel", () => {
             configurable: true,
         });
         const { container } = render(createElement(GitCommandsPanel, {
-            pageCommands: {
+            isPane: false,
+            commands: {
                 directoryCommand: "cd /repo",
                 commands: commandRuns(["git diff-tree abc", "git log --max-count=50"]),
             },
@@ -137,7 +164,8 @@ describe("GitCommandsPanel", () => {
         const longWord = "a".repeat(COMMAND_WORD_LENGTH_UNBROKEN_MAX + 1);
         const shortWord = "b".repeat(COMMAND_WORD_LENGTH_UNBROKEN_MAX);
         const { container } = render(createElement(GitCommandsPanel, {
-            pageCommands: {
+            isPane: false,
+            commands: {
                 directoryCommand: "cd /repo",
                 commands: commandRuns([`git ${shortWord} ${longWord}`]),
             },
@@ -150,7 +178,8 @@ describe("GitCommandsPanel", () => {
 
     test("shows the commands beside a muted prompt that the command's text leaves out", () => {
         const { container } = render(createElement(GitCommandsPanel, {
-            pageCommands: {
+            isPane: false,
+            commands: {
                 directoryCommand: "cd /repo",
                 commands: commandRuns(["git log"]),
             },

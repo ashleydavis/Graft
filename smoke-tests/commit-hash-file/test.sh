@@ -38,7 +38,10 @@ wait_for_text commit-details-hash "$head_hash" 30
 wait_for_text changed-files-heading "Files changed (1)" 30
 wait_for_text changed-file-notes.txt "notes.txt" 30
 
+# The click leaves the commit pane active. Right makes the commit details pane active, so the
+# right sidebar lists its commands.
 click right-sidebar-toggle
+press_key Right
 wait_for_text git-command-0-text "git diff-tree -r --root --no-commit-id --numstat $head_hash --" 30
 wait_for_text git-command-1-text "git diff-tree -r --root --no-commit-id --name-status $head_hash --" 30
 
@@ -46,4 +49,8 @@ click changed-file-notes.txt
 wait_for_element file-diff 30
 wait_for_text file-diff "The first note." 30
 wait_for_text file-diff "The second note." 30
+
+# The click leaves the commit details pane active. Right makes the file pane active, so the right
+# sidebar lists its command.
+press_key Right
 wait_for_text git-command-0-text "git diff-tree -r -p --root --no-commit-id $head_hash -- notes.txt" 30

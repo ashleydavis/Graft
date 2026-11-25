@@ -9,7 +9,9 @@
 // follows the page shown and its drop-down opens another page and that the right sidebar shows the
 // Git commands the page shown has run. It checks the trail ends with the pane steps the repo
 // explorer page sets, and that the Command Palette action shows the command palette with the
-// commands of the page shown, or of the active pane the repo explorer page sets, first. It also
+// commands of the page shown, or of the active pane the repo explorer page sets, first. It checks
+// the right sidebar shows the Git commands of the active pane, or of the page shown while the page
+// has no active pane. It also
 // checks that with no repo open the trail has no repo
 // step and the Repo explorer link is hidden. The actions of the feature hooks the layout calls are
 // tested beside each hook.
@@ -366,13 +368,13 @@ describe("AppLayout's Git commands", () => {
     }
 
     //
-    // Sends the event the Git interface function sends for the command, from a task of the
-    // repo explorer page.
+    // Sends the event the Git interface function sends for the command, from a task queued under
+    // the source, a pane's name or a page's path.
     //
-    function sendRepoExplorerPageCommand(command: string): void {
+    function sendCommand(source: string, command: string): void {
         sendTaskEvent({
             taskId: "t1",
-            source: "repo-explorer-page",
+            source,
             data: {
                 type: "git-command",
                 directoryCommand: "cd /repos/graft",
@@ -382,43 +384,82 @@ describe("AppLayout's Git commands", () => {
         });
     }
 
+    //
+    // Selects the pane in the mock repo explorer page, as the page does when the pane becomes
+    // active.
+    //
+    function selectPane(container: HTMLElement, pane: string): void {
+        act(() => {
+            elementWithDataId(container, `mock-select-${pane}`)?.click();
+        });
+    }
+
     test("the right sidebar says the About page has run no Git commands", async () => {
         const container = await renderAppLayout("/repos/graft");
         openRightSidebar(container);
-        expect(elementWithDataId(container, "git-commands-empty")).not.toBeUndefined();
+        expect(elementWithDataId(container, "git-commands-empty")?.textContent).toBe("This page has run no Git commands.");
     });
 
-    test("the right sidebar shows the repo explorer page's commands, kept while the sidebar is closed and while another page is open", async () => {
+    test("the right sidebar shows the selected pane's commands, kept while the sidebar is closed and while another page is open", async () => {
         const container = await renderAppLayout("/repos/graft");
-        sendRepoExplorerPageCommand("git log --max-count=50");
+        sendCommand("commit-pane", "git log --max-count=50");
         await openPage(container, "repo-explorer", "The repo explorer page");
+        selectPane(container, "commit-pane");
         openRightSidebar(container);
         expect(elementWithDataId(container, "git-commands-directory")?.textContent).toBe("cd /repos/graft");
         expect(elementWithDataId(container, "git-command-0-text")?.textContent).toBe("git log --max-count=50");
 
         openRightSidebar(container);
-        sendRepoExplorerPageCommand("git diff-tree abc");
+        sendCommand("commit-pane", "git log --max-count=50 abc");
         await openPage(container, "help", "The Help page");
         openRightSidebar(container);
-        expect(elementWithDataId(container, "git-commands-empty")).not.toBeUndefined();
+        expect(elementWithDataId(container, "git-commands-empty")?.textContent).toBe("This page has run no Git commands.");
 
         await openPage(container, "repo-explorer", "The repo explorer page");
-        expect(elementWithDataId(container, "git-command-0-text")?.textContent).toBe("git diff-tree abc");
+        selectPane(container, "commit-pane");
+        expect(elementWithDataId(container, "git-command-0-text")?.textContent).toBe("git log --max-count=50 abc");
         expect(elementWithDataId(container, "git-command-1-text")?.textContent).toBe("git log --max-count=50");
+    });
+
+    test("the right sidebar shows the commands of each pane as it becomes selected", async () => {
+        const container = await renderAppLayout("/repos/graft");
+        sendCommand("commit-pane", "git log --max-count=50");
+        sendCommand("commit-details-pane", "git diff-tree abc");
+        await openPage(container, "repo-explorer", "The repo explorer page");
+        openRightSidebar(container);
+        selectPane(container, "commit-pane");
+        expect(elementWithDataId(container, "git-command-0-text")?.textContent).toBe("git log --max-count=50");
+        expect(elementWithDataId(container, "git-command-1")).toBeUndefined();
+
+        selectPane(container, "commit-details-pane");
+        expect(elementWithDataId(container, "git-command-0-text")?.textContent).toBe("git diff-tree abc");
+        expect(elementWithDataId(container, "git-command-1")).toBeUndefined();
+
+        selectPane(container, "repo-details-pane");
+        expect(elementWithDataId(container, "git-commands-empty")?.textContent).toBe("This pane has run no Git commands.");
+    });
+
+    test("the right sidebar shows the page's commands while the page has no selected pane", async () => {
+        const container = await renderAppLayout("/repos/graft");
+        sendCommand("/help", "git status");
+        await openPage(container, "help", "The Help page");
+        openRightSidebar(container);
+        expect(elementWithDataId(container, "git-command-0-text")?.textContent).toBe("git status");
     });
 
     test("ignores a task event that is not a Git command", async () => {
         const container = await renderAppLayout("/repos/graft");
         sendTaskEvent({
             taskId: "t1",
-            source: "repo-explorer-page",
+            source: "commit-pane",
             data: {
                 type: "output",
             },
         });
         await openPage(container, "repo-explorer", "The repo explorer page");
+        selectPane(container, "commit-pane");
         openRightSidebar(container);
-        expect(elementWithDataId(container, "git-commands-empty")).not.toBeUndefined();
+        expect(elementWithDataId(container, "git-commands-empty")?.textContent).toBe("This pane has run no Git commands.");
     });
 
     test("stops listening for task events when it is removed", async () => {

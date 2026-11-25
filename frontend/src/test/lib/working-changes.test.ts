@@ -33,7 +33,7 @@ describe("readWorkingChanges", () => {
         expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t1",
             taskType: "working-changes",
-            source: "repo-explorer-page",
+            source: "changes-pane",
             data: {
                 repoPath: "/repo",
             },

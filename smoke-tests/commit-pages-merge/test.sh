@@ -98,7 +98,10 @@ wait_for_text "commit-title-$side_hash" "Side 1" 30
 
 # The right sidebar lists the git log that read the second page: from every branch and HEAD,
 # skipping the page already read, with `--` after HEAD.
+# The Commits link's click leaves the repo details pane active, so Right makes the commit pane
+# active for the right sidebar to list its commands.
 click right-sidebar-toggle
+press_key Right
 wait_for_text git-command-0-text "git log --no-show-signature --max-count=$PAGE_SIZE --skip=$PAGE_SIZE --branches --remotes HEAD --" 30
 click right-sidebar-toggle
 

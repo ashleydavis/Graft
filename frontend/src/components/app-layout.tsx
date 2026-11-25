@@ -10,7 +10,7 @@ import type { ITaskEvent } from "ziggy";
 import { PaneOrPage, selectedPaneOrPage } from "../lib/active-pane";
 import { ITrailStep, pageTrail } from "../lib/breadcrumb-trail";
 import { viewHelp } from "../lib/context-help";
-import { addGitCommand, IPageGitCommands, isGitCommandEvent, pageGitCommands } from "../lib/git-commands";
+import { addGitCommand, IPageGitCommands, isGitCommandEvent, selectedGitCommands } from "../lib/git-commands";
 import { openPage } from "../lib/navigation";
 import { ActivePaneContext } from "./active-pane";
 import { CommandPalette } from "./command-palette";
@@ -83,7 +83,8 @@ export function useSavedSwitch(stateKey: string, description: string): [boolean,
 // through PaneTrailContext, so every page gets its trail without drawing it itself. It keeps the
 // Git commands every page has run for as long as the app runs, listening whether the right sidebar
 // is open or not, so closing a pane or the sidebar or moving to another page loses none, and the
-// right sidebar shows the commands of the page that is open. It holds the keyboard shortcuts
+// right sidebar shows the commands of the active pane, or of the page that is open while the page
+// has no active pane. It holds the keyboard shortcuts
 // overlay, so `?` shows it over every page, and the command palette, so Ctrl+Shift+P shows it over
 // every page. It keeps the active pane the page sets through ActivePaneContext and works out the
 // selected pane or page from it and the page the router shows, so the command palette lists that
@@ -145,7 +146,7 @@ export function AppLayout(): JSX.Element {
                     </PaneTrailContext.Provider>
                 </div>
                 <RightSidebar isOpen={isRightSidebarOpen}>
-                    <GitCommandsPanel pageCommands={pageGitCommands(gitCommandHistory, location.pathname)} />
+                    <GitCommandsPanel commands={selectedGitCommands(gitCommandHistory, location.pathname, activePane)} isPane={activePane !== undefined} />
                     <HelpPane help={viewHelp(selectedPaneOrPage(location.pathname, activePane))} />
                 </RightSidebar>
             </div>

@@ -7,10 +7,11 @@
 
 import { act, render, RenderResult, screen } from "@testing-library/react";
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
-import { createElement, JSX } from "react";
+import { createElement, JSX, useEffect } from "react";
 import type { ITaskEvent, IZiggyBridge } from "ziggy";
 import { AppLayout } from "../components/app-layout";
 import { useActivePane } from "../components/active-pane";
+import { PaneOrPage } from "../lib/active-pane";
 import { AppTheme, systemDarkQuery } from "../components/app-theme";
 import { usePaneTrail } from "../components/pane-trail";
 import { RepoProvider } from "../components/repo-context";
@@ -57,12 +58,23 @@ export function sendTaskEvent(event: ITaskEvent<unknown>): void {
 // A mock of the repo explorer page, with a button that puts the commit pane's step in the
 // breadcrumb trail as the page does when the commit pane opens, so a test can check the layout
 // draws the pane steps a page sets, and a button that makes the commit pane the active pane, so a
-// test can check the command palette lists the active pane's commands first.
+// test can check the command palette lists the active pane's commands first. It has a button for
+// each of the repo details pane, the commit pane and the commit details pane that makes it the
+// active pane, and it clears the active pane when it closes as the page does, so a test can check
+// the right sidebar follows the active pane.
 //
 export function MockRepoExplorerPage(): JSX.Element {
     const { setPaneSteps } = usePaneTrail();
     const { setActivePane } = useActivePane();
+    useEffect(() => {
+        return () => setActivePane(undefined);
+    }, []);
     return createElement("div", null,
+        ...["repo-details-pane", "commit-pane", "commit-details-pane"].map(pane => createElement("button", {
+            key: pane,
+            "data-id": `mock-select-${pane}`,
+            onClick: () => setActivePane(pane as PaneOrPage),
+        }, `Select the ${pane}`)),
         createElement("p", null, "The repo explorer page"),
         createElement("button", {
             "data-id": "mock-open-pane",

@@ -60,7 +60,7 @@ describe("readCommitPage", () => {
         expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t1",
             taskType: "commits",
-            source: "repo-explorer-page",
+            source: "commit-pane",
             data: {
                 repoPath: "/repo",
                 pageSize: 50,
@@ -107,7 +107,7 @@ describe("readCommitPage later pages", () => {
         expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t2",
             taskType: "commits",
-            source: "repo-explorer-page",
+            source: "commit-pane",
             data: {
                 repoPath: "/repo",
                 pageSize: 50,

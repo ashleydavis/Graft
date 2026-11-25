@@ -1,30 +1,22 @@
 //
-// Keeps the Git commands each page has run and how long each took, from the events the backend's
-// Git interface function sends as each `git` ends, so the help panel in the right sidebar can show
-// them.
+// Keeps the Git commands each pane and page has run and how long each took, from the events the
+// backend's Git interface function sends as each `git` ends, so the help panel in the right sidebar
+// can show those of the selected pane or page.
 //
 
 //
-// The most commands kept for one page. A page that runs more, such as one where many commits are
-// opened, keeps the most recent ones. The panel's total time adds up every command kept, and the
-// panel lists the most recent COMMANDS_SHOWN_MAX of them.
+// The most commands kept for one pane or page. A pane that runs more, such as the commit details
+// pane as many commits are opened, keeps the most recent ones. The panel's total time adds up every
+// command kept, and the panel lists the most recent COMMANDS_SHOWN_MAX of them.
 //
 export const MAX_COMMANDS_PER_PAGE = 20;
 
 //
-// The most commands the panel shows for one page. The page's most recent commands are the ones
+// The most commands the panel shows for one pane or page. Its most recent commands are the ones
 // that read what the user opened last, such as a file's diff or a commit's changed files, so two
-// of them show where the page's newest content came from without filling the sidebar.
+// of them show where its newest content came from without filling the sidebar.
 //
 export const COMMANDS_SHOWN_MAX = 2;
-
-//
-// The source each page queues its tasks under, by the page's path, so the help panel shows the
-// commands of the page that is open. Only the pages listed here run Git commands.
-//
-const PAGE_TASK_SOURCES: Record<string, string> = {
-    "/repo-explorer": "repo-explorer-page",
-};
 
 //
 // The event the backend's Git interface function sends for each `git` it ran. The backend writes
@@ -45,7 +37,7 @@ export interface IGitCommandEvent {
 }
 
 //
-// One command a page ran and how long its most recent run took.
+// One command a pane or page ran and how long its most recent run took.
 //
 export interface IGitCommandRun {
     // The Git command, as it runs in a terminal in the repo.
@@ -56,7 +48,7 @@ export interface IGitCommandRun {
 }
 
 //
-// The Git commands one page has run.
+// The Git commands one pane or page has run.
 //
 export interface IPageGitCommands {
     // The `cd` command that moves a terminal into the repo the last command ran in.
@@ -89,11 +81,11 @@ export function isGitCommandEvent(value: unknown): value is IGitCommandEvent {
 }
 
 //
-// Adds the command a task of the source ran to the page's commands, as the most recent one, and
-// returns the new history, leaving the old one as it was so React sees the change. A command the
-// page ran before moves to the front with its new duration rather than showing twice, because the
-// page shows what its latest run read. The oldest is dropped once the page has more than
-// MAX_COMMANDS_PER_PAGE.
+// Adds the command a task of the source ran to the source's commands, as the most recent one, and
+// returns the new history, leaving the old one as it was so React sees the change. The source is
+// the pane or page that queued the task. A command the source ran before moves to the front with
+// its new duration rather than showing twice, because the pane or page shows what its latest run
+// read. The oldest is dropped once the source has more than MAX_COMMANDS_PER_PAGE.
 //
 export function addGitCommand(history: ReadonlyMap<string, IPageGitCommands>, source: string, event: IGitCommandEvent): ReadonlyMap<string, IPageGitCommands> {
     const earlierCommands = history.get(source)?.commands ?? [];
@@ -111,27 +103,30 @@ export function addGitCommand(history: ReadonlyMap<string, IPageGitCommands>, so
 }
 
 //
-// Reads the commands the page at the path has run, or undefined when it has run none.
+// Reads the commands the active pane has run, or, while the page shown has no active pane, those
+// kept under the page's path, or undefined when it has run none. A pane queues its tasks under its
+// name (lib/panes.ts), so the Git commands panel follows the pane the keys act on, and while no
+// pane is active it shows the page's own commands.
 //
-export function pageGitCommands(history: ReadonlyMap<string, IPageGitCommands>, pagePath: string): IPageGitCommands | undefined {
-    const source = PAGE_TASK_SOURCES[pagePath];
-    if (source === undefined) {
-        return undefined;
+export function selectedGitCommands(history: ReadonlyMap<string, IPageGitCommands>, pagePath: string, activePane: string | undefined): IPageGitCommands | undefined {
+    if (activePane !== undefined) {
+        return history.get(activePane);
     }
-    return history.get(source);
+    return history.get(pagePath);
 }
 
 //
-// Picks the commands the panel shows for the page: its most recent ones, up to COMMANDS_SHOWN_MAX,
-// the most recent first. The rest stay in the page's commands so the total time covers them too.
+// Picks the commands the panel shows for the pane or page: its most recent ones, up to
+// COMMANDS_SHOWN_MAX, the most recent first. The rest stay in its commands so the total time covers
+// them too.
 //
 export function shownGitCommands(pageCommands: IPageGitCommands): IGitCommandRun[] {
     return pageCommands.commands.slice(0, COMMANDS_SHOWN_MAX);
 }
 
 //
-// Adds up how long the page's commands took, so the help panel shows the total time of the Git
-// commands behind the page.
+// Adds up how long the pane's or page's commands took, so the help panel shows the total time of
+// the Git commands behind it.
 //
 export function totalDurationMs(pageCommands: IPageGitCommands): number {
     return pageCommands.commands.reduce((total, run) => total + run.durationMs, 0);

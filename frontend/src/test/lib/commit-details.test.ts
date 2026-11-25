@@ -60,7 +60,7 @@ describe("readCommitDetails", () => {
         expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t1",
             taskType: "commit-details",
-            source: "repo-explorer-page",
+            source: "commit-details-pane",
             data: {
                 repoPath: "/repo",
                 hash: commitJson.hash,

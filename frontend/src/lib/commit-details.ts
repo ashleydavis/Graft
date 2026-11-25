@@ -6,6 +6,7 @@
 
 import type { IAddTask, ITaskCompletedEvent, ITaskResult } from "ziggy";
 import { commitFromJson, ICommit, IReadCommitsError, isCommitJson } from "./commits";
+import { COMMIT_DETAILS_PANE } from "./panes";
 import { err, ok, Result } from "./result";
 
 //
@@ -71,7 +72,7 @@ export function readCommitDetails(request: ICommitDetailsRequest, onRead: (resul
     const task: IAddTask = {
         taskId: request.taskId,
         taskType: "commit-details",
-        source: "repo-explorer-page",
+        source: COMMIT_DETAILS_PANE,
         data: {
             repoPath: request.repoPath,
             hash: request.hash,

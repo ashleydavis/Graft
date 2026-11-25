@@ -6,6 +6,7 @@
 
 import type { IAddTask, ITaskCompletedEvent, ITaskResult } from "ziggy";
 import { IReadCommitsError } from "./commits";
+import { FILE_PANE, WORKING_FILE_PANE } from "./panes";
 import { err, ok, Result } from "./result";
 
 //
@@ -43,7 +44,7 @@ export function readFileDiff(request: IFileDiffRequest, onRead: (result: Result<
     const task: IAddTask = {
         taskId: request.taskId,
         taskType: "file-diff",
-        source: "repo-explorer-page",
+        source: FILE_PANE,
         data: {
             repoPath: request.repoPath,
             hash: request.hash,
@@ -119,7 +120,7 @@ export function readWorkingFileDiff(request: IWorkingFileDiffRequest, onRead: (r
     const task: IAddTask = {
         taskId: request.taskId,
         taskType: "working-file-diff",
-        source: "repo-explorer-page",
+        source: WORKING_FILE_PANE,
         data: {
             repoPath: request.repoPath,
             path: request.path,

@@ -34,7 +34,7 @@ describe("commitStagedFiles", () => {
         expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t1",
             taskType: "commit",
-            source: "repo-explorer-page",
+            source: "changes-pane",
             data: {
                 repoPath: "/repo",
                 message: "Add the notes\n\nThe notes say what is next.",

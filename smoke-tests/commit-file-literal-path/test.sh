@@ -48,6 +48,9 @@ case "$diff_text" in
         ;;
 esac
 
+# The click leaves the commit details pane active, so Right makes the file pane active for the
+# right sidebar to list its diff command.
+press_key Right
 wait_for_text git-command-0-text "git diff-tree -r -p --root --no-commit-id $head_hash -- 'foo[1].txt'" 30
 command_text="$(text_of git-command-0-text)"
 case "$command_text" in

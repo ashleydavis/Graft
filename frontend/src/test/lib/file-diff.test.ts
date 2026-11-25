@@ -34,7 +34,7 @@ describe("readFileDiff", () => {
         expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t1",
             taskType: "file-diff",
-            source: "repo-explorer-page",
+            source: "file-pane",
             data: {
                 repoPath: "/repo",
                 hash: "abc123",
@@ -80,7 +80,7 @@ describe("readWorkingFileDiff", () => {
         expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t1",
             taskType: "working-file-diff",
-            source: "repo-explorer-page",
+            source: "working-file-pane",
             data: {
                 repoPath: "/repo",
                 path: "new.txt",

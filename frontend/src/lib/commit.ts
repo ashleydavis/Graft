@@ -5,6 +5,7 @@
 
 import type { IAddTask, ITaskCompletedEvent, ITaskResult } from "ziggy";
 import { IReadCommitsError } from "./commits";
+import { CHANGES_PANE } from "./panes";
 import { err, ok, Result } from "./result";
 
 //
@@ -39,7 +40,7 @@ export function commitStagedFiles(request: ICommitRequest, onDone: (result: Resu
     const task: IAddTask = {
         taskId: request.taskId,
         taskType: "commit",
-        source: "repo-explorer-page",
+        source: CHANGES_PANE,
         data: {
             repoPath: request.repoPath,
             message: request.message,

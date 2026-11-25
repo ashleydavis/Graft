@@ -1,10 +1,11 @@
 //
-// Tests the record of the Git commands each page has run: which task data is a Git command event,
-// how a command is added to a page's commands, which page's commands the help panel shows, which of
-// them it lists, the total time of a page's commands and how a duration is written.
+// Tests the record of the Git commands each pane and page has run: which task data is a Git command
+// event, how a command is added to a pane's or page's commands, which commands the help panel shows
+// for the selected pane or the page, which of them it lists, the total time of the commands and how
+// a duration is written.
 //
 
-import { addGitCommand, COMMANDS_SHOWN_MAX, formatDuration, IGitCommandEvent, IPageGitCommands, isGitCommandEvent, MAX_COMMANDS_PER_PAGE, pageGitCommands, shownGitCommands, totalDurationMs } from "../../lib/git-commands";
+import { addGitCommand, COMMANDS_SHOWN_MAX, formatDuration, IGitCommandEvent, IPageGitCommands, isGitCommandEvent, MAX_COMMANDS_PER_PAGE, selectedGitCommands, shownGitCommands, totalDurationMs } from "../../lib/git-commands";
 
 //
 // Makes the event for the command run in /repo that took 5 ms.
@@ -76,8 +77,8 @@ describe("isGitCommandEvent", () => {
 
 describe("addGitCommand", () => {
     test("starts a page's commands with the first one", () => {
-        const history = addGitCommand(new Map(), "repo-explorer-page", commandEvent("git log --max-count=50"));
-        expect(history.get("repo-explorer-page")).toEqual({
+        const history = addGitCommand(new Map(), "commit-pane", commandEvent("git log --max-count=50"));
+        expect(history.get("commit-pane")).toEqual({
             directoryCommand: "cd /repo",
             commands: [
                 {
@@ -89,30 +90,30 @@ describe("addGitCommand", () => {
     });
 
     test("puts the newest command first and leaves the old history as it was", () => {
-        const first = addGitCommand(new Map(), "repo-explorer-page", commandEvent("git log"));
-        const second = addGitCommand(first, "repo-explorer-page", commandEvent("git diff-tree abc"));
-        expect(pageCommandTexts(second, "repo-explorer-page")).toEqual(["git diff-tree abc", "git log"]);
-        expect(pageCommandTexts(first, "repo-explorer-page")).toEqual(["git log"]);
+        const first = addGitCommand(new Map(), "commit-pane", commandEvent("git log"));
+        const second = addGitCommand(first, "commit-pane", commandEvent("git diff-tree abc"));
+        expect(pageCommandTexts(second, "commit-pane")).toEqual(["git diff-tree abc", "git log"]);
+        expect(pageCommandTexts(first, "commit-pane")).toEqual(["git log"]);
     });
 
     test("moves a command run again to the front rather than showing it twice", () => {
         let history: ReadonlyMap<string, IPageGitCommands> = new Map();
-        history = addGitCommand(history, "repo-explorer-page", commandEvent("git log"));
-        history = addGitCommand(history, "repo-explorer-page", commandEvent("git diff-tree abc"));
-        history = addGitCommand(history, "repo-explorer-page", commandEvent("git log"));
-        expect(pageCommandTexts(history, "repo-explorer-page")).toEqual(["git log", "git diff-tree abc"]);
+        history = addGitCommand(history, "commit-pane", commandEvent("git log"));
+        history = addGitCommand(history, "commit-pane", commandEvent("git diff-tree abc"));
+        history = addGitCommand(history, "commit-pane", commandEvent("git log"));
+        expect(pageCommandTexts(history, "commit-pane")).toEqual(["git log", "git diff-tree abc"]);
     });
 
     test("keeps the duration of a command's most recent run", () => {
         let history: ReadonlyMap<string, IPageGitCommands> = new Map();
-        history = addGitCommand(history, "repo-explorer-page", commandEvent("git log"));
-        history = addGitCommand(history, "repo-explorer-page", {
+        history = addGitCommand(history, "commit-pane", commandEvent("git log"));
+        history = addGitCommand(history, "commit-pane", {
             type: "git-command",
             directoryCommand: "cd /repo",
             command: "git log",
             durationMs: 40,
         });
-        expect(history.get("repo-explorer-page")?.commands).toEqual([
+        expect(history.get("commit-pane")?.commands).toEqual([
             {
                 command: "git log",
                 durationMs: 40,
@@ -122,50 +123,58 @@ describe("addGitCommand", () => {
 
     test("keeps each source's commands apart", () => {
         let history: ReadonlyMap<string, IPageGitCommands> = new Map();
-        history = addGitCommand(history, "repo-explorer-page", commandEvent("git log"));
+        history = addGitCommand(history, "commit-pane", commandEvent("git log"));
         history = addGitCommand(history, "other-page", commandEvent("git status"));
-        expect(pageCommandTexts(history, "repo-explorer-page")).toEqual(["git log"]);
+        expect(pageCommandTexts(history, "commit-pane")).toEqual(["git log"]);
         expect(pageCommandTexts(history, "other-page")).toEqual(["git status"]);
     });
 
     test("takes the cd command of the most recent command", () => {
         let history: ReadonlyMap<string, IPageGitCommands> = new Map();
-        history = addGitCommand(history, "repo-explorer-page", commandEvent("git log"));
-        history = addGitCommand(history, "repo-explorer-page", {
+        history = addGitCommand(history, "commit-pane", commandEvent("git log"));
+        history = addGitCommand(history, "commit-pane", {
             type: "git-command",
             directoryCommand: "cd /other",
             command: "git log",
             durationMs: 5,
         });
-        expect(history.get("repo-explorer-page")?.directoryCommand).toBe("cd /other");
+        expect(history.get("commit-pane")?.directoryCommand).toBe("cd /other");
     });
 
     test("drops the oldest command once a page has more than the most it keeps", () => {
         let history: ReadonlyMap<string, IPageGitCommands> = new Map();
         for (let index = 0; index <= MAX_COMMANDS_PER_PAGE; index++) {
-            history = addGitCommand(history, "repo-explorer-page", commandEvent(`git show ${index}`));
+            history = addGitCommand(history, "commit-pane", commandEvent(`git show ${index}`));
         }
-        const commands = pageCommandTexts(history, "repo-explorer-page");
+        const commands = pageCommandTexts(history, "commit-pane");
         expect(commands?.length).toBe(MAX_COMMANDS_PER_PAGE);
         expect(commands?.[0]).toBe(`git show ${MAX_COMMANDS_PER_PAGE}`);
         expect(commands).not.toContain("git show 0");
     });
 });
 
-describe("pageGitCommands", () => {
-    test("gives the repo explorer page the commands its tasks ran", () => {
-        const history = addGitCommand(new Map(), "repo-explorer-page", commandEvent("git log"));
-        expect(pageGitCommands(history, "/repo-explorer")?.commands.map(run => run.command)).toEqual(["git log"]);
+describe("selectedGitCommands", () => {
+    test("gives the selected pane the commands its tasks ran", () => {
+        let history = addGitCommand(new Map(), "commit-pane", commandEvent("git log"));
+        history = addGitCommand(history, "commit-details-pane", commandEvent("git diff-tree abc"));
+        expect(selectedGitCommands(history, "/repo-explorer", "commit-pane")?.commands.map(run => run.command)).toEqual(["git log"]);
+        expect(selectedGitCommands(history, "/repo-explorer", "commit-details-pane")?.commands.map(run => run.command)).toEqual(["git diff-tree abc"]);
     });
 
-    test("gives undefined for the repo explorer page before it has run a command", () => {
-        expect(pageGitCommands(new Map(), "/repo-explorer")).toBeUndefined();
+    test("gives undefined for a selected pane that has run no command", () => {
+        const history = addGitCommand(new Map(), "commit-pane", commandEvent("git log"));
+        expect(selectedGitCommands(history, "/repo-explorer", "repo-details-pane")).toBeUndefined();
     });
 
-    test("gives undefined for a page that runs no Git commands", () => {
-        const history = addGitCommand(new Map(), "repo-explorer-page", commandEvent("git log"));
-        expect(pageGitCommands(history, "/")).toBeUndefined();
-        expect(pageGitCommands(history, "/help")).toBeUndefined();
+    test("gives the page's commands while no pane is selected", () => {
+        const history = addGitCommand(new Map(), "/help", commandEvent("git status"));
+        expect(selectedGitCommands(history, "/help", undefined)?.commands.map(run => run.command)).toEqual(["git status"]);
+    });
+
+    test("gives undefined for a page with no selected pane that runs no Git commands", () => {
+        const history = addGitCommand(new Map(), "commit-pane", commandEvent("git log"));
+        expect(selectedGitCommands(history, "/", undefined)).toBeUndefined();
+        expect(selectedGitCommands(history, "/repo-explorer", undefined)).toBeUndefined();
     });
 });
 

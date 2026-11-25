@@ -21,7 +21,7 @@ The changes pane is where the user gets the working tree's changes ready for the
 - When git refuses the commit, for example when a pre-commit hook fails, the commit section shows "Git did not make the commit:" followed by git's own error text between the message box and the button, with git's line breaks kept. The message stays in the box so the user can fix the problem and commit again. The error goes away when the next commit is made and when the pane opens again.
 - Git runs with Graft's own environment, so a commit uses the user's git config, such as their name and email address, and their hooks, as git in their terminal does.
 - The keys move through the changes pane as through the other panes (see [keys](../keys/detail.md)): Down and Up move through the Unstaged rows then the Staged rows, Enter opens the selected row's file pane and makes it active and Escape closes the file pane, then the changes pane.
-- Every Git command the changes pane runs goes through the Git interface function, so the right sidebar's Git commands panel counts it in the total time and lists it while it is one of the page's two most recent, as for the other panes.
+- Every Git command the changes pane runs goes through the Git interface function, so the right sidebar's Git commands panel counts it in the total time and lists it while it is one of the two most recent of the pane that ran it, the changes pane or its file pane, as for the other panes.
 
 ## Acceptance criteria
 

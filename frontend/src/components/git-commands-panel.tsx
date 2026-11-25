@@ -1,6 +1,6 @@
 //
-// The Git commands panel: the help panel in the right sidebar that shows the Git commands the open
-// page has run and how long they took.
+// The Git commands panel: the help panel in the right sidebar that shows the Git commands the
+// selected pane or the open page has run and how long they took.
 //
 
 import { faTerminal } from "@fortawesome/free-solid-svg-icons";
@@ -13,8 +13,11 @@ import { CopyButton } from "./copy-button";
 // The commands the panel shows.
 //
 export interface IGitCommandsPanelProps {
-    // The commands the open page has run, or undefined when it has run none.
-    pageCommands: IPageGitCommands | undefined;
+    // The commands the selected pane or the open page has run, or undefined when it has run none.
+    commands: IPageGitCommands | undefined;
+
+    // Whether the commands are a pane's, so the panel's text names a pane, or the page's.
+    isPane: boolean;
 }
 
 //
@@ -68,13 +71,18 @@ export function CommandBlock({ command, textDataId, copyDataId }: ICommandBlockP
 
 //
 // Shows a heading with a line on what the panel is for, then the `cd` into the repo above the
-// page's most recent Git commands, the ones shownGitCommands picks, each with a button that copies
-// it, so a user can run what Graft ran in a terminal from a short list. Under each command is how
-// long it took, and above the commands is the total time of every command the page keeps, so a
-// user sees what all the page's Git work cost. For a page that has run no commands it shows the
-// line "This page has run no Git commands." in a dashed box with a terminal icon.
+// pane's or page's most recent Git commands, the ones shownGitCommands picks, each with a button
+// that copies it, so a user can run what Graft ran in a terminal from a short list. Under each
+// command is how long it took, and above the commands is the total time of every command kept for
+// the pane or page, so a user sees what all its Git work cost. For a pane or page that has run no
+// commands it shows the line "This pane has run no Git commands." or "This page has run no Git
+// commands." in a dashed box with a terminal icon.
 //
-export function GitCommandsPanel({ pageCommands }: IGitCommandsPanelProps): JSX.Element {
+export function GitCommandsPanel({ commands, isPane }: IGitCommandsPanelProps): JSX.Element {
+    let source = "page";
+    if (isPane) {
+        source = "pane";
+    }
     return (
         <section data-id="git-commands-panel" className="flex flex-col gap-[var(--space-4)] p-[var(--space-4)]">
             <div className="flex flex-col gap-[var(--space-1)]">
@@ -85,25 +93,25 @@ export function GitCommandsPanel({ pageCommands }: IGitCommandsPanelProps): JSX.
                     </span>
                 </h2>
                 <p className="text-[length:var(--text-sm)] text-[var(--color-text-muted)]">
-                    The Git commands this page ran. Copy one to run it in a terminal.
+                    The Git commands this {source} ran. Copy one to run it in a terminal.
                 </p>
             </div>
-            {pageCommands === undefined && (
+            {commands === undefined && (
                 <div className="flex flex-col items-center gap-[var(--space-2)] rounded-[var(--radius-md)] border border-dashed border-[var(--color-border)] px-[var(--space-4)] py-[var(--space-6)] text-center text-[length:var(--text-sm)] text-[var(--color-text-muted)]">
                     <FontAwesomeIcon icon={faTerminal} className="text-[length:var(--icon-lg)]" />
                     <p data-id="git-commands-empty">
-                        This page has run no Git commands.
+                        This {source} has run no Git commands.
                     </p>
                 </div>
             )}
-            {pageCommands !== undefined && (
+            {commands !== undefined && (
                 <>
-                    <CommandBlock command={pageCommands.directoryCommand} textDataId="git-commands-directory" copyDataId="git-commands-directory-copy" />
+                    <CommandBlock command={commands.directoryCommand} textDataId="git-commands-directory" copyDataId="git-commands-directory-copy" />
                     <p className="text-[length:var(--text-sm)] text-[var(--color-text-muted)]">
-                        Total time: <span data-id="git-commands-total" className="text-[var(--color-text)]">{formatDuration(totalDurationMs(pageCommands))}</span>
+                        Total time: <span data-id="git-commands-total" className="text-[var(--color-text)]">{formatDuration(totalDurationMs(commands))}</span>
                     </p>
                     <ol data-id="git-commands-list" className="flex flex-col gap-[var(--space-2)]">
-                        {shownGitCommands(pageCommands).map((run, index) => (
+                        {shownGitCommands(commands).map((run, index) => (
                             <li key={run.command} data-id={`git-command-${index}`} className="flex flex-col gap-[var(--space-1)]">
                                 <CommandBlock command={run.command} textDataId={`git-command-${index}-text`} copyDataId={`git-command-${index}-copy`} />
                                 <p className="pl-[var(--space-3)] text-[length:var(--text-xs)] text-[var(--color-text-muted)]">

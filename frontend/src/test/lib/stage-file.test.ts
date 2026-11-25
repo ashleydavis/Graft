@@ -34,7 +34,7 @@ describe("toggleFileStaged", () => {
         expect(ziggy.addTask).toHaveBeenCalledWith({
             taskId: "t1",
             taskType: "stage-file",
-            source: "repo-explorer-page",
+            source: "changes-pane",
             data: {
                 repoPath: "/repo",
                 path: "notes.txt",

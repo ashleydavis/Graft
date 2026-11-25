@@ -4,6 +4,7 @@
 //
 
 import type { IAddTask, IJsonObject, ITaskCompletedEvent, ITaskResult } from "ziggy";
+import { COMMIT_PANE } from "./panes";
 import { err, ok, Result } from "./result";
 
 //
@@ -153,7 +154,7 @@ export function readCommitPage(request: ICommitPageRequest, onRead: (result: Res
     const task: IAddTask = {
         taskId: request.taskId,
         taskType: "commits",
-        source: "repo-explorer-page",
+        source: COMMIT_PANE,
         data: {
             repoPath: request.repoPath,
             pageSize: request.pageSize,

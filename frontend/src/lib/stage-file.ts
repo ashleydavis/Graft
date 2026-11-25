@@ -5,6 +5,7 @@
 
 import type { IAddTask, ITaskCompletedEvent, ITaskResult } from "ziggy";
 import { IReadCommitsError } from "./commits";
+import { CHANGES_PANE } from "./panes";
 import { err, ok, Result } from "./result";
 
 //
@@ -54,7 +55,7 @@ export function toggleFileStaged(request: IStageFileRequest, onDone: (result: Re
     const task: IAddTask = {
         taskId: request.taskId,
         taskType: stageTaskType(request.isStaged),
-        source: "repo-explorer-page",
+        source: CHANGES_PANE,
         data: {
             repoPath: request.repoPath,
             path: request.path,
