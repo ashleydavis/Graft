@@ -14,6 +14,7 @@ The Help page shows a user how to find their way around Graft: what each of its 
   - "Repo explorer": "Shows the open repo. Its Commits link lists the repo's commits."
   - "Help": "This page."
   - "About": "What Graft is, its version and where to find out more."
+- The pages and what each is for are read from `PAGE_HELP` in `frontend/src/lib/context-help.ts`, which the right sidebar's Help pane also reads (see [help-pane](../layout/help-pane/detail.md)), so the two never differ.
 - Under that it shows the section heading "Moving between pages" and a list of the ways to move between them, each with how it works:
   - "Left sidebar": "Repo explorer is at the top while a repo is open. Help and About are at the bottom. The menu button at the left of the top bar shrinks the sidebar to its icons and expands it again."
   - "Breadcrumb trail": "The top bar shows the open repo and the page you are on. On the Help and About pages, click the page's name to switch between them."

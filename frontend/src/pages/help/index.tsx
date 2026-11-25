@@ -4,13 +4,15 @@
 
 import { JSX } from "react";
 import { KeyCaps } from "../../components/shortcuts-overlay";
+import { PAGE_HELP } from "../../lib/context-help";
 import { HelpEntry } from "./components/help-entry";
 
 //
 // Shows the heading "Help", a line saying what the page holds, then a section of Graft's pages
-// and what each is for and a section of the ways to move between them. The keyboard section names
-// `?`, the key of the keyboard shortcuts overlay, and leaves every other key to the overlay, which
-// shows each in the platform's own form, Ctrl on Linux and Windows and Cmd on macOS. The page is
+// and what each is for, read from PAGE_HELP, which the right sidebar's Help pane also reads, and a
+// section of the ways to move between them. The keyboard section names `?`, the key of the
+// keyboard shortcuts overlay, and leaves every other key to the overlay, which shows each in the
+// platform's own form, Ctrl on Linux and Windows and Cmd on macOS. The page is
 // laid out as the About page is, with the style guide's page title and section heading sizes, so
 // Graft's pages about the app look the same.
 //
@@ -30,18 +32,11 @@ export function HelpPage(): JSX.Element {
                     Pages
                 </h2>
                 <dl className="flex flex-col gap-[var(--space-3)]">
-                    <HelpEntry term="Welcome" dataId="help-welcome">
-                        The page Graft starts on. Its Open repo button opens a local Git repo.
-                    </HelpEntry>
-                    <HelpEntry term="Repo explorer" dataId="help-repo-explorer">
-                        Shows the open repo. Its Commits link lists the repo's commits.
-                    </HelpEntry>
-                    <HelpEntry term="Help" dataId="help-help">
-                        This page.
-                    </HelpEntry>
-                    <HelpEntry term="About" dataId="help-about">
-                        What Graft is, its version and where to find out more.
-                    </HelpEntry>
+                    {Object.values(PAGE_HELP).map(page => (
+                        <HelpEntry key={page.id} term={page.name} dataId={`help-${page.id}`}>
+                            {page.description}
+                        </HelpEntry>
+                    ))}
                 </dl>
             </section>
             <section data-id="help-moving-section" className="flex flex-col gap-[var(--space-3)]">

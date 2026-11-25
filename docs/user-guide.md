@@ -36,6 +36,8 @@ The button at the far right of the top bar slides the right sidebar in and out. 
 
 The button next to it, which shows the current theme's icon, opens the theme menu, where you pick Graft's colours: **Light**, **Dark** or **System**, which follows your system's light or dark theme. Graft starts on **System** and remembers your choice the next time it opens. The setting is `theme` in Graft's config file, `~/.config/graft/config.toml` on Linux and macOS and `%APPDATA%\Graft\config.toml` on Windows.
 
+Under the Git commands the right sidebar shows **Help** for what you are working in. On the repo explorer it follows the active pane, the one the keys act on: it names the pane, describes what it shows and lists the keys that work in it, drawn as keys, and what a click does there. It changes as soon as another pane becomes active. On every other page it names the page and describes what it is for, as the Help page does.
+
 Graft remembers whether the left sidebar is minimised and whether the right sidebar is open, and starts with them as you left them.
 
 ### Opening a repo

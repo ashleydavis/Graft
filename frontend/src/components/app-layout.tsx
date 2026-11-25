@@ -9,12 +9,14 @@ import { JSX, useEffect, useState } from "react";
 import type { ITaskEvent } from "ziggy";
 import { PaneOrPage, selectedPaneOrPage } from "../lib/active-pane";
 import { ITrailStep, pageTrail } from "../lib/breadcrumb-trail";
+import { viewHelp } from "../lib/context-help";
 import { addGitCommand, IPageGitCommands, isGitCommandEvent, pageGitCommands } from "../lib/git-commands";
 import { openPage } from "../lib/navigation";
 import { ActivePaneContext } from "./active-pane";
 import { CommandPalette } from "./command-palette";
 import { useRepoExplorerAction } from "./repo-explorer-action";
 import { GitCommandsPanel } from "./git-commands-panel";
+import { HelpPane } from "./help-pane";
 import { LeftSidebar } from "./left-sidebar";
 import { useNewWindowAction } from "./new-window-action";
 import { useOpenRepoAction } from "./open-repo-action";
@@ -85,7 +87,7 @@ export function useSavedSwitch(stateKey: string, description: string): [boolean,
 // overlay, so `?` shows it over every page, and the command palette, so Ctrl+Shift+P shows it over
 // every page. It keeps the active pane the page sets through ActivePaneContext and works out the
 // selected pane or page from it and the page the router shows, so the command palette lists that
-// pane or page's commands first. It calls the hook of each feature whose action works on
+// pane or page's commands first and the right sidebar's Help pane shows its help under the Git commands panel. It calls the hook of each feature whose action works on
 // every page, one line per feature, because the layout is inside both the router and the open
 // repo's context for as long as the window is open.
 //
@@ -143,6 +145,7 @@ export function AppLayout(): JSX.Element {
                 </div>
                 <RightSidebar isOpen={isRightSidebarOpen}>
                     <GitCommandsPanel pageCommands={pageGitCommands(gitCommandHistory, location.pathname)} />
+                    <HelpPane help={viewHelp(selectedPaneOrPage(location.pathname, activePane))} />
                 </RightSidebar>
             </div>
             <ShortcutsOverlay />

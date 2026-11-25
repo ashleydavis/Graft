@@ -428,3 +428,55 @@ describe("AppLayout's Git commands", () => {
         expect(taskEventListeners().length).toBe(0);
     });
 });
+
+describe("AppLayout's Help pane", () => {
+    //
+    // Opens the right sidebar.
+    //
+    function openRightSidebar(container: HTMLElement): void {
+        act(() => {
+            elementWithDataId(container, "right-sidebar-toggle")?.click();
+        });
+    }
+
+    test("the right sidebar shows the Help pane under the Git commands panel", async () => {
+        const container = await renderAppLayout("/repos/graft");
+        openRightSidebar(container);
+        const content = elementWithDataId(container, "right-sidebar-content");
+        expect(content?.children[0]).toBe(elementWithDataId(container, "git-commands-panel"));
+        expect(content?.children[1]).toBe(elementWithDataId(container, "help-pane"));
+        expect(elementWithDataId(container, "help-pane-heading")?.textContent).toBe("Help");
+    });
+
+    test("the Help pane shows the help of the page shown", async () => {
+        const container = await renderAppLayout("/repos/graft");
+        openRightSidebar(container);
+        expect(elementWithDataId(container, "help-pane-name")?.textContent).toBe("About");
+        act(() => {
+            elementWithDataId(container, "left-sidebar-help-link")?.click();
+        });
+        await screen.findByText("The Help page");
+        expect(elementWithDataId(container, "help-pane-name")?.textContent).toBe("Help");
+        expect(elementWithDataId(container, "help-pane-description")?.textContent).toBe("This page.");
+    });
+
+    test("the Help pane follows the repo explorer page's active pane, and the page once it closes", async () => {
+        const container = await renderAppLayout("/repos/graft");
+        openRightSidebar(container);
+        act(() => {
+            elementWithDataId(container, "left-sidebar-repo-explorer-link")?.click();
+        });
+        await screen.findByText("The repo explorer page");
+        expect(elementWithDataId(container, "help-pane-name")?.textContent).toBe("Repo explorer");
+        act(() => {
+            elementWithDataId(container, "mock-activate-commit-pane")?.click();
+        });
+        expect(elementWithDataId(container, "help-pane-name")?.textContent).toBe("Commit pane");
+        act(() => {
+            elementWithDataId(container, "left-sidebar-about-link")?.click();
+        });
+        await waitFor(() => {
+            expect(elementWithDataId(container, "help-pane-name")?.textContent).toBe("About");
+        });
+    });
+});
