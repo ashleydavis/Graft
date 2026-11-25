@@ -8,8 +8,9 @@ import { JSX } from "react";
 import { ICommit } from "../../../lib/commits";
 import { IDateFormatOptions } from "../../../lib/date-format";
 import { activePaneClass } from "./active-pane-style";
+import { CollapsedStrip } from "./collapse";
 import { CommitList } from "./commit-list";
-import { CloseButton, MaximiseButton, PaneHeader } from "./pane-header";
+import { CloseButton, collapseHandler, MaximiseButton, PaneHeader } from "./pane-header";
 import { paneWidthClass } from "./pane-width";
 
 //
@@ -43,6 +44,12 @@ export interface ICommitPaneProps {
     // Called when the user clicks the pane's maximise button.
     onToggleMaximise(): void;
 
+    // Whether the pane is collapsed into a narrow strip, which the pane draws in its place.
+    isCollapsed: boolean;
+
+    // Called when the user clicks the collapse button or the strip's restore button.
+    onToggleCollapse(): void;
+
     // The locale and time zone each commit's date is shown in.
     dateFormat: IDateFormatOptions;
 
@@ -62,12 +69,16 @@ export interface ICommitPaneProps {
 // the style guide's commit explorer shows it. The list scrolls inside the card below its header
 // when it is taller than the card. While the pane is maximised the card fills the repo explorer
 // instead. The card's border is in the style guide's active pane colour while the pane is active.
-// The header's buttons maximise the pane and restore it, and close it.
+// The header's buttons maximise the pane and restore it, and close it. While it is collapsed it
+// draws the strip with "Commits" down it in its place.
 //
-export function CommitPane({ commits, isLoading, error, hasReadLastPage, selectedHash, openHash, isActive, isMaximised, onToggleMaximise, dateFormat, onSelectCommit, onNearEnd, onClose }: ICommitPaneProps): JSX.Element {
+export function CommitPane({ commits, isLoading, error, hasReadLastPage, selectedHash, openHash, isActive, isMaximised, onToggleMaximise, isCollapsed, onToggleCollapse, dateFormat, onSelectCommit, onNearEnd, onClose }: ICommitPaneProps): JSX.Element {
+    if (isCollapsed) {
+        return <CollapsedStrip paneLabel="Commits" title="Commits" paneDataId="commit-pane" isActive={isActive} onRestore={onToggleCollapse} />;
+    }
     return (
         <section data-id="commit-pane" aria-label="Commits" className={`flex ${paneWidthClass("w-[min(850px,calc(100cqw-var(--space-6)*2))]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
-            <PaneHeader title="Commits" titleDataId="commit-pane-heading" action={(
+            <PaneHeader title="Commits" titleDataId="commit-pane-heading" collapseDataId="commit-pane-collapse" onCollapse={collapseHandler(isMaximised, onToggleCollapse)} action={(
                 <>
                     <MaximiseButton isMaximised={isMaximised} dataId="commit-pane-maximise" onToggleMaximise={onToggleMaximise} />
                     <CloseButton paneLabel="Commits" dataId="commit-pane-close" onClose={onClose} />

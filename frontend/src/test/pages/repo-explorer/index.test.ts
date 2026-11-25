@@ -29,6 +29,11 @@
 // drawn, and restore them. M is left to a text box and to a press with a modifier held. The
 // maximised pane stays active, its keys work, and closing it puts the other panes back. Hiding
 // and showing a pane never starts its opening or closing animation.
+// Each pane's collapse button and C fold it into a strip with its title and the strip's restore
+// button and C restore it. Left and Right move through a collapsed pane, whose strip shows the
+// active pane's border, Up and Down still act on it, a pane that closes while collapsed opens again
+// in full and C is left to a text box and to Shift, Ctrl, Alt and Cmd. The collapse button is hidden
+// while a pane is maximised.
 //
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -2357,5 +2362,162 @@ describe("scrollPaneIntoView", () => {
         scrollPaneIntoView(null, 0);
         scrollPaneIntoView(document.createElement("div"), 0);
         expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+});
+
+//
+// Lists the data-ids of the panes and strips the page draws, from left to right.
+//
+function paneIds(): (string | null)[] {
+    return paneElements().map(pane => pane.getAttribute("data-id"));
+}
+
+describe("RepoExplorerPage collapse", () => {
+    test("each pane's collapse button folds it into a strip with its title in its place and the strip's restore button restores it", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        expect(paneIds()).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane"]);
+
+        fireEvent.click(elementWithDataId("repo-details-pane-collapse"));
+        fireEvent.click(elementWithDataId("commit-pane-collapse"));
+        fireEvent.click(elementWithDataId("commit-details-pane-collapse"));
+        fireEvent.click(elementWithDataId("file-pane-collapse"));
+        expect(paneIds()).toEqual(["repo-details-pane-strip", "commit-pane-strip", "commit-details-pane-strip", "file-pane-strip"]);
+        expect(elementWithDataId("repo-details-pane-strip-title").textContent).toBe("Repo repo");
+        expect(elementWithDataId("commit-pane-strip-title").textContent).toBe("Commits");
+        expect(elementWithDataId("commit-details-pane-strip-title").textContent).toBe("Commit 1111111");
+        expect(elementWithDataId("file-pane-strip-title").textContent).toBe("README.md");
+
+        fireEvent.click(elementWithDataId("commit-pane-restore"));
+        expect(paneIds()).toEqual(["repo-details-pane-strip", "commit-pane", "commit-details-pane-strip", "file-pane-strip"]);
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        fireEvent.click(elementWithDataId("repo-details-pane-restore"));
+        fireEvent.click(elementWithDataId("commit-details-pane-restore"));
+        fireEvent.click(elementWithDataId("file-pane-restore"));
+        expect(paneIds()).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane"]);
+        expect(elementWithDataId("file-diff-loading").textContent).toBe("Loading the diff.");
+    });
+
+    test("clicking a collapse button makes its pane active, so its strip has the active pane's border", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        fireEvent.click(elementWithDataId("commit-details-pane-collapse"));
+        expect(activePaneIds()).toEqual(["commit-details-pane-strip"]);
+    });
+
+    test("C collapses the active pane and C again restores it", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        pressKey("c");
+        expect(paneIds()).toEqual(["repo-details-pane", "commit-pane-strip", "commit-details-pane"]);
+        expect(activePaneIds()).toEqual(["commit-pane-strip"]);
+        pressKey("c");
+        expect(paneIds()).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane"]);
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+    });
+
+    test("C collapses and restores the repo details pane, the commit details pane and the file pane", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        pressKey("ArrowRight");
+        pressKey("c");
+        pressKey("ArrowLeft");
+        pressKey("c");
+        pressKey("ArrowLeft");
+        pressKey("ArrowLeft");
+        pressKey("C");
+        expect(paneIds()).toEqual(["repo-details-pane-strip", "commit-pane", "commit-details-pane-strip", "file-pane-strip"]);
+        pressKey("c");
+        pressKey("ArrowRight");
+        pressKey("ArrowRight");
+        pressKey("c");
+        pressKey("ArrowRight");
+        pressKey("c");
+        expect(paneIds()).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane"]);
+    });
+
+    test("Left and Right move through a collapsed pane, whose strip has the active pane's border while it is active", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        pressKey("c");
+        pressKey("ArrowRight");
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        pressKey("ArrowLeft");
+        expect(activePaneIds()).toEqual(["commit-pane-strip"]);
+        pressKey("ArrowLeft");
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+        pressKey("ArrowRight");
+        pressKey("ArrowRight");
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        expect(paneIds()).toEqual(["repo-details-pane", "commit-pane-strip", "commit-details-pane"]);
+    });
+
+    test("C collapses and restores the changes pane and a changed file's pane", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        fireEvent.click(elementWithDataId("change-unstaged-notes.txt"));
+        fireEvent.click(elementWithDataId("changes-pane-collapse"));
+        fireEvent.click(elementWithDataId("file-pane-collapse"));
+        expect(paneIds()).toEqual(["repo-details-pane", "changes-pane-strip", "file-pane-strip"]);
+        expect(elementWithDataId("changes-pane-strip-title").textContent).toBe("Changes");
+        expect(elementWithDataId("file-pane-strip-title").textContent).toBe("notes.txt");
+        pressKey("c");
+        pressKey("ArrowLeft");
+        pressKey("c");
+        expect(paneIds()).toEqual(["repo-details-pane", "changes-pane", "file-pane"]);
+    });
+
+    test("a pane that closes while collapsed opens again in full", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("commit-details-pane-collapse"));
+        pressKey("Escape");
+        expect(paneIds()).toEqual(["repo-details-pane", "commit-pane"]);
+        pressKey("Enter");
+        expect(paneIds()).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane"]);
+    });
+
+    test("leaves C to a text box that has the focus", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        act(() => {
+            fireEvent.keyDown(elementWithDataId("commit-message"), {
+                key: "c",
+            });
+        });
+        expect(paneIds()).toEqual(["repo-details-pane", "changes-pane"]);
+    });
+
+    test("does nothing for C held with Shift, Ctrl, Alt or Cmd", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        for (const modifier of ["shiftKey", "ctrlKey", "altKey", "metaKey"]) {
+            act(() => {
+                fireEvent.keyDown(document.activeElement ?? document.body, {
+                    key: "C",
+                    [modifier]: true,
+                });
+            });
+        }
+        expect(paneIds()).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane"]);
+    });
+
+    test("Down in a collapsed commit pane still opens the next commit's details", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("ArrowDown");
+        pressKey("Enter");
+        pressKey("ArrowLeft");
+        pressKey("c");
+        pressKey("ArrowDown");
+        expect((ziggy.addTask as jest.Mock).mock.calls[2][0].data).toEqual({
+            repoPath: "/repo",
+            hash: secondCommitJson.hash,
+        });
+        expect(activePaneIds()).toEqual(["commit-pane-strip"]);
     });
 });

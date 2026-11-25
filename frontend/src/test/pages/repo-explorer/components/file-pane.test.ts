@@ -7,6 +7,7 @@
 // with the card kept to its border.
 // It checks the maximise button reports a click, sits before the close button and the card fills
 // the repo explorer while maximised.
+// It checks the collapse button and the strip drawn while the pane is collapsed.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
@@ -50,6 +51,8 @@ function renderPane(onClose: jest.Mock, isActive: boolean): void {
         isActive,
         isMaximised: false,
         onToggleMaximise: jest.fn(),
+        isCollapsed: false,
+        onToggleCollapse: jest.fn(),
         onClose,
     }));
 }
@@ -71,6 +74,8 @@ describe("FilePane", () => {
             isActive: false,
             isMaximised: false,
             onToggleMaximise: jest.fn(),
+            isCollapsed: false,
+            onToggleCollapse: jest.fn(),
             onClose: jest.fn(),
         }));
         const title = document.querySelector("[data-id=\"file-pane-path\"]");
@@ -180,6 +185,8 @@ describe("FilePane maximise button", () => {
             isActive: true,
             isMaximised: true,
             onToggleMaximise,
+            isCollapsed: false,
+            onToggleCollapse: jest.fn(),
             onClose: jest.fn(),
         }));
         expect(document.querySelector("[data-id=\"file-pane\"]")?.className).toContain(maximisedPaneClasses);
@@ -188,5 +195,51 @@ describe("FilePane maximise button", () => {
         expect(button.getAttribute("data-id")).toBe("file-pane-maximise");
         fireEvent.click(button);
         expect(onToggleMaximise).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("FilePane collapse", () => {
+    //
+    // Renders the pane for docs/guide/setup.md in the commit, collapsed or not, with the collapse
+    // callback.
+    //
+    function renderCollapsiblePane(isCollapsed: boolean, onToggleCollapse: jest.Mock): void {
+        render(createElement(FilePane, {
+            repoPath: "/repo",
+            hash: commitHash,
+            path: "docs/guide/setup.md",
+            isActive: false,
+            isMaximised: false,
+            onToggleMaximise: jest.fn(),
+            isCollapsed,
+            onToggleCollapse,
+            onClose: jest.fn(),
+        }));
+    }
+
+    test("shows its collapse button before its maximise button and reports a click on it", () => {
+        installFakeTaskZiggy();
+        const onToggleCollapse = jest.fn();
+        renderCollapsiblePane(false, onToggleCollapse);
+        const collapse = document.querySelector<HTMLElement>("[data-id=\"file-pane-collapse\"]");
+        expect(collapse?.nextElementSibling?.getAttribute("data-id")).toBe("file-pane-maximise");
+
+        //
+        // The cast is safe because the expect above fails the test when the button is not drawn, and a
+        // type guard cannot narrow it because Jest's expect does not narrow the type.
+        //
+        fireEvent.click(collapse as HTMLElement);
+        expect(onToggleCollapse).toHaveBeenCalledTimes(1);
+    });
+
+    test("draws the strip with the file's name down it in its place while it is collapsed, and reports a click on its restore button", () => {
+        installFakeTaskZiggy();
+        const onToggleCollapse = jest.fn();
+        renderCollapsiblePane(true, onToggleCollapse);
+        expect(document.querySelector("[data-id=\"file-pane\"]")).toBeNull();
+        expect(document.querySelector("[data-id=\"file-pane-strip\"]")?.getAttribute("aria-label")).toBe("File diff");
+        expect(document.querySelector("[data-id=\"file-pane-strip-title\"]")?.textContent).toBe("setup.md");
+        fireEvent.click(screen.getByLabelText("Restore file diff"));
+        expect(onToggleCollapse).toHaveBeenCalledTimes(1);
     });
 });

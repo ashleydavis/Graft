@@ -45,6 +45,8 @@ function renderPane(commit: ICommit, isActive: boolean, onClose: jest.Mock): voi
         isActive,
         isMaximised: false,
         onToggleMaximise: jest.fn(),
+        isCollapsed: false,
+        onToggleCollapse: jest.fn(),
         dateFormat: {
             locale: "en-US",
             timeZone: "UTC",
@@ -125,6 +127,56 @@ describe("CommitInfoPane", () => {
         renderPane(commitWith([], ""), false, onClose);
         fireEvent.click(elementWithDataId("commit-info-close"));
         expect(onClose).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("CommitInfoPane collapse and maximise", () => {
+    test("shows a collapse button, a maximise button and a close button in that order", () => {
+        renderPane(commitWith([], ""), false, jest.fn());
+        const collapse = elementWithDataId("commit-info-pane-collapse");
+        expect(collapse.nextElementSibling?.getAttribute("data-id")).toBe("commit-info-maximise");
+        expect(elementWithDataId("commit-info-maximise").nextElementSibling?.getAttribute("data-id")).toBe("commit-info-close");
+    });
+
+    test("draws the strip with Commit details down it in its place while it is collapsed and reports a click on its restore button", () => {
+        const onToggleCollapse = jest.fn();
+        render(createElement(CommitInfoPane, {
+            commit: commitWith([], ""),
+            isActive: true,
+            isMaximised: false,
+            onToggleMaximise: jest.fn(),
+            isCollapsed: true,
+            onToggleCollapse,
+            dateFormat: {
+                locale: "en-US",
+                timeZone: "UTC",
+            },
+            onClose: jest.fn(),
+        }));
+        expect(document.querySelector("[data-id=\"commit-info-pane\"]")).toBeNull();
+        expect(elementWithDataId("commit-info-pane-strip-title").textContent).toBe("Commit details");
+        fireEvent.click(elementWithDataId("commit-info-pane-restore"));
+        expect(onToggleCollapse).toHaveBeenCalledTimes(1);
+    });
+
+    test("fills the repo explorer and offers to restore the panes while it is maximised, with no collapse button", () => {
+        const onToggleMaximise = jest.fn();
+        render(createElement(CommitInfoPane, {
+            commit: commitWith([], ""),
+            isActive: true,
+            isMaximised: true,
+            onToggleMaximise,
+            isCollapsed: false,
+            onToggleCollapse: jest.fn(),
+            dateFormat: {
+                locale: "en-US",
+                timeZone: "UTC",
+            },
+            onClose: jest.fn(),
+        }));
+        expect(document.querySelector("[data-id=\"commit-info-pane-collapse\"]")).toBeNull();
+        fireEvent.click(elementWithDataId("commit-info-maximise"));
+        expect(onToggleMaximise).toHaveBeenCalledTimes(1);
     });
 });
 

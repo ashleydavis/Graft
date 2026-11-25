@@ -6,6 +6,8 @@
 // It checks M and the maximise state: maximising and restoring a pane, Left, Right and Escape
 // while a pane is maximised, and putting the panes back when the maximised pane closes or stops
 // being active.
+// It checks C and the collapsed panes: collapsing and restoring a pane, the panes that stay
+// collapsed as panes close and moving through a collapsed pane with the keys.
 //
 
 import {
@@ -29,9 +31,12 @@ import {
     IRepoExplorerItems,
     IRepoExplorerState,
     isCopyKey,
+    isCollapseKey,
     isExplorerKey,
     isExplorerKeyTarget,
+    isPaneCollapsed,
     itemAfterMove,
+    keepOpenPanesCollapsed,
     moveCommitSelection,
     moveSelection,
     moveSelectionByPage,
@@ -54,6 +59,7 @@ import {
     keepMaximisedPaneShown,
     MAXIMISE_KEY,
     toggleMaximise,
+    toggleCollapsedPane,
 } from "../../lib/repo-explorer";
 
 //
@@ -95,6 +101,7 @@ const commitsOpen: IRepoExplorerState = {
     selectedChange: undefined,
     openChange: undefined,
     maximisedPaneIndex: undefined,
+    collapsedPanes: [],
 };
 
 //
@@ -140,7 +147,7 @@ const allOpen: IRepoExplorerState = {
 };
 
 describe("initialRepoExplorerState", () => {
-    test("is the repo details pane alone, active, with nothing selected", () => {
+    test("is the repo details pane alone, active, with nothing selected or collapsed", () => {
         expect(initialRepoExplorerState).toEqual({
             activePaneIndex: 0,
             selectedLink: undefined,
@@ -152,14 +159,15 @@ describe("initialRepoExplorerState", () => {
             selectedChange: undefined,
             openChange: undefined,
             maximisedPaneIndex: undefined,
+            collapsedPanes: [],
         });
         expect(Object.keys(initialRepoExplorerState)).toContain("maximisedPaneIndex");
     });
 });
 
 describe("isExplorerKey", () => {
-    test("is true for the arrow keys, Page Up, Page Down, Home, End, Enter, Escape and M in either case", () => {
-        for (const key of ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", "Enter", "Escape", "m", "M"]) {
+    test("is true for the arrow keys, Page Up, Page Down, Home, End, Enter, Escape, M and C in either case", () => {
+        for (const key of ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", "Enter", "Escape", "m", "M", "c", "C"]) {
             expect(isExplorerKey(key)).toBe(true);
         }
     });
@@ -223,7 +231,7 @@ describe("itemAfterMove", () => {
 });
 
 describe("selectLink", () => {
-    test("selects and opens the link with no commit or file, with the repo details pane active", () => {
+    test("selects and opens the link with no commit or file and no pane collapsed, with the repo details pane active", () => {
         expect(selectLink(COMMITS_LINK)).toEqual({
             activePaneIndex: 0,
             selectedLink: COMMITS_LINK,
@@ -235,6 +243,7 @@ describe("selectLink", () => {
             selectedChange: undefined,
             openChange: undefined,
             maximisedPaneIndex: undefined,
+            collapsedPanes: [],
         });
     });
 
@@ -1623,5 +1632,174 @@ describe("explorerStateAfterKey with a pane maximised", () => {
         expect(closed.openPath).toBeUndefined();
         expect(closed.maximisedPaneIndex).toBeUndefined();
         expect(closed.activePaneIndex).toBe(1);
+    });
+});
+
+//
+// The explorer of allOpen with the commit pane collapsed and the commit details pane active.
+//
+const commitPaneCollapsed: IRepoExplorerState = {
+    ...allOpen,
+    activePaneIndex: 1,
+    collapsedPanes: [1],
+};
+
+describe("isCollapseKey", () => {
+    test("is true for C in either case", () => {
+        expect(isCollapseKey("c")).toBe(true);
+        expect(isCollapseKey("C")).toBe(true);
+    });
+
+    test("is false for any other key", () => {
+        expect(isCollapseKey("x")).toBe(false);
+        expect(isCollapseKey("Enter")).toBe(false);
+    });
+});
+
+describe("hasKeyModifier with C", () => {
+    test("counts Shift with C, as it does with M", () => {
+        const press = {
+            key: "C",
+            ctrlKey: false,
+            metaKey: false,
+            altKey: false,
+            shiftKey: true,
+        };
+        expect(hasKeyModifier(press)).toBe(true);
+        expect(hasKeyModifier({
+            ...press,
+            key: "c",
+        })).toBe(true);
+    });
+});
+
+describe("toggleCollapsedPane", () => {
+    test("collapses a pane and restores it, leaving the active pane and the other collapsed panes as they are", () => {
+        const collapsed = toggleCollapsedPane(allOpen, 2);
+        expect(collapsed).toEqual({
+            ...allOpen,
+            collapsedPanes: [2],
+        });
+        expect(isPaneCollapsed(collapsed, 2)).toBe(true);
+        expect(isPaneCollapsed(collapsed, 1)).toBe(false);
+        const both = toggleCollapsedPane(collapsed, 0);
+        expect(both.collapsedPanes).toEqual([2, 0]);
+        const restored = toggleCollapsedPane(both, 2);
+        expect(restored).toEqual({
+            ...allOpen,
+            collapsedPanes: [0],
+        });
+        expect(isPaneCollapsed(restored, 2)).toBe(false);
+    });
+});
+
+describe("keepOpenPanesCollapsed", () => {
+    test("takes the panes that have closed out of the collapsed panes and keeps the open ones", () => {
+        expect(keepOpenPanesCollapsed({
+            ...detailsOpen,
+            collapsedPanes: [0, 3, 2],
+        }).collapsedPanes).toEqual([0, 2]);
+    });
+});
+
+describe("collapsed panes as panes close", () => {
+    test("closing the file pane takes it out of the collapsed panes and keeps the others", () => {
+        expect(closeFilePane({
+            ...allOpen,
+            collapsedPanes: [1, 3],
+        }).collapsedPanes).toEqual([1]);
+    });
+
+    test("closing the commit details pane takes it and the file pane out of the collapsed panes", () => {
+        expect(closeCommitDetailsPane({
+            ...allOpen,
+            collapsedPanes: [3, 2, 1],
+        }).collapsedPanes).toEqual([1]);
+    });
+
+    test("opening another commit closes the file pane and takes it out of the collapsed panes", () => {
+        expect(selectCommit({
+            ...allOpen,
+            collapsedPanes: [2, 3],
+        }, "ccc").collapsedPanes).toEqual([2]);
+    });
+
+    test("closing the link's pane leaves only the repo details pane collapsed, when it was", () => {
+        expect(closeLinkPane({
+            ...allOpen,
+            collapsedPanes: [1, 0, 2],
+        }).collapsedPanes).toEqual([0]);
+    });
+
+    test("closing a changed file's pane takes it out of the collapsed panes", () => {
+        expect(closeChangeFilePane({
+            ...changeFileOpen,
+            collapsedPanes: [2, 1],
+        }).collapsedPanes).toEqual([1]);
+    });
+
+    test("Enter on a link of the collapsed repo details pane opens its pane afresh and leaves only the repo details pane collapsed", () => {
+        expect(openSelection({
+            ...allOpen,
+            activePaneIndex: 0,
+            selectedLink: CHANGES_LINK,
+            collapsedPanes: [0, 1, 2],
+        })).toEqual({
+            ...selectLink(CHANGES_LINK),
+            activePaneIndex: 1,
+            collapsedPanes: [0],
+        });
+    });
+
+    test("Escape closes the rightmost pane and takes it out of the collapsed panes", () => {
+        expect(explorerStateAfterKey({
+            ...allOpen,
+            collapsedPanes: [3],
+        }, "Escape", items).collapsedPanes).toEqual([]);
+    });
+});
+
+describe("explorerStateAfterKey with C", () => {
+    test("C collapses the active pane and C again restores it, in either case", () => {
+        const collapsed = explorerStateAfterKey(allOpen, "c", items);
+        expect(collapsed).toEqual({
+            ...allOpen,
+            collapsedPanes: [3],
+        });
+        expect(explorerStateAfterKey(collapsed, "C", items)).toEqual({
+            ...allOpen,
+            collapsedPanes: [],
+        });
+    });
+
+    test("C collapses the repo details pane while it is active", () => {
+        expect(explorerStateAfterKey(initialRepoExplorerState, "c", items).collapsedPanes).toEqual([0]);
+    });
+
+    test("Left and Right move through a collapsed pane, which can be the active pane", () => {
+        const onCollapsed = explorerStateAfterKey({
+            ...commitPaneCollapsed,
+            activePaneIndex: 2,
+        }, "ArrowLeft", items);
+        expect(onCollapsed.activePaneIndex).toBe(1);
+        expect(explorerStateAfterKey(onCollapsed, "ArrowLeft", items).activePaneIndex).toBe(0);
+        expect(explorerStateAfterKey(onCollapsed, "ArrowRight", items).activePaneIndex).toBe(2);
+        expect(onCollapsed.collapsedPanes).toEqual([1]);
+    });
+
+    test("Up and Down in a collapsed commit pane still move its selection and show the commit's details", () => {
+        const after = explorerStateAfterKey(commitPaneCollapsed, "ArrowDown", items);
+        expect(after.selectedHash).toBe("ccc");
+        expect(after.openHash).toBe("ccc");
+        expect(after.openPath).toBe(undefined);
+        expect(after.activePaneIndex).toBe(1);
+        expect(after.collapsedPanes).toEqual([1]);
+    });
+
+    test("Enter in a collapsed commit pane opens the selected commit's details and makes them active", () => {
+        const after = explorerStateAfterKey(commitPaneCollapsed, "Enter", items);
+        expect(after.openHash).toBe("bbb");
+        expect(after.activePaneIndex).toBe(2);
+        expect(after.collapsedPanes).toEqual([1]);
     });
 });

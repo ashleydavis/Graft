@@ -11,6 +11,8 @@
 // the colour, name and meaning of each change type and the text of the line counts.
 // It checks the maximise button reports a click, sits before the close button and the card fills
 // the repo explorer while maximised.
+// It checks the collapse button and the strip drawn while the pane is collapsed, which still reads
+// the commit.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
@@ -228,6 +230,8 @@ function paneElement(selectedPath: string | undefined, onSelectFile: jest.Mock, 
         isActive,
         isMaximised: false,
         onToggleMaximise: jest.fn(),
+        isCollapsed: false,
+        onToggleCollapse: jest.fn(),
         onSelectFile,
         onReadCommit,
         onClose,
@@ -547,6 +551,8 @@ describe("CommitDetailsPane maximise button", () => {
             isActive: true,
             isMaximised: true,
             onToggleMaximise,
+            isCollapsed: false,
+            onToggleCollapse: jest.fn(),
             onSelectFile: jest.fn(),
             onReadCommit: jest.fn(),
             onClose: jest.fn(),
@@ -557,5 +563,59 @@ describe("CommitDetailsPane maximise button", () => {
         expect(button.getAttribute("data-id")).toBe("commit-details-maximise");
         fireEvent.click(button);
         expect(onToggleMaximise).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("CommitDetailsPane collapse", () => {
+    //
+    // Makes the pane for the commit, collapsed or not, with the callbacks.
+    //
+    function collapsiblePane(isCollapsed: boolean, onToggleCollapse: jest.Mock, onReadCommit: jest.Mock): ReactElement {
+        return createElement(CommitDetailsPane, {
+            repoPath: "/repo",
+            hash: commitHash,
+            selectedPath: undefined,
+            openPath: undefined,
+            isActive: false,
+            isMaximised: false,
+            onToggleMaximise: jest.fn(),
+            isCollapsed,
+            onToggleCollapse,
+            onSelectFile: jest.fn(),
+            onReadCommit,
+            onClose: jest.fn(),
+        });
+    }
+
+    test("shows its collapse button before its close button and reports a click on it", () => {
+        installFakeTaskZiggy();
+        const onToggleCollapse = jest.fn();
+        render(collapsiblePane(false, onToggleCollapse, jest.fn()));
+        expect(elementWithDataId("commit-details-pane-collapse").nextElementSibling?.getAttribute("data-id")).toBe("commit-details-close");
+        fireEvent.click(elementWithDataId("commit-details-pane-collapse"));
+        expect(onToggleCollapse).toHaveBeenCalledTimes(1);
+    });
+
+    test("draws the strip with Commit and the short hash down it while it is collapsed and still reads the commit's files", () => {
+        const ziggy = installFakeTaskZiggy();
+        const onToggleCollapse = jest.fn();
+        const onReadCommit = jest.fn();
+        render(collapsiblePane(true, onToggleCollapse, onReadCommit));
+        expect(document.querySelector("[data-id=\"commit-details-pane\"]")).toBeNull();
+        expect(elementWithDataId("commit-details-pane-strip").getAttribute("aria-label")).toBe("Commit details");
+        expect(elementWithDataId("commit-details-pane-strip-title").textContent).toBe("Commit 1111111");
+        completeTask(ziggy, succeededResult([], ""));
+        expect(onReadCommit).toHaveBeenCalledTimes(1);
+        fireEvent.click(elementWithDataId("commit-details-pane-restore"));
+        expect(onToggleCollapse).toHaveBeenCalledTimes(1);
+    });
+
+    test("shows the commit it read while collapsed as soon as it is restored", () => {
+        const ziggy = installFakeTaskZiggy();
+        const { rerender } = render(collapsiblePane(true, jest.fn(), jest.fn()));
+        completeTask(ziggy, succeededResult([], ""));
+        rerender(collapsiblePane(false, jest.fn(), jest.fn()));
+        expect(elementWithDataId("commit-details-pane")).not.toBeNull();
+        expect((ziggy.addTask as jest.Mock).mock.calls.length).toBe(1);
     });
 });

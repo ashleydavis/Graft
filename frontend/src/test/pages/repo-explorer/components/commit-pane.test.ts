@@ -5,6 +5,7 @@
 // commit reports its hash and that its close button reports a close.
 // It checks the maximise button reports a click and the card fills the repo explorer while
 // maximised.
+// It checks the collapse button and the strip drawn while the pane is collapsed.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
@@ -61,6 +62,8 @@ function renderPane(isActive: boolean, onSelectCommit: jest.Mock, onClose: jest.
         isActive,
         isMaximised: false,
         onToggleMaximise: jest.fn(),
+        isCollapsed: false,
+        onToggleCollapse: jest.fn(),
         dateFormat: {
             locale: "en-US",
             timeZone: "UTC",
@@ -140,6 +143,8 @@ describe("CommitPane maximise button", () => {
             isActive: true,
             isMaximised: true,
             onToggleMaximise,
+            isCollapsed: false,
+            onToggleCollapse: jest.fn(),
             dateFormat: {
                 locale: "en-US",
                 timeZone: "UTC",
@@ -149,9 +154,75 @@ describe("CommitPane maximise button", () => {
             onClose: jest.fn(),
         }));
         expect(container.querySelector("[data-id=\"commit-pane\"]")?.className).toContain(maximisedPaneClasses);
+        expect(container.querySelector("[data-id=\"commit-pane-collapse\"]")).toBeNull();
         const button = screen.getByLabelText("Restore the pane");
         expect(button.getAttribute("data-id")).toBe("commit-pane-maximise");
         fireEvent.click(button);
         expect(onToggleMaximise).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("CommitPane collapse", () => {
+    test("reports a click on its collapse button in its header", () => {
+        const onToggleCollapse = jest.fn();
+        const { container } = render(createElement(CommitPane, {
+            commits: [commit],
+            isLoading: false,
+            error: undefined,
+            hasReadLastPage: false,
+            selectedHash: undefined,
+            openHash: undefined,
+            isActive: false,
+            isMaximised: false,
+            onToggleMaximise: jest.fn(),
+            isCollapsed: false,
+            onToggleCollapse,
+            dateFormat: {
+                locale: "en-US",
+                timeZone: "UTC",
+            },
+            onSelectCommit: jest.fn(),
+            onNearEnd: jest.fn(),
+            onClose: jest.fn(),
+        }));
+        const collapse = container.querySelector<HTMLElement>("[data-id=\"commit-pane-collapse\"]");
+        expect(collapse).not.toBeNull();
+
+        //
+        // The cast is safe because the expect above fails the test on null, and a type guard cannot
+        // narrow it because Jest's expect does not narrow the type.
+        //
+        fireEvent.click(collapse as HTMLElement);
+        expect(onToggleCollapse).toHaveBeenCalledTimes(1);
+    });
+
+    test("draws the strip with Commits down it in its place while it is collapsed, and reports a click on its restore button", () => {
+        const onToggleCollapse = jest.fn();
+        const { container } = render(createElement(CommitPane, {
+            commits: [commit],
+            isLoading: false,
+            error: undefined,
+            hasReadLastPage: false,
+            selectedHash: undefined,
+            openHash: undefined,
+            isActive: false,
+            isMaximised: false,
+            onToggleMaximise: jest.fn(),
+            isCollapsed: true,
+            onToggleCollapse,
+            dateFormat: {
+                locale: "en-US",
+                timeZone: "UTC",
+            },
+            onSelectCommit: jest.fn(),
+            onNearEnd: jest.fn(),
+            onClose: jest.fn(),
+        }));
+        expect(container.querySelector("[data-id=\"commit-pane\"]")).toBeNull();
+        expect(container.querySelector("[data-id=\"commit-list\"]")).toBeNull();
+        expect(container.querySelector("[data-id=\"commit-pane-strip\"]")?.getAttribute("aria-label")).toBe("Commits");
+        expect(container.querySelector("[data-id=\"commit-pane-strip-title\"]")?.textContent).toBe("Commits");
+        fireEvent.click(screen.getByLabelText("Restore commits"));
+        expect(onToggleCollapse).toHaveBeenCalledTimes(1);
     });
 });

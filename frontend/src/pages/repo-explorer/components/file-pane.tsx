@@ -9,6 +9,7 @@ import { JSX, useEffect, useState } from "react";
 import { DiffLineKind, IDiffHunk, IDiffLine, parseDiffLines, splitDiffHunks } from "../../../lib/diff-lines";
 import { readFileDiff } from "../../../lib/file-diff";
 import { activeFlatPaneClass } from "./active-pane-style";
+import { CollapseButton, CollapsedStrip } from "./collapse";
 import { FileIcon } from "./file-icon";
 import { FilePathMenu } from "./file-path-menu";
 import { CloseButton, MaximiseButton } from "./pane-header";
@@ -36,6 +37,12 @@ export interface IFilePaneProps {
     // Called when the user clicks the pane's maximise button.
     onToggleMaximise(): void;
 
+    // Whether the pane is collapsed into a narrow strip, which the pane draws in its place.
+    isCollapsed: boolean;
+
+    // Called when the user clicks the collapse button or the strip's restore button.
+    onToggleCollapse(): void;
+
     // Called when the user closes the pane.
     onClose(): void;
 }
@@ -43,7 +50,7 @@ export interface IFilePaneProps {
 //
 // Reads the file's diff in the commit with the file diff task and shows it in the file diff card.
 //
-export function FilePane({ repoPath, hash, path, isActive, isMaximised, onToggleMaximise, onClose }: IFilePaneProps): JSX.Element {
+export function FilePane({ repoPath, hash, path, isActive, isMaximised, onToggleMaximise, isCollapsed, onToggleCollapse, onClose }: IFilePaneProps): JSX.Element {
     const [diff, setDiff] = useState<string | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
 
@@ -63,7 +70,7 @@ export function FilePane({ repoPath, hash, path, isActive, isMaximised, onToggle
         });
     }, [repoPath, hash, path]);
 
-    return <FileDiffCard repoPath={repoPath} path={path} diff={diff} error={error} isActive={isActive} isMaximised={isMaximised} onToggleMaximise={onToggleMaximise} onClose={onClose} />;
+    return <FileDiffCard repoPath={repoPath} path={path} diff={diff} error={error} isActive={isActive} isMaximised={isMaximised} onToggleMaximise={onToggleMaximise} isCollapsed={isCollapsed} onToggleCollapse={onToggleCollapse} onClose={onClose} />;
 }
 
 //
@@ -91,31 +98,43 @@ export interface IFileDiffCardProps {
     // Called when the user clicks the pane's maximise button.
     onToggleMaximise(): void;
 
+    // Whether the pane is collapsed into a narrow strip, which the pane draws in its place.
+    isCollapsed: boolean;
+
+    // Called when the user clicks the collapse button or the strip's restore button.
+    onToggleCollapse(): void;
+
     // Called when the user closes the pane.
     onClose(): void;
 }
 
 //
-// Shows the diff in a rounded card headed by the file's icon and name, with a button that maximises
-// the pane and restores it and a button that closes the pane, as the style guide's file diff card
-// is headed, so the file pane and the changes pane's file pane look the same. The title holds the
-// file's name alone, so it stays short in a narrow pane, and hovering it shows the full path. The
-// file path menu's button sits beside the name. It shows that the diff is loading until it is read
-// and what went wrong when it could not be. The card is 840 pixels wide, or the width of the page's
-// visible area when that is narrower, so the whole diff can be scrolled into view, and fills the
-// repo explorer while the pane is maximised. The card's border is in the style guide's active pane
-// colour while the pane is active. The card has no shadow, as the style guide's file diff card has
-// none. The page's AnimatedPane column animates it as it opens and closes.
+// Shows the diff in a rounded card headed by the file's icon and name, with a button that collapses
+// the pane, a button that maximises it and restores it and a button that closes it, as the style
+// guide's file diff card is headed, so the file pane and the changes pane's file pane look the
+// same. The title holds the file's name alone, so it stays short in a narrow pane, and hovering it
+// shows the full path. The file path menu's button sits beside the name. It shows that the diff is
+// loading until it is read and what went wrong when it could not be. The card is 840 pixels wide,
+// or the width of the page's visible area when that is narrower, so the whole diff can be scrolled
+// into view, and fills the repo explorer while the pane is maximised. The card's border is in the
+// style guide's active pane colour while the pane is active. The card has no shadow, as the style
+// guide's file diff card has none. The page's AnimatedPane column animates it as it opens and
+// closes. While it is collapsed it draws the strip with the file's name down it in its place.
 //
-export function FileDiffCard({ repoPath, path, diff, error, isActive, isMaximised, onToggleMaximise, onClose }: IFileDiffCardProps): JSX.Element {
+export function FileDiffCard({ repoPath, path, diff, error, isActive, isMaximised, onToggleMaximise, isCollapsed, onToggleCollapse, onClose }: IFileDiffCardProps): JSX.Element {
+    const fileName = path.slice(path.lastIndexOf("/") + 1);
+    if (isCollapsed) {
+        return <CollapsedStrip paneLabel="File diff" title={fileName} paneDataId="file-pane" isActive={isActive} onRestore={onToggleCollapse} />;
+    }
     return (
         <section data-id="file-pane" aria-label="File diff" className={`flex ${paneWidthClass("w-[min(840px,calc(100cqw-var(--space-6)*2))]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activeFlatPaneClass(isActive)}`}>
             <div className="flex flex-none items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-panel)] p-2">
                 <span title={path} className="flex min-w-0 flex-1 items-center gap-2 text-[length:var(--text-sm)] font-[var(--weight-medium)] text-[var(--color-text)]">
                     <FileIcon path={path} />
-                    <span data-id="file-pane-path" className="min-w-0 truncate">{path.slice(path.lastIndexOf("/") + 1)}</span>
+                    <span data-id="file-pane-path" className="min-w-0 truncate">{fileName}</span>
                     <FilePathMenu repoPath={repoPath} path={path} dataId="file-pane-path-menu" />
                 </span>
+                {!isMaximised && <CollapseButton dataId="file-pane-collapse" onCollapse={onToggleCollapse} />}
                 <MaximiseButton isMaximised={isMaximised} dataId="file-pane-maximise" onToggleMaximise={onToggleMaximise} />
                 <CloseButton paneLabel="File diff" dataId="file-pane-close" onClose={onClose} />
             </div>

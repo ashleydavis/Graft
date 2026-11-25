@@ -14,12 +14,14 @@ import { changeKey } from "../../../lib/repo-explorer";
 import { changedFileCount, IWorkingChanges, IWorkingFile } from "../../../lib/working-changes";
 import { activePaneClass } from "./active-pane-style";
 import { scrollRowIntoView } from "./commit-details-pane";
+import { CollapsedStrip } from "./collapse";
 import { openRowClass } from "./commit-list";
 import { FileIcon } from "./file-icon";
 import { FilePath } from "./file-path";
 import { FilePathMenu, filePathMenuRowStyle } from "./file-path-menu";
-import { MaximiseButton, PaneHeader } from "./pane-header";
+import { collapseHandler, MaximiseButton, PaneHeader } from "./pane-header";
 import { paneWidthClass } from "./pane-width";
+import { Tip } from "./tip";
 
 //
 // What the changes pane shows and what it reports.
@@ -52,6 +54,12 @@ export interface IChangesPaneProps {
     // Called when the user clicks the pane's maximise button.
     onToggleMaximise(): void;
 
+    // Whether the pane is collapsed into a narrow strip, which the pane draws in its place.
+    isCollapsed: boolean;
+
+    // Called when the user clicks the collapse button or the strip's restore button.
+    onToggleCollapse(): void;
+
     // Called with the key of the row the user clicks.
     onSelectChange(key: string): void;
 
@@ -82,9 +90,13 @@ export interface IChangesPaneProps {
 // while the pane is maximised. The header's button maximises the pane and restores it. Its border
 // is in the style guide's active pane colour while the pane is active. The page's AnimatedPane
 // column animates it as it opens and closes. The commit section sits at the bottom of the card,
-// under the lists, as the style guide's Commit pane sits under its Changes pane.
+// under the lists, as the style guide's Commit pane sits under its Changes pane. While it is
+// collapsed it draws the strip with "Changes" down it in its place.
 //
-export function ChangesPane({ repoPath, changes, error, stageError, selectedKey, openKey, isActive, isMaximised, onToggleMaximise, onSelectChange, onToggleStaged, commitMessage, commitError, isCommitting, onCommitMessageChange, onCommit }: IChangesPaneProps): JSX.Element {
+export function ChangesPane({ repoPath, changes, error, stageError, selectedKey, openKey, isActive, isMaximised, onToggleMaximise, isCollapsed, onToggleCollapse, onSelectChange, onToggleStaged, commitMessage, commitError, isCommitting, onCommitMessageChange, onCommit }: IChangesPaneProps): JSX.Element {
+    if (isCollapsed) {
+        return <CollapsedStrip paneLabel="Changes" title="Changes" paneDataId="changes-pane" isActive={isActive} onRestore={onToggleCollapse} />;
+    }
     let stagedCount = 0;
     if (changes) {
         stagedCount = changes.staged.length;
@@ -97,7 +109,7 @@ export function ChangesPane({ repoPath, changes, error, stageError, selectedKey,
     );
     return (
         <section data-id="changes-pane" aria-label="Changes" className={`flex ${paneWidthClass("w-[420px]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
-            <PaneHeader title={title} titleDataId="changes-heading" action={<MaximiseButton isMaximised={isMaximised} dataId="changes-maximise" onToggleMaximise={onToggleMaximise} />} />
+            <PaneHeader title={title} titleDataId="changes-heading" collapseDataId="changes-pane-collapse" onCollapse={collapseHandler(isMaximised, onToggleCollapse)} action={<MaximiseButton isMaximised={isMaximised} dataId="changes-maximise" onToggleMaximise={onToggleMaximise} />} />
             {stageError !== undefined && (
                 <p data-id="changes-stage-error" className="m-2 mb-0 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[length:var(--text-sm)] text-[var(--color-text)]">{stageError}</p>
             )}
@@ -365,7 +377,7 @@ export function StageButton({ path, isStaged, onClick }: IStageButtonProps): JSX
         dataId = `unstage-${path}`;
     }
     return (
-        <Tooltip title={<StageTip title={label} detail={detail} />}>
+        <Tooltip title={<Tip title={label} detail={detail} />}>
             <IconButton
                 data-id={dataId}
                 aria-label={label}
@@ -379,30 +391,6 @@ export function StageButton({ path, isStaged, onClick }: IStageButtonProps): JSX
                 <FontAwesomeIcon icon={icon} />
             </IconButton>
         </Tooltip>
-    );
-}
-
-//
-// What the stage button's tooltip shows.
-//
-export interface IStageTipProps {
-    // What the button does, in bold.
-    title: string;
-
-    // What that means for the file, under it.
-    detail: string;
-}
-
-//
-// Shows the tooltip of the stage button and of the Commit button: what the button does in bold,
-// then what that means, as the style guide's tooltips with a title and a detail are laid out.
-//
-export function StageTip({ title, detail }: IStageTipProps): JSX.Element {
-    return (
-        <span className="flex flex-col gap-1">
-            <span className="font-[var(--weight-bold)]">{title}</span>
-            <span className="text-[length:var(--text-xs)] font-[var(--weight-normal)] opacity-80">{detail}</span>
-        </span>
     );
 }
 
@@ -459,7 +447,7 @@ export function CommitSection({ message, stagedCount, error, isCommitting, onMes
             {error !== undefined && (
                 <p data-id="commit-error" className="max-h-[160px] overflow-auto whitespace-pre-wrap rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[length:var(--text-sm)] text-[var(--color-text)]">{error}</p>
             )}
-            <Tooltip title={<StageTip title={tip.title} detail={tip.detail} />}>
+            <Tooltip title={<Tip title={tip.title} detail={tip.detail} />}>
                 <span className="block">
                     <Button data-id="commit-button" variant="contained" fullWidth={true} disabled={isDisabled} onClick={onCommit}>
                         {commitButtonText(stagedCount)}

@@ -4,7 +4,7 @@
 // buttons, what it shows while the changes load, when they could not be read, when a stage failed
 // and when there are none, that each row and button reports its file, that a button's click does
 // not select its row and that the pane marks the selected and open rows and its active border. It
-// checks the stage button's tooltip shows what the button does and what that means. It checks the
+// checks the collapse button and the strip drawn while the pane is collapsed. It checks the
 // commit section under the lists: the message box reports each change, the Commit button counts
 // the staged files, is disabled while the message is empty, no file is staged or a commit is being
 // made, reports its click once enabled and shows why the last commit failed with git's line breaks.
@@ -18,7 +18,7 @@ import { changeKey } from "../../../../lib/repo-explorer";
 import { IWorkingChanges } from "../../../../lib/working-changes";
 import { maximisedPaneClasses } from "../../../../pages/repo-explorer/components/pane-width";
 import { activePaneClasses } from "../../../../pages/repo-explorer/components/active-pane-style";
-import { ChangesPane, changesSummary, stageButtonClasses, StageTip, unstageButtonClasses } from "../../../../pages/repo-explorer/components/changes-pane";
+import { ChangesPane, changesSummary, stageButtonClasses, unstageButtonClasses } from "../../../../pages/repo-explorer/components/changes-pane";
 import { openRowClasses } from "../../../../pages/repo-explorer/components/commit-list";
 
 //
@@ -59,6 +59,8 @@ interface IRenderOptions {
     selectedKey?: string;
     openKey?: string;
     isActive?: boolean;
+    isCollapsed?: boolean;
+    onToggleCollapse?: jest.Mock;
     onSelectChange?: jest.Mock;
     onToggleStaged?: jest.Mock;
     commitMessage?: string;
@@ -84,6 +86,8 @@ function renderPane(options: IRenderOptions): void {
         isActive: options.isActive ?? false,
         isMaximised: options.isMaximised ?? false,
         onToggleMaximise: options.onToggleMaximise ?? jest.fn(),
+        isCollapsed: options.isCollapsed ?? false,
+        onToggleCollapse: options.onToggleCollapse ?? jest.fn(),
         onSelectChange: options.onSelectChange ?? jest.fn(),
         onToggleStaged: options.onToggleStaged ?? jest.fn(),
         commitMessage: options.commitMessage ?? "",
@@ -277,6 +281,33 @@ describe("ChangesPane", () => {
     });
 });
 
+describe("ChangesPane collapse", () => {
+    test("reports a click on its collapse button in its header", () => {
+        const onToggleCollapse = jest.fn();
+        renderPane({
+            changes,
+            onToggleCollapse,
+        });
+        fireEvent.click(elementWithDataId("changes-pane-collapse"));
+        expect(onToggleCollapse).toHaveBeenCalledTimes(1);
+    });
+
+    test("draws the strip with Changes down it in its place while it is collapsed, and reports a click on its restore button", () => {
+        const onToggleCollapse = jest.fn();
+        renderPane({
+            changes,
+            isCollapsed: true,
+            onToggleCollapse,
+        });
+        expect(document.querySelector("[data-id=\"changes-pane\"]")).toBeNull();
+        expect(document.querySelector("[data-id=\"commit-section\"]")).toBeNull();
+        expect(elementWithDataId("changes-pane-strip").getAttribute("aria-label")).toBe("Changes");
+        expect(elementWithDataId("changes-pane-strip-title").textContent).toBe("Changes");
+        fireEvent.click(elementWithDataId("changes-pane-restore"));
+        expect(onToggleCollapse).toHaveBeenCalledTimes(1);
+    });
+});
+
 //
 // Reads the Commit button, failing the test when the pane does not show it.
 //
@@ -402,19 +433,6 @@ describe("changesSummary", () => {
     });
 });
 
-describe("StageTip", () => {
-    test("shows what the button does in bold above what that means for the file", () => {
-        const { container } = render(createElement(StageTip, {
-            title: "Stage this file",
-            detail: "Adds the file's changes to the next commit.",
-        }));
-        const lines = container.firstElementChild?.children;
-        expect(lines?.[0].textContent).toBe("Stage this file");
-        expect(lines?.[0].className).toContain("font-[var(--weight-bold)]");
-        expect(lines?.[1].textContent).toBe("Adds the file's changes to the next commit.");
-    });
-});
-
 describe("ChangesPane maximise button", () => {
     test("reports a click and fills the repo explorer while the pane is maximised", () => {
         const onToggleMaximise = jest.fn();
@@ -427,6 +445,7 @@ describe("ChangesPane maximise button", () => {
         fireEvent.click(elementWithDataId("changes-maximise"));
         expect(onToggleMaximise).toHaveBeenCalledTimes(1);
         expect(screen.getByLabelText("Restore the pane").getAttribute("data-id")).toBe("changes-maximise");
+        expect(document.querySelector("[data-id=\"changes-pane-collapse\"]")).toBeNull();
     });
 
     test("keeps its own width and offers to maximise while the pane is at its usual size", () => {

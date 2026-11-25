@@ -2,7 +2,7 @@
 
 **ID:** commit-columns
 
-Manual test steps for the columns on the repo explorer page to the right of the repo details pane: the commit pane, the commit details pane and the file pane.
+Manual test steps for the columns on the repo explorer page to the right of the repo details pane: the commit pane, the commit details pane and the file pane, and collapsing every pane into a strip.
 
 ## Sub-features
 

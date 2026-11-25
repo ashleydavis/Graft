@@ -35,6 +35,7 @@ The repo explorer page shows its panes side by side in columns. The first is the
 - Hiding and showing a pane for a maximised pane never starts its opening or closing animation.
 - While a pane is maximised, clicking its items does what it always does. A pane opened that way to its right is hidden until the panes are put back. A change that makes another pane active, such as Enter opening the next pane, puts every pane back.
 - Closing the maximised pane, with its close button or Escape, puts the other panes back.
+- Every pane, the repo details pane, the commit pane, the commit details pane, the "Commit details" pane, the changes pane and the file pane (of a commit's file and of a working file), has a collapse button with a chevron pointing left in its header, before the maximise button and the close button where the pane has them, and hidden while the pane is maximised. Its tooltip reads "Collapse the pane to the left" with "Key: C" under it. Clicking it, or pressing C while the pane is active (see [keys](../keys/detail.md)), folds the pane into a strip the width of a button, drawn in the pane's place with its rounded card and border, as in the style guide's collapsed strip. The strip has a restore button with a chevron pointing right at its top, whose tooltip reads "Restore the pane" with "Key: C" under it, and the pane's title written down it in muted bold text: "Repo" and the repo's name, "Commits", "Commit" and the short hash, "Changes" for the changes pane, "Commit details" for the "Commit details" pane, or the file's name. Clicking the restore button restores the pane as it was. A collapsed pane keeps its place among the panes, and a pane that closes while collapsed opens in full the next time it opens. A collapsed commit details pane still reads its commit, so it shows it at once when restored. Opening the Commits or Changes link afresh opens its panes in full, and the repo details pane stays collapsed when it was.
 - While a pane's task runs it says "Loading the commit." or "Loading the diff.". When the task fails the pane shows why.
 - The commit details pane queues the commit details task, a background task that runs the `log` wrapper for the commit's details and the `diff-tree` wrapper for its changed files.
 - The `log` wrapper reads one commit with `git log -z --no-show-signature --max-count=1 <hash> --` and the same `--format` string the commit pane uses. `--no-show-signature` stops `log.showSignature=true` in the user's git config adding signature text that the wrapper cannot read, so a signed commit's details show. The `--` after the hash makes git read it only as a commit, so `git log` reads the commit even when a file in the repo has the hash as its name.
@@ -97,6 +98,10 @@ The repo explorer page shows its panes side by side in columns. The first is the
 - [x] "Open in editor" runs the `editor` setting's command with the file's full path, or the operating system's default app when the setting is absent.
 - [x] A missing file or a failed open shows why in the menu, with the command the backend ran.
 - [x] A click on the menu's button or its menu never selects or opens the row it sits in.
+- [x] Every pane has a collapse button with a chevron pointing left in its header, whose tooltip reads "Collapse the pane to the left" and names the key, C.
+- [x] Clicking the collapse button folds the pane into a strip the width of a button, with a restore button at its top and the pane's title written down it, and the restore button restores the pane.
+- [x] A collapsed pane keeps its place among the panes.
+- [x] The collapse button and the strip look as in the style guide, in the light and dark themes.
 
 ## Open questions
 

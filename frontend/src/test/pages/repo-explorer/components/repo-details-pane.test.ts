@@ -5,6 +5,7 @@
 // colour and that clicking each link reports its name.
 // It checks the maximise button reports a click, the card fills the repo explorer while maximised
 // and the pane is hidden, still drawn, while another pane is maximised.
+// It checks the collapse button and the strip drawn while the pane is collapsed.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
@@ -27,6 +28,8 @@ function renderPane(options: { link: string | undefined; isActive: boolean; onSe
         isActive: options.isActive,
         isMaximised: false,
         onToggleMaximise: jest.fn(),
+        isCollapsed: false,
+        onToggleCollapse: jest.fn(),
         isHidden: false,
         onSelectLink: options.onSelectLink,
     }));
@@ -168,6 +171,8 @@ describe("RepoDetailsPane maximise button", () => {
             isMaximised: options.isMaximised,
             onToggleMaximise: options.onToggleMaximise,
             isHidden: options.isHidden,
+            isCollapsed: false,
+            onToggleCollapse: jest.fn(),
             onSelectLink: jest.fn(),
         }));
         return container;
@@ -201,5 +206,47 @@ describe("RepoDetailsPane maximise button", () => {
         expect(screen.getByLabelText("Maximise the pane", {
             selector: "button",
         })).not.toBeNull();
+    });
+});
+
+describe("RepoDetailsPane collapse", () => {
+    test("reports a click on its collapse button in its header", () => {
+        const onToggleCollapse = jest.fn();
+        const { container } = render(createElement(RepoDetailsPane, {
+            repoPath: "/repos/graft",
+            selectedLink: undefined,
+            openLink: undefined,
+            isActive: false,
+            isMaximised: false,
+            onToggleMaximise: jest.fn(),
+            isHidden: false,
+            isCollapsed: false,
+            onToggleCollapse,
+            onSelectLink: jest.fn(),
+        }));
+        fireEvent.click(elementIn(container, "repo-details-pane-collapse"));
+        expect(onToggleCollapse).toHaveBeenCalledTimes(1);
+    });
+
+    test("draws the strip with Repo and the repo's name down it in its place while it is collapsed, and reports a click on its restore button", () => {
+        const onToggleCollapse = jest.fn();
+        const { container } = render(createElement(RepoDetailsPane, {
+            repoPath: "/repos/graft",
+            selectedLink: undefined,
+            openLink: undefined,
+            isActive: true,
+            isMaximised: false,
+            onToggleMaximise: jest.fn(),
+            isHidden: false,
+            isCollapsed: true,
+            onToggleCollapse,
+            onSelectLink: jest.fn(),
+        }));
+        expect(container.querySelector("[data-id=\"repo-details-pane\"]")).toBeNull();
+        expect(elementIn(container, "repo-details-pane-strip").getAttribute("aria-label")).toBe("Repo details");
+        expect(elementIn(container, "repo-details-pane-strip").className).toContain(activePaneClasses);
+        expect(elementIn(container, "repo-details-pane-strip-title").textContent).toBe("Repo graft");
+        fireEvent.click(elementIn(container, "repo-details-pane-restore"));
+        expect(onToggleCollapse).toHaveBeenCalledTimes(1);
     });
 });

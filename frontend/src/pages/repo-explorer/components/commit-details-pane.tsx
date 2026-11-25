@@ -11,11 +11,12 @@ import { JSX, useEffect, useRef, useState } from "react";
 import { IChangedFile, ICommitDetails, readCommitDetails } from "../../../lib/commit-details";
 import { COMMIT_DETAILS_PATH } from "../../../lib/repo-explorer";
 import { activePaneClass } from "./active-pane-style";
+import { CollapsedStrip } from "./collapse";
 import { openRowClass } from "./commit-list";
 import { FileIcon } from "./file-icon";
 import { FilePath } from "./file-path";
 import { FilePathMenu, filePathMenuRowStyle } from "./file-path-menu";
-import { CloseButton, MaximiseButton, PaneHeader } from "./pane-header";
+import { CloseButton, collapseHandler, MaximiseButton, PaneHeader } from "./pane-header";
 import { paneWidthClass } from "./pane-width";
 
 //
@@ -51,6 +52,15 @@ export interface ICommitDetailsPaneProps {
     // Called when the user clicks the pane's maximise button.
     onToggleMaximise(): void;
 
+    // Whether the pane is collapsed into a narrow strip, which the pane draws in its place.
+    isCollapsed: boolean;
+
+    // Called when the user clicks the collapse button or the strip's restore button.
+    onToggleCollapse(): void;
+
+    // Called when the user clicks the pane's maximise button.
+    onToggleMaximise(): void;
+
     // Called with the path of the changed file the user clicks, or COMMIT_DETAILS_PATH for the
     // "Commit details" row.
     onSelectFile(path: string): void;
@@ -70,9 +80,12 @@ export interface ICommitDetailsPaneProps {
 // and restores it and a button that closes the pane. It shows that it is loading until the task
 // ends and what went wrong when the commit could not be read. The card fills the repo explorer
 // while the pane is maximised. The card's border is in the style guide's active pane colour while
-// the pane is active. The page's AnimatedPane column animates it as it opens and closes.
+// the pane is active. The page's AnimatedPane column animates it as it opens and closes. While it
+// is collapsed it draws the strip with "Commit" and the short hash down it in its place, and still
+// reads the commit, so the keys move through its files and it shows them at once when it is
+// restored.
 //
-export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isActive, isMaximised, onToggleMaximise, onSelectFile, onReadCommit, onClose }: ICommitDetailsPaneProps): JSX.Element {
+export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isActive, isMaximised, onToggleMaximise, isCollapsed, onToggleCollapse, onSelectFile, onReadCommit, onClose }: ICommitDetailsPaneProps): JSX.Element {
     const [details, setDetails] = useState<ICommitDetails | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
 
@@ -92,6 +105,9 @@ export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isAc
         });
     }, [repoPath, hash]);
 
+    if (isCollapsed) {
+        return <CollapsedStrip paneLabel="Commit details" title={`Commit ${hash.slice(0, 7)}`} paneDataId="commit-details-pane" isActive={isActive} onRestore={onToggleCollapse} />;
+    }
     const title = (
         <span className="flex items-baseline gap-2">
             Commit
@@ -100,7 +116,7 @@ export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isAc
     );
     return (
         <section data-id="commit-details-pane" aria-label="Commit details" className={`flex ${paneWidthClass("w-[450px]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
-            <PaneHeader title={title} titleDataId="commit-details-heading" action={(
+            <PaneHeader title={title} titleDataId="commit-details-heading" collapseDataId="commit-details-pane-collapse" onCollapse={collapseHandler(isMaximised, onToggleCollapse)} action={(
                 <>
                     <MaximiseButton isMaximised={isMaximised} dataId="commit-details-maximise" onToggleMaximise={onToggleMaximise} />
                     <CloseButton paneLabel="Commit details" dataId="commit-details-close" onClose={onClose} />

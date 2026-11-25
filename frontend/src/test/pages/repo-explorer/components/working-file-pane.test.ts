@@ -5,6 +5,7 @@
 // reports it.
 // It checks the maximise button reports a click and the card fills the repo explorer while
 // maximised.
+// It checks the collapse button and the strip drawn while the pane is collapsed.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
@@ -46,6 +47,8 @@ function renderPane(onClose: jest.Mock): void {
         isActive: true,
         isMaximised: false,
         onToggleMaximise: jest.fn(),
+        isCollapsed: false,
+        onToggleCollapse: jest.fn(),
         onClose,
     }));
 }
@@ -118,6 +121,8 @@ describe("WorkingFilePane maximise button", () => {
             isActive: true,
             isMaximised: true,
             onToggleMaximise,
+            isCollapsed: false,
+            onToggleCollapse: jest.fn(),
             onClose: jest.fn(),
         }));
         expect(document.querySelector("[data-id=\"file-pane\"]")?.className).toContain(maximisedPaneClasses);
@@ -125,5 +130,29 @@ describe("WorkingFilePane maximise button", () => {
         expect(button.getAttribute("data-id")).toBe("file-pane-maximise");
         fireEvent.click(button);
         expect(onToggleMaximise).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("WorkingFilePane collapse", () => {
+    test("draws the strip with the file's name down it while it is collapsed and reports a click on its restore button", () => {
+        installFakeTaskZiggy();
+        const onToggleCollapse = jest.fn();
+        render(createElement(WorkingFilePane, {
+            repoPath: "/repo",
+            file: {
+                status: "?",
+                path: "docs/new.txt",
+            },
+            isStaged: false,
+            isActive: true,
+            isMaximised: false,
+            onToggleMaximise: jest.fn(),
+            isCollapsed: true,
+            onToggleCollapse,
+            onClose: jest.fn(),
+        }));
+        expect(document.querySelector("[data-id=\"file-pane-strip-title\"]")?.textContent).toBe("new.txt");
+        fireEvent.click(screen.getByLabelText("Restore file diff"));
+        expect(onToggleCollapse).toHaveBeenCalledTimes(1);
     });
 });

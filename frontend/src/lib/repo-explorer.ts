@@ -7,11 +7,11 @@
 import { IWorkingChanges, IWorkingFile } from "./working-changes";
 
 //
-// The repo explorer's panes and their selections. The open panes are the repo details pane, then
-// the commit pane while the Commits link is open, then the commit details pane while a commit is
-// open, then the file pane while a file is open. While the Changes link is open the changes pane
-// follows the repo details pane in place of the commit pane, then the file pane while a changed
-// file is open.
+// The repo explorer's panes, their selections, which are collapsed and which is maximised. The
+// open panes are the repo details pane, then the commit pane while the Commits link is open, then
+// the commit details pane while a commit is open, then the file pane while a file is open. While
+// the Changes link is open the changes pane follows the repo details pane in place of the commit
+// pane, then the file pane while a changed file is open.
 //
 export interface IRepoExplorerState {
     // The position of the active pane among the open panes: 0 for the repo details pane, 1 for
@@ -52,6 +52,10 @@ export interface IRepoExplorerState {
     // undefined while every open pane shows. A maximised pane fills the repo explorer and the other
     // panes are hidden. It is always the active pane, so the keys act on the pane the user sees.
     maximisedPaneIndex: number | undefined;
+    // The positions among the open panes of the panes folded into a narrow strip, as
+    // activePaneIndex counts them. A pane that closes takes its position out, so it opens again in
+    // full.
+    collapsedPanes: number[];
 }
 
 //
@@ -126,6 +130,7 @@ export const initialRepoExplorerState: IRepoExplorerState = {
     selectedChange: undefined,
     openChange: undefined,
     maximisedPaneIndex: undefined,
+    collapsedPanes: [],
 };
 
 //
@@ -166,7 +171,7 @@ export interface IKeyPress {
 //
 // Returns true when a modifier key is held with the key, so the repo explorer leaves the press to
 // the shortcut it makes. Ctrl, Alt and Cmd make a shortcut with any key, which Ziggy runs. Shift
-// counts only with M, because Shift+M is a different key from M, while Shift with an arrow key or
+// counts only with M and C, because Shift+M and Shift+C are different keys from M and C, while Shift with an arrow key or
 // Enter leaves the explorer's keys working as they always have.
 //
 export function hasKeyModifier(press: IKeyPress): boolean {
@@ -182,6 +187,9 @@ export function hasKeyModifier(press: IKeyPress): boolean {
     if (isMaximiseKey(press.key)) {
         return press.shiftKey;
     }
+    if (isCollapseKey(press.key)) {
+        return press.shiftKey;
+    }
     return false;
 }
 
@@ -194,7 +202,57 @@ export function isExplorerKey(key: string): boolean {
     if (isMaximiseKey(key)) {
         return true;
     }
+    if (isCollapseKey(key)) {
+        return true;
+    }
     return ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", "Enter", "Escape"].includes(key);
+}
+
+//
+// Returns true when the key, as KeyboardEvent.key names it, is C, which collapses the active pane
+// or restores it. Caps Lock makes it "C" with Shift up, so both cases count.
+//
+export function isCollapseKey(key: string): boolean {
+    return key === "c" || key === "C";
+}
+
+//
+// Returns true when the pane at the position among the open panes is folded into a narrow strip, so
+// the repo explorer page draws its strip in its place.
+//
+export function isPaneCollapsed(state: IRepoExplorerState, paneIndex: number): boolean {
+    return state.collapsedPanes.includes(paneIndex);
+}
+
+//
+// Folds the pane at the position among the open panes into a narrow strip, or restores it when it
+// is folded, as its collapse button, its strip's restore button and C do. The pane keeps its place
+// among the panes and the active pane stays as it is.
+//
+export function toggleCollapsedPane(state: IRepoExplorerState, paneIndex: number): IRepoExplorerState {
+    if (isPaneCollapsed(state, paneIndex)) {
+        return {
+            ...state,
+            collapsedPanes: state.collapsedPanes.filter(index => index !== paneIndex),
+        };
+    }
+    return {
+        ...state,
+        collapsedPanes: [...state.collapsedPanes, paneIndex],
+    };
+}
+
+//
+// Takes the positions of the panes that have closed out of the collapsed panes, so a pane that
+// opens again where a collapsed one closed opens in full. Each function that closes a pane passes
+// its new state through it.
+//
+export function keepOpenPanesCollapsed(state: IRepoExplorerState): IRepoExplorerState {
+    const paneCount = openPaneCount(state);
+    return {
+        ...state,
+        collapsedPanes: state.collapsedPanes.filter(index => index < paneCount),
+    };
 }
 
 //
@@ -240,8 +298,8 @@ export function itemAfterMove(items: string[], selected: string | undefined, ste
 
 //
 // Selects the link and opens its pane, with the repo details pane active, as a click on the link
-// does. The pane opens afresh, with no commit or file open, so a click and Enter both show it from
-// the start.
+// does. The pane opens afresh, with no commit or file open and no pane collapsed, so a click and
+// Enter both show it from the start.
 //
 export function selectLink(link: string): IRepoExplorerState {
     return {
@@ -255,6 +313,7 @@ export function selectLink(link: string): IRepoExplorerState {
         selectedChange: undefined,
         openChange: undefined,
         maximisedPaneIndex: undefined,
+        collapsedPanes: [],
     };
 }
 
@@ -276,11 +335,11 @@ export function selectChange(state: IRepoExplorerState, key: string): IRepoExplo
 // pane active when the file pane was.
 //
 export function closeChangeFilePane(state: IRepoExplorerState): IRepoExplorerState {
-    return {
+    return keepOpenPanesCollapsed({
         ...state,
         activePaneIndex: Math.min(state.activePaneIndex, 1),
         openChange: undefined,
-    };
+    });
 }
 
 //
@@ -332,14 +391,14 @@ export function keepListedChanges(state: IRepoExplorerState, changeKeys: string[
 // Enter both show the commit afresh.
 //
 export function selectCommit(state: IRepoExplorerState, hash: string): IRepoExplorerState {
-    return {
+    return keepOpenPanesCollapsed({
         ...state,
         activePaneIndex: 1,
         selectedHash: hash,
         openHash: hash,
         selectedPath: undefined,
         openPath: undefined,
-    };
+    });
 }
 
 //
@@ -377,11 +436,11 @@ export function selectFile(state: IRepoExplorerState, path: string): IRepoExplor
 // active when the file pane was.
 //
 export function closeFilePane(state: IRepoExplorerState): IRepoExplorerState {
-    return {
+    return keepOpenPanesCollapsed({
         ...state,
         activePaneIndex: Math.min(state.activePaneIndex, 2),
         openPath: undefined,
-    };
+    });
 }
 
 //
@@ -389,22 +448,23 @@ export function closeFilePane(state: IRepoExplorerState): IRepoExplorerState {
 // Escape do, and makes the commit pane active when one of them was. The commit stays selected.
 //
 export function closeCommitDetailsPane(state: IRepoExplorerState): IRepoExplorerState {
-    return {
+    return keepOpenPanesCollapsed({
         ...state,
         activePaneIndex: Math.min(state.activePaneIndex, 1),
         openHash: undefined,
         selectedPath: undefined,
         openPath: undefined,
-    };
+    });
 }
 
 //
 // Closes the pane the open link opened, the commit pane or the changes pane, and every pane to its
 // right, as Escape and the commit pane's close button do, and makes the repo details pane active.
-// The link stays selected, and its pane opens afresh when it opens again.
+// The link stays selected, and its pane opens afresh when it opens again. Only the repo details
+// pane stays collapsed, when it was.
 //
 export function closeLinkPane(state: IRepoExplorerState): IRepoExplorerState {
-    return {
+    return keepOpenPanesCollapsed({
         ...state,
         activePaneIndex: 0,
         openLink: undefined,
@@ -414,7 +474,7 @@ export function closeLinkPane(state: IRepoExplorerState): IRepoExplorerState {
         openPath: undefined,
         selectedChange: undefined,
         openChange: undefined,
-    };
+    });
 }
 
 //
@@ -660,8 +720,9 @@ export function pageRowCount(areaHeightPx: number, rowHeightPx: number): number 
 //
 // Opens the selected item of the active pane, as Enter does: the selected link opens its pane, the
 // selected commit opens its details pane and the selected file, in a commit or in the changes
-// pane, opens its file pane, and the new pane becomes active. With no item selected, or in the
-// file pane, the state stays as it is.
+// pane, opens its file pane, and the new pane becomes active. Enter on a link of the collapsed
+// repo details pane leaves it collapsed. With no item selected, or in the file pane, the state
+// stays as it is.
 //
 export function openSelection(state: IRepoExplorerState): IRepoExplorerState {
     if (state.activePaneIndex === 0) {
@@ -671,6 +732,7 @@ export function openSelection(state: IRepoExplorerState): IRepoExplorerState {
         return {
             ...selectLink(state.selectedLink),
             activePaneIndex: 1,
+            collapsedPanes: state.collapsedPanes.filter(index => index === 0),
         };
     }
     if (state.openLink === CHANGES_LINK) {
@@ -742,10 +804,12 @@ export function closeRightmostPane(state: IRepoExplorerState): IRepoExplorerStat
 // Works out the repo explorer after the key, as KeyboardEvent.key names it: Up and Down move the
 // selection in the active pane one step, Page Up and Page Down move it a page, Home and End move
 // it to the first and last item, Left and Right make the pane to the left or right active when
-// there is one, Enter opens the selected item, Escape closes the rightmost pane and M maximises the
-// active pane or restores the panes. While a pane is maximised, Left and Right leave the state as
-// it is, because the maximised pane stays the active pane, and Escape closes the maximised pane.
-// Any other key changes nothing.
+// there is one, Enter opens the selected item, Escape closes the rightmost pane, M maximises the
+// active pane or restores the panes and C collapses the active pane or restores it. While a pane
+// is maximised, Left and Right leave the state as it is, because the maximised pane stays the
+// active pane, Escape closes the maximised pane and C leaves the state as it is. The keys act on
+// a collapsed pane as on any other, so Up and Down move its selection and Enter opens its selected
+// item. Any other key changes nothing.
 //
 export function explorerStateAfterKey(state: IRepoExplorerState, key: string, items: IRepoExplorerItems): IRepoExplorerState {
     if (isMaximiseKey(key)) {
@@ -760,6 +824,9 @@ export function explorerStateAfterKey(state: IRepoExplorerState, key: string, it
         }
         if (key === "Escape") {
             return closeMaximisedPane(state);
+        }
+        if (isCollapseKey(key)) {
+            return state;
         }
     }
     if (key === "ArrowUp") {
@@ -798,13 +865,16 @@ export function explorerStateAfterKey(state: IRepoExplorerState, key: string, it
     if (key === "Escape") {
         return closeRightmostPane(state);
     }
+    if (isCollapseKey(key)) {
+        return toggleCollapsedPane(state, state.activePaneIndex);
+    }
     return state;
 }
 
 //
 // Maximises the pane at the index among the open panes and makes it active, as its maximise button
 // and M do, or restores every pane when that pane is the maximised one, so the same button or key
-// both maximises and restores.
+// both maximises and restores. A collapsed pane that is maximised opens in full.
 //
 export function toggleMaximise(state: IRepoExplorerState, paneIndex: number): IRepoExplorerState {
     if (state.maximisedPaneIndex === paneIndex) {
@@ -817,6 +887,7 @@ export function toggleMaximise(state: IRepoExplorerState, paneIndex: number): IR
         ...state,
         activePaneIndex: paneIndex,
         maximisedPaneIndex: paneIndex,
+        collapsedPanes: state.collapsedPanes.filter(index => index !== paneIndex),
     };
 }
 
