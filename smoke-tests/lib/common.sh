@@ -439,6 +439,19 @@ wait_for_in_view() {
 }
 
 #
+# Prints where the element with the data-id is in the window and how wide it is, as
+# <left> <right>, in whole pixels. A hidden element is 0 0. Usage: bounds_of <data-id>
+#
+bounds_of() {
+    local answer
+    answer="$(control "{\"command\":\"bounds\",\"dataId\":\"$1\"}")"
+    if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
+        fail "reading where $1 is failed: $answer"
+    fi
+    printf '%s' "$answer" | jq -r '.value | fromjson | "\(.left) \(.right)"'
+}
+
+#
 # Scrolls the element with the data-id to the end of its content, as a user does with the mouse
 # wheel or the scroll bar. Usage: scroll_to_end <data-id>
 #

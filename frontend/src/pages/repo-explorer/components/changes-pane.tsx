@@ -18,7 +18,8 @@ import { openRowClass } from "./commit-list";
 import { FileIcon } from "./file-icon";
 import { FilePath } from "./file-path";
 import { FilePathMenu, filePathMenuRowStyle } from "./file-path-menu";
-import { PaneHeader } from "./pane-header";
+import { MaximiseButton, PaneHeader } from "./pane-header";
+import { paneWidthClass } from "./pane-width";
 
 //
 // What the changes pane shows and what it reports.
@@ -44,6 +45,12 @@ export interface IChangesPaneProps {
 
     // Whether the pane is the repo explorer's active pane, which its border shows.
     isActive: boolean;
+
+    // Whether the pane is maximised, filling the repo explorer, which its maximise button shows.
+    isMaximised: boolean;
+
+    // Called when the user clicks the pane's maximise button.
+    onToggleMaximise(): void;
 
     // Called with the key of the row the user clicks.
     onSelectChange(key: string): void;
@@ -71,12 +78,13 @@ export interface IChangesPaneProps {
 //
 // Shows the changes in a rounded card headed "Changes", with how many files changed and how many
 // are staged beside it in muted text, as the style guide's Changes pane is headed. The card is as
-// tall as the page's columns and never shrinks, as the other panes. Its border is in the style
-// guide's active pane colour while the pane is active. The page's AnimatedPane column animates it
-// as it opens and closes. The commit section sits at the bottom of the card, under the lists, as
-// the style guide's Commit pane sits under its Changes pane.
+// tall as the page's columns and never shrinks, as the other panes, and fills the repo explorer
+// while the pane is maximised. The header's button maximises the pane and restores it. Its border
+// is in the style guide's active pane colour while the pane is active. The page's AnimatedPane
+// column animates it as it opens and closes. The commit section sits at the bottom of the card,
+// under the lists, as the style guide's Commit pane sits under its Changes pane.
 //
-export function ChangesPane({ repoPath, changes, error, stageError, selectedKey, openKey, isActive, onSelectChange, onToggleStaged, commitMessage, commitError, isCommitting, onCommitMessageChange, onCommit }: IChangesPaneProps): JSX.Element {
+export function ChangesPane({ repoPath, changes, error, stageError, selectedKey, openKey, isActive, isMaximised, onToggleMaximise, onSelectChange, onToggleStaged, commitMessage, commitError, isCommitting, onCommitMessageChange, onCommit }: IChangesPaneProps): JSX.Element {
     let stagedCount = 0;
     if (changes) {
         stagedCount = changes.staged.length;
@@ -88,8 +96,8 @@ export function ChangesPane({ repoPath, changes, error, stageError, selectedKey,
         </span>
     );
     return (
-        <section data-id="changes-pane" aria-label="Changes" className={`flex w-[420px] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
-            <PaneHeader title={title} titleDataId="changes-heading" action={undefined} />
+        <section data-id="changes-pane" aria-label="Changes" className={`flex ${paneWidthClass("w-[420px]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
+            <PaneHeader title={title} titleDataId="changes-heading" action={<MaximiseButton isMaximised={isMaximised} dataId="changes-maximise" onToggleMaximise={onToggleMaximise} />} />
             {stageError !== undefined && (
                 <p data-id="changes-stage-error" className="m-2 mb-0 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[length:var(--text-sm)] text-[var(--color-text)]">{stageError}</p>
             )}

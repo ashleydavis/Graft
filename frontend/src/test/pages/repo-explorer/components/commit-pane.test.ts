@@ -3,11 +3,14 @@
 // card headed "Commits" that never shrinks, passes the selected and open commits on to the list,
 // marks the pane active with a border in the style guide's active pane colour, that clicking a
 // commit reports its hash and that its close button reports a close.
+// It checks the maximise button reports a click and the card fills the repo explorer while
+// maximised.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { ICommit } from "../../../../lib/commits";
+import { maximisedPaneClasses } from "../../../../pages/repo-explorer/components/pane-width";
 import { activePaneClasses } from "../../../../pages/repo-explorer/components/active-pane-style";
 import { openRowClasses } from "../../../../pages/repo-explorer/components/commit-list";
 import { CommitPane } from "../../../../pages/repo-explorer/components/commit-pane";
@@ -56,6 +59,8 @@ function renderPane(isActive: boolean, onSelectCommit: jest.Mock, onClose: jest.
         selectedHash: commit.hash,
         openHash: commit.hash,
         isActive,
+        isMaximised: false,
+        onToggleMaximise: jest.fn(),
         dateFormat: {
             locale: "en-US",
             timeZone: "UTC",
@@ -119,5 +124,34 @@ describe("CommitPane", () => {
         expect((await screen.findByRole("tooltip")).textContent).toBe("Close");
         fireEvent.click(screen.getByLabelText("Close commits"));
         expect(onClose).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("CommitPane maximise button", () => {
+    test("reports a click and fills the repo explorer while the pane is maximised", () => {
+        const onToggleMaximise = jest.fn();
+        const { container } = render(createElement(CommitPane, {
+            commits: [commit],
+            isLoading: false,
+            error: undefined,
+            hasReadLastPage: false,
+            selectedHash: undefined,
+            openHash: undefined,
+            isActive: true,
+            isMaximised: true,
+            onToggleMaximise,
+            dateFormat: {
+                locale: "en-US",
+                timeZone: "UTC",
+            },
+            onSelectCommit: jest.fn(),
+            onNearEnd: jest.fn(),
+            onClose: jest.fn(),
+        }));
+        expect(container.querySelector("[data-id=\"commit-pane\"]")?.className).toContain(maximisedPaneClasses);
+        const button = screen.getByLabelText("Restore the pane");
+        expect(button.getAttribute("data-id")).toBe("commit-pane-maximise");
+        fireEvent.click(button);
+        expect(onToggleMaximise).toHaveBeenCalledTimes(1);
     });
 });

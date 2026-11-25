@@ -9,7 +9,8 @@ import { ICommit } from "../../../lib/commits";
 import { IDateFormatOptions } from "../../../lib/date-format";
 import { activePaneClass } from "./active-pane-style";
 import { CommitList } from "./commit-list";
-import { CloseButton, PaneHeader } from "./pane-header";
+import { CloseButton, MaximiseButton, PaneHeader } from "./pane-header";
+import { paneWidthClass } from "./pane-width";
 
 //
 // What the commit pane shows and what it reports.
@@ -36,6 +37,12 @@ export interface ICommitPaneProps {
     // Whether the pane is the repo explorer's active pane, which its border shows.
     isActive: boolean;
 
+    // Whether the pane is maximised, filling the repo explorer, which its maximise button shows.
+    isMaximised: boolean;
+
+    // Called when the user clicks the pane's maximise button.
+    onToggleMaximise(): void;
+
     // The locale and time zone each commit's date is shown in.
     dateFormat: IDateFormatOptions;
 
@@ -53,13 +60,19 @@ export interface ICommitPaneProps {
 // Shows the commit list in a rounded card 850 pixels wide, or the width of the page's visible area
 // when that is narrower, so the card is never cut off, as tall as the page leaves room for, as
 // the style guide's commit explorer shows it. The list scrolls inside the card below its header
-// when it is taller than the card, and the header's close button closes the pane. The card's
-// border is in the style guide's active pane colour while the pane is active.
+// when it is taller than the card. While the pane is maximised the card fills the repo explorer
+// instead. The card's border is in the style guide's active pane colour while the pane is active.
+// The header's buttons maximise the pane and restore it, and close it.
 //
-export function CommitPane({ commits, isLoading, error, hasReadLastPage, selectedHash, openHash, isActive, dateFormat, onSelectCommit, onNearEnd, onClose }: ICommitPaneProps): JSX.Element {
+export function CommitPane({ commits, isLoading, error, hasReadLastPage, selectedHash, openHash, isActive, isMaximised, onToggleMaximise, dateFormat, onSelectCommit, onNearEnd, onClose }: ICommitPaneProps): JSX.Element {
     return (
-        <section data-id="commit-pane" aria-label="Commits" className={`flex w-[min(850px,calc(100cqw-var(--space-6)*2))] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
-            <PaneHeader title="Commits" titleDataId="commit-pane-heading" action={<CloseButton paneLabel="Commits" dataId="commit-pane-close" onClose={onClose} />} />
+        <section data-id="commit-pane" aria-label="Commits" className={`flex ${paneWidthClass("w-[min(850px,calc(100cqw-var(--space-6)*2))]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
+            <PaneHeader title="Commits" titleDataId="commit-pane-heading" action={(
+                <>
+                    <MaximiseButton isMaximised={isMaximised} dataId="commit-pane-maximise" onToggleMaximise={onToggleMaximise} />
+                    <CloseButton paneLabel="Commits" dataId="commit-pane-close" onClose={onClose} />
+                </>
+            )} />
             <CommitList commits={commits} isLoading={isLoading} error={error} hasReadLastPage={hasReadLastPage} selectedHash={selectedHash} openHash={openHash} dateFormat={dateFormat} onSelectCommit={onSelectCommit} onNearEnd={onNearEnd} />
         </section>
     );

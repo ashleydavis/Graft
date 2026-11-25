@@ -8,12 +8,15 @@
 // commit section under the lists: the message box reports each change, the Commit button counts
 // the staged files, is disabled while the message is empty, no file is staged or a commit is being
 // made, reports its click once enabled and shows why the last commit failed with git's line breaks.
+// It checks the maximise button reports a click and the card fills the repo explorer while
+// maximised, and keeps its own width otherwise.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { changeKey } from "../../../../lib/repo-explorer";
 import { IWorkingChanges } from "../../../../lib/working-changes";
+import { maximisedPaneClasses } from "../../../../pages/repo-explorer/components/pane-width";
 import { activePaneClasses } from "../../../../pages/repo-explorer/components/active-pane-style";
 import { ChangesPane, changesSummary, stageButtonClasses, StageTip, unstageButtonClasses } from "../../../../pages/repo-explorer/components/changes-pane";
 import { openRowClasses } from "../../../../pages/repo-explorer/components/commit-list";
@@ -63,6 +66,8 @@ interface IRenderOptions {
     isCommitting?: boolean;
     onCommitMessageChange?: jest.Mock;
     onCommit?: jest.Mock;
+    isMaximised?: boolean;
+    onToggleMaximise?: jest.Mock;
 }
 
 //
@@ -77,6 +82,8 @@ function renderPane(options: IRenderOptions): void {
         selectedKey: options.selectedKey,
         openKey: options.openKey,
         isActive: options.isActive ?? false,
+        isMaximised: options.isMaximised ?? false,
+        onToggleMaximise: options.onToggleMaximise ?? jest.fn(),
         onSelectChange: options.onSelectChange ?? jest.fn(),
         onToggleStaged: options.onToggleStaged ?? jest.fn(),
         commitMessage: options.commitMessage ?? "",
@@ -405,5 +412,28 @@ describe("StageTip", () => {
         expect(lines?.[0].textContent).toBe("Stage this file");
         expect(lines?.[0].className).toContain("font-[var(--weight-bold)]");
         expect(lines?.[1].textContent).toBe("Adds the file's changes to the next commit.");
+    });
+});
+
+describe("ChangesPane maximise button", () => {
+    test("reports a click and fills the repo explorer while the pane is maximised", () => {
+        const onToggleMaximise = jest.fn();
+        renderPane({
+            changes: undefined,
+            isMaximised: true,
+            onToggleMaximise,
+        });
+        expect(elementWithDataId("changes-pane").className).toContain(maximisedPaneClasses);
+        fireEvent.click(elementWithDataId("changes-maximise"));
+        expect(onToggleMaximise).toHaveBeenCalledTimes(1);
+        expect(screen.getByLabelText("Restore the pane").getAttribute("data-id")).toBe("changes-maximise");
+    });
+
+    test("keeps its own width and offers to maximise while the pane is at its usual size", () => {
+        renderPane({
+            changes: undefined,
+        });
+        expect(elementWithDataId("changes-pane").className).not.toContain(maximisedPaneClasses);
+        expect(screen.getByLabelText("Maximise the pane").getAttribute("data-id")).toBe("changes-maximise");
     });
 });

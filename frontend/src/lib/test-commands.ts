@@ -11,7 +11,7 @@ import type { IAddTask, IJsonObject, IJsonValue, ITaskCompletedEvent } from "zig
 //
 export interface ITestCommand {
     // What to do: ready, click, focus, type, key-down, get-value, get-text, exists, in-view,
-    // in-view-of, scroll-to-end, insert, viewport, drop-file or run-task.
+    // in-view-of, bounds, scroll-to-end, insert, viewport, drop-file or run-task.
     command: string;
 
     // The data-id of the element to act on.
@@ -182,6 +182,12 @@ export function performTestCommand(finder: IElementFinder, command: ITestCommand
     if (command.command === "in-view") {
         return elementInViewResult(element.getBoundingClientRect(), finder.windowWidth, command.dataId);
     }
+    if (command.command === "bounds") {
+        return {
+            ok: true,
+            value: boundsText(element.getBoundingClientRect()),
+        };
+    }
     if (command.command === "scroll-to-end") {
         element.scrollTop = element.scrollHeight;
         return {
@@ -265,6 +271,20 @@ export function elementInViewResult(bounds: IHorizontalBounds, windowWidth: numb
         ok: false,
         error: `The element with the data-id ${dataId} is outside the window: its left edge is at ${left}, its right edge is at ${right} and the window is ${windowWidth} wide.`,
     };
+}
+
+//
+// Writes the element's edges, rounded to whole pixels, as JSON for the bounds command, so a smoke
+// test can read with jq where an element is and how wide it is, such as a maximised pane filling
+// the page or a hidden pane taking no room.
+//
+export function boundsText(bounds: IBounds): string {
+    return JSON.stringify({
+        left: Math.round(bounds.left),
+        right: Math.round(bounds.right),
+        top: Math.round(bounds.top),
+        bottom: Math.round(bounds.bottom),
+    });
 }
 
 //

@@ -5,12 +5,15 @@
 // group of their own, or says why it could not be read. It checks that the close button reports
 // it and that the pane's border is in the style guide's active pane colour while it is active,
 // with the card kept to its border.
+// It checks the maximise button reports a click, sits before the close button and the card fills
+// the repo explorer while maximised.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import type { IAddTask, ITaskCompletedEvent } from "ziggy";
 import { activeFlatPaneClasses } from "../../../../pages/repo-explorer/components/active-pane-style";
+import { maximisedPaneClasses } from "../../../../pages/repo-explorer/components/pane-width";
 import { FilePane } from "../../../../pages/repo-explorer/components/file-pane";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../../../fake-ziggy";
 
@@ -45,6 +48,8 @@ function renderPane(onClose: jest.Mock, isActive: boolean): void {
         hash: commitHash,
         path: "notes.txt",
         isActive,
+        isMaximised: false,
+        onToggleMaximise: jest.fn(),
         onClose,
     }));
 }
@@ -64,6 +69,8 @@ describe("FilePane", () => {
             hash: commitHash,
             path: "docs/guide/setup.md",
             isActive: false,
+            isMaximised: false,
+            onToggleMaximise: jest.fn(),
             onClose: jest.fn(),
         }));
         const title = document.querySelector("[data-id=\"file-pane-path\"]");
@@ -159,5 +166,27 @@ describe("FilePane", () => {
         installFakeTaskZiggy();
         renderPane(jest.fn(), false);
         expect(isPaneMarkedActive()).toBe(false);
+    });
+});
+
+describe("FilePane maximise button", () => {
+    test("reports a click, sits before the close button and fills the repo explorer while the pane is maximised", () => {
+        installFakeTaskZiggy();
+        const onToggleMaximise = jest.fn();
+        render(createElement(FilePane, {
+            repoPath: "/repo",
+            hash: commitHash,
+            path: "notes.txt",
+            isActive: true,
+            isMaximised: true,
+            onToggleMaximise,
+            onClose: jest.fn(),
+        }));
+        expect(document.querySelector("[data-id=\"file-pane\"]")?.className).toContain(maximisedPaneClasses);
+        expect(document.querySelector("[data-id=\"file-pane-maximise\"] + [data-id=\"file-pane-close\"]")).not.toBeNull();
+        const button = screen.getByLabelText("Restore the pane");
+        expect(button.getAttribute("data-id")).toBe("file-pane-maximise");
+        fireEvent.click(button);
+        expect(onToggleMaximise).toHaveBeenCalledTimes(1);
     });
 });

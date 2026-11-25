@@ -408,6 +408,21 @@ describe("performTestCommand", () => {
         });
     });
 
+    test("bounds returns the element's edges as JSON, rounded to whole pixels", () => {
+        expect(performTestCommand(makeFinder(makePlacedElement("", undefined, {
+            left: 10.4,
+            right: 300.6,
+            top: 0,
+            bottom: 20.2,
+        })), {
+            command: "bounds",
+            dataId: "target",
+        })).toEqual({
+            ok: true,
+            value: "{\"left\":10,\"right\":301,\"top\":0,\"bottom\":20}",
+        });
+    });
+
     test("in-view-of succeeds when the element is inside the container and fails when it is not", () => {
         expect(performTestCommand(makeListFinder(placedRow(150, 180)), {
             command: "in-view-of",

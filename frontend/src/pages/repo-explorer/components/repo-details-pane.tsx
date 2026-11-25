@@ -12,7 +12,8 @@ import { CHANGES_LINK, COMMITS_LINK } from "../../../lib/repo-explorer";
 import { activePaneClass } from "./active-pane-style";
 import { Fact } from "./commit-info-pane";
 import { openRowClass } from "./commit-list";
-import { PaneHeader } from "./pane-header";
+import { MaximiseButton, PaneHeader } from "./pane-header";
+import { paneWidthClass } from "./pane-width";
 
 //
 // What the repo details pane shows and what it reports.
@@ -31,6 +32,16 @@ export interface IRepoDetailsPaneProps {
     // Whether the pane is the repo explorer's active pane, which its border shows.
     isActive: boolean;
 
+    // Whether the pane is maximised, filling the repo explorer, which its maximise button shows.
+    isMaximised: boolean;
+
+    // Called when the user clicks the pane's maximise button.
+    onToggleMaximise(): void;
+
+    // Whether another pane is maximised, which hides this one. It stays drawn, hidden, so it shows
+    // again as it was when the panes are restored.
+    isHidden: boolean;
+
     // Called with the name of the link the user clicks.
     onSelectLink(link: string): void;
 }
@@ -39,10 +50,11 @@ export interface IRepoDetailsPaneProps {
 // Shows the repo in a rounded card headed "Repo" and the repo's name: its name and its full path
 // as labelled facts, laid out as the commit details pane lays out a commit's facts, then the
 // Commits link, which opens the commit pane, and the Changes link, which opens the changes pane.
-// The card never shrinks, so the panes that open to its right never hide it. The card's border is
-// in the style guide's active pane colour while the pane is active.
+// The card never shrinks, so the panes that open to its right never hide it, and fills the repo
+// explorer while it is maximised. The card's border is in the style guide's active pane colour
+// while the pane is active. The header's button maximises the pane and restores it.
 //
-export function RepoDetailsPane({ repoPath, selectedLink, openLink, isActive, onSelectLink }: IRepoDetailsPaneProps): JSX.Element {
+export function RepoDetailsPane({ repoPath, selectedLink, openLink, isActive, isMaximised, onToggleMaximise, isHidden, onSelectLink }: IRepoDetailsPaneProps): JSX.Element {
     const name = repoName(repoPath);
     const title = (
         <span className="flex items-baseline gap-2">
@@ -50,9 +62,13 @@ export function RepoDetailsPane({ repoPath, selectedLink, openLink, isActive, on
             <span className="truncate text-[length:var(--text-sm)] font-[var(--weight-normal)] text-[var(--color-text-muted)]">{name}</span>
         </span>
     );
+    let hiddenClass = "flex";
+    if (isHidden) {
+        hiddenClass = "hidden";
+    }
     return (
-        <section data-id="repo-details-pane" aria-label="Repo details" className={`flex w-[360px] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
-            <PaneHeader title={title} titleDataId="repo-details-heading" action={undefined} />
+        <section data-id="repo-details-pane" aria-label="Repo details" className={`${hiddenClass} ${paneWidthClass("w-[360px]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
+            <PaneHeader title={title} titleDataId="repo-details-heading" action={<MaximiseButton isMaximised={isMaximised} dataId="repo-details-maximise" onToggleMaximise={onToggleMaximise} />} />
             <div className="min-h-0 flex-1 overflow-auto">
                 <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-4 gap-y-2 border-b border-[var(--color-border)] p-4">
                     <Fact label="Name" dataId="repo-details-name">

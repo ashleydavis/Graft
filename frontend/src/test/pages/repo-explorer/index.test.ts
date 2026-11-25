@@ -25,6 +25,10 @@
 // in a column that fades and narrows until its animation ends, while the keys and clicks still act
 // on the other panes. Under reduced motion the columns have an empty animation class and a closed
 // pane goes at once.
+// Each pane's maximise button and M make the pane fill the page with the other panes hidden, still
+// drawn, and restore them. M is left to a text box and to a press with a modifier held. The
+// maximised pane stays active, its keys work, and closing it puts the other panes back. Hiding
+// and showing a pane never starts its opening or closing animation.
 //
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -38,7 +42,9 @@ import { ITrailStep } from "../../../lib/breadcrumb-trail";
 import { ICommit } from "../../../lib/commits";
 import { formatDate, formatDateTime } from "../../../lib/date-format";
 import { REDUCED_MOTION_QUERY } from "../../../lib/pane-animation";
-import { RepoExplorerPage, scrollLastPaneIntoView } from "../../../pages/repo-explorer";
+import { pageWidthClass, RepoExplorerPage, scrollLastPaneIntoView, scrollPaneIntoView } from "../../../pages/repo-explorer";
+import { openColumnClass } from "../../../pages/repo-explorer/components/animated-pane";
+import { maximisedPaneClasses } from "../../../pages/repo-explorer/components/pane-width";
 import { activeFlatPaneClasses, activePaneClasses } from "../../../pages/repo-explorer/components/active-pane-style";
 import { openRowClasses } from "../../../pages/repo-explorer/components/commit-list";
 import { IFakeListLayout, installFakeListLayout } from "../../fake-list-layout";
@@ -2057,5 +2063,299 @@ describe("RepoExplorerPage pane clicks", () => {
         expect(activePaneIds()).toEqual(["repo-details-pane"]);
         fireEvent.click(elementWithDataId("changes-pane"));
         expect(activePaneIds()).toEqual(["changes-pane"]);
+    });
+});
+
+//
+// Returns true when the pane with the data-id is hidden while another pane is maximised: the repo
+// details pane hides itself and every other pane hides with its column.
+//
+function isPaneHidden(dataId: string): boolean {
+    const pane = elementWithDataId(dataId);
+    if (pane.className.split(" ").includes("hidden")) {
+        return true;
+    }
+    return columnOf(dataId).className.split(" ").includes("hidden");
+}
+
+//
+// Lists the data-ids of the panes the page shows, from left to right, leaving out the panes hidden
+// while another pane is maximised.
+//
+function shownPaneIds(): (string | null)[] {
+    return paneElements()
+        .map(pane => pane.getAttribute("data-id"))
+        .filter(dataId => dataId !== null && !isPaneHidden(dataId));
+}
+
+//
+// Clicks the maximise button with the data-id, as a user does.
+//
+function clickMaximise(dataId: string): void {
+    act(() => {
+        fireEvent.click(elementWithDataId(dataId));
+    });
+}
+
+//
+// Shows the repo explorer page with the commit pane, the commit details pane and the file pane of
+// README.md open, with the file pane active.
+//
+async function openAllCommitPanes(ziggy: FakeTaskZiggy): Promise<void> {
+    await openCommitDetails(ziggy);
+    fireEvent.click(elementWithDataId("changed-file-README.md"));
+    expect(shownPaneIds()).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane"]);
+}
+
+describe("RepoExplorerPage maximise", () => {
+    test("each commit pane's maximise button fills the page with it and hides the others, and a second click puts them back", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openAllCommitPanes(ziggy);
+        const panes = [
+            ["repo-details-pane", "repo-details-maximise"],
+            ["commit-pane", "commit-pane-maximise"],
+            ["commit-details-pane", "commit-details-maximise"],
+            ["file-pane", "file-pane-maximise"],
+        ];
+        for (const [paneId, buttonId] of panes) {
+            clickMaximise(buttonId);
+            expect(shownPaneIds()).toEqual([paneId]);
+            expect(activePaneIds()).toEqual([paneId]);
+            expect(elementWithDataId(paneId).className).toContain(maximisedPaneClasses);
+            expect(elementWithDataId(buttonId).getAttribute("aria-label")).toBe("Restore the pane");
+            expect(elementWithDataId("repo-explorer-page").className).toContain(pageWidthClass(true));
+            clickMaximise(buttonId);
+            expect(shownPaneIds()).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane"]);
+            expect(elementWithDataId(paneId).className).not.toContain(maximisedPaneClasses);
+            expect(elementWithDataId(buttonId).getAttribute("aria-label")).toBe("Maximise the pane");
+            expect(elementWithDataId("repo-explorer-page").className).toContain(pageWidthClass(false));
+        }
+        expect(document.querySelectorAll("[data-id=\"file-diff\"], [data-id=\"file-diff-loading\"]").length).toBe(1);
+    });
+
+    test("the changes pane's and its file pane's maximise buttons fill the page and put the panes back", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        fireEvent.click(elementWithDataId("change-unstaged-notes.txt"));
+        for (const [paneId, buttonId] of [["changes-pane", "changes-maximise"], ["file-pane", "file-pane-maximise"]]) {
+            clickMaximise(buttonId);
+            expect(shownPaneIds()).toEqual([paneId]);
+            expect(activePaneIds()).toEqual([paneId]);
+            clickMaximise(buttonId);
+            expect(shownPaneIds()).toEqual(["repo-details-pane", "changes-pane", "file-pane"]);
+        }
+    });
+
+    test("gives the focus back to the page from the button, so the keys work at once", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openAllCommitPanes(ziggy);
+        const elsewhere = document.createElement("input");
+        document.body.appendChild(elsewhere);
+        elsewhere.focus();
+        expect(document.activeElement).toBe(elsewhere);
+        clickMaximise("commit-pane-maximise");
+        expect(document.activeElement).toBe(elementWithDataId("repo-explorer-page"));
+        elsewhere.remove();
+        pressKey("m");
+        expect(shownPaneIds()).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane"]);
+    });
+
+    test("M maximises the active pane and M again puts the panes back", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("m");
+        expect(shownPaneIds()).toEqual(["commit-pane"]);
+        pressKey("M");
+        expect(shownPaneIds()).toEqual(["repo-details-pane", "commit-pane"]);
+    });
+
+    test("keeps each M it handles from the rest of the page", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        const event = new KeyboardEvent("keydown", {
+            key: "m",
+            bubbles: true,
+            cancelable: true,
+        });
+        act(() => {
+            document.body.dispatchEvent(event);
+        });
+        expect(event.defaultPrevented).toBe(true);
+        expect(shownPaneIds()).toEqual(["commit-pane"]);
+    });
+
+    test("leaves M to a text box", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        const textBox = document.createElement("input");
+        elementWithDataId("repo-explorer-page").appendChild(textBox);
+        act(() => {
+            fireEvent.keyDown(textBox, {
+                key: "m",
+            });
+        });
+        expect(shownPaneIds()).toEqual(["repo-details-pane", "commit-pane"]);
+        textBox.remove();
+    });
+
+    test("leaves M to the commit message box", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openChanges(ziggy);
+        const messageBox = document.querySelector("[data-id=\"commit-message\"]");
+        expect(messageBox).not.toBeNull();
+        if (messageBox instanceof HTMLElement) {
+            act(() => {
+                fireEvent.keyDown(messageBox, {
+                    key: "m",
+                });
+            });
+        }
+        expect(shownPaneIds()).toEqual(["repo-details-pane", "changes-pane"]);
+    });
+
+    test("does nothing for M held with Shift, Ctrl, Alt or Cmd", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        for (const modifier of ["shiftKey", "ctrlKey", "altKey", "metaKey"]) {
+            act(() => {
+                fireEvent.keyDown(document.body, {
+                    key: "M",
+                    [modifier]: true,
+                });
+            });
+            expect(shownPaneIds()).toEqual(["repo-details-pane", "commit-pane"]);
+        }
+    });
+
+    test("keeps the maximised pane active, with Up and Down moving its selection and Left and Right leaving it active", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("m");
+        pressKey("ArrowDown");
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(true);
+        pressKey("ArrowLeft");
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        expect(shownPaneIds()).toEqual(["commit-pane"]);
+        pressKey("ArrowRight");
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+        pressKey("ArrowDown");
+        expect(isSelected(`commit-${secondCommitJson.hash}`)).toBe(true);
+        expect(shownPaneIds()).toEqual(["commit-pane"]);
+    });
+
+    test("puts the panes back when Enter opens the next pane and makes it active", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("ArrowDown");
+        pressKey("m");
+        expect(shownPaneIds()).toEqual(["commit-pane"]);
+        pressKey("Enter");
+        completeCommitDetails(ziggy, 1);
+        expect(shownPaneIds()).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane"]);
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+    });
+
+    test("closing the maximised pane with its close button puts the other panes back", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openAllCommitPanes(ziggy);
+        clickMaximise("file-pane-maximise");
+        fireEvent.click(elementWithDataId("file-pane-close"));
+        expect(shownPaneIds()).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane"]);
+        expect(activePaneIds()).toEqual(["commit-details-pane"]);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        expect(shownPaneIds()).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane"]);
+    });
+
+    test("Escape closes the maximised pane and the panes to its right and puts the other panes back", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openAllCommitPanes(ziggy);
+        clickMaximise("commit-details-maximise");
+        pressKey("Escape");
+        expect(shownPaneIds()).toEqual(["repo-details-pane", "commit-pane"]);
+        expect(activePaneIds()).toEqual(["commit-pane"]);
+    });
+
+    test("scrolls the active pane into view when the panes are put back, and not when a pane is maximised", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openAllCommitPanes(ziggy);
+        scrollIntoView.mockClear();
+        clickMaximise("file-pane-maximise");
+        expect(scrolledDataIds()).toEqual([]);
+        clickMaximise("file-pane-maximise");
+        expect(scrolledDataIds()).toEqual(["file-pane"]);
+    });
+});
+
+describe("RepoExplorerPage maximise with motion", () => {
+    beforeEach(() => {
+        installReducedMotion(false);
+    });
+
+    test("hides and shows the panes without starting their opening or closing animation", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.animationEnd(elementWithDataId("commit-pane"));
+        expect(columnOf("commit-pane").className).toContain("graft-pane-in");
+        fireEvent.animationEnd(columnOf("commit-pane"));
+        fireEvent.animationEnd(columnOf("commit-details-pane"));
+        expect(columnOf("commit-pane").className).not.toContain("graft-pane-in");
+        clickMaximise("commit-details-maximise");
+        expect(columnOf("commit-pane").className).not.toContain("graft-pane-out");
+        expect(columnOf("commit-pane").hasAttribute("inert")).toBe(false);
+        clickMaximise("commit-details-maximise");
+        for (const dataId of ["commit-pane", "commit-details-pane"]) {
+            expect(columnOf(dataId).className).not.toContain("graft-pane-in");
+            expect(columnOf(dataId).className).not.toContain("graft-pane-out");
+        }
+    });
+
+    test("fades a pane in again when it opens afresh after its first opening ended", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.animationEnd(columnOf("commit-details-pane"));
+        expect(columnOf("commit-details-pane").className).not.toContain("graft-pane-in");
+        fireEvent.click(elementWithDataId("commit-details-close"));
+        fireEvent.animationEnd(columnOf("commit-details-pane"));
+        fireEvent.click(await screen.findByText("The first commit"));
+        expect(columnOf("commit-details-pane").className).toContain("graft-pane-in");
+    });
+});
+
+describe("openColumnClass", () => {
+    test("hides the column, grows it or keeps it the width of its pane", () => {
+        expect(openColumnClass(true, false)).toBe("hidden");
+        expect(openColumnClass(false, true)).toBe("flex min-w-0 flex-1");
+        expect(openColumnClass(false, false)).toBe("flex flex-none");
+    });
+});
+
+describe("pageWidthClass", () => {
+    test("is as wide as the panes, at least the window, or the window alone while a pane is maximised", () => {
+        expect(pageWidthClass(false)).toBe("w-max min-w-full");
+        expect(pageWidthClass(true)).toBe("w-full");
+    });
+});
+
+describe("scrollPaneIntoView", () => {
+    test("scrolls the pane at the index into view at once", () => {
+        const columns = document.createElement("div");
+        const first = document.createElement("section");
+        const second = document.createElement("section");
+        columns.append(first, second);
+        scrollIntoView.mockClear();
+        scrollPaneIntoView(columns, 1);
+        expect(scrollIntoView.mock.contexts).toEqual([second]);
+        expect(scrollIntoView).toHaveBeenCalledWith({
+            behavior: "instant",
+            block: "nearest",
+            inline: "nearest",
+        });
+    });
+
+    test("scrolls nothing with no columns or no pane at the index", () => {
+        scrollIntoView.mockClear();
+        scrollPaneIntoView(null, 0);
+        scrollPaneIntoView(document.createElement("div"), 0);
+        expect(scrollIntoView).not.toHaveBeenCalled();
     });
 });

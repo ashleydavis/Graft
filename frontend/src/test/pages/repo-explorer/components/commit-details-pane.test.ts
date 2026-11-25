@@ -9,6 +9,8 @@
 // border is in the style guide's active pane colour while it is active, and that the pane's
 // scrolling area scrolls to show the selected row each time the selection changes. It also checks
 // the colour, name and meaning of each change type and the text of the line counts.
+// It checks the maximise button reports a click, sits before the close button and the card fills
+// the repo explorer while maximised.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
@@ -16,6 +18,7 @@ import { IChangedFile } from "../../../../lib/commit-details";
 import { createElement, ReactElement } from "react";
 import type { IAddTask, ITaskCompletedEvent } from "ziggy";
 import { ICommitJson } from "../../../../lib/commits";
+import { maximisedPaneClasses } from "../../../../pages/repo-explorer/components/pane-width";
 import { activePaneClasses } from "../../../../pages/repo-explorer/components/active-pane-style";
 import { COMMIT_DETAILS_PATH } from "../../../../lib/repo-explorer";
 import { CommitDetailsPane, FileTip, lineCountsText, IVerticalEdges, scrollRowIntoView, scrollTopShowingRow, statusColorClass, statusTip } from "../../../../pages/repo-explorer/components/commit-details-pane";
@@ -223,6 +226,8 @@ function paneElement(selectedPath: string | undefined, onSelectFile: jest.Mock, 
         selectedPath,
         openPath: selectedPath,
         isActive,
+        isMaximised: false,
+        onToggleMaximise: jest.fn(),
         onSelectFile,
         onReadCommit,
         onClose,
@@ -527,5 +532,30 @@ describe("FileTip", () => {
         }));
         expect(container.textContent).toBe("MModified+9 −2The file's lines changed.Pathdocs/notes.txt");
         expect(screen.getByText("M").className).toContain("text-[var(--color-warning)]");
+    });
+});
+
+describe("CommitDetailsPane maximise button", () => {
+    test("reports a click, sits before the close button and fills the repo explorer while the pane is maximised", () => {
+        installFakeTaskZiggy();
+        const onToggleMaximise = jest.fn();
+        const { container } = render(createElement(CommitDetailsPane, {
+            repoPath: "/repo",
+            hash: commitHash,
+            selectedPath: undefined,
+            openPath: undefined,
+            isActive: true,
+            isMaximised: true,
+            onToggleMaximise,
+            onSelectFile: jest.fn(),
+            onReadCommit: jest.fn(),
+            onClose: jest.fn(),
+        }));
+        expect(container.querySelector("[data-id=\"commit-details-pane\"]")?.className).toContain(maximisedPaneClasses);
+        expect(container.querySelector("[data-id=\"commit-details-maximise\"] + [data-id=\"commit-details-close\"]")).not.toBeNull();
+        const button = screen.getByLabelText("Restore the pane");
+        expect(button.getAttribute("data-id")).toBe("commit-details-maximise");
+        fireEvent.click(button);
+        expect(onToggleMaximise).toHaveBeenCalledTimes(1);
     });
 });

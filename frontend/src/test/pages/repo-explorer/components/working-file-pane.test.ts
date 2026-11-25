@@ -3,11 +3,14 @@
 // that it queues the working file diff task for the file and its list, shows the file's name alone
 // and that it is loading, then the diff or why it could not be read, and that the close button
 // reports it.
+// It checks the maximise button reports a click and the card fills the repo explorer while
+// maximised.
 //
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import type { IAddTask, ITaskCompletedEvent } from "ziggy";
+import { maximisedPaneClasses } from "../../../../pages/repo-explorer/components/pane-width";
 import { WorkingFilePane } from "../../../../pages/repo-explorer/components/working-file-pane";
 import { FakeTaskZiggy, installFakeTaskZiggy } from "../../../fake-ziggy";
 
@@ -41,6 +44,8 @@ function renderPane(onClose: jest.Mock): void {
         },
         isStaged: false,
         isActive: true,
+        isMaximised: false,
+        onToggleMaximise: jest.fn(),
         onClose,
     }));
 }
@@ -96,5 +101,29 @@ describe("WorkingFilePane", () => {
         renderPane(onClose);
         fireEvent.click(screen.getByLabelText("Close file diff"));
         expect(onClose).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("WorkingFilePane maximise button", () => {
+    test("reports a click and fills the repo explorer while the pane is maximised", () => {
+        installFakeTaskZiggy();
+        const onToggleMaximise = jest.fn();
+        render(createElement(WorkingFilePane, {
+            repoPath: "/repo",
+            file: {
+                status: "M",
+                path: "notes.txt",
+            },
+            isStaged: true,
+            isActive: true,
+            isMaximised: true,
+            onToggleMaximise,
+            onClose: jest.fn(),
+        }));
+        expect(document.querySelector("[data-id=\"file-pane\"]")?.className).toContain(maximisedPaneClasses);
+        const button = screen.getByLabelText("Restore the pane");
+        expect(button.getAttribute("data-id")).toBe("file-pane-maximise");
+        fireEvent.click(button);
+        expect(onToggleMaximise).toHaveBeenCalledTimes(1);
     });
 });

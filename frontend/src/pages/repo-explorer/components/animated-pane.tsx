@@ -1,6 +1,7 @@
 //
 // Draws one pane of the repo explorer in a column of its own that animates as the pane opens and
-// closes, and keeps a closing pane drawn until its closing animation ends.
+// closes, keeps a closing pane drawn until its closing animation ends and hides or widens the
+// column while a pane is maximised.
 //
 
 import { AnimationEvent, JSX, ReactNode, useLayoutEffect, useRef, useState } from "react";
@@ -14,6 +15,13 @@ export interface IAnimatedPaneProps {
     // drawn afresh and fades in again, as when another commit's details open.
     openId: string | undefined;
 
+    // Whether another pane is maximised, which hides this pane's column. The pane stays drawn,
+    // hidden, so it shows again as it was when the panes are restored.
+    isHidden: boolean;
+
+    // Whether this pane is maximised, so its column grows to fill the repo explorer.
+    isMaximised: boolean;
+
     // The open pane, drawn while openId names it.
     children: ReactNode;
 }
@@ -25,19 +33,23 @@ export interface IAnimatedPaneProps {
 // the keys act on them while it animates. It moves the focus out of a closing pane, so a key
 // pressed then reaches the page instead of a button that is going away. The closing animation
 // narrows from the column's width, measured as the animation starts, because a pane's width depends
-// on the window. Under reduced motion the column has an empty animation class and a closed pane
-// goes at once, because the end of the closing animation is what removes a closed pane, and that
-// animation is off.
+// on the window. The opening animation's class comes off the column once the animation ends, so
+// a column hidden while another pane is maximised shows again at once when the panes are restored.
+// Under reduced motion the column has an empty animation class and a closed pane goes at once,
+// because the end of the closing animation is what removes a closed pane, and that animation is
+// off.
 //
-export function AnimatedPane({ openId, children }: IAnimatedPaneProps): JSX.Element | undefined {
+export function AnimatedPane({ openId, isHidden, isMaximised, children }: IAnimatedPaneProps): JSX.Element | undefined {
     const isReducedMotion = window.matchMedia(REDUCED_MOTION_QUERY).matches;
     const [previousOpenId, setPreviousOpenId] = useState(openId);
     const [closingId, setClosingId] = useState<string | undefined>(undefined);
+    const [openedId, setOpenedId] = useState<string | undefined>(undefined);
     const lastPane = useRef<ReactNode>(undefined);
 
     if (previousOpenId !== openId) {
         setPreviousOpenId(openId);
         setClosingId(closingPaneId(previousOpenId, openId, isReducedMotion));
+        setOpenedId(undefined);
     }
 
     useLayoutEffect(() => {
@@ -47,8 +59,25 @@ export function AnimatedPane({ openId, children }: IAnimatedPaneProps): JSX.Elem
     });
 
     if (openId !== undefined) {
+        let animationClass = paneAnimationClass(false, isReducedMotion);
+        if (openedId === openId) {
+            animationClass = "";
+        }
+
+        //
+        // Takes the opening animation's class off the column once its own animation ends. An
+        // animation of an element inside the pane ends too and reaches the column, so only the
+        // column's own is taken.
+        //
+        function onOpenAnimationEnd(event: AnimationEvent<HTMLDivElement>): void {
+            if (event.target !== event.currentTarget) {
+                return;
+            }
+            setOpenedId(openId);
+        }
+
         return (
-            <div key={openId} className={`flex flex-none ${paneAnimationClass(false, isReducedMotion)}`}>
+            <div key={openId} className={`${openColumnClass(isHidden, isMaximised)} ${animationClass}`} onAnimationEnd={onOpenAnimationEnd}>
                 {children}
             </div>
         );
@@ -90,4 +119,19 @@ export function AnimatedPane({ openId, children }: IAnimatedPaneProps): JSX.Elem
             {lastPane.current}
         </div>
     );
+}
+
+//
+// Picks the Tailwind classes of an open pane's column: hidden while another pane is maximised,
+// growing to fill the repo explorer while its own pane is maximised and as wide as its pane
+// otherwise.
+//
+export function openColumnClass(isHidden: boolean, isMaximised: boolean): string {
+    if (isHidden) {
+        return "hidden";
+    }
+    if (isMaximised) {
+        return "flex min-w-0 flex-1";
+    }
+    return "flex flex-none";
 }

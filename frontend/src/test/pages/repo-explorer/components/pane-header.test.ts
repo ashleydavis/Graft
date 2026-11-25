@@ -1,12 +1,14 @@
 //
-// Tests the pane header and the close button: renders the header with a title and an action and
-// checks that it shows the title under its data-id and the action, and that the close button has
-// its data-id and name and reports a click.
+// Tests the pane header, the close button and the maximise button: renders the header with a title
+// and an action and checks that it shows the title under its data-id and the action, that the
+// close button has its data-id and name and reports a click, and that the maximise button shows
+// arrows pointing out or in, is named for what a click does, names the M key in its tooltip and
+// reports a click.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
-import { CloseButton, PaneHeader } from "../../../../pages/repo-explorer/components/pane-header";
+import { CloseButton, MaximiseButton, PaneHeader } from "../../../../pages/repo-explorer/components/pane-header";
 
 describe("PaneHeader", () => {
     test("shows the title under its data-id", () => {
@@ -42,5 +44,44 @@ describe("CloseButton", () => {
         expect(close.getAttribute("data-id")).toBe("commit-details-close");
         fireEvent.click(close);
         expect(onClose).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("MaximiseButton", () => {
+    test("shows arrows pointing out, is named Maximise the pane and reports a click while the pane is at its usual size", () => {
+        const onToggleMaximise = jest.fn();
+        render(createElement(MaximiseButton, {
+            isMaximised: false,
+            dataId: "commit-pane-maximise",
+            onToggleMaximise,
+        }));
+        const button = screen.getByLabelText("Maximise the pane");
+        expect(button.getAttribute("data-id")).toBe("commit-pane-maximise");
+        expect(button.getAttribute("aria-pressed")).toBe("false");
+        expect(button.querySelector("svg")?.getAttribute("data-icon")).toBe("up-right-and-down-left-from-center");
+        fireEvent.click(button);
+        expect(onToggleMaximise).toHaveBeenCalledTimes(1);
+    });
+
+    test("shows arrows pointing in and is named Restore the pane while the pane is maximised", () => {
+        render(createElement(MaximiseButton, {
+            isMaximised: true,
+            dataId: "commit-pane-maximise",
+            onToggleMaximise: jest.fn(),
+        }));
+        const button = screen.getByLabelText("Restore the pane");
+        expect(button.getAttribute("aria-pressed")).toBe("true");
+        expect(button.querySelector("svg")?.getAttribute("data-icon")).toBe("down-left-and-up-right-to-center");
+    });
+
+    test("names what a click does and the M key in its tooltip", async () => {
+        render(createElement(MaximiseButton, {
+            isMaximised: false,
+            dataId: "commit-pane-maximise",
+            onToggleMaximise: jest.fn(),
+        }));
+        fireEvent.mouseOver(screen.getByLabelText("Maximise the pane"));
+        const tooltip = await screen.findByRole("tooltip");
+        expect(tooltip.textContent).toBe("Maximise the paneKey: M");
     });
 });

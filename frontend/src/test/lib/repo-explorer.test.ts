@@ -3,6 +3,9 @@
 // active pane and the selection in each pane, and which key presses are the explorer's to handle.
 // It also checks which key presses are the copy key, what the copy key copies from each pane and
 // when the page holds text the user selected.
+// It checks M and the maximise state: maximising and restoring a pane, Left, Right and Escape
+// while a pane is maximised, and putting the panes back when the maximised pane closes or stops
+// being active.
 //
 
 import {
@@ -45,6 +48,12 @@ import {
     selectFirstFile,
     selectLink,
     selectedItemText,
+    closeMaximisedPane,
+    hasKeyModifier,
+    isMaximiseKey,
+    keepMaximisedPaneShown,
+    MAXIMISE_KEY,
+    toggleMaximise,
 } from "../../lib/repo-explorer";
 
 //
@@ -85,6 +94,7 @@ const commitsOpen: IRepoExplorerState = {
     openPath: undefined,
     selectedChange: undefined,
     openChange: undefined,
+    maximisedPaneIndex: undefined,
 };
 
 //
@@ -141,13 +151,15 @@ describe("initialRepoExplorerState", () => {
             openPath: undefined,
             selectedChange: undefined,
             openChange: undefined,
+            maximisedPaneIndex: undefined,
         });
+        expect(Object.keys(initialRepoExplorerState)).toContain("maximisedPaneIndex");
     });
 });
 
 describe("isExplorerKey", () => {
-    test("is true for the arrow keys, Page Up, Page Down, Home, End, Enter and Escape", () => {
-        for (const key of ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", "Enter", "Escape"]) {
+    test("is true for the arrow keys, Page Up, Page Down, Home, End, Enter, Escape and M in either case", () => {
+        for (const key of ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", "Enter", "Escape", "m", "M"]) {
             expect(isExplorerKey(key)).toBe(true);
         }
     });
@@ -222,7 +234,13 @@ describe("selectLink", () => {
             openPath: undefined,
             selectedChange: undefined,
             openChange: undefined,
+            maximisedPaneIndex: undefined,
         });
+    });
+
+    test("puts back every pane when a pane was maximised", () => {
+        expect(Object.keys(selectLink(CHANGES_LINK))).toContain("maximisedPaneIndex");
+        expect(selectLink(CHANGES_LINK).maximisedPaneIndex).toBeUndefined();
     });
 });
 
@@ -1325,6 +1343,51 @@ describe("isCopyKey", () => {
     });
 });
 
+describe("isMaximiseKey", () => {
+    test("is true for M in either case and false for any other key", () => {
+        expect(MAXIMISE_KEY).toBe("M");
+        expect(isMaximiseKey("m")).toBe(true);
+        expect(isMaximiseKey("M")).toBe(true);
+        expect(isMaximiseKey("n")).toBe(false);
+        expect(isMaximiseKey("Enter")).toBe(false);
+    });
+});
+
+describe("hasKeyModifier", () => {
+    test("is false for a key held with no modifier", () => {
+        expect(hasKeyModifier(keyPress("m"))).toBe(false);
+        expect(hasKeyModifier(keyPress("ArrowDown"))).toBe(false);
+    });
+
+    test("is true for any key held with Ctrl, Alt or Cmd", () => {
+        for (const key of ["m", "ArrowDown"]) {
+            expect(hasKeyModifier({
+                ...keyPress(key),
+                ctrlKey: true,
+            })).toBe(true);
+            expect(hasKeyModifier({
+                ...keyPress(key),
+                altKey: true,
+            })).toBe(true);
+            expect(hasKeyModifier({
+                ...keyPress(key),
+                metaKey: true,
+            })).toBe(true);
+        }
+    });
+
+    test("counts Shift only with M, so Shift with an arrow key still moves through the panes", () => {
+        expect(hasKeyModifier({
+            ...keyPress("M"),
+            shiftKey: true,
+        })).toBe(true);
+        expect(hasKeyModifier({
+            ...keyPress("ArrowDown"),
+            shiftKey: true,
+        })).toBe(false);
+    });
+});
+
 describe("selectedItemText", () => {
     //
     // The commit pane open, with a commit and one of its files selected.
@@ -1433,5 +1496,132 @@ describe("hasSelectedText", () => {
         selection?.removeAllRanges();
         paragraph.remove();
         expect(hasSelectedText(null)).toBe(false);
+    });
+});
+
+describe("toggleMaximise", () => {
+    test("maximises the pane and makes it active", () => {
+        const maximised = toggleMaximise(allOpen, 1);
+        expect(maximised).toEqual({
+            ...allOpen,
+            activePaneIndex: 1,
+            maximisedPaneIndex: 1,
+        });
+    });
+
+    test("puts every pane back when the pane is the maximised one, keeping it active", () => {
+        const restored = toggleMaximise(toggleMaximise(allOpen, 2), 2);
+        expect(restored.maximisedPaneIndex).toBeUndefined();
+        expect(restored.activePaneIndex).toBe(2);
+        expect(restored.openPath).toBe("notes.txt");
+    });
+
+    test("maximises another pane in place of the maximised one", () => {
+        const other = toggleMaximise(toggleMaximise(allOpen, 2), 3);
+        expect(other.maximisedPaneIndex).toBe(3);
+        expect(other.activePaneIndex).toBe(3);
+    });
+});
+
+describe("closeMaximisedPane", () => {
+    test("closes the maximised file pane and makes the commit details pane active, with every pane back", () => {
+        const closed = closeMaximisedPane(toggleMaximise(allOpen, 3));
+        expect(closed.openPath).toBeUndefined();
+        expect(closed.openHash).toBe("bbb");
+        expect(closed.activePaneIndex).toBe(2);
+        expect(closed.maximisedPaneIndex).toBeUndefined();
+    });
+
+    test("closes the maximised commit pane and every pane to its right", () => {
+        const closed = closeMaximisedPane(toggleMaximise(allOpen, 1));
+        expect(closed.openLink).toBeUndefined();
+        expect(closed.openHash).toBeUndefined();
+        expect(closed.openPath).toBeUndefined();
+        expect(closed.activePaneIndex).toBe(0);
+        expect(closed.maximisedPaneIndex).toBeUndefined();
+    });
+
+    test("closes the maximised changes pane and its file pane", () => {
+        const closed = closeMaximisedPane(toggleMaximise(changeFileOpen, 1));
+        expect(closed.openLink).toBeUndefined();
+        expect(closed.openChange).toBeUndefined();
+        expect(closed.activePaneIndex).toBe(0);
+    });
+
+    test("puts the panes back without closing any when the repo details pane is maximised", () => {
+        const closed = closeMaximisedPane(toggleMaximise(allOpen, 0));
+        expect(closed).toEqual({
+            ...allOpen,
+            activePaneIndex: 0,
+            maximisedPaneIndex: undefined,
+        });
+    });
+
+    test("changes nothing but the maximised pane when no pane is maximised", () => {
+        expect(closeMaximisedPane(allOpen)).toEqual(allOpen);
+    });
+});
+
+describe("keepMaximisedPaneShown", () => {
+    test("keeps a maximised pane that is open and active", () => {
+        const maximised = toggleMaximise(allOpen, 2);
+        expect(keepMaximisedPaneShown(maximised)).toBe(maximised);
+    });
+
+    test("keeps the state as it is with no pane maximised", () => {
+        expect(keepMaximisedPaneShown(allOpen)).toBe(allOpen);
+    });
+
+    test("puts every pane back when the maximised pane is no longer active", () => {
+        const opened = keepMaximisedPaneShown({
+            ...toggleMaximise(allOpen, 2),
+            activePaneIndex: 3,
+        });
+        expect(opened.maximisedPaneIndex).toBeUndefined();
+        expect(opened.activePaneIndex).toBe(3);
+    });
+
+    test("puts every pane back when the maximised pane has closed with its close button", () => {
+        expect(keepMaximisedPaneShown(closeFilePane(toggleMaximise(allOpen, 3))).maximisedPaneIndex).toBeUndefined();
+        expect(keepMaximisedPaneShown(closeCommitDetailsPane(toggleMaximise(allOpen, 2))).maximisedPaneIndex).toBeUndefined();
+        expect(keepMaximisedPaneShown(closeChangeFilePane(toggleMaximise(changeFileOpen, 2))).maximisedPaneIndex).toBeUndefined();
+    });
+
+    test("puts every pane back when a maximised index is beyond the open panes", () => {
+        expect(keepMaximisedPaneShown({
+            ...commitsOpen,
+            activePaneIndex: 3,
+            maximisedPaneIndex: 3,
+        }).maximisedPaneIndex).toBeUndefined();
+    });
+});
+
+describe("explorerStateAfterKey with a pane maximised", () => {
+    test("M maximises the active pane and M again restores the panes", () => {
+        const maximised = explorerStateAfterKey(detailsOpen, "m", items);
+        expect(maximised.maximisedPaneIndex).toBe(2);
+        expect(explorerStateAfterKey(maximised, "M", items).maximisedPaneIndex).toBeUndefined();
+    });
+
+    test("Left and Right keep the maximised pane active", () => {
+        const maximised = toggleMaximise(allOpen, 2);
+        expect(explorerStateAfterKey(maximised, "ArrowLeft", items)).toBe(maximised);
+        expect(explorerStateAfterKey(maximised, "ArrowRight", items)).toBe(maximised);
+    });
+
+    test("Up and Down move the selection in the maximised pane as before", () => {
+        const maximised = toggleMaximise(detailsOpen, 1);
+        const down = explorerStateAfterKey(maximised, "ArrowDown", items);
+        expect(down.openHash).toBe("ccc");
+        expect(down.activePaneIndex).toBe(1);
+        expect(down.maximisedPaneIndex).toBe(1);
+    });
+
+    test("Escape closes the maximised pane and every pane to its right", () => {
+        const closed = explorerStateAfterKey(toggleMaximise(allOpen, 2), "Escape", items);
+        expect(closed.openHash).toBeUndefined();
+        expect(closed.openPath).toBeUndefined();
+        expect(closed.maximisedPaneIndex).toBeUndefined();
+        expect(closed.activePaneIndex).toBe(1);
     });
 });

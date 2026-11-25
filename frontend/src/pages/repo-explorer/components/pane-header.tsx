@@ -1,12 +1,14 @@
 //
-// The header of a pane in the repo explorer: the pane's title and, for a pane that can be closed, a
-// button that closes it, laid out as the style guide's commit explorer panes are.
+// The header of a pane in the repo explorer: the pane's title, the button that maximises the pane
+// and, for a pane that can be closed, a button that closes it, laid out as the style guide's
+// commit explorer panes are.
 //
 
-import { faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faDownLeftAndUpRightToCenter, faUpRightAndDownLeftFromCenter, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { IconButton, Tooltip } from "@mui/material";
 import { JSX, ReactNode } from "react";
+import { MAXIMISE_KEY } from "../../../lib/repo-explorer";
 
 //
 // What the pane header shows.
@@ -18,7 +20,8 @@ export interface IPaneHeaderProps {
     // The data-id of the title, so a smoke test can read it.
     titleDataId: string;
 
-    // What shows at the right of the header, such as the close button, or undefined for nothing.
+    // What shows at the right of the header, such as the maximise and close buttons, or undefined
+    // for nothing.
     action: ReactNode | undefined;
 }
 
@@ -61,6 +64,48 @@ export function CloseButton({ paneLabel, dataId, onClose }: ICloseButtonProps): 
         <Tooltip title="Close">
             <IconButton data-id={dataId} aria-label={`Close ${paneLabel.toLowerCase()}`} size="small" onClick={onClose}>
                 <FontAwesomeIcon icon={faXmark} />
+            </IconButton>
+        </Tooltip>
+    );
+}
+
+//
+// What the maximise button shows and does and how a smoke test finds it.
+//
+export interface IMaximiseButtonProps {
+    // Whether the pane is maximised, so the button shows that a click restores the panes.
+    isMaximised: boolean;
+
+    // The data-id of the button, so a smoke test can click it.
+    dataId: string;
+
+    // Called when the user clicks the button.
+    onToggleMaximise(): void;
+}
+
+//
+// Shows the icon button that maximises a pane, as the style guide's maximise button does: arrows
+// pointing out while the pane is at its usual size and arrows pointing in while it is maximised.
+// Its tooltip shows what a click does in bold and names the key that does the same below it, so
+// the user learns the key. aria-pressed gives assistive technology whether the pane is maximised.
+//
+export function MaximiseButton({ isMaximised, dataId, onToggleMaximise }: IMaximiseButtonProps): JSX.Element {
+    let label = "Maximise the pane";
+    let icon = faUpRightAndDownLeftFromCenter;
+    if (isMaximised) {
+        label = "Restore the pane";
+        icon = faDownLeftAndUpRightToCenter;
+    }
+    const tip = (
+        <span className="flex flex-col gap-[2px] py-[2px]">
+            <span className="font-[var(--weight-bold)]">{label}</span>
+            <span className="text-[length:var(--text-xs)] font-[var(--weight-normal)] opacity-80">{`Key: ${MAXIMISE_KEY}`}</span>
+        </span>
+    );
+    return (
+        <Tooltip title={tip}>
+            <IconButton data-id={dataId} aria-label={label} aria-pressed={isMaximised} size="small" onClick={onToggleMaximise}>
+                <FontAwesomeIcon icon={icon} />
             </IconButton>
         </Tooltip>
     );

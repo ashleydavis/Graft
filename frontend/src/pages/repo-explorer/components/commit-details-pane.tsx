@@ -15,7 +15,8 @@ import { openRowClass } from "./commit-list";
 import { FileIcon } from "./file-icon";
 import { FilePath } from "./file-path";
 import { FilePathMenu, filePathMenuRowStyle } from "./file-path-menu";
-import { CloseButton, PaneHeader } from "./pane-header";
+import { CloseButton, MaximiseButton, PaneHeader } from "./pane-header";
+import { paneWidthClass } from "./pane-width";
 
 //
 // The data-id of the pane's scrolling area, which a selected file's row finds and scrolls and the
@@ -44,6 +45,12 @@ export interface ICommitDetailsPaneProps {
     // Whether the pane is the repo explorer's active pane, which its border shows.
     isActive: boolean;
 
+    // Whether the pane is maximised, filling the repo explorer, which its maximise button shows.
+    isMaximised: boolean;
+
+    // Called when the user clicks the pane's maximise button.
+    onToggleMaximise(): void;
+
     // Called with the path of the changed file the user clicks, or COMMIT_DETAILS_PATH for the
     // "Commit details" row.
     onSelectFile(path: string): void;
@@ -59,12 +66,13 @@ export interface ICommitDetailsPaneProps {
 
 //
 // Reads the commit's details and changed files with the commit details task and shows them in a
-// rounded card headed "Commit" and the commit's short hash, with a button that closes the pane. It
-// shows that it is loading until the task ends and what went wrong when the commit could not be
-// read. The card's border is in the style guide's active pane colour while the pane is active. The
-// page's AnimatedPane column animates it as it opens and closes.
+// rounded card headed "Commit" and the commit's short hash, with a button that maximises the pane
+// and restores it and a button that closes the pane. It shows that it is loading until the task
+// ends and what went wrong when the commit could not be read. The card fills the repo explorer
+// while the pane is maximised. The card's border is in the style guide's active pane colour while
+// the pane is active. The page's AnimatedPane column animates it as it opens and closes.
 //
-export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isActive, onSelectFile, onReadCommit, onClose }: ICommitDetailsPaneProps): JSX.Element {
+export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isActive, isMaximised, onToggleMaximise, onSelectFile, onReadCommit, onClose }: ICommitDetailsPaneProps): JSX.Element {
     const [details, setDetails] = useState<ICommitDetails | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
 
@@ -91,8 +99,13 @@ export function CommitDetailsPane({ repoPath, hash, selectedPath, openPath, isAc
         </span>
     );
     return (
-        <section data-id="commit-details-pane" aria-label="Commit details" className={`flex w-[450px] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
-            <PaneHeader title={title} titleDataId="commit-details-heading" action={<CloseButton paneLabel="Commit details" dataId="commit-details-close" onClose={onClose} />} />
+        <section data-id="commit-details-pane" aria-label="Commit details" className={`flex ${paneWidthClass("w-[450px]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
+            <PaneHeader title={title} titleDataId="commit-details-heading" action={(
+                <>
+                    <MaximiseButton isMaximised={isMaximised} dataId="commit-details-maximise" onToggleMaximise={onToggleMaximise} />
+                    <CloseButton paneLabel="Commit details" dataId="commit-details-close" onClose={onClose} />
+                </>
+            )} />
             <div data-id={SCROLL_AREA_DATA_ID} className="min-h-0 flex-1 overflow-auto">
                 <CommitDetailsContent repoPath={repoPath} details={details} error={error} selectedPath={selectedPath} openPath={openPath} onSelectFile={onSelectFile} />
             </div>

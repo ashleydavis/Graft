@@ -6,7 +6,9 @@
 // the file pane's place, like the column view of a file browser. Its Changes link opens the changes
 // pane in place of the commit pane, with the working tree's unstaged and staged files, and clicking
 // a file there opens its file pane. The arrow keys, Page Up, Page Down, Enter and Escape move through the panes as in
-// the column view of macOS Finder. Clicking anywhere in a pane makes it the active pane.
+// the column view of macOS Finder. Clicking anywhere in a pane makes it the active pane. Each pane's
+// maximise button, or M, makes the pane fill the page with the other panes hidden, and restores
+// them.
 //
 
 import { JSX, MouseEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -20,7 +22,7 @@ import { commitStagedFiles } from "../../lib/commit";
 import { canReadNextPage, COMMIT_PAGE_SIZE, commitPagesAfterRead, commitPagesReading, ICommitPages, nextPageStart, noCommitPages } from "../../lib/commit-pages";
 import { ICommit, ICommitPageStart, readCommitPage } from "../../lib/commits";
 import { openPaneIds } from "../../lib/pane-animation";
-import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, closeLinkPane, COMMIT_DETAILS_PATH, CHANGES_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, hasSelectedText, initialRepoExplorerState, IRepoExplorerState, isCopyKey, isExplorerKey, isExplorerKeyTarget, keepListedChanges, measurePageRowCount, selectChange, selectedItemText, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
+import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, closeLinkPane, COMMIT_DETAILS_PATH, CHANGES_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, hasKeyModifier, hasSelectedText, initialRepoExplorerState, IRepoExplorerState, isCopyKey, isExplorerKey, isExplorerKeyTarget, keepListedChanges, keepMaximisedPaneShown, measurePageRowCount, selectChange, selectedItemText, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex, toggleMaximise } from "../../lib/repo-explorer";
 import { toggleFileStaged } from "../../lib/stage-file";
 import { IWorkingChanges, IWorkingFile, readWorkingChanges } from "../../lib/working-changes";
 import { AnimatedPane } from "./components/animated-pane";
@@ -85,13 +87,19 @@ export function RepoExplorerPage(): JSX.Element {
 // clears the message and reads the changes again, so the staged list empties. The commit pane
 // shows the new commit because it reads the commits afresh each time it opens. It puts a step
 // for each open pane in the breadcrumb trail each time a pane opens or closes, and takes them out
-// when the page closes, so the trail always ends with the rightmost pane. It sets the layout's
-// active pane each time the active pane changes, and clears it when the page closes, so the
-// command palette lists the active pane's commands first.
+// when the page closes, so the trail always ends with the rightmost pane. Every change to the
+// explorer's state goes through keepMaximisedPaneShown, so a maximised pane that closes or stops
+// being active puts the other panes back. While a pane is maximised the other panes stay drawn,
+// hidden, so they come back as they were, and the page is as wide as the window, so the maximised
+// pane fills it. Its maximise button gives the focus back to the page, so the keys work at once.
+// Restoring the panes scrolls the active pane into view, because the page's sideways scroll is
+// lost while it is as wide as the window. It sets the layout's active pane each time the active
+// pane changes, and clears it when the page closes, so the command palette lists the active
+// pane's commands first.
 //
 export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const [commitPages, setCommitPages] = useState<ICommitPages>(noCommitPages);
-    const [explorer, setExplorer] = useState(initialRepoExplorerState);
+    const [explorer, setExplorerState] = useState(initialRepoExplorerState);
     const [filePaths, setFilePaths] = useState<string[]>([]);
     const [openCommit, setOpenCommit] = useState<ICommit | undefined>(undefined);
     const [changes, setChanges] = useState<IWorkingChanges | undefined>(undefined);
@@ -103,11 +111,41 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const [isCommitting, setIsCommitting] = useState(false);
     const pageRef = useRef<HTMLElement>(null);
     const columnsRef = useRef<HTMLDivElement>(null);
+    const wasMaximisedRef = useRef(false);
     const dateFormat = Intl.DateTimeFormat().resolvedOptions();
     const isCommitsOpen = explorer.openLink === COMMITS_LINK;
     const isChangesOpen = explorer.openLink === CHANGES_LINK;
     const { setPaneSteps } = usePaneTrail();
     const { setActivePane } = useActivePane();
+
+    //
+    // Changes the explorer's state with the change, then puts the panes back when the maximised
+    // pane has closed or is no longer active, so every change keeps the active pane in view.
+    //
+    function setExplorer(change: (state: IRepoExplorerState) => IRepoExplorerState): void {
+        setExplorerState(state => keepMaximisedPaneShown(change(state)));
+    }
+
+    //
+    // Maximises the pane at the index or restores the panes, as its maximise button does, and
+    // gives the focus back to the page from the button, so the keys act on the pane at once.
+    //
+    function onToggleMaximise(paneIndex: number): void {
+        setExplorer(state => toggleMaximise(state, paneIndex));
+        pageRef.current?.focus({
+            preventScroll: true,
+        });
+    }
+
+    //
+    // Returns true when the pane at the index is hidden because another pane is maximised.
+    //
+    function isPaneHidden(paneIndex: number): boolean {
+        if (explorer.maximisedPaneIndex === undefined) {
+            return false;
+        }
+        return explorer.maximisedPaneIndex !== paneIndex;
+    }
 
     //
     // Reads the working tree's changes and shows them, then works out the explorer's state from
@@ -248,6 +286,18 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
         }
     }, [explorer.openLink, explorer.openHash, explorer.openPath, explorer.openChange]);
 
+    useEffect(() => {
+        if (explorer.maximisedPaneIndex !== undefined) {
+            wasMaximisedRef.current = true;
+            return;
+        }
+        if (!wasMaximisedRef.current) {
+            return;
+        }
+        wasMaximisedRef.current = false;
+        scrollPaneIntoView(columnsRef.current, explorer.activePaneIndex);
+    }, [explorer.maximisedPaneIndex]);
+
     useLayoutEffect(() => {
         const items = {
             links: [COMMITS_LINK, CHANGES_LINK],
@@ -264,8 +314,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
             if (!isExplorerKey(event.key)) {
                 return;
             }
-            const hasModifier = event.ctrlKey || event.altKey || event.metaKey;
-            if (!isExplorerKeyTarget(event.target, pageRef.current, hasModifier)) {
+            if (!isExplorerKeyTarget(event.target, pageRef.current, hasKeyModifier(event))) {
                 return;
             }
             event.preventDefault();
@@ -322,10 +371,10 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const paneIds = openPaneIds(explorer, openChange !== undefined);
 
     return (
-        <main ref={pageRef} tabIndex={-1} data-id="repo-explorer-page" className="graft-page-in outline-none flex h-full w-max min-w-full flex-col gap-4 bg-[var(--color-bg)] p-6">
+        <main ref={pageRef} tabIndex={-1} data-id="repo-explorer-page" className={`graft-page-in outline-none flex h-full ${pageWidthClass(explorer.maximisedPaneIndex !== undefined)} flex-col gap-4 bg-[var(--color-bg)] p-6`}>
             <div ref={columnsRef} data-id="repo-explorer-columns" onClickCapture={onColumnsClickCapture} className="flex min-h-0 flex-1 items-stretch gap-3">
-                <RepoDetailsPane repoPath={repoPath} selectedLink={explorer.selectedLink} openLink={explorer.openLink} isActive={explorer.activePaneIndex === 0} onSelectLink={link => setExplorer(selectLink(link))} />
-                <AnimatedPane openId={paneIds.commitPane}>
+                <RepoDetailsPane repoPath={repoPath} selectedLink={explorer.selectedLink} openLink={explorer.openLink} isActive={explorer.activePaneIndex === 0} isMaximised={explorer.maximisedPaneIndex === 0} onToggleMaximise={() => onToggleMaximise(0)} isHidden={isPaneHidden(0)} onSelectLink={link => setExplorer(() => selectLink(link))} />
+                <AnimatedPane openId={paneIds.commitPane} isHidden={isPaneHidden(1)} isMaximised={explorer.maximisedPaneIndex === 1}>
                     {isCommitsOpen && (
                         <CommitPane
                             commits={commitPages.commits}
@@ -335,6 +384,8 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                             selectedHash={explorer.selectedHash}
                             openHash={explorer.openHash}
                             isActive={explorer.activePaneIndex === 1}
+                            isMaximised={explorer.maximisedPaneIndex === 1}
+                            onToggleMaximise={() => onToggleMaximise(1)}
                             dateFormat={dateFormat}
                             onSelectCommit={hash => setExplorer(state => selectCommit(state, hash))}
                             onNearEnd={readNextPage}
@@ -342,7 +393,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                         />
                     )}
                 </AnimatedPane>
-                <AnimatedPane openId={paneIds.commitDetailsPane}>
+                <AnimatedPane openId={paneIds.commitDetailsPane} isHidden={isPaneHidden(2)} isMaximised={explorer.maximisedPaneIndex === 2}>
                     {explorer.openHash !== undefined && (
                         <CommitDetailsPane
                             key={explorer.openHash}
@@ -351,6 +402,8 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                             selectedPath={explorer.selectedPath}
                             openPath={explorer.openPath}
                             isActive={explorer.activePaneIndex === 2}
+                            isMaximised={explorer.maximisedPaneIndex === 2}
+                            onToggleMaximise={() => onToggleMaximise(2)}
                             onSelectFile={path => setExplorer(state => selectFile(state, path))}
                             onReadCommit={details => {
                                 const paths = details.changedFiles.map(file => file.path);
@@ -362,15 +415,15 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                         />
                     )}
                 </AnimatedPane>
-                <AnimatedPane openId={paneIds.filePane}>
+                <AnimatedPane openId={paneIds.filePane} isHidden={isPaneHidden(3)} isMaximised={explorer.maximisedPaneIndex === 3}>
                     {explorer.openPath === COMMIT_DETAILS_PATH && openCommit && (
-                        <CommitInfoPane commit={openCommit} isActive={explorer.activePaneIndex === 3} dateFormat={dateFormat} onClose={() => setExplorer(closeFilePane)} />
+                        <CommitInfoPane commit={openCommit} isActive={explorer.activePaneIndex === 3} isMaximised={explorer.maximisedPaneIndex === 3} onToggleMaximise={() => onToggleMaximise(3)} dateFormat={dateFormat} onClose={() => setExplorer(closeFilePane)} />
                     )}
                     {explorer.openHash !== undefined && explorer.openPath !== undefined && explorer.openPath !== COMMIT_DETAILS_PATH && (
-                        <FilePane key={`${explorer.openHash} ${explorer.openPath}`} repoPath={repoPath} hash={explorer.openHash} path={explorer.openPath} isActive={explorer.activePaneIndex === 3} onClose={() => setExplorer(closeFilePane)} />
+                        <FilePane key={`${explorer.openHash} ${explorer.openPath}`} repoPath={repoPath} hash={explorer.openHash} path={explorer.openPath} isActive={explorer.activePaneIndex === 3} isMaximised={explorer.maximisedPaneIndex === 3} onToggleMaximise={() => onToggleMaximise(3)} onClose={() => setExplorer(closeFilePane)} />
                     )}
                 </AnimatedPane>
-                <AnimatedPane openId={paneIds.changesPane}>
+                <AnimatedPane openId={paneIds.changesPane} isHidden={isPaneHidden(1)} isMaximised={explorer.maximisedPaneIndex === 1}>
                     {isChangesOpen && (
                         <ChangesPane
                             repoPath={repoPath}
@@ -380,6 +433,8 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                             selectedKey={explorer.selectedChange}
                             openKey={explorer.openChange}
                             isActive={explorer.activePaneIndex === 1}
+                            isMaximised={explorer.maximisedPaneIndex === 1}
+                            onToggleMaximise={() => onToggleMaximise(1)}
                             onSelectChange={key => setExplorer(state => selectChange(state, key))}
                             onToggleStaged={onToggleStaged}
                             commitMessage={commitMessage}
@@ -390,9 +445,9 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                         />
                     )}
                 </AnimatedPane>
-                <AnimatedPane openId={paneIds.workingFilePane}>
+                <AnimatedPane openId={paneIds.workingFilePane} isHidden={isPaneHidden(2)} isMaximised={explorer.maximisedPaneIndex === 2}>
                     {isChangesOpen && openChange && (
-                        <WorkingFilePane key={`${explorer.openChange} ${changesReadCount}`} repoPath={repoPath} file={openChange.file} isStaged={openChange.isStaged} isActive={explorer.activePaneIndex === 2} onClose={() => setExplorer(closeChangeFilePane)} />
+                        <WorkingFilePane key={`${explorer.openChange} ${changesReadCount}`} repoPath={repoPath} file={openChange.file} isStaged={openChange.isStaged} isActive={explorer.activePaneIndex === 2} isMaximised={explorer.maximisedPaneIndex === 2} onToggleMaximise={() => onToggleMaximise(2)} onClose={() => setExplorer(closeChangeFilePane)} />
                     )}
                 </AnimatedPane>
             </div>
@@ -422,4 +477,37 @@ export function scrollLastPaneIntoView(columns: HTMLElement | null): void {
         block: "nearest",
         inline: "nearest",
     });
+}
+
+//
+// Scrolls the page by the least amount that shows the pane at the index among the columns, so the
+// pane the keys act on is in view after the panes are restored. The columns
+// are null only before React has drawn them, when there is no pane to show.
+//
+export function scrollPaneIntoView(columns: HTMLElement | null, paneIndex: number): void {
+    if (!columns) {
+        return;
+    }
+    const pane = columns.children.item(paneIndex);
+    if (!pane) {
+        return;
+    }
+    pane.scrollIntoView({
+        behavior: "instant",
+        block: "nearest",
+        inline: "nearest",
+    });
+}
+
+//
+// Picks the Tailwind classes of the page's width: as wide as its panes, and at least as wide as
+// the window, so the panes sit side by side and the page scrolls sideways when they are wider than
+// the window, or exactly as wide as the window while a pane is maximised, so the maximised pane
+// fills it.
+//
+export function pageWidthClass(isMaximised: boolean): string {
+    if (isMaximised) {
+        return "w-full";
+    }
+    return "w-max min-w-full";
 }

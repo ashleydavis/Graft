@@ -3,11 +3,14 @@
 // path in a card headed "Repo" that never shrinks, shows the Commits and Changes links as selected
 // and open as it is told, marks the pane active with a border in the style guide's active pane
 // colour and that clicking each link reports its name.
+// It checks the maximise button reports a click, the card fills the repo explorer while maximised
+// and the pane is hidden, still drawn, while another pane is maximised.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { CHANGES_LINK, COMMITS_LINK } from "../../../../lib/repo-explorer";
+import { maximisedPaneClasses } from "../../../../pages/repo-explorer/components/pane-width";
 import { activePaneClasses } from "../../../../pages/repo-explorer/components/active-pane-style";
 import { openRowClasses } from "../../../../pages/repo-explorer/components/commit-list";
 import { RepoDetailsPane } from "../../../../pages/repo-explorer/components/repo-details-pane";
@@ -22,6 +25,9 @@ function renderPane(options: { link: string | undefined; isActive: boolean; onSe
         selectedLink: options.link,
         openLink: options.link,
         isActive: options.isActive,
+        isMaximised: false,
+        onToggleMaximise: jest.fn(),
+        isHidden: false,
         onSelectLink: options.onSelectLink,
     }));
     return container;
@@ -146,5 +152,54 @@ describe("RepoDetailsPane", () => {
         });
         fireEvent.click(screen.getByText("Changes"));
         expect(onSelectLink).toHaveBeenCalledWith(CHANGES_LINK);
+    });
+});
+
+describe("RepoDetailsPane maximise button", () => {
+    //
+    // Renders the pane maximised or hidden as given, with the maximise callback.
+    //
+    function renderSized(options: { isMaximised: boolean; isHidden: boolean; onToggleMaximise: jest.Mock }): HTMLElement {
+        const { container } = render(createElement(RepoDetailsPane, {
+            repoPath: "/repos/graft",
+            selectedLink: undefined,
+            openLink: undefined,
+            isActive: true,
+            isMaximised: options.isMaximised,
+            onToggleMaximise: options.onToggleMaximise,
+            isHidden: options.isHidden,
+            onSelectLink: jest.fn(),
+        }));
+        return container;
+    }
+
+    test("reports a click and fills the repo explorer while the pane is maximised", () => {
+        const onToggleMaximise = jest.fn();
+        const container = renderSized({
+            isMaximised: true,
+            isHidden: false,
+            onToggleMaximise,
+        });
+        const pane = elementIn(container, "repo-details-pane");
+        expect(pane.className).toContain(maximisedPaneClasses);
+        expect(pane.className.split(" ")).not.toContain("hidden");
+        const button = screen.getByLabelText("Restore the pane");
+        expect(button.getAttribute("data-id")).toBe("repo-details-maximise");
+        fireEvent.click(button);
+        expect(onToggleMaximise).toHaveBeenCalledTimes(1);
+    });
+
+    test("is hidden, still drawn, while another pane is maximised", () => {
+        const container = renderSized({
+            isMaximised: false,
+            isHidden: true,
+            onToggleMaximise: jest.fn(),
+        });
+        const pane = elementIn(container, "repo-details-pane");
+        expect(pane.className.split(" ")).toContain("hidden");
+        expect(pane.className.split(" ")).not.toContain("flex");
+        expect(screen.getByLabelText("Maximise the pane", {
+            selector: "button",
+        })).not.toBeNull();
     });
 });

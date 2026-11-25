@@ -8,7 +8,8 @@ import { JSX, ReactNode } from "react";
 import { ICommit } from "../../../lib/commits";
 import { formatDateTime, IDateFormatOptions } from "../../../lib/date-format";
 import { activePaneClass } from "./active-pane-style";
-import { CloseButton, PaneHeader } from "./pane-header";
+import { CloseButton, MaximiseButton, PaneHeader } from "./pane-header";
+import { paneWidthClass } from "./pane-width";
 
 //
 // What the "Commit details" pane is given and what it reports.
@@ -20,6 +21,12 @@ export interface ICommitInfoPaneProps {
     // Whether the pane is the repo explorer's active pane, which its border shows.
     isActive: boolean;
 
+    // Whether the pane is maximised, filling the repo explorer, which its maximise button shows.
+    isMaximised: boolean;
+
+    // Called when the user clicks the pane's maximise button.
+    onToggleMaximise(): void;
+
     // The locale and time zone the commit's dates are shown in.
     dateFormat: IDateFormatOptions;
 
@@ -28,7 +35,7 @@ export interface ICommitInfoPaneProps {
 }
 
 //
-// Shows the commit in a rounded card headed "Commit details", with a button that closes the pane,
+// Shows the commit in a rounded card headed "Commit details", with a button that maximises the pane and restores it and a button that closes the pane,
 // as the style guide's full commit details pane lays it out: the commit's title in bold, its
 // description muted under it when the message has more than a title, then its facts in a column
 // of labels and a column of values: who wrote it and when, who made it and when, its hash and its
@@ -36,10 +43,15 @@ export interface ICommitInfoPaneProps {
 // style guide's active pane colour while the pane is active. The page's AnimatedPane column
 // animates it as it opens and closes.
 //
-export function CommitInfoPane({ commit, isActive, dateFormat, onClose }: ICommitInfoPaneProps): JSX.Element {
+export function CommitInfoPane({ commit, isActive, isMaximised, onToggleMaximise, dateFormat, onClose }: ICommitInfoPaneProps): JSX.Element {
     return (
-        <section data-id="commit-info-pane" aria-label="Full commit details" className={`flex w-[min(840px,calc(100cqw-var(--space-6)*2))] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
-            <PaneHeader title="Commit details" titleDataId="commit-info-heading" action={<CloseButton paneLabel="Full commit details" dataId="commit-info-close" onClose={onClose} />} />
+        <section data-id="commit-info-pane" aria-label="Full commit details" className={`flex ${paneWidthClass("w-[min(840px,calc(100cqw-var(--space-6)*2))]", isMaximised)} flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
+            <PaneHeader title="Commit details" titleDataId="commit-info-heading" action={(
+                <>
+                    <MaximiseButton isMaximised={isMaximised} dataId="commit-info-maximise" onToggleMaximise={onToggleMaximise} />
+                    <CloseButton paneLabel="Full commit details" dataId="commit-info-close" onClose={onClose} />
+                </>
+            )} />
             <div className="min-h-0 flex-1 overflow-auto">
                 <div className="flex flex-col gap-4 p-4">
                     <div className="flex flex-col gap-2">

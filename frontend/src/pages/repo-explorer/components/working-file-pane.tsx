@@ -26,6 +26,12 @@ export interface IWorkingFilePaneProps {
     // Whether the pane is the repo explorer's active pane, which its border shows.
     isActive: boolean;
 
+    // Whether the pane is maximised, filling the repo explorer, which its maximise button shows.
+    isMaximised: boolean;
+
+    // Called when the user clicks the pane's maximise button.
+    onToggleMaximise(): void;
+
     // Called when the user closes the pane.
     onClose(): void;
 }
@@ -35,7 +41,7 @@ export interface IWorkingFilePaneProps {
 // file diff card. The repo explorer page keys the pane by the file's row and each read of the
 // changes, so the diff is read afresh after every stage and unstage.
 //
-export function WorkingFilePane({ repoPath, file, isStaged, isActive, onClose }: IWorkingFilePaneProps): JSX.Element {
+export function WorkingFilePane({ repoPath, file, isStaged, isActive, isMaximised, onToggleMaximise, onClose }: IWorkingFilePaneProps): JSX.Element {
     const [diff, setDiff] = useState<string | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
 
@@ -56,5 +62,5 @@ export function WorkingFilePane({ repoPath, file, isStaged, isActive, onClose }:
         });
     }, [repoPath, file.path, file.status, isStaged]);
 
-    return <FileDiffCard repoPath={repoPath} path={file.path} diff={diff} error={error} isActive={isActive} onClose={onClose} />;
+    return <FileDiffCard repoPath={repoPath} path={file.path} diff={diff} error={error} isActive={isActive} isMaximised={isMaximised} onToggleMaximise={onToggleMaximise} onClose={onClose} />;
 }

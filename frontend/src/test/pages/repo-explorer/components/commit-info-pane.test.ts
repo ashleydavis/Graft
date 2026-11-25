@@ -43,6 +43,8 @@ function renderPane(commit: ICommit, isActive: boolean, onClose: jest.Mock): voi
     render(createElement(CommitInfoPane, {
         commit,
         isActive,
+        isMaximised: false,
+        onToggleMaximise: jest.fn(),
         dateFormat: {
             locale: "en-US",
             timeZone: "UTC",

@@ -47,6 +47,11 @@ export interface IRepoExplorerState {
     // The key of the changed file whose file pane is open, as changeKey makes it, or undefined when
     // it is closed.
     openChange: string | undefined;
+
+    // The position of the maximised pane among the open panes, as activePaneIndex counts them, or
+    // undefined while every open pane shows. A maximised pane fills the repo explorer and the other
+    // panes are hidden. It is always the active pane, so the keys act on the pane the user sees.
+    maximisedPaneIndex: number | undefined;
 }
 
 //
@@ -120,7 +125,65 @@ export const initialRepoExplorerState: IRepoExplorerState = {
     openPath: undefined,
     selectedChange: undefined,
     openChange: undefined,
+    maximisedPaneIndex: undefined,
 };
+
+//
+// The key that maximises the active pane and restores the panes, as the maximise button's tooltip
+// names it. KeyboardEvent.key gives it in lower case, or in upper case with Caps Lock on, so both
+// are taken.
+//
+export const MAXIMISE_KEY = "M";
+
+//
+// Returns true when the key, as KeyboardEvent.key names it, is the maximise key, M, in either case,
+// so the page can tell it from the other keys that Shift does not change.
+//
+export function isMaximiseKey(key: string): boolean {
+    return key.toUpperCase() === MAXIMISE_KEY;
+}
+
+//
+// The key a keyboard event carries and the modifier keys held with it, as KeyboardEvent gives them.
+//
+export interface IKeyPress {
+    // The key, as KeyboardEvent.key names it.
+    key: string;
+
+    // Whether Shift is held.
+    shiftKey: boolean;
+
+    // Whether Ctrl is held.
+    ctrlKey: boolean;
+
+    // Whether Alt is held.
+    altKey: boolean;
+
+    // Whether Cmd is held.
+    metaKey: boolean;
+}
+
+//
+// Returns true when a modifier key is held with the key, so the repo explorer leaves the press to
+// the shortcut it makes. Ctrl, Alt and Cmd make a shortcut with any key, which Ziggy runs. Shift
+// counts only with M, because Shift+M is a different key from M, while Shift with an arrow key or
+// Enter leaves the explorer's keys working as they always have.
+//
+export function hasKeyModifier(press: IKeyPress): boolean {
+    if (press.ctrlKey) {
+        return true;
+    }
+    if (press.altKey) {
+        return true;
+    }
+    if (press.metaKey) {
+        return true;
+    }
+    if (isMaximiseKey(press.key)) {
+        return press.shiftKey;
+    }
+    return false;
+}
 
 //
 // Returns true when the key, as KeyboardEvent.key names it, is one the repo explorer acts on, so
@@ -128,6 +191,9 @@ export const initialRepoExplorerState: IRepoExplorerState = {
 // scroll on an arrow key.
 //
 export function isExplorerKey(key: string): boolean {
+    if (isMaximiseKey(key)) {
+        return true;
+    }
     return ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", "Enter", "Escape"].includes(key);
 }
 
@@ -188,6 +254,7 @@ export function selectLink(link: string): IRepoExplorerState {
         openPath: undefined,
         selectedChange: undefined,
         openChange: undefined,
+        maximisedPaneIndex: undefined,
     };
 }
 
@@ -675,10 +742,26 @@ export function closeRightmostPane(state: IRepoExplorerState): IRepoExplorerStat
 // Works out the repo explorer after the key, as KeyboardEvent.key names it: Up and Down move the
 // selection in the active pane one step, Page Up and Page Down move it a page, Home and End move
 // it to the first and last item, Left and Right make the pane to the left or right active when
-// there is one, Enter opens the selected item and Escape closes the rightmost pane. Any other key
-// changes nothing.
+// there is one, Enter opens the selected item, Escape closes the rightmost pane and M maximises the
+// active pane or restores the panes. While a pane is maximised, Left and Right leave the state as
+// it is, because the maximised pane stays the active pane, and Escape closes the maximised pane.
+// Any other key changes nothing.
 //
 export function explorerStateAfterKey(state: IRepoExplorerState, key: string, items: IRepoExplorerItems): IRepoExplorerState {
+    if (isMaximiseKey(key)) {
+        return toggleMaximise(state, state.activePaneIndex);
+    }
+    if (state.maximisedPaneIndex !== undefined) {
+        if (key === "ArrowLeft") {
+            return state;
+        }
+        if (key === "ArrowRight") {
+            return state;
+        }
+        if (key === "Escape") {
+            return closeMaximisedPane(state);
+        }
+    }
     if (key === "ArrowUp") {
         return moveSelection(state, items, -1);
     }
@@ -719,11 +802,82 @@ export function explorerStateAfterKey(state: IRepoExplorerState, key: string, it
 }
 
 //
+// Maximises the pane at the index among the open panes and makes it active, as its maximise button
+// and M do, or restores every pane when that pane is the maximised one, so the same button or key
+// both maximises and restores.
+//
+export function toggleMaximise(state: IRepoExplorerState, paneIndex: number): IRepoExplorerState {
+    if (state.maximisedPaneIndex === paneIndex) {
+        return {
+            ...state,
+            maximisedPaneIndex: undefined,
+        };
+    }
+    return {
+        ...state,
+        activePaneIndex: paneIndex,
+        maximisedPaneIndex: paneIndex,
+    };
+}
+
+//
+// Closes the maximised pane and every pane to its right, as Escape does while a pane is maximised,
+// and puts the other panes back, so the user sees the pane to its left, which becomes active. The
+// repo details pane always stays open, so Escape with it maximised puts the other panes back.
+//
+export function closeMaximisedPane(state: IRepoExplorerState): IRepoExplorerState {
+    const paneIndex = state.maximisedPaneIndex;
+    let next: IRepoExplorerState = {
+        ...state,
+        maximisedPaneIndex: undefined,
+    };
+    if (paneIndex === undefined) {
+        return next;
+    }
+    if (paneIndex === 0) {
+        return next;
+    }
+
+    //
+    // Each pass closes one pane. The limit is the most panes openPaneCount returns, so the loop
+    // ends once every pane to the right of the maximised pane has closed.
+    //
+    for (let pass = 0; pass < 4; pass++) {
+        if (openPaneCount(next) <= paneIndex) {
+            break;
+        }
+        next = closeRightmostPane(next);
+    }
+    return next;
+}
+
+//
+// Puts every pane back when the maximised pane is no longer the active pane or has closed, as
+// after its close button, Enter opening the next pane or the file it showed going from the changes.
+// The repo explorer page runs every change to the state through it, so the active pane is always
+// one the user sees and a pane opened later opens at its usual size.
+//
+export function keepMaximisedPaneShown(state: IRepoExplorerState): IRepoExplorerState {
+    if (state.maximisedPaneIndex === undefined) {
+        return state;
+    }
+    if (state.maximisedPaneIndex === state.activePaneIndex) {
+        if (state.maximisedPaneIndex < openPaneCount(state)) {
+            return state;
+        }
+    }
+    return {
+        ...state,
+        maximisedPaneIndex: undefined,
+    };
+}
+
+//
 // Returns true when a key pressed with the focus on the target is the repo explorer's to handle:
 // the focus is on the page's body, or on the repo explorer page outside a text box, link or
-// button, which handle the key themselves. A key held with Ctrl, Alt or Cmd is a shortcut, which
-// Ziggy runs, and a key pressed in a menu or dialog belongs to that menu or dialog, which sits
-// outside the repo explorer page.
+// button, which handle the key themselves. A key held with a modifier, as hasKeyModifier works it
+// out, is a shortcut, which Ziggy runs, and a key pressed in a menu or dialog belongs to that menu
+// or dialog, which sits outside the repo explorer page.
 //
 export function isExplorerKeyTarget(target: EventTarget | null, page: Element | null, hasModifier: boolean): boolean {
     if (hasModifier) {
