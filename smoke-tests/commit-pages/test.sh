@@ -4,9 +4,10 @@
 # Creates a test repo of the smoke test's own with more commits than one page of the commit list,
 # starts the real app with remote control on, opens that repo with the welcome page's Open repo
 # button and checks the commit list reads every page: scrolling the list to its end reads the next
-# page until the repo's first commit shows, and the right sidebar lists the git log that read the
-# page after the first. Then it opens the commit pane again and presses Down once per commit, so
-# the selection moves across the pages to the first commit, and Enter opens that commit's details.
+# page until the repo's first commit shows, with "That is every commit." under it, and the right
+# sidebar lists the git log that read the page after the first. Then it opens the commit pane again
+# and presses Down once per commit, so the selection moves across the pages to the first commit,
+# and Enter opens that commit's details.
 # The repo holds a file named HEAD, which every page names, and one named after the first commit's
 # short hash, so the pages and the details are read with a file of the same name in the repo.
 # See test.md.
@@ -80,6 +81,8 @@ done
 wait_for_text "commit-title-$first_hash" "Add the readme" 30
 wait_for_missing_element commits-loading 30
 wait_for_missing_element commits-error 5
+wait_for_text commits-end "That is every commit." 30
+wait_for_missing_element commits-none 5
 
 # The right sidebar lists the git log that read the page after the first, the most recent command:
 # from every branch and HEAD, skipping the page already read, with `--` after HEAD.

@@ -52,6 +52,7 @@ function renderPane(isActive: boolean, onSelectCommit: jest.Mock, onClose: jest.
         commits: [commit],
         isLoading: false,
         error: undefined,
+        hasReadLastPage: true,
         selectedHash: commit.hash,
         openHash: commit.hash,
         isActive,
@@ -93,6 +94,11 @@ describe("CommitPane", () => {
     test("keeps its grey border while it is not active", () => {
         const container = renderPane(false, jest.fn(), jest.fn());
         expect(container.querySelector<HTMLElement>("[data-id=\"commit-pane\"]")?.className).not.toContain(activePaneClasses);
+    });
+
+    test("passes on that the last page has been read, so the list shows the end of list row", () => {
+        const container = renderPane(false, jest.fn(), jest.fn());
+        expect(container.querySelector("[data-id=\"commits-end\"]")?.textContent).toBe("That is every commit.");
     });
 
     test("reports the hash of the commit the user clicks", () => {

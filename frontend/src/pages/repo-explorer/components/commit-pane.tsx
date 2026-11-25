@@ -24,6 +24,9 @@ export interface ICommitPaneProps {
     // Why the last page of commits could not be read, or undefined.
     error: string | undefined;
 
+    // Whether the last page of commits has been read.
+    hasReadLastPage: boolean;
+
     // The hash of the selected commit, which the list shows as selected, or undefined.
     selectedHash: string | undefined;
 
@@ -53,11 +56,11 @@ export interface ICommitPaneProps {
 // when it is taller than the card, and the header's close button closes the pane. The card's
 // border is in the style guide's active pane colour while the pane is active.
 //
-export function CommitPane({ commits, isLoading, error, selectedHash, openHash, isActive, dateFormat, onSelectCommit, onNearEnd, onClose }: ICommitPaneProps): JSX.Element {
+export function CommitPane({ commits, isLoading, error, hasReadLastPage, selectedHash, openHash, isActive, dateFormat, onSelectCommit, onNearEnd, onClose }: ICommitPaneProps): JSX.Element {
     return (
         <section data-id="commit-pane" aria-label="Commits" className={`flex w-[min(850px,calc(100cqw-var(--space-6)*2))] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
             <PaneHeader title="Commits" titleDataId="commit-pane-heading" action={<CloseButton paneLabel="Commits" dataId="commit-pane-close" onClose={onClose} />} />
-            <CommitList commits={commits} isLoading={isLoading} error={error} selectedHash={selectedHash} openHash={openHash} dateFormat={dateFormat} onSelectCommit={onSelectCommit} onNearEnd={onNearEnd} />
+            <CommitList commits={commits} isLoading={isLoading} error={error} hasReadLastPage={hasReadLastPage} selectedHash={selectedHash} openHash={openHash} dateFormat={dateFormat} onSelectCommit={onSelectCommit} onNearEnd={onNearEnd} />
         </section>
     );
 }

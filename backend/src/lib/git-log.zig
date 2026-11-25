@@ -166,8 +166,11 @@ pub const LogPageStart = struct {
 //
 // Reads one page of commits from the repo by running `git log -z` through `run_git`, and parses
 // git's output. Everything the page holds is allocated with the allocator and its strings point
-// into git's output, so the caller passes an arena and frees the page by freeing the arena. When
-// git fails, what it wrote goes to the task's log and the function returns error.GitLogFailed.
+// into git's output, so the caller passes an arena and frees the page by freeing the arena. Git
+// log fails in a repo with no commits, so when the first page fails it calls `has_no_commits` to
+// check whether HEAD has a commit, and reads an empty page when it has none. When git fails for
+// any other reason, what it wrote goes to the task's log and the function returns
+// error.GitLogFailed.
 //
 pub fn read_log_page(
     io: std.Io,
@@ -192,13 +195,20 @@ pub fn read_log_page(
     const command = try read_log_page_command(allocator, request, max_count);
     const result = try run_git(io, services, allocator, command);
     if (result.exit_code != 0) {
+        if (request.start == null) {
+            if (try has_no_commits(io, services, allocator, run_git, request.repo_path)) {
+                return .{
+                    .commits = &.{},
+                };
+            }
+        }
         services.log.tool("git", .{
             .stdout = result.stdout,
             .stderr = result.stderr,
         });
         services.log.err("git log exited with an error, so the commits could not be read.");
         services.fail_with("Running git log failed, so the commits could not be read. Check " ++
-            "that the repo exists and has at least one commit. What git said is in Graft's log.");
+            "that the repo exists. What git wrote is in Graft's log.");
         return error.GitLogFailed;
     }
     const commits = parse_log_output(allocator, result.stdout, request.page_size) catch |err| {
@@ -211,6 +221,34 @@ pub fn read_log_page(
     return .{
         .commits = commits,
     };
+}
+
+//
+// Checks whether the repo has no commits, for `read_log_page` when git log fails for the first
+// page. It runs `git rev-parse --verify --quiet HEAD`, which exits with 0 and prints HEAD's commit
+// when HEAD has one, exits with 1 with no output in a repo with no commits and exits with 128
+// outside a repo or when git cannot read the repo. Only exit code 1 is an empty repo. The command's
+// output is allocated with the allocator, which `read_log_page` is given as an arena.
+//
+pub fn has_no_commits(
+    io: std.Io,
+    services: TaskServices,
+    allocator: std.mem.Allocator,
+    run_git: git_interface.RunGit,
+    repo_path: []const u8,
+) !bool {
+    assert(repo_path.len > 0);
+
+    const result = try run_git(io, services, allocator, .{
+        .repo_path = repo_path,
+        .args = &.{
+            "rev-parse",
+            "--verify",
+            "--quiet",
+            "HEAD",
+        },
+    });
+    return result.exit_code == 1;
 }
 
 //

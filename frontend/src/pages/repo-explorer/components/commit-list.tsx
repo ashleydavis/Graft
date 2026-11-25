@@ -1,6 +1,7 @@
 //
 // The commit list: the commit pane's scrolling list of commits, one row each, under a header row
-// naming the columns, with a row under them while the next page loads or when it could not be read.
+// naming the columns, with a row under them while the next page loads, when it could not be read and
+// once every commit has been read.
 //
 
 import { CircularProgress, List, ListItemButton, Tooltip } from "@mui/material";
@@ -25,6 +26,10 @@ export interface ICommitListProps {
     // Why the last page of commits could not be read, which the error row under the commits
     // shows, or undefined.
     error: string | undefined;
+
+    // Whether the last page of commits has been read, so the list holds every commit and the end
+    // of list row under them shows.
+    hasReadLastPage: boolean;
 
     // The hash of the selected commit, which the list shows as selected and scrolls into view, or
     // undefined.
@@ -98,6 +103,45 @@ export function titleWeightClass(isOpen: boolean): string {
 }
 
 //
+// The end of list row: its data-id and its text.
+//
+export interface IListEndRow {
+    // The row's data-id.
+    dataId: string;
+
+    // The row's text.
+    text: string;
+}
+
+//
+// Picks the row the commit list shows under the commits once every commit has been read: "There
+// are no commits." for a repo with none and "That is every commit." for any other, as the style
+// guide's commit pane shows them. It is undefined while a page is being read, after a read failed
+// and before the last page has been read, so the row never shows while more commits may come.
+//
+export function listEndRow(commitCount: number, isLoading: boolean, error: string | undefined, hasReadLastPage: boolean): IListEndRow | undefined {
+    if (isLoading) {
+        return undefined;
+    }
+    if (error !== undefined) {
+        return undefined;
+    }
+    if (!hasReadLastPage) {
+        return undefined;
+    }
+    if (commitCount === 0) {
+        return {
+            dataId: "commits-none",
+            text: "There are no commits.",
+        };
+    }
+    return {
+        dataId: "commits-end",
+        text: "That is every commit.",
+    };
+}
+
+//
 // Lists the commits in a virtual list built with TanStack Virtual, which draws only the rows in
 // view and a few either side, so a repo with any number of commits scrolls smoothly. Each row shows
 // the commit's title, refs, author, date and short hash. Each row is a MaterialUI ListItemButton,
@@ -106,15 +150,16 @@ export function titleWeightClass(isOpen: boolean): string {
 // their own after the title, which shows only the badges that fit, so the title always keeps its
 // room and the author, date and hash line up from row to row. Clicking a commit calls
 // onSelectCommit with its hash. Under the commits it shows a loading row while a page is read and
-// an error row when one could not be read. When the last row drawn comes near the last commit read
-// it calls onNearEnd, so the next page is read as the user scrolls. When the selected commit
-// changes, it scrolls the least amount that brings the commit's row into view, so the selected row
-// stays in sight as the arrow keys move it. Above the scrolling area a header row names the
-// columns, Message, Author, Date and Hash, each lined up with its column in the rows and styled as
-// the style guide's table header, so it stays in view as the list scrolls. Over the badges' column
-// it leaves a blank space of the same width.
+// an error row when one could not be read, and once the last page has been read it shows the end
+// of list row that listEndRow picks, in muted text as in the style guide. When the last row drawn
+// comes near the last commit read it calls onNearEnd, so the next page is read as the user scrolls.
+// When the selected commit changes, it scrolls the least amount that brings the commit's row into
+// view, so the selected row stays in sight as the arrow keys move it. Above the scrolling area a
+// header row names the columns, Message, Author, Date and Hash, each lined up with its column in the
+// rows and styled as the style guide's table header, so it stays in view as the list scrolls. Over
+// the badges' column it leaves a blank space of the same width.
 //
-export function CommitList({ commits, isLoading, error, selectedHash, openHash, dateFormat, onSelectCommit, onNearEnd }: ICommitListProps): JSX.Element {
+export function CommitList({ commits, isLoading, error, hasReadLastPage, selectedHash, openHash, dateFormat, onSelectCommit, onNearEnd }: ICommitListProps): JSX.Element {
     const scrollRef = useRef<HTMLDivElement>(null);
     const virtualizer = useVirtualizer({
         count: commits.length,
@@ -128,6 +173,7 @@ export function CommitList({ commits, isLoading, error, selectedHash, openHash, 
     });
     const rows = virtualizer.getVirtualItems();
     const lastDrawnIndex = lastRowIndex(rows);
+    const endRow = listEndRow(commits.length, isLoading, error, hasReadLastPage);
 
     useEffect(() => {
         if (lastDrawnIndex === undefined) {
@@ -199,6 +245,9 @@ export function CommitList({ commits, isLoading, error, selectedHash, openHash, 
                 )}
                 {error !== undefined && (
                     <p data-id="commits-error" className="m-3 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[var(--color-text)]">{error}</p>
+                )}
+                {endRow !== undefined && (
+                    <p data-id={endRow.dataId} aria-live="polite" className="m-0 min-h-[var(--space-8)] px-[var(--space-4)] py-[var(--space-2)] text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{endRow.text}</p>
                 )}
             </div>
         </>

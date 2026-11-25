@@ -230,7 +230,7 @@ test "the commits task reads the first page from every branch and HEAD when the 
 }
 
 test "the commits task fails with a description of the error when git log fails" {
-    const mock = comptime git_mock.mock_git(.{
+    const mock = comptime git_mock.mock_git_calls(&.{ .{
         .expected_args = &.{
             "-C",
             "/repo",
@@ -257,7 +257,26 @@ test "the commits task fails with a description of the error when git log fails"
         .stdout = "",
         .stderr = "fatal: not a git repository\n",
         .start_error = null,
-    });
+    }, .{
+        .expected_args = &.{
+            "-C",
+            "/repo",
+            "rev-parse",
+            "--verify",
+            "--quiet",
+            "HEAD",
+        },
+        .expected_shown_args = &.{
+            "rev-parse",
+            "--verify",
+            "--quiet",
+            "HEAD",
+        },
+        .exit_code = 128,
+        .stdout = "",
+        .stderr = "fatal: not a git repository\n",
+        .start_error = null,
+    } });
     try expect_task_message(
         mock,
         "{\"repoPath\":\"/repo\",\"pageSize\":50}",

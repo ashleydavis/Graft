@@ -1,5 +1,6 @@
 //
-// Tests the commit list: renders it with commits, while a page loads and with an error, and checks
+// Tests the commit list: renders it with commits, while a page loads, with an error and once the
+// last page has been read, and checks that the end of list row shows only in its cases and
 // what each row shows, that a header row above the scrolling area names the columns in line with
 // them, that each row is a MaterialUI ListItemButton with the selected commit's set as selected,
 // that the open commit's row has the open bar and a bold title, that the refs sit in their column
@@ -12,7 +13,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { ICommit } from "../../../../lib/commits";
-import { COMMIT_LIST_PADDING_PX, COMMIT_ROW_HEIGHT_PX, CommitList, hashColumnClasses, lastRowIndex, openRowClass, openRowClasses, titleWeightClass } from "../../../../pages/repo-explorer/components/commit-list";
+import { COMMIT_LIST_PADDING_PX, COMMIT_ROW_HEIGHT_PX, CommitList, hashColumnClasses, lastRowIndex, listEndRow, openRowClass, openRowClasses, titleWeightClass } from "../../../../pages/repo-explorer/components/commit-list";
 import { FAKE_LIST_HEIGHT_PX, IFakeListLayout, installFakeListLayout } from "../../../fake-list-layout";
 
 //
@@ -51,6 +52,7 @@ function renderList(selectedHash: string | undefined, openHash: string | undefin
         commits: [commit, secondCommit],
         isLoading: false,
         error: undefined,
+        hasReadLastPage: false,
         selectedHash,
         openHash,
         dateFormat: {
@@ -86,6 +88,7 @@ function listProps(commits: ICommit[], onNearEnd: jest.Mock): Parameters<typeof 
         commits,
         isLoading: false,
         error: undefined,
+        hasReadLastPage: false,
         selectedHash: undefined,
         openHash: undefined,
         dateFormat: {
@@ -203,6 +206,59 @@ describe("CommitList", () => {
         expect(screen.queryByText("Loading the commits.")).toBeNull();
     });
 
+    test("shows \"That is every commit.\" under the last commit once the last page has been read", () => {
+        const { container } = render(createElement(CommitList, {
+            ...listProps([commit, secondCommit], jest.fn()),
+            hasReadLastPage: true,
+        }));
+        const endRow = screen.getByText("That is every commit.");
+        expect(endRow.getAttribute("data-id")).toBe("commits-end");
+        expect(endRow.className).toContain("text-[var(--color-text-muted)]");
+        expect(endRow.className).toContain("text-[length:var(--text-sm)]");
+        expect(endRow.className).toContain("px-[var(--space-4)]");
+        expect(endRow.className).toContain("py-[var(--space-2)]");
+        expect(endRow.className).toContain("min-h-[var(--space-8)]");
+        expect(container.querySelector("[data-id=\"commit-list\"]")?.nextElementSibling).toBe(endRow);
+        expect(screen.queryByText("There are no commits.")).toBeNull();
+    });
+
+    test("shows \"There are no commits.\" for a repo with no commits", () => {
+        render(createElement(CommitList, {
+            ...listProps([], jest.fn()),
+            hasReadLastPage: true,
+        }));
+        expect(screen.getByText("There are no commits.").getAttribute("data-id")).toBe("commits-none");
+        expect(screen.queryByText("That is every commit.")).toBeNull();
+        expect(screen.queryByText("Loading the commits.")).toBeNull();
+    });
+
+    test("shows no end of list row before the last page has been read", () => {
+        render(createElement(CommitList, listProps([commit], jest.fn())));
+        expect(screen.queryByText("That is every commit.")).toBeNull();
+        expect(screen.queryByText("There are no commits.")).toBeNull();
+    });
+
+    test("shows no end of list row while a page is read", () => {
+        render(createElement(CommitList, {
+            ...listProps([], jest.fn()),
+            isLoading: true,
+            hasReadLastPage: true,
+        }));
+        expect(screen.queryByText("That is every commit.")).toBeNull();
+        expect(screen.queryByText("There are no commits.")).toBeNull();
+    });
+
+    test("shows no end of list row after a read failed", () => {
+        render(createElement(CommitList, {
+            ...listProps([], jest.fn()),
+            error: "It broke.",
+            hasReadLastPage: true,
+        }));
+        expect(screen.getByText("It broke.")).toBeTruthy();
+        expect(screen.queryByText("That is every commit.")).toBeNull();
+        expect(screen.queryByText("There are no commits.")).toBeNull();
+    });
+
     test("reports the hash of the commit the user clicks", () => {
         const onSelectCommit = jest.fn();
         renderList(undefined, undefined, onSelectCommit);
@@ -279,6 +335,26 @@ describe("CommitList virtual list", () => {
             selectedHash: "ffff",
         }));
         expect(layout.scrollTo).not.toHaveBeenCalled();
+    });
+});
+
+describe("listEndRow", () => {
+    test("picks the end of list row for an empty repo and for every commit read", () => {
+        expect(listEndRow(0, false, undefined, true)).toEqual({
+            dataId: "commits-none",
+            text: "There are no commits.",
+        });
+        expect(listEndRow(3, false, undefined, true)).toEqual({
+            dataId: "commits-end",
+            text: "That is every commit.",
+        });
+    });
+
+    test("picks no row while a page is read, after a read failed or before the last page", () => {
+        expect(listEndRow(3, true, undefined, true)).toBeUndefined();
+        expect(listEndRow(0, false, "It broke.", true)).toBeUndefined();
+        expect(listEndRow(3, false, undefined, false)).toBeUndefined();
+        expect(listEndRow(0, false, undefined, false)).toBeUndefined();
     });
 });
 

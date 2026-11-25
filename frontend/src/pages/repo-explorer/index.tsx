@@ -299,6 +299,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
                             commits={commitPages.commits}
                             isLoading={commitPages.readTaskId !== undefined}
                             error={commitPages.error}
+                            hasReadLastPage={commitPages.hasReadLastPage}
                             selectedHash={explorer.selectedHash}
                             openHash={explorer.openHash}
                             isActive={explorer.activePaneIndex === 1}

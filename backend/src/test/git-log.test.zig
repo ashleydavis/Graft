@@ -91,6 +91,63 @@ const first_page_request: git_log.LogPageRequest = .{
     .start = null,
 };
 
+//
+// The arguments `has_no_commits` starts git with in the repo at "repo".
+//
+const head_commit_args: []const []const u8 = &.{
+    "-C",
+    "repo",
+    "rev-parse",
+    "--verify",
+    "--quiet",
+    "HEAD",
+};
+
+//
+// The arguments the help panel is given to show for the same command.
+//
+const head_commit_shown_args: []const []const u8 = &.{
+    "rev-parse",
+    "--verify",
+    "--quiet",
+    "HEAD",
+};
+
+//
+// Builds a mock of a first page git log that exits with the log exit code, followed by
+// `git rev-parse --verify --quiet HEAD`, which exits with the head exit code and prints the output.
+//
+fn mock_failed_first_page(
+    comptime log_exit_code: ?u8,
+    comptime head_exit_code: ?u8,
+    comptime head_stdout: []const u8,
+) git_interface.RunGit {
+    return git_mock.mock_git_calls(&.{
+        .{
+            .expected_args = first_page_args,
+            .expected_shown_args = first_page_shown_args,
+            .exit_code = log_exit_code,
+            .stdout = "",
+            .stderr = "fatal: your current branch 'main' does not have any commits yet\n",
+            .start_error = null,
+        },
+        .{
+            .expected_args = head_commit_args,
+            .expected_shown_args = head_commit_shown_args,
+            .exit_code = head_exit_code,
+            .stdout = head_stdout,
+            .stderr = "",
+            .start_error = null,
+        },
+    });
+}
+
+//
+// The text the frontend is sent when git log fails for a reason other than an empty repo.
+//
+const git_log_failed_text = "Running git log failed, so the commits could not be read. Check " ++
+    "that the repo exists. What git wrote is in Graft's log.";
+
 test "read_log_page reads the first page from every branch and HEAD and parses each commit" {
     var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
@@ -252,31 +309,50 @@ test "read_log_page refuses a page size of 0 without starting git" {
     );
 }
 
-test "read_log_page fails with GitLogFailed when git exits with an error" {
+test "read_log_page reads an empty page when git log fails because the repo has no commits" {
     var task = git_mock.mock_task();
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
-    const mock = comptime git_mock.mock_git(.{
-        .expected_args = first_page_args,
-        .expected_shown_args = first_page_shown_args,
-        .exit_code = 128,
-        .stdout = "",
-        .stderr = "fatal: your current branch 'main' does not have any commits yet\n",
-        .start_error = null,
-    });
+    const page = try git_log.read_log_page(
+        io,
+        git_mock.mock_services(&task),
+        arena.allocator(),
+        mock_failed_first_page(128, 1, ""),
+        first_page_request,
+    );
+    try std.testing.expectEqual(@as(usize, 0), page.commits.len);
+    try std.testing.expect(task.failure == null);
+}
+
+test "read_log_page fails with GitLogFailed when git log fails and HEAD has a commit" {
+    var task = git_mock.mock_task();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
     try std.testing.expectError(error.GitLogFailed, git_log.read_log_page(
         io,
         git_mock.mock_services(&task),
         arena.allocator(),
-        mock,
+        mock_failed_first_page(128, 0, second_hash ++ "\n"),
         first_page_request,
     ));
-    try std.testing.expectEqualStrings(
-        "Running git log failed, so the commits could not be read. Check that the repo exists " ++
-            "and has at least one commit. What git said is in Graft's log.",
-        task.failure.?,
-    );
+    try std.testing.expectEqualStrings(git_log_failed_text, task.failure.?);
+}
+
+test "read_log_page fails with GitLogFailed when git exits with an error outside a repo" {
+    var task = git_mock.mock_task();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    try std.testing.expectError(error.GitLogFailed, git_log.read_log_page(
+        io,
+        git_mock.mock_services(&task),
+        arena.allocator(),
+        mock_failed_first_page(128, 128, ""),
+        first_page_request,
+    ));
+    try std.testing.expectEqualStrings(git_log_failed_text, task.failure.?);
 }
 
 test "read_log_page fails with GitLogFailed when git ends without exiting" {
@@ -284,12 +360,49 @@ test "read_log_page fails with GitLogFailed when git ends without exiting" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena.deinit();
 
+    try std.testing.expectError(error.GitLogFailed, git_log.read_log_page(
+        io,
+        git_mock.mock_services(&task),
+        arena.allocator(),
+        mock_failed_first_page(null, null, ""),
+        first_page_request,
+    ));
+    try std.testing.expectEqualStrings(git_log_failed_text, task.failure.?);
+}
+
+test "read_log_page fails with GitLogFailed on a later page with git log as its only git run" {
+    var task = git_mock.mock_task();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
     const mock = comptime git_mock.mock_git(.{
-        .expected_args = first_page_args,
-        .expected_shown_args = first_page_shown_args,
-        .exit_code = null,
+        .expected_args = &.{
+            "-C",
+            "repo",
+            "log",
+            "-z",
+            "--no-show-signature",
+            "--max-count=50",
+            format_arg,
+            "--skip=50",
+            "--branches",
+            "--remotes",
+            "HEAD",
+            "--",
+        },
+        .expected_shown_args = &.{
+            "log",
+            "--no-show-signature",
+            "--max-count=50",
+            "--skip=50",
+            "--branches",
+            "--remotes",
+            "HEAD",
+            "--",
+        },
+        .exit_code = 128,
         .stdout = "",
-        .stderr = "",
+        .stderr = "fatal: bad object\n",
         .start_error = null,
     });
     try std.testing.expectError(error.GitLogFailed, git_log.read_log_page(
@@ -297,13 +410,60 @@ test "read_log_page fails with GitLogFailed when git ends without exiting" {
         git_mock.mock_services(&task),
         arena.allocator(),
         mock,
-        first_page_request,
+        .{
+            .repo_path = "repo",
+            .page_size = 50,
+            .start = .{
+                .skip_count = 50,
+            },
+        },
     ));
-    try std.testing.expectEqualStrings(
-        "Running git log failed, so the commits could not be read. Check that the repo exists " ++
-            "and has at least one commit. What git said is in Graft's log.",
-        task.failure.?,
+    try std.testing.expectEqualStrings(git_log_failed_text, task.failure.?);
+}
+
+test "has_no_commits passes up the error when git cannot be started" {
+    var task = git_mock.mock_task();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+
+    const mock = comptime git_mock.mock_git(.{
+        .expected_args = head_commit_args,
+        .expected_shown_args = head_commit_shown_args,
+        .exit_code = 0,
+        .stdout = "",
+        .stderr = "",
+        .start_error = error.FileNotFound,
+    });
+    try std.testing.expectError(error.FileNotFound, git_log.has_no_commits(
+        io,
+        git_mock.mock_services(&task),
+        arena.allocator(),
+        mock,
+        "repo",
+    ));
+}
+
+//
+// Reads the first page of a repo with no commits with the allocator, for the allocation failure
+// test of the git log that fails and the `git rev-parse` after it. The page is allocated in an
+// arena over the allocator, as a task's is.
+//
+fn read_empty_repo(allocator: std.mem.Allocator) !void {
+    var task = git_mock.mock_task();
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+
+    _ = try git_log.read_log_page(
+        io,
+        git_mock.mock_services(&task),
+        arena.allocator(),
+        mock_failed_first_page(128, 1, ""),
+        first_page_request,
     );
+}
+
+test "read_log_page frees everything in a repo with no commits when an allocation fails" {
+    try std.testing.checkAllAllocationFailures(std.testing.allocator, read_empty_repo, .{});
 }
 
 test "read_log_page refuses output that does not end with a commit's NUL" {
