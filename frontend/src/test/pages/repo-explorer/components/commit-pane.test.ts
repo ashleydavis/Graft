@@ -1,8 +1,8 @@
 //
 // Tests the commit pane: renders it with commits and checks that it holds the commit list in a
 // card headed "Commits" that never shrinks, passes the selected and open commits on to the list,
-// marks the pane active with a border in the style guide's active pane colour and that clicking a
-// commit reports its hash.
+// marks the pane active with a border in the style guide's active pane colour, that clicking a
+// commit reports its hash and that its close button reports a close.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
@@ -44,10 +44,10 @@ const commit: ICommit = {
 };
 
 //
-// Renders the pane with the commit selected and open, active or not, with the callback, in en-US
+// Renders the pane with the commit selected and open, active or not, with the callbacks, in en-US
 // and UTC.
 //
-function renderPane(isActive: boolean, onSelectCommit: jest.Mock): HTMLElement {
+function renderPane(isActive: boolean, onSelectCommit: jest.Mock, onClose: jest.Mock): HTMLElement {
     const { container } = render(createElement(CommitPane, {
         commits: [commit],
         isLoading: false,
@@ -61,13 +61,14 @@ function renderPane(isActive: boolean, onSelectCommit: jest.Mock): HTMLElement {
         },
         onSelectCommit,
         onNearEnd: jest.fn(),
+        onClose,
     }));
     return container;
 }
 
 describe("CommitPane", () => {
     test("holds the commit list in a card headed Commits that never shrinks", () => {
-        const container = renderPane(false, jest.fn());
+        const container = renderPane(false, jest.fn(), jest.fn());
         const pane = container.querySelector("[data-id=\"commit-pane\"]");
         expect(pane?.className).toContain("flex-none");
         expect(pane?.className).toContain("rounded-[var(--radius-lg)]");
@@ -79,25 +80,38 @@ describe("CommitPane", () => {
     });
 
     test("shows the selected commit as selected and the open commit as open", () => {
-        const container = renderPane(false, jest.fn());
+        const container = renderPane(false, jest.fn(), jest.fn());
         expect(container.querySelector(`[data-id="commit-${commit.hash}"]`)?.className).toContain("Mui-selected");
         expect(container.querySelector(`[data-id="commit-${commit.hash}"]`)?.className).toContain(openRowClasses);
     });
 
     test("draws its border in the style guide's active pane colour while it is active", () => {
-        const container = renderPane(true, jest.fn());
+        const container = renderPane(true, jest.fn(), jest.fn());
         expect(container.querySelector<HTMLElement>("[data-id=\"commit-pane\"]")?.className).toContain(activePaneClasses);
     });
 
     test("keeps its grey border while it is not active", () => {
-        const container = renderPane(false, jest.fn());
+        const container = renderPane(false, jest.fn(), jest.fn());
         expect(container.querySelector<HTMLElement>("[data-id=\"commit-pane\"]")?.className).not.toContain(activePaneClasses);
     });
 
     test("reports the hash of the commit the user clicks", () => {
         const onSelectCommit = jest.fn();
-        renderPane(false, onSelectCommit);
+        renderPane(false, onSelectCommit, jest.fn());
         fireEvent.click(screen.getByText("The first commit"));
         expect(onSelectCommit).toHaveBeenCalledWith(commit.hash);
+    });
+
+    test("shows a close button with a Close tooltip at the right of its header that reports a close", async () => {
+        const onClose = jest.fn();
+        const container = renderPane(false, jest.fn(), onClose);
+        const header = container.querySelector("[data-id=\"commit-pane-heading\"]")?.parentElement;
+        const closeButton = container.querySelector<HTMLElement>("[data-id=\"commit-pane-close\"]");
+        expect(header?.lastElementChild).toBe(closeButton);
+        expect(closeButton?.getAttribute("aria-label")).toBe("Close commits");
+        fireEvent.mouseOver(screen.getByLabelText("Close commits"));
+        expect((await screen.findByRole("tooltip")).textContent).toBe("Close");
+        fireEvent.click(screen.getByLabelText("Close commits"));
+        expect(onClose).toHaveBeenCalledTimes(1);
     });
 });

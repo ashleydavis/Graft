@@ -315,8 +315,8 @@ export function closeCommitDetailsPane(state: IRepoExplorerState): IRepoExplorer
 
 //
 // Closes the pane the open link opened, the commit pane or the changes pane, and every pane to its
-// right, as Escape does, and makes the repo details pane active. The link stays selected, and its
-// pane opens afresh when it opens again.
+// right, as Escape and the commit pane's close button do, and makes the repo details pane active.
+// The link stays selected, and its pane opens afresh when it opens again.
 //
 export function closeLinkPane(state: IRepoExplorerState): IRepoExplorerState {
     return {

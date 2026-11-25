@@ -4,8 +4,8 @@
 // Commits link opens the commit pane, which queues the commits task for the repo, shows that it is
 // loading, then lists the commits or says why they could not be read. It also checks the columns:
 // clicking a commit opens the commit details pane and highlights the commit, clicking a changed
-// file opens the file pane and highlights the file and each pane closes, and that the page scrolls
-// each pane that opens into view.
+// file opens the file pane and highlights the file and each pane closes, the commit pane with the
+// panes to its right, and that the page scrolls each pane that opens into view.
 // It presses the repo explorer's keys on the page and checks how they move the selection, change
 // the active pane, open and close panes, and that they are left alone in a text box, outside the
 // page and with Ctrl held. Dates are checked against the browser's own locale and time zone, which
@@ -600,6 +600,20 @@ describe("RepoExplorerPage", () => {
         fireEvent.click(elementWithDataId("commit-details-close"));
         expect(screen.queryByText("Loading the diff.")).toBeNull();
         expect(document.querySelector("[data-id=\"changed-file-README.md\"]")).toBeNull();
+    });
+
+    test("closes the commit pane and the panes to its right with its close button and makes the repo details pane active", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("changed-file-README.md"));
+        expect(lastPaneStepIds()).toEqual(["breadcrumb-pane-commits", "breadcrumb-pane-commit", "breadcrumb-pane-file"]);
+        fireEvent.click(elementWithDataId("commit-pane-close"));
+        expect(document.querySelector("[data-id=\"commit-pane\"]")).toBeNull();
+        expect(document.querySelector("[data-id=\"commit-details-pane\"]")).toBeNull();
+        expect(document.querySelector("[data-id=\"file-pane\"]")).toBeNull();
+        expect(activePaneIds()).toEqual(["repo-details-pane"]);
+        expect(isSelected("repo-details-commits")).toBe(true);
+        expect(lastPaneStepIds()).toEqual([]);
     });
 
     test("closes the file pane when a commit is clicked, so it opens without a file", async () => {

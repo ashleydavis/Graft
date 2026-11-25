@@ -21,7 +21,7 @@ The repo explorer page shows its panes side by side in columns. The first is the
 - Each pane after the repo details pane animates as it opens and as it closes, over the style guide's normal duration (`--duration-normal`) with its standard easing (`--ease-standard`). An opening pane fades in. A closing pane stays drawn while it fades out and its column narrows to nothing, so the panes to its right slide left into its place, and then it goes. Opening another commit's details or another file's diff fades the pane in afresh.
 - The keys and clicks act on the open panes while a pane animates. A closing pane ignores clicks and gives up the focus. A pane that is closing opens again at once when the user opens it again, such as with Enter after Escape closed it.
 - While the system's reduced motion setting is on, the panes open and close at once.
-- Each of the commit details pane and the file pane has a close button (an X icon) in its header. Closing the file pane leaves the commit details pane open. Closing the commit details pane closes the file pane with it.
+- Each of the commit pane, the commit details pane and the file pane has a close button (an X icon with a "Close" tooltip) at the right of its header. Closing the file pane leaves the commit details pane open. Closing the commit details pane closes the file pane with it. Closing the commit pane closes the commit details pane and the file pane with it, as Escape in the commit pane does, and makes the repo details pane active with the Commits link still selected. The breadcrumb trail drops the steps of the panes that closed.
 - While a pane's task runs it says "Loading the commit." or "Loading the diff.". When the task fails the pane shows why.
 - The commit details pane queues the commit details task, a background task that runs the `log` wrapper for the commit's details and the `diff-tree` wrapper for its changed files.
 - The `log` wrapper reads one commit with `git log -z --no-show-signature --max-count=1 <hash> --` and the same `--format` string the commit pane uses. `--no-show-signature` stops `log.showSignature=true` in the user's git config adding signature text that the wrapper cannot read, so a signed commit's details show. The `--` after the hash makes git read it only as a commit, so `git log` reads the commit even when a file in the repo has the hash as its name.
@@ -37,6 +37,7 @@ The repo explorer page shows its panes side by side in columns. The first is the
 - [x] Clicking a commit opens the commit details pane to the right of the commit pane, with the commit's details and changed files.
 - [x] Clicking a changed file opens the file pane to the right of the commit details pane, with the file's detail.
 - [x] The commit details pane and the file pane can each be closed.
+- [x] The commit pane's close button closes it and the panes to its right, makes the repo details pane active with the Commits link still selected and drops the closed panes' steps from the breadcrumb trail.
 - [x] With `log.showSignature=true` in the git config, the commit details pane shows a signed commit with no error.
 - [x] New Git wrappers call the Git interface function and new Ziggy background tasks run them to get the commit's details, changed files and the file's detail.
 - [x] The first columns, the repo details pane and the commit pane, always show in full.

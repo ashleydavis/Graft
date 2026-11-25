@@ -4,7 +4,8 @@
 # Creates a test repo of the smoke test's own, starts the real app with remote control on, opens
 # that repo with the welcome page's Open repo button, opens the commit details pane and the file
 # pane on the repo explorer page, then closes the file pane and the commit details pane and checks
-# each has gone. See test.md.
+# each has gone. It opens them again and closes the commit pane with its close button, and checks
+# every pane but the repo details pane has gone. See test.md.
 #
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
@@ -38,3 +39,15 @@ click commit-details-close
 wait_for_missing_element commit-details-pane 30
 wait_for_element commit-pane 5
 wait_for_element "commit-$root_hash" 5
+
+click "commit-$root_hash"
+wait_for_element changed-file-README.md 30
+click changed-file-README.md
+wait_for_element file-diff 30
+wait_for_text file-diff "+# Test repo" 30
+
+click commit-pane-close
+wait_for_missing_element commit-pane 30
+wait_for_missing_element commit-details-pane 30
+wait_for_missing_element file-pane 30
+wait_for_element repo-details-pane 5
