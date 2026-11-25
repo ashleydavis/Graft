@@ -2,6 +2,7 @@
 
 ## Now
 
+- Reduce merge conflicts again. infra-1 halved them (about one per two approved tickets on 2026-11-23, from about one per ticket before), but they still happen. The causes are in `docs/reducing-conflicts.md` under "Session of 2026-11-23".
 
 ## Code Review
 
