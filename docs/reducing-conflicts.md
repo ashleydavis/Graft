@@ -125,3 +125,59 @@ Tickets that failed to merge, the ticket they clashed with and the files involve
 - In testing manuals, add new steps at the end or use headings instead of numbers, so adding a step does not renumber the others.
 - Merge main into every branch in `in-progress/` as soon as a ticket that changes many files (such as infra-2) lands, before those branches reach review.
 - Weigh chaining tickets in the same area against conflicts: chains avoid conflicts but leave one ticket per round, as `commits-3` to `commits-5` did.
+
+## Session of 2026-11-25
+
+Tickets that failed to merge, the ticket they clashed with and the files involved. Taken from each ticket's `detail.md` in the state repo. This list is added to as the session goes on.
+
+### First train (commits-17, git-interface-2, git-interface-3, git-interface-4, git-interface-5, git-interface-6, git-interface-8)
+
+- commits-17 and git-interface-2 landed.
+- git-interface-3 behind git-interface-2 on the train: `backend/src/test/git-interface.test.zig`, `docs/architecture.md`, `docs/spec/layout/git-commands/detail.md`, `docs/testing-manual/repo-explorer/columns/detail.md`.
+- git-interface-4 behind git-interface-2: `backend/src/lib/git-log.zig`, `git-interface.test.zig`, `docs/architecture.md`, the git commands spec, `docs/spec/repo-explorer/detail.md`, `docs/testing-manual/repo-explorer/detail.md` and the `commit-pages` smoke test (`test.md`, `test.sh`).
+- git-interface-5 behind git-interface-2: `docs/testing-manual/repo-explorer/columns/detail.md`. After the rebase its Zig tests also failed to compile, because git-interface-2 renamed `LogPageRequest.after_hash` to `start`.
+- git-interface-6 behind git-interface-2: `git-log.zig`, `git-interface.test.zig`, `backend/src/test/git-log.test.zig`, the git commands spec, `docs/spec/repo-explorer/detail.md`, the columns and repo explorer testing manuals and the `commit-pages` smoke test.
+- git-interface-8 behind git-interface-2: `git-interface.test.zig`, `docs/architecture.md`, the git commands spec and the columns testing manual.
+
+### Second train (git-interface-3, git-interface-4, git-interface-5, git-interface-6, git-interface-8)
+
+- git-interface-3 landed. The other four had been rebased in parallel onto the same main, so each then conflicted with it.
+- git-interface-4: `git-interface.test.zig`, `docs/architecture.md`, the git commands spec and `docs/testing-manual/layout/git-commands/detail.md`.
+- git-interface-5: `backend/src/test/git-diff-tree.test.zig`, `docs/spec/repo-explorer/columns/detail.md` and the columns testing manual.
+- git-interface-6: `git-interface.test.zig`, the git commands spec and the columns testing manual (both tickets added a step 18).
+- git-interface-8: `backend/src/lib/git-diff-tree.zig`, `git-interface.test.zig`, the git commands spec, the columns spec and the columns testing manual.
+
+### Third train (git-interface-4, git-interface-5, git-interface-6, git-interface-8)
+
+- git-interface-4 and git-interface-5 stacked cleanly and landed.
+- git-interface-6 behind git-interface-4: `git-log.zig`, `backend/src/test/commit-details-task.test.zig`, `git-interface.test.zig`, the git commands spec and testing manual, the columns spec and testing manual, the repo explorer spec and testing manual and the `commit-pages` and `commit-pages-merge` smoke tests.
+- git-interface-8 behind git-interface-4: `git-log.zig`, `commit-details-task.test.zig`, `git-interface.test.zig`, `docs/architecture.md`, the git commands spec and testing manual and the columns spec and testing manual.
+
+### Fourth conflicts pass (git-interface-6, git-interface-8 onto main `5de0d6e`)
+
+- git-interface-6 with git-interface-4, which added `--no-show-signature` and moved `read_commit`'s arguments into `read_commit_command`: `git-log.zig`, `commit-details-task.test.zig`, `git-interface.test.zig`, the git commands spec and testing manual, the columns spec, the repo explorer spec and testing manual and the `commit-pages` and `commit-pages-merge` smoke tests (`test.md`, `test.sh`).
+- git-interface-6 with git-interface-4 and git-interface-5 in the columns testing manual: git-interface-5 added a step 19, so this ticket's step moved to 20.
+- git-interface-8 with git-interface-4: `git-log.zig`, `commit-details-task.test.zig`, `git-interface.test.zig`, `docs/architecture.md` and the git commands spec and testing manual.
+- git-interface-8 with git-interface-4 and git-interface-5: the columns spec and testing manual.
+
+### Fourth train (git-interface-6, git-interface-8)
+
+- git-interface-6 landed.
+- git-interface-8 behind git-interface-6 on the train: `git-log.zig`, `git-interface.test.zig`, the git commands spec and testing manual and the columns spec and testing manual. Both tickets put `--` after the hash in `read_commit`, and git-interface-8's History says its lines were written to match git-interface-6's, yet each rebase onto a newer main rewrote those same lines on both branches.
+- git-interface-8's fifth conflicts pass, onto main `a8178f5`, all with git-interface-6: `git-log.zig` (only a comment wrapped differently), `git-interface.test.zig` (the header comment), the git commands spec and testing manual and the columns spec and testing manual (main's last two steps renumbered to 20 and 21).
+- git-interface-8 then landed on its own train with no conflict. It took five trains and four conflicts passes.
+
+### Causes seen so far
+
+- Five git-interface tickets that change the same Git wrappers (`git-log.zig`, `git-diff-tree.zig`) ran side by side with no dependency between them. git-interface-6's ticket says it expects a conflict with git-interface-2.
+- `backend/src/test/git-interface.test.zig` has one header comment that lists every real-git check, so every ticket that adds a check rewrites it.
+- `docs/spec/layout/git-commands/detail.md` lists the exact `git` command line of each operation, so every ticket that adds an option or changes paging rewrites the same lines.
+- The columns testing manual is a numbered list, so tickets adding a step both claim the same step number.
+- Fixing several conflicted tickets at once again. All of them were rebased onto the same main, then the first to land put the rest back into conflict.
+
+### Ways to avoid them next time
+
+- Chain tickets that change the same Git wrapper with dependencies, so each is built on the one before.
+- Rebase and land conflicted tickets in the same area one at a time instead of in parallel.
+- Keep the header comment of `git-interface.test.zig` general and describe each check beside its test.
+- Describe each operation's command line in the spec once, next to its wrapper, instead of repeating it in several docs.
