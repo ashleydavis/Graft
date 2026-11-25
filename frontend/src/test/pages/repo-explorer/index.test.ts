@@ -1079,6 +1079,52 @@ describe("RepoExplorerPage keys", () => {
         textBox.remove();
     });
 
+    test("End and Home select the last and first commit", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        pressKey("End");
+        expect(isSelected(`commit-${secondCommitJson.hash}`)).toBe(true);
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(false);
+        pressKey("Home");
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(true);
+        expect(isSelected(`commit-${secondCommitJson.hash}`)).toBe(false);
+    });
+
+    test("ignores Home and End while a text box has the focus", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        const textBox = document.createElement("input");
+        elementWithDataId("repo-explorer-page").appendChild(textBox);
+        for (const key of ["End", "Home"]) {
+            const event = new KeyboardEvent("keydown", {
+                key,
+                bubbles: true,
+                cancelable: true,
+            });
+            act(() => {
+                textBox.dispatchEvent(event);
+            });
+            expect(event.defaultPrevented).toBe(false);
+        }
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(false);
+        expect(isSelected(`commit-${secondCommitJson.hash}`)).toBe(false);
+        textBox.remove();
+    });
+
+    test("ignores Home and End with Ctrl, Alt or Cmd held", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        for (const modifier of ["ctrlKey", "altKey", "metaKey"]) {
+            act(() => {
+                fireEvent.keyDown(document.body, {
+                    key: "End",
+                    [modifier]: true,
+                });
+            });
+        }
+        expect(isSelected(`commit-${secondCommitJson.hash}`)).toBe(false);
+    });
+
     test("ignores the keys with Ctrl held", async () => {
         const ziggy = installFakeTaskZiggy();
         await listTwoCommits(ziggy);
@@ -1397,6 +1443,32 @@ describe("RepoExplorerPage commit pages", () => {
         pressKey("ArrowDown");
         pressKey("ArrowDown");
         expect(isSelected(`commit-${commitPageJson(52, 1)[0].hash}`)).toBe(true);
+    });
+
+    test("End selects the last commit read, scrolls it into view and reads the next page", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listFirstPage(ziggy);
+        layout.scrollTo.mockClear();
+        pressKey("ArrowRight");
+        pressKey("End");
+        expect(isSelected(`commit-${commitPageJson(49, 1)[0].hash}`)).toBe(true);
+        expect(layout.scrollTo).toHaveBeenCalled();
+        expect(ziggy.addTask).toHaveBeenCalledTimes(2);
+        expect(taskDataAt(ziggy, 1)).toEqual({
+            repoPath: "/repo",
+            pageSize: 50,
+            start: {
+                hash: commitPageJson(0, 1)[0].hash,
+                skipCount: 50,
+            },
+        });
+        completeTaskAt(ziggy, 1, {
+            commits: commitPageJson(50, 3),
+        });
+        pressKey("End");
+        expect(isSelected(`commit-${commitPageJson(52, 1)[0].hash}`)).toBe(true);
+        pressKey("Home");
+        expect(isSelected(`commit-${commitPageJson(0, 1)[0].hash}`)).toBe(true);
     });
 });
 

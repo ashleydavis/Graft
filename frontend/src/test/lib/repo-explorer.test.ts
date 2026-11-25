@@ -128,8 +128,8 @@ describe("initialRepoExplorerState", () => {
 });
 
 describe("isExplorerKey", () => {
-    test("is true for the arrow keys, Enter and Escape", () => {
-        for (const key of ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter", "Escape"]) {
+    test("is true for the arrow keys, Home, End, Enter and Escape", () => {
+        for (const key of ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "Enter", "Escape"]) {
             expect(isExplorerKey(key)).toBe(true);
         }
     });
@@ -175,6 +175,20 @@ describe("itemAfterMove", () => {
     test("picks nothing from no items", () => {
         expect(itemAfterMove([], undefined, 1)).toBeUndefined();
         expect(itemAfterMove([], "aaa", 1)).toBeUndefined();
+        expect(itemAfterMove([], undefined, Infinity)).toBeUndefined();
+    });
+
+    test("picks the first item for a step of -Infinity and the last for Infinity", () => {
+        expect(itemAfterMove(items.commitHashes, "bbb", -Infinity)).toBe("aaa");
+        expect(itemAfterMove(items.commitHashes, "bbb", Infinity)).toBe("ccc");
+        expect(itemAfterMove(items.commitHashes, "aaa", -Infinity)).toBe("aaa");
+        expect(itemAfterMove(items.commitHashes, "ccc", Infinity)).toBe("ccc");
+    });
+
+    test("picks the first item for -Infinity and the last for Infinity with nothing selected or a selection no longer listed", () => {
+        expect(itemAfterMove(items.commitHashes, undefined, -Infinity)).toBe("aaa");
+        expect(itemAfterMove(items.commitHashes, undefined, Infinity)).toBe("ccc");
+        expect(itemAfterMove(items.commitHashes, "zzz", Infinity)).toBe("ccc");
     });
 });
 
@@ -754,6 +768,104 @@ describe("explorerStateAfterKey", () => {
 
     test("Escape closes the rightmost pane", () => {
         expect(explorerStateAfterKey(allOpen, "Escape", items).openPath).toBeUndefined();
+    });
+
+    test("Home and End select the first and last link in the repo details pane", () => {
+        expect(explorerStateAfterKey(initialRepoExplorerState, "End", items).selectedLink).toBe(COMMIT_LINK);
+        expect(explorerStateAfterKey(initialRepoExplorerState, "Home", items).selectedLink).toBe(COMMITS_LINK);
+        expect(explorerStateAfterKey({
+            ...initialRepoExplorerState,
+            selectedLink: COMMIT_LINK,
+        }, "Home", items).selectedLink).toBe(COMMITS_LINK);
+    });
+
+    test("Home and End select the first and last commit in the commit pane, with and without a selection", () => {
+        expect(explorerStateAfterKey(commitsOpen, "End", items).selectedHash).toBe("ccc");
+        expect(explorerStateAfterKey(commitsOpen, "Home", items).selectedHash).toBe("aaa");
+        const middle: IRepoExplorerState = {
+            ...commitsOpen,
+            selectedHash: "bbb",
+        };
+        expect(explorerStateAfterKey(middle, "End", items).selectedHash).toBe("ccc");
+        expect(explorerStateAfterKey(middle, "Home", items).selectedHash).toBe("aaa");
+        expect(explorerStateAfterKey(middle, "End", items).openHash).toBeUndefined();
+    });
+
+    test("End in the commit pane selects the last commit read so far, and after the next page is read End moves on to its last commit", () => {
+        const firstPage = explorerStateAfterKey(commitsOpen, "End", items);
+        expect(firstPage.selectedHash).toBe("ccc");
+        const nextPage = explorerStateAfterKey(firstPage, "End", {
+            ...items,
+            commitHashes: [...items.commitHashes, "ddd", "eee"],
+        });
+        expect(nextPage.selectedHash).toBe("eee");
+    });
+
+    test("Home and End in the commit pane open the newly selected commit while its details are open", () => {
+        const state: IRepoExplorerState = {
+            ...detailsOpen,
+            activePaneIndex: 1,
+        };
+        const end = explorerStateAfterKey(state, "End", items);
+        expect(end.selectedHash).toBe("ccc");
+        expect(end.openHash).toBe("ccc");
+        expect(end.activePaneIndex).toBe(1);
+        const home = explorerStateAfterKey(state, "Home", items);
+        expect(home.selectedHash).toBe("aaa");
+        expect(home.openHash).toBe("aaa");
+        expect(home.activePaneIndex).toBe(1);
+    });
+
+    test("Home and End in the commit details pane with no file open open the first and last commit and keep the pane active", () => {
+        const end = explorerStateAfterKey(detailsOpen, "End", items);
+        expect(end.openHash).toBe("ccc");
+        expect(end.activePaneIndex).toBe(2);
+        const home = explorerStateAfterKey(detailsOpen, "Home", items);
+        expect(home.openHash).toBe("aaa");
+        expect(home.activePaneIndex).toBe(2);
+    });
+
+    test("Home and End in the commit's file list select the first and last file and show its diff while a file is open", () => {
+        const fileOpen: IRepoExplorerState = {
+            ...allOpen,
+            activePaneIndex: 2,
+            selectedPath: "README.md",
+            openPath: "README.md",
+        };
+        const end = explorerStateAfterKey(fileOpen, "End", items);
+        expect(end.selectedPath).toBe("notes.txt");
+        expect(end.openPath).toBe("notes.txt");
+        expect(end.openHash).toBe("bbb");
+        expect(end.activePaneIndex).toBe(2);
+        const home = explorerStateAfterKey(end, "Home", items);
+        expect(home.selectedPath).toBe("README.md");
+        expect(home.openPath).toBe("README.md");
+    });
+
+    test("Home and End in the changes pane select the first unstaged row and the last staged row", () => {
+        const end = explorerStateAfterKey(changesOpen, "End", items);
+        expect(end.selectedChange).toBe(changeKey(true, "notes.txt"));
+        expect(end.openChange).toBeUndefined();
+        const home = explorerStateAfterKey(end, "Home", items);
+        expect(home.selectedChange).toBe(changeKey(false, "notes.txt"));
+        expect(explorerStateAfterKey(changesOpen, "Home", items).selectedChange).toBe(changeKey(false, "notes.txt"));
+    });
+
+    test("Home and End in the file pane leave the selection as it is", () => {
+        expect(explorerStateAfterKey(allOpen, "Home", items)).toEqual(allOpen);
+        expect(explorerStateAfterKey(allOpen, "End", items)).toEqual(allOpen);
+        expect(explorerStateAfterKey(changeFileOpen, "Home", items)).toEqual(changeFileOpen);
+        expect(explorerStateAfterKey(changeFileOpen, "End", items)).toEqual(changeFileOpen);
+    });
+
+    test("Home and End in an empty list select nothing", () => {
+        const noItems: IRepoExplorerItems = {
+            ...items,
+            commitHashes: [],
+            changeKeys: [],
+        };
+        expect(explorerStateAfterKey(commitsOpen, "End", noItems).selectedHash).toBeUndefined();
+        expect(explorerStateAfterKey(changesOpen, "Home", noItems).selectedChange).toBeUndefined();
     });
 
     test("any other key changes nothing", () => {

@@ -50,7 +50,7 @@ export interface IRepoExplorerState {
 }
 
 //
-// What the panes list, which Up and Down move through.
+// What the panes list, which Up, Down, Home and End move through.
 //
 export interface IRepoExplorerItems {
     // The names of the links in the repo details pane, in the order it lists them.
@@ -123,7 +123,7 @@ export const initialRepoExplorerState: IRepoExplorerState = {
 // scroll on an arrow key.
 //
 export function isExplorerKey(key: string): boolean {
-    return ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter", "Escape"].includes(key);
+    return ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "Enter", "Escape"].includes(key);
 }
 
 //
@@ -150,16 +150,18 @@ export function openPaneCount(state: IRepoExplorerState): number {
 
 //
 // Picks the item one step up (step -1) or down (step 1) from the selected one, staying on the
-// first or last item at the ends. With nothing selected, or a selection no longer in the list, it
-// picks the first item. With no items it picks nothing.
+// first or last item at the ends, so a step of -Infinity picks the first item and Infinity the
+// last, as Home and End do. With nothing selected, or a selection no longer in the list, the move
+// starts from just above the first item, so Up, Down and Home pick the first item and End the last.
+// With no items it picks nothing.
 //
 export function itemAfterMove(items: string[], selected: string | undefined, step: number): string | undefined {
     if (items.length === 0) {
         return undefined;
     }
-    const index = selected === undefined ? -1 : items.indexOf(selected);
-    if (index < 0) {
-        return items[0];
+    let index = -1;
+    if (selected !== undefined) {
+        index = items.indexOf(selected);
     }
     const nextIndex = Math.min(Math.max(index + step, 0), items.length - 1);
     return items[nextIndex];
@@ -344,10 +346,11 @@ export function closeLinkPane(state: IRepoExplorerState): IRepoExplorerState {
 }
 
 //
-// Moves the selected commit in the commit pane one step, up for step -1 and down for step 1. While
-// a commit's details are open they follow the selection, so the commit details pane shows the newly
-// selected commit at once, with the commit pane still active. At the first or last commit the
-// selection and the open details stay as they are.
+// Moves the selected commit in the commit pane one step, up for step -1 and down for step 1, or to
+// the first commit for step -Infinity and the last commit read for step Infinity. While a commit's
+// details are open they follow the selection, so the commit details pane shows the newly selected
+// commit at once, with the commit pane still active. At the first or last commit the selection and
+// the open details stay as they are.
 //
 export function moveCommitSelection(state: IRepoExplorerState, commitHashes: string[], step: number): IRepoExplorerState {
     const selectedHash = itemAfterMove(commitHashes, state.selectedHash, step);
@@ -395,13 +398,14 @@ export function targetPaneIndex(columns: Element, target: EventTarget): number |
 }
 
 //
-// Moves the selection in the active pane one step, up for step -1 and down for step 1. The file
-// pane lists no items, so the selection stays as it is there.
+// Moves the selection in the active pane one step, up for step -1 and down for step 1, or to the
+// first item for step -Infinity and the last for step Infinity. The file pane lists no items, so
+// the selection stays as it is there.
 //
 // With the commit details pane active and no file pane open, Up and Down open the commit above or
-// below, as they do in the commit pane, so the commit details pane follows the keys after Enter, a
-// click in it or Right. The commit details pane stays active, so the next Up or Down moves on
-// through the commits.
+// below and Home and End the first and last commit read, as they do in the commit pane, so the
+// commit details pane follows the keys after Enter, a click in it or Right. The commit details
+// pane stays active, so the next Up or Down moves on through the commits.
 //
 // In a commit's file list, while a file pane or the "Commit details" pane is open, the newly
 // selected row opens at once in its place, so the user can read one diff after another with Up and
@@ -530,9 +534,9 @@ export function closeRightmostPane(state: IRepoExplorerState): IRepoExplorerStat
 
 //
 // Works out the repo explorer after the key, as KeyboardEvent.key names it: Up and Down move the
-// selection in the active pane, Left and Right make the pane to the left or right active when
-// there is one, Enter opens the selected item and Escape closes the rightmost pane. Any other key
-// changes nothing.
+// selection in the active pane one step, Home and End move it to the first and last item, Left
+// and Right make the pane to the left or right active when there is one, Enter opens the selected
+// item and Escape closes the rightmost pane. Any other key changes nothing.
 //
 export function explorerStateAfterKey(state: IRepoExplorerState, key: string, items: IRepoExplorerItems): IRepoExplorerState {
     if (key === "ArrowUp") {
@@ -540,6 +544,12 @@ export function explorerStateAfterKey(state: IRepoExplorerState, key: string, it
     }
     if (key === "ArrowDown") {
         return moveSelection(state, items, 1);
+    }
+    if (key === "Home") {
+        return moveSelection(state, items, -Infinity);
+    }
+    if (key === "End") {
+        return moveSelection(state, items, Infinity);
     }
     if (key === "ArrowLeft") {
         return {
