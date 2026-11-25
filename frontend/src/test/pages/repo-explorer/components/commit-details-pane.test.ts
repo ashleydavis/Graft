@@ -437,8 +437,8 @@ describe("scrollRowIntoView", () => {
         const row = document.createElement("li");
         document.body.appendChild(row);
         const scrollTop = document.body.scrollTop;
-        scrollRowIntoView(null);
-        scrollRowIntoView(row);
+        scrollRowIntoView(null, "commit-details-scroll");
+        scrollRowIntoView(row, "commit-details-scroll");
         expect(document.body.scrollTop).toBe(scrollTop);
         row.remove();
     });

@@ -1125,6 +1125,38 @@ describe("RepoExplorerPage keys", () => {
         expect(isSelected(`commit-${secondCommitJson.hash}`)).toBe(false);
     });
 
+    test("leaves Page Up and Page Down to a focused text box and to a key held with Ctrl, Alt or Cmd and keeps the page from scrolling on them otherwise", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await listTwoCommits(ziggy);
+        const textBox = document.createElement("input");
+        elementWithDataId("repo-explorer-page").appendChild(textBox);
+        act(() => {
+            fireEvent.keyDown(textBox, {
+                key: "PageDown",
+            });
+        });
+        textBox.remove();
+        for (const modifier of ["ctrlKey", "altKey", "metaKey"]) {
+            act(() => {
+                fireEvent.keyDown(document.body, {
+                    key: "PageDown",
+                    [modifier]: true,
+                });
+            });
+        }
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(false);
+        const event = new KeyboardEvent("keydown", {
+            key: "PageDown",
+            bubbles: true,
+            cancelable: true,
+        });
+        act(() => {
+            document.body.dispatchEvent(event);
+        });
+        expect(event.defaultPrevented).toBe(true);
+        expect(isSelected(`commit-${commitJson.hash}`)).toBe(true);
+    });
+
     test("ignores the keys with Ctrl held", async () => {
         const ziggy = installFakeTaskZiggy();
         await listTwoCommits(ziggy);
@@ -1468,6 +1500,38 @@ describe("RepoExplorerPage commit pages", () => {
         expect(isSelected(`commit-${commitPageJson(52, 1)[0].hash}`)).toBe(true);
         pressKey("Home");
         expect(isSelected(`commit-${commitPageJson(0, 1)[0].hash}`)).toBe(true);
+    });
+
+    test("Page Down moves the selection by the rows that fit, scrolls it into view and reads the next page near the end and Page Up moves it back", async () => {
+        const ziggy = installFakeTaskZiggy();
+        const rowHeight = jest.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 36,
+            top: 0,
+            right: 100,
+            bottom: 36,
+            left: 0,
+            toJSON: () => ({}),
+        });
+        await listFirstPage(ziggy);
+        pressKey("ArrowRight");
+        pressKey("PageDown");
+        expect(isSelected(`commit-${commitPageJson(0, 1)[0].hash}`)).toBe(true);
+        layout.scrollTo.mockClear();
+        pressKey("PageDown");
+        expect(isSelected(`commit-${commitPageJson(10, 1)[0].hash}`)).toBe(true);
+        expect(layout.scrollTo).toHaveBeenCalled();
+        expect(ziggy.addTask).toHaveBeenCalledTimes(1);
+        for (let press = 0; press < 4; press++) {
+            pressKey("PageDown");
+        }
+        expect(isSelected(`commit-${commitPageJson(49, 1)[0].hash}`)).toBe(true);
+        expect(ziggy.addTask).toHaveBeenCalledTimes(2);
+        pressKey("PageUp");
+        expect(isSelected(`commit-${commitPageJson(39, 1)[0].hash}`)).toBe(true);
+        rowHeight.mockRestore();
     });
 });
 

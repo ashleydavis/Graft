@@ -31,7 +31,11 @@ import {
     itemAfterMove,
     moveCommitSelection,
     moveSelection,
+    moveSelectionByPage,
     openPaneCount,
+    pageListSelectors,
+    pageRowCount,
+    measurePageRowCount,
     keepListedChanges,
     openSelection,
     targetPaneIndex,
@@ -45,13 +49,27 @@ import {
 
 //
 // The items the panes list: the Commits and Changes links, three commits, two changed files in the
-// commit and three rows in the changes pane, notes.txt in both lists.
+// commit and three rows in the changes pane, notes.txt in both lists, with two rows to a page.
 //
 const items: IRepoExplorerItems = {
     links: [COMMITS_LINK, CHANGES_LINK],
     commitHashes: ["aaa", "bbb", "ccc"],
     filePaths: ["README.md", "notes.txt"],
     changeKeys: [changeKey(false, "notes.txt"), changeKey(false, "new.txt"), changeKey(true, "notes.txt")],
+    pageRowCount: 2,
+};
+
+//
+// The items of a long list: seven commits, five changed files in the commit and five rows in the
+// changes pane, three unstaged then two staged, with three rows to a page, so a page moves part
+// way through each list and a second page reaches its end.
+//
+const longItems: IRepoExplorerItems = {
+    links: [COMMITS_LINK, CHANGES_LINK],
+    commitHashes: ["c1", "c2", "c3", "c4", "c5", "c6", "c7"],
+    filePaths: ["f1", "f2", "f3", "f4", "f5"],
+    changeKeys: [changeKey(false, "u1"), changeKey(false, "u2"), changeKey(false, "u3"), changeKey(true, "s1"), changeKey(true, "s2")],
+    pageRowCount: 3,
 };
 
 //
@@ -128,8 +146,8 @@ describe("initialRepoExplorerState", () => {
 });
 
 describe("isExplorerKey", () => {
-    test("is true for the arrow keys, Home, End, Enter and Escape", () => {
-        for (const key of ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "Enter", "Escape"]) {
+    test("is true for the arrow keys, Page Up, Page Down, Home, End, Enter and Escape", () => {
+        for (const key of ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", "Enter", "Escape"]) {
             expect(isExplorerKey(key)).toBe(true);
         }
     });
@@ -868,8 +886,216 @@ describe("explorerStateAfterKey", () => {
         expect(explorerStateAfterKey(changesOpen, "Home", noItems).selectedChange).toBeUndefined();
     });
 
+    test("Page Down moves the selection down a page and Page Up moves it back", () => {
+        const down = explorerStateAfterKey({
+            ...commitsOpen,
+            selectedHash: "c1",
+        }, "PageDown", longItems);
+        expect(down.selectedHash).toBe("c4");
+        expect(explorerStateAfterKey(down, "PageUp", longItems).selectedHash).toBe("c1");
+    });
+
     test("any other key changes nothing", () => {
         expect(explorerStateAfterKey(allOpen, "a", items)).toBe(allOpen);
+    });
+});
+
+describe("moveSelectionByPage", () => {
+    test("moves the selected commit down by the page's rows, then stops at the last commit and back up to the first", () => {
+        const start: IRepoExplorerState = {
+            ...commitsOpen,
+            selectedHash: "c2",
+        };
+        const once = moveSelectionByPage(start, longItems, 1);
+        expect(once.selectedHash).toBe("c5");
+        const twice = moveSelectionByPage(once, longItems, 1);
+        expect(twice.selectedHash).toBe("c7");
+        expect(moveSelectionByPage(twice, longItems, 1).selectedHash).toBe("c7");
+        const up = moveSelectionByPage(twice, longItems, -1);
+        expect(up.selectedHash).toBe("c4");
+        expect(moveSelectionByPage(up, longItems, -1).selectedHash).toBe("c1");
+        expect(moveSelectionByPage(moveSelectionByPage(up, longItems, -1), longItems, -1).selectedHash).toBe("c1");
+    });
+
+    test("selects the first item when none is selected, whichever way it moves", () => {
+        expect(moveSelectionByPage(commitsOpen, longItems, 1).selectedHash).toBe("c1");
+        expect(moveSelectionByPage(commitsOpen, longItems, -1).selectedHash).toBe("c1");
+        expect(moveSelectionByPage(changesOpen, longItems, 1).selectedChange).toBe(changeKey(false, "u1"));
+        expect(moveSelectionByPage(initialRepoExplorerState, longItems, -1).selectedLink).toBe(COMMITS_LINK);
+    });
+
+    test("moves to the last or first link in the repo details pane", () => {
+        const down = moveSelectionByPage({
+            ...initialRepoExplorerState,
+            selectedLink: COMMITS_LINK,
+        }, longItems, 1);
+        expect(down.selectedLink).toBe(CHANGES_LINK);
+        expect(moveSelectionByPage(down, longItems, -1).selectedLink).toBe(COMMITS_LINK);
+    });
+
+    test("moves through the Unstaged rows, then the Staged rows, in the changes pane", () => {
+        const down = moveSelectionByPage({
+            ...changesOpen,
+            selectedChange: changeKey(false, "u2"),
+        }, longItems, 1);
+        expect(down.selectedChange).toBe(changeKey(true, "s2"));
+        expect(moveSelectionByPage(down, longItems, -1).selectedChange).toBe(changeKey(false, "u2"));
+    });
+
+    test("opens the newly selected commit while a commit's details are open, with the commit pane active", () => {
+        const down = moveSelectionByPage({
+            ...commitsOpen,
+            selectedHash: "c1",
+            openHash: "c1",
+        }, longItems, 1);
+        expect(down.selectedHash).toBe("c4");
+        expect(down.openHash).toBe("c4");
+        expect(down.activePaneIndex).toBe(1);
+    });
+
+    test("opens the commit a page away with the commit details pane active and no file open", () => {
+        const down = moveSelectionByPage({
+            ...commitsOpen,
+            activePaneIndex: 2,
+            selectedHash: "c1",
+            openHash: "c1",
+        }, longItems, 1);
+        expect(down.openHash).toBe("c4");
+        expect(down.activePaneIndex).toBe(2);
+    });
+
+    test("shows the file a page away while a file's diff is open, with the commit details pane active", () => {
+        const down = moveSelectionByPage({
+            ...commitsOpen,
+            activePaneIndex: 2,
+            selectedHash: "c1",
+            openHash: "c1",
+            selectedPath: "f1",
+            openPath: "f1",
+        }, longItems, 1);
+        expect(down.selectedPath).toBe("f4");
+        expect(down.openPath).toBe("f4");
+        expect(down.openHash).toBe("c1");
+        expect(down.activePaneIndex).toBe(2);
+    });
+
+    test("leaves the selection as it is in the file pane", () => {
+        expect(moveSelectionByPage(allOpen, longItems, 1)).toEqual(allOpen);
+        expect(moveSelectionByPage(changeFileOpen, longItems, -1)).toEqual(changeFileOpen);
+    });
+});
+
+describe("pageRowCount", () => {
+    test("counts the whole rows that fit in the area", () => {
+        expect(pageRowCount(360, 36)).toBe(10);
+        expect(pageRowCount(370, 36)).toBe(10);
+        expect(pageRowCount(359, 36)).toBe(9);
+    });
+
+    test("counts one row when no whole row fits or the row has no height", () => {
+        expect(pageRowCount(20, 36)).toBe(1);
+        expect(pageRowCount(0, 36)).toBe(1);
+        expect(pageRowCount(360, 0)).toBe(1);
+    });
+});
+
+describe("pageListSelectors", () => {
+    test("picks the commit list in the commit pane and in the commit details pane with no file open", () => {
+        expect(pageListSelectors(commitsOpen)).toEqual({
+            areaSelector: "[data-id=\"commit-list-scroll\"]",
+            rowSelector: "li",
+        });
+        expect(pageListSelectors(detailsOpen)).toEqual({
+            areaSelector: "[data-id=\"commit-list-scroll\"]",
+            rowSelector: "li",
+        });
+    });
+
+    test("picks the changed files in the commit details pane while a file is open", () => {
+        expect(pageListSelectors({
+            ...allOpen,
+            activePaneIndex: 2,
+        })).toEqual({
+            areaSelector: "[data-id=\"commit-details-scroll\"]",
+            rowSelector: "[data-id=\"changed-files\"] > li",
+        });
+    });
+
+    test("picks the changes pane's list that holds the selected row, the Unstaged list before one is selected", () => {
+        expect(pageListSelectors(changesOpen)?.areaSelector).toBe("[data-id=\"changes-unstaged-scroll\"]");
+        expect(pageListSelectors({
+            ...changesOpen,
+            selectedChange: changeKey(false, "notes.txt"),
+        })?.areaSelector).toBe("[data-id=\"changes-unstaged-scroll\"]");
+        expect(pageListSelectors({
+            ...changesOpen,
+            selectedChange: changeKey(true, "notes.txt"),
+        })?.areaSelector).toBe("[data-id=\"changes-staged-scroll\"]");
+    });
+
+    test("picks no list in the repo details pane or a file pane", () => {
+        expect(pageListSelectors(initialRepoExplorerState)).toBeUndefined();
+        expect(pageListSelectors(allOpen)).toBeUndefined();
+        expect(pageListSelectors(changeFileOpen)).toBeUndefined();
+    });
+});
+
+describe("measurePageRowCount", () => {
+    //
+    // Makes a repo explorer page with a commit list scrolling area of the height holding rows of
+    // the height, as a browser lays them out, and puts it on the document.
+    //
+    function makePage(areaHeightPx: number, rowHeightPx: number, rowCount: number): HTMLElement {
+        const page = document.createElement("main");
+        const area = document.createElement("div");
+        area.setAttribute("data-id", "commit-list-scroll");
+        Object.defineProperty(area, "clientHeight", {
+            configurable: true,
+            value: areaHeightPx,
+        });
+        for (let index = 0; index < rowCount; index += 1) {
+            const row = document.createElement("li");
+            row.getBoundingClientRect = () => rowRect(index * rowHeightPx, rowHeightPx);
+            area.appendChild(row);
+        }
+        page.appendChild(area);
+        document.body.appendChild(page);
+        return page;
+    }
+
+    //
+    // Makes the bounds of a row at the top with the height, as a browser reports them, field by
+    // field, so the test runs in jsdom.
+    //
+    function rowRect(topPx: number, heightPx: number): DOMRect {
+        return {
+            x: 0,
+            y: topPx,
+            width: 100,
+            height: heightPx,
+            top: topPx,
+            right: 100,
+            bottom: topPx + heightPx,
+            left: 0,
+            toJSON: () => ({}),
+        };
+    }
+
+    afterEach(() => {
+        document.body.innerHTML = "";
+    });
+
+    test("counts the whole rows that fit in the active pane's scrolling area, following its height", () => {
+        expect(measurePageRowCount(makePage(360, 36, 3), commitsOpen)).toBe(10);
+        expect(measurePageRowCount(makePage(200, 36, 3), commitsOpen)).toBe(5);
+        expect(measurePageRowCount(makePage(360, 45, 3), commitsOpen)).toBe(8);
+    });
+
+    test("counts one row with no page, no list in the active pane, no scrolling area or no row drawn", () => {
+        expect(measurePageRowCount(null, commitsOpen)).toBe(1);
+        expect(measurePageRowCount(makePage(360, 36, 3), initialRepoExplorerState)).toBe(1);
+        expect(measurePageRowCount(makePage(360, 36, 3), changesOpen)).toBe(1);
+        expect(measurePageRowCount(makePage(360, 36, 0), commitsOpen)).toBe(1);
     });
 });
 

@@ -178,6 +178,36 @@ describe("ChangesPane", () => {
         expect(unstaged.getAttribute("aria-current")).toBe("true");
     });
 
+    test("scrolls the selected row's list by the least amount that shows the row", () => {
+        const edges: Record<string, number[]> = {
+            "changes-staged-scroll": [100, 200],
+            "change-staged-notes.txt": [210, 240],
+        };
+        const bounds = jest.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function placedRect(this: Element): DOMRect {
+            const [top, bottom] = edges[this.getAttribute("data-id") ?? ""] ?? [0, 0];
+            return {
+                x: 0,
+                y: top,
+                width: 0,
+                height: bottom - top,
+                top,
+                right: 0,
+                bottom,
+                left: 0,
+                toJSON: () => ({}),
+            };
+        });
+        const scrollTop = jest.spyOn(Element.prototype, "scrollTop", "set");
+        renderPane({
+            changes,
+            selectedKey: changeKey(true, "notes.txt"),
+        });
+        expect(scrollTop).toHaveBeenCalledWith(40);
+        expect(scrollTop.mock.contexts).toEqual([elementWithDataId("changes-staged-scroll")]);
+        scrollTop.mockRestore();
+        bounds.mockRestore();
+    });
+
     test("says what an empty list means", () => {
         renderPane({
             changes: {

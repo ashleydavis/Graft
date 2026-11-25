@@ -67,6 +67,11 @@ export interface IRepoExplorerItems {
     // The keys of the files in the changes pane, as changeKey makes them, the unstaged files then
     // the staged files, as the pane lists them, or none until they are read.
     changeKeys: string[];
+
+    // The number of whole rows that fit in the scrolling area of the list the keys move through in
+    // the active pane, which Page Up and Page Down move the selection by, as measurePageRowCount
+    // measures it when the key is pressed.
+    pageRowCount: number;
 }
 
 //
@@ -123,7 +128,7 @@ export const initialRepoExplorerState: IRepoExplorerState = {
 // scroll on an arrow key.
 //
 export function isExplorerKey(key: string): boolean {
-    return ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "Enter", "Escape"].includes(key);
+    return ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End", "Enter", "Escape"].includes(key);
 }
 
 //
@@ -452,6 +457,120 @@ export function moveSelection(state: IRepoExplorerState, items: IRepoExplorerIte
 }
 
 //
+// Moves the selection in the active pane a page at a time, up for direction -1 and down for
+// direction 1, as Page Up and Page Down do. In the repo details pane a page is every link, so the
+// selection goes to the first or last link. In every other pane a page is items.pageRowCount rows,
+// and the move does what Up and Down do there, so it stops at the ends, selects the first item when
+// none is selected and opens the newly selected commit or file where Up and Down open it.
+//
+export function moveSelectionByPage(state: IRepoExplorerState, items: IRepoExplorerItems, direction: number): IRepoExplorerState {
+    if (state.activePaneIndex === 0) {
+        return moveSelection(state, items, direction * items.links.length);
+    }
+    return moveSelection(state, items, direction * items.pageRowCount);
+}
+
+//
+// The selectors of a scrolling area and one of the rows of the list in it, which
+// measurePageRowCount measures.
+//
+export interface IPageListSelectors {
+    // Selects the list's scrolling area within the repo explorer page.
+    areaSelector: string;
+
+    // Selects a row of the list within the scrolling area.
+    rowSelector: string;
+}
+
+//
+// The selectors of the commit pane's commit list, which both the commit pane and the commit
+// details pane with no file pane open move through. The commit list draws each commit as an li in
+// its scrolling area, whose data-id is commit-list-scroll.
+//
+export const COMMIT_LIST_SELECTORS: IPageListSelectors = {
+    areaSelector: `[data-id="commit-list-scroll"]`,
+    rowSelector: "li",
+};
+
+//
+// Picks the selectors of the scrolling area and its rows that make up the list Up and Down move
+// through in the active pane, so measurePageRowCount can measure how many rows fit in it: the
+// commit list, the commit details pane's changed files while a file pane is open, or the list in
+// the changes pane that holds the selected row, the Unstaged list before a row is selected. With
+// the commit details pane active and no file pane open the keys move through the commits, so it
+// picks the commit list. For the repo details pane and the file pane it returns undefined.
+//
+export function pageListSelectors(state: IRepoExplorerState): IPageListSelectors | undefined {
+    if (state.activePaneIndex === 0) {
+        return undefined;
+    }
+    if (state.openLink === CHANGES_LINK) {
+        if (state.activePaneIndex === 1) {
+            let listName = "unstaged";
+            if (state.selectedChange?.startsWith("staged:")) {
+                listName = "staged";
+            }
+            return {
+                areaSelector: `[data-id="changes-${listName}-scroll"]`,
+                rowSelector: "li",
+            };
+        }
+        return undefined;
+    }
+    if (state.activePaneIndex === 1) {
+        return COMMIT_LIST_SELECTORS;
+    }
+    if (state.activePaneIndex === 2) {
+        if (state.openPath === undefined) {
+            return COMMIT_LIST_SELECTORS;
+        }
+        return {
+            areaSelector: `[data-id="commit-details-scroll"]`,
+            rowSelector: `[data-id="changed-files"] > li`,
+        };
+    }
+    return undefined;
+}
+
+//
+// Measures how many whole rows fit in the scrolling area of the list the keys move through in the
+// active pane, when Page Up or Page Down is pressed, so a page follows the pane's size as the
+// window is resized or zoomed. The commit list is a virtual list that draws the rows in view, so a
+// drawn row gives the height of every row. It counts one row when the pane has no list, its list
+// has no rows drawn or the page is not drawn yet, so a key still moves the selection.
+//
+export function measurePageRowCount(page: Element | null, state: IRepoExplorerState): number {
+    if (!page) {
+        return 1;
+    }
+    const selectors = pageListSelectors(state);
+    if (!selectors) {
+        return 1;
+    }
+    const area = page.querySelector(selectors.areaSelector);
+    if (!area) {
+        return 1;
+    }
+    const row = area.querySelector(selectors.rowSelector);
+    if (!row) {
+        return 1;
+    }
+    return pageRowCount(area.clientHeight, row.getBoundingClientRect().height);
+}
+
+//
+// Works out how many whole rows of the height fit in a scrolling area of the height, at least one,
+// so Page Up and Page Down always move the selection even when a row is taller than the area or is
+// not laid out.
+//
+export function pageRowCount(areaHeightPx: number, rowHeightPx: number): number {
+    if (rowHeightPx <= 0) {
+        return 1;
+    }
+    return Math.max(Math.floor(areaHeightPx / rowHeightPx), 1);
+}
+
+//
 // Opens the selected item of the active pane, as Enter does: the selected link opens its pane, the
 // selected commit opens its details pane and the selected file, in a commit or in the changes
 // pane, opens its file pane, and the new pane becomes active. With no item selected, or in the
@@ -534,9 +653,10 @@ export function closeRightmostPane(state: IRepoExplorerState): IRepoExplorerStat
 
 //
 // Works out the repo explorer after the key, as KeyboardEvent.key names it: Up and Down move the
-// selection in the active pane one step, Home and End move it to the first and last item, Left
-// and Right make the pane to the left or right active when there is one, Enter opens the selected
-// item and Escape closes the rightmost pane. Any other key changes nothing.
+// selection in the active pane one step, Page Up and Page Down move it a page, Home and End move
+// it to the first and last item, Left and Right make the pane to the left or right active when
+// there is one, Enter opens the selected item and Escape closes the rightmost pane. Any other key
+// changes nothing.
 //
 export function explorerStateAfterKey(state: IRepoExplorerState, key: string, items: IRepoExplorerItems): IRepoExplorerState {
     if (key === "ArrowUp") {
@@ -544,6 +664,12 @@ export function explorerStateAfterKey(state: IRepoExplorerState, key: string, it
     }
     if (key === "ArrowDown") {
         return moveSelection(state, items, 1);
+    }
+    if (key === "PageUp") {
+        return moveSelectionByPage(state, items, -1);
+    }
+    if (key === "PageDown") {
+        return moveSelectionByPage(state, items, 1);
     }
     if (key === "Home") {
         return moveSelection(state, items, -Infinity);

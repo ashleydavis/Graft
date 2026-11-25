@@ -336,7 +336,7 @@ export function ChangedFileRow({ repoPath, file, isSelected, isOpen, onSelectFil
 
     useEffect(() => {
         if (isSelected) {
-            scrollRowIntoView(rowRef.current);
+            scrollRowIntoView(rowRef.current, SCROLL_AREA_DATA_ID);
         }
     }, [isSelected]);
 
@@ -364,18 +364,19 @@ export function ChangedFileRow({ repoPath, file, isSelected, isOpen, onSelectFil
 }
 
 //
-// Scrolls the pane's scrolling area up or down by the least amount that shows the whole row, so
-// the highlighted file stays inside the pane's visible part. It sets the area's scrollTop, which
-// moves only that area, so the page's own smooth sideways scroll that brings a newly opened pane
-// into view runs to its end. It scrolls at once, so the list keeps up with each press of Up or
-// Down. It returns at once when React has yet to draw the row or the row is drawn outside the
-// pane's scrolling area, because then there is no area for it to move.
+// Scrolls the scrolling area with the data-id that holds the row up or down by the least amount
+// that shows the whole row, so the highlighted file stays inside the pane's visible part, in the
+// commit details pane and in the changes pane's lists. It sets the area's scrollTop, which moves
+// only that area, so the page's own smooth sideways scroll that brings a newly opened pane into
+// view runs to its end. It scrolls at once, so the list keeps up with each press of Up, Down, Page
+// Up or Page Down. It returns at once when React has yet to draw the row or the row is drawn
+// outside the scrolling area, because then there is no area for it to move.
 //
-export function scrollRowIntoView(row: HTMLElement | null): void {
+export function scrollRowIntoView(row: HTMLElement | null, areaDataId: string): void {
     if (!row) {
         return;
     }
-    const area = row.closest<HTMLElement>(`[data-id="${SCROLL_AREA_DATA_ID}"]`);
+    const area = row.closest<HTMLElement>(`[data-id="${areaDataId}"]`);
     if (!area) {
         return;
     }

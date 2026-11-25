@@ -5,7 +5,7 @@
 // there opens the file pane to its right, or its "Commit details" row the "Commit details" pane in
 // the file pane's place, like the column view of a file browser. Its Changes link opens the changes
 // pane in place of the commit pane, with the working tree's unstaged and staged files, and clicking
-// a file there opens its file pane. The arrow keys, Enter and Escape move through the panes as in
+// a file there opens its file pane. The arrow keys, Page Up, Page Down, Enter and Escape move through the panes as in
 // the column view of macOS Finder. Clicking anywhere in a pane makes it the active pane.
 //
 
@@ -20,7 +20,7 @@ import { commitStagedFiles } from "../../lib/commit";
 import { canReadNextPage, COMMIT_PAGE_SIZE, commitPagesAfterRead, commitPagesReading, ICommitPages, nextPageStart, noCommitPages } from "../../lib/commit-pages";
 import { ICommit, ICommitPageStart, readCommitPage } from "../../lib/commits";
 import { openPaneIds } from "../../lib/pane-animation";
-import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, closeLinkPane, COMMIT_DETAILS_PATH, CHANGES_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, hasSelectedText, initialRepoExplorerState, IRepoExplorerState, isCopyKey, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectedItemText, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
+import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, closeLinkPane, COMMIT_DETAILS_PATH, CHANGES_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, hasSelectedText, initialRepoExplorerState, IRepoExplorerState, isCopyKey, isExplorerKey, isExplorerKeyTarget, keepListedChanges, measurePageRowCount, selectChange, selectedItemText, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
 import { toggleFileStaged } from "../../lib/stage-file";
 import { IWorkingChanges, IWorkingFile, readWorkingChanges } from "../../lib/working-changes";
 import { AnimatedPane } from "./components/animated-pane";
@@ -70,7 +70,7 @@ export function RepoExplorerPage(): JSX.Element {
 // closes the file pane and closing a pane closes the panes to its right. Dates are shown in the
 // browser's own locale and time zone. When a pane opens, the page scrolls sideways to bring it into
 // view, because the newest pane is the one the user wants to read and it can open beyond the right
-// edge of the window. While the page is shown it handles the arrow keys, Enter and Escape itself,
+// edge of the window. While the page is shown it handles the arrow keys, Page Up, Page Down, Enter and Escape itself,
 // on the document in the capture phase, so the key reaches it before a focused row's own Enter
 // handling and the page does not also scroll. It leaves the keys to a text box, link, button, menu
 // or dialog that has the focus. Ctrl+C (Cmd+C on macOS) copies the active pane's selected item in
@@ -270,7 +270,10 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
             }
             event.preventDefault();
             event.stopPropagation();
-            setExplorer(state => explorerStateAfterKey(state, event.key, items));
+            setExplorer(state => explorerStateAfterKey(state, event.key, {
+                ...items,
+                pageRowCount: measurePageRowCount(pageRef.current, state),
+            }));
         }
 
         //

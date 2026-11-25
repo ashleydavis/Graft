@@ -8,11 +8,12 @@
 import { faAnglesLeft, faAnglesRight, faCheck } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button, IconButton, List, ListItemButton, TextField, Tooltip } from "@mui/material";
-import { JSX } from "react";
+import { JSX, useEffect, useRef } from "react";
 import { canCommit, commitButtonText, commitTip } from "../../../lib/commit";
 import { changeKey } from "../../../lib/repo-explorer";
 import { changedFileCount, IWorkingChanges, IWorkingFile } from "../../../lib/working-changes";
 import { activePaneClass } from "./active-pane-style";
+import { scrollRowIntoView } from "./commit-details-pane";
 import { openRowClass } from "./commit-list";
 import { FileIcon } from "./file-icon";
 import { FilePath } from "./file-path";
@@ -219,7 +220,7 @@ export function ChangeList({ repoPath, title, files, isStaged, emptyText, select
                     {title} ({files.length})
                 </h3>
             </div>
-            <div className="min-h-0 flex-1 overflow-auto">
+            <div data-id={`changes-${listId}-scroll`} className="min-h-0 flex-1 overflow-auto">
                 {files.length === 0 && (
                     <p data-id={`changes-${listId}-empty`} className="p-3 text-center text-[length:var(--text-sm)] text-[var(--color-text-muted)]">{emptyText}</p>
                 )}
@@ -266,19 +267,30 @@ export interface IChangeRowProps {
 // Shows one changed file as the style guide's file rows do: the stage or unstage button at its
 // left, then the file's icon, its path and its file path menu. The row is a MaterialUI
 // ListItemButton, so a selected file shows the selected background. Its data-id holds the list and
-// the path, because a file with staged and unstaged changes has a row in each list.
+// the path, because a file with staged and unstaged changes has a row in each list. When the row
+// becomes selected it scrolls its list by the least amount that shows it, so the highlighted file
+// stays visible as the keys move through a list longer than its box.
 //
 export function ChangeRow({ repoPath, file, isStaged, isSelected, isOpen, onSelect, onToggleStaged }: IChangeRowProps): JSX.Element {
+    const rowRef = useRef<HTMLLIElement>(null);
     let listName = "unstaged";
     if (isStaged) {
         listName = "staged";
     }
+
+    useEffect(() => {
+        if (isSelected) {
+            scrollRowIntoView(rowRef.current, `changes-${listName}-scroll`);
+        }
+    }, [isSelected]);
+
     let current: "true" | undefined = undefined;
     if (isOpen) {
         current = "true";
     }
     return (
         <ListItemButton
+            ref={rowRef}
             component="li"
             data-id={`change-${listName}-${file.path}`}
             aria-label={file.path}
