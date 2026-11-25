@@ -1458,7 +1458,6 @@ describe("RepoExplorerPage commit pages", () => {
             repoPath: "/repo",
             pageSize: 50,
             start: {
-                hash: commitPageJson(0, 1)[0].hash,
                 skipCount: 50,
             },
         });
