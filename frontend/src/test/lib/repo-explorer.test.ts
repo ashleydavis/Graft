@@ -12,7 +12,7 @@ import {
     closeFilePane,
     closeLinkPane,
     closeRightmostPane,
-    COMMIT_LINK,
+    CHANGES_LINK,
     COMMITS_LINK,
     explorerStateAfterKey,
     findChange,
@@ -37,11 +37,11 @@ import {
 } from "../../lib/repo-explorer";
 
 //
-// The items the panes list: the Commits and Commit links, three commits, two changed files in the
+// The items the panes list: the Commits and Changes links, three commits, two changed files in the
 // commit and three rows in the changes pane, notes.txt in both lists.
 //
 const items: IRepoExplorerItems = {
-    links: [COMMITS_LINK, COMMIT_LINK],
+    links: [COMMITS_LINK, CHANGES_LINK],
     commitHashes: ["aaa", "bbb", "ccc"],
     filePaths: ["README.md", "notes.txt"],
     changeKeys: [changeKey(false, "notes.txt"), changeKey(false, "new.txt"), changeKey(true, "notes.txt")],
@@ -68,8 +68,8 @@ const commitsOpen: IRepoExplorerState = {
 const changesOpen: IRepoExplorerState = {
     ...initialRepoExplorerState,
     activePaneIndex: 1,
-    selectedLink: COMMIT_LINK,
-    openLink: COMMIT_LINK,
+    selectedLink: CHANGES_LINK,
+    openLink: CHANGES_LINK,
 };
 
 //
@@ -272,10 +272,10 @@ describe("closeLinkPane", () => {
         });
     });
 
-    test("closes the changes pane and its file pane, keeping the Commit link selected", () => {
+    test("closes the changes pane and its file pane, keeping the Changes link selected", () => {
         expect(closeLinkPane(changeFileOpen)).toEqual({
             ...initialRepoExplorerState,
-            selectedLink: COMMIT_LINK,
+            selectedLink: CHANGES_LINK,
         });
     });
 });
@@ -574,10 +574,10 @@ describe("openSelection", () => {
         expect(openSelection(changeFileOpen)).toBe(changeFileOpen);
     });
 
-    test("opens the selected Commit link and makes the changes pane active", () => {
+    test("opens the selected Changes link and makes the changes pane active", () => {
         expect(openSelection({
             ...initialRepoExplorerState,
-            selectedLink: COMMIT_LINK,
+            selectedLink: CHANGES_LINK,
         })).toEqual(changesOpen);
     });
 

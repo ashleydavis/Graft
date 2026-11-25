@@ -1,5 +1,5 @@
 //
-// The changes pane: the column the repo details pane's Commit link opens, headed "Commit", with
+// The changes pane: the column the repo details pane's Changes link opens, headed "Changes", with
 // the working tree's unstaged files and staged files in two lists, as the style guide's Commit
 // page lays them out, a button on each row that stages or unstages the whole file and the commit
 // section under the lists, with the commit message box and the Commit button.
@@ -64,7 +64,7 @@ export interface IChangesPaneProps {
 }
 
 //
-// Shows the changes in a rounded card headed "Commit", with how many files changed and how many
+// Shows the changes in a rounded card headed "Changes", with how many files changed and how many
 // are staged beside it in muted text, as the style guide's Changes pane is headed. The card is as
 // tall as the page's columns and never shrinks, as the other panes. Its border is in the style
 // guide's active pane colour while the pane is active. The page's AnimatedPane column animates it
@@ -78,12 +78,12 @@ export function ChangesPane({ changes, error, stageError, selectedKey, openKey, 
     }
     const title = (
         <span className="flex items-baseline gap-2">
-            Commit
+            Changes
             <span data-id="changes-summary" className="truncate text-[length:var(--text-sm)] font-[var(--weight-normal)] text-[var(--color-text-muted)]">{changesSummary(changes)}</span>
         </span>
     );
     return (
-        <section data-id="changes-pane" aria-label="Commit" className={`flex w-[420px] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
+        <section data-id="changes-pane" aria-label="Changes" className={`flex w-[420px] flex-none flex-col overflow-hidden rounded-[var(--radius-lg)] border bg-[var(--color-panel)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-standard)] ${activePaneClass(isActive)}`}>
             <PaneHeader title={title} titleDataId="changes-heading" action={undefined} />
             {stageError !== undefined && (
                 <p data-id="changes-stage-error" className="m-2 mb-0 rounded-[var(--radius-md)] bg-[var(--color-danger-subtle)] px-3 py-2 text-[length:var(--text-sm)] text-[var(--color-text)]">{stageError}</p>

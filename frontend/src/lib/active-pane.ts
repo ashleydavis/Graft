@@ -4,7 +4,7 @@
 // reads the one value.
 //
 
-import { COMMIT_LINK, IRepoExplorerState } from "./repo-explorer";
+import { CHANGES_LINK, IRepoExplorerState } from "./repo-explorer";
 
 //
 // The name of one of Graft's pages or one of the repo explorer's panes.
@@ -49,7 +49,7 @@ export function repoExplorerActivePane(state: IRepoExplorerState): PaneOrPage {
     if (state.activePaneIndex === 0) {
         return "repo-details-pane";
     }
-    if (state.openLink === COMMIT_LINK) {
+    if (state.openLink === CHANGES_LINK) {
         if (state.activePaneIndex === 1) {
             return "changes-pane";
         }

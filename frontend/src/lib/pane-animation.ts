@@ -5,7 +5,7 @@
 // reduced motion setting is on.
 //
 
-import { COMMIT_LINK, COMMITS_LINK, IRepoExplorerState } from "./repo-explorer";
+import { CHANGES_LINK, COMMITS_LINK, IRepoExplorerState } from "./repo-explorer";
 
 //
 // The media query that matches while the system's reduced motion setting is on. The panes read it
@@ -59,7 +59,7 @@ export interface IOpenPaneIds {
     // The open commit's hash and the open file's path, so another file's diff opens afresh.
     filePane: string | undefined;
 
-    // The changes pane's name while the Commit link is open.
+    // The changes pane's name while the Changes link is open.
     changesPane: string | undefined;
 
     // The open changed file's key, which stays the same as the changes are read again, so the pane
@@ -89,8 +89,8 @@ export function openPaneIds(explorer: IRepoExplorerState, hasOpenChange: boolean
             ids.filePane = `${explorer.openHash} ${explorer.openPath}`;
         }
     }
-    if (explorer.openLink === COMMIT_LINK) {
-        ids.changesPane = COMMIT_LINK;
+    if (explorer.openLink === CHANGES_LINK) {
+        ids.changesPane = CHANGES_LINK;
         if (hasOpenChange) {
             ids.workingFilePane = explorer.openChange;
         }

@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { List, ListItemButton } from "@mui/material";
 import { JSX } from "react";
 import { repoName } from "../../../lib/breadcrumb-trail";
-import { COMMIT_LINK, COMMITS_LINK } from "../../../lib/repo-explorer";
+import { CHANGES_LINK, COMMITS_LINK } from "../../../lib/repo-explorer";
 import { activePaneClass } from "./active-pane-style";
 import { Fact } from "./commit-details-pane";
 import { openRowClass } from "./commit-list";
@@ -38,7 +38,7 @@ export interface IRepoDetailsPaneProps {
 //
 // Shows the repo in a rounded card headed "Repo" and the repo's name: its name and its full path
 // as labelled facts, laid out as the commit details pane lays out a commit's facts, then the
-// Commits link, which opens the commit pane, and the Commit link, which opens the changes pane.
+// Commits link, which opens the commit pane, and the Changes link, which opens the changes pane.
 // The card never shrinks, so the panes that open to its right never hide it. The card's border is
 // in the style guide's active pane colour while the pane is active.
 //
@@ -64,7 +64,7 @@ export function RepoDetailsPane({ repoPath, selectedLink, openLink, isActive, on
                 </dl>
                 <List data-id="repo-details-links" disablePadding={true} className="px-1 py-2">
                     <LinkRow link={COMMITS_LINK} label="Commits" icon={faCodeCommit} dataId="repo-details-commits" selectedLink={selectedLink} openLink={openLink} onSelectLink={onSelectLink} />
-                    <LinkRow link={COMMIT_LINK} label="Commit" icon={faPenToSquare} dataId="repo-details-commit" selectedLink={selectedLink} openLink={openLink} onSelectLink={onSelectLink} />
+                    <LinkRow link={CHANGES_LINK} label="Changes" icon={faPenToSquare} dataId="repo-details-changes" selectedLink={selectedLink} openLink={openLink} onSelectLink={onSelectLink} />
                 </List>
             </div>
         </section>

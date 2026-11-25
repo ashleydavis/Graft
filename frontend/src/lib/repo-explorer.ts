@@ -9,14 +9,14 @@ import { IWorkingChanges, IWorkingFile } from "./working-changes";
 //
 // The repo explorer's panes and their selections. The open panes are the repo details pane, then
 // the commit pane while the Commits link is open, then the commit details pane while a commit is
-// open, then the file pane while a file is open. While the Commit link is open the changes pane
+// open, then the file pane while a file is open. While the Changes link is open the changes pane
 // follows the repo details pane in place of the commit pane, then the file pane while a changed
 // file is open.
 //
 export interface IRepoExplorerState {
     // The position of the active pane among the open panes: 0 for the repo details pane, 1 for
     // the commit pane, 2 for the commit details pane and 3 for the file pane, or 1 for the changes
-    // pane and 2 for the file pane while the Commit link is open. The keys act on this pane.
+    // pane and 2 for the file pane while the Changes link is open. The keys act on this pane.
     activePaneIndex: number;
 
     // The name of the selected link in the repo details pane, as in "commits", or undefined before
@@ -74,10 +74,10 @@ export interface IRepoExplorerItems {
 export const COMMITS_LINK = "commits";
 
 //
-// The name of the repo details pane's Commit link, which opens the changes pane, used by the page
+// The name of the repo details pane's Changes link, which opens the changes pane, used by the page
 // and the state as COMMITS_LINK is.
 //
-export const COMMIT_LINK = "commit";
+export const CHANGES_LINK = "changes";
 
 //
 // Makes the key that names one row of the changes pane: the list it is in and the file's path. A
@@ -123,7 +123,7 @@ export function openPaneCount(state: IRepoExplorerState): number {
     if (state.openLink === undefined) {
         return 1;
     }
-    if (state.openLink === COMMIT_LINK) {
+    if (state.openLink === CHANGES_LINK) {
         if (state.openChange === undefined) {
             return 2;
         }
@@ -403,7 +403,7 @@ export function moveSelection(state: IRepoExplorerState, items: IRepoExplorerIte
             selectedLink: itemAfterMove(items.links, state.selectedLink, step),
         };
     }
-    if (state.openLink === COMMIT_LINK) {
+    if (state.openLink === CHANGES_LINK) {
         if (state.activePaneIndex === 1) {
             return {
                 ...state,
@@ -451,7 +451,7 @@ export function openSelection(state: IRepoExplorerState): IRepoExplorerState {
             activePaneIndex: 1,
         };
     }
-    if (state.openLink === COMMIT_LINK) {
+    if (state.openLink === CHANGES_LINK) {
         if (state.activePaneIndex === 1) {
             if (state.selectedChange === undefined) {
                 return state;
@@ -490,7 +490,7 @@ export function openSelection(state: IRepoExplorerState): IRepoExplorerState {
 //
 export function closeRightmostPane(state: IRepoExplorerState): IRepoExplorerState {
     const paneCount = openPaneCount(state);
-    if (state.openLink === COMMIT_LINK) {
+    if (state.openLink === CHANGES_LINK) {
         if (paneCount === 3) {
             return {
                 ...closeChangeFilePane(state),

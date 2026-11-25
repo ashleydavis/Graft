@@ -292,13 +292,13 @@ describe("BreadcrumbTrail with the trail of the repo explorer page", () => {
         expect(elementWithDataId("breadcrumb-pane-commit")?.classList.contains("text-[var(--color-text-muted)]")).toBe(true);
     });
 
-    test("with the changes pane and a file open, shows Commit then the file's name after Repo explorer", () => {
+    test("with the changes pane and a file open, shows Changes then the file's name after Repo explorer", () => {
         renderTrail(pageTrail("/repo-explorer", "/home/user/projects/graft", explorerPaneSteps({
             ...initialRepoExplorerState,
-            openLink: "commit",
+            openLink: "changes",
             openChange: "unstaged:notes.txt",
         }, "notes.txt")));
-        expect(elementWithDataId("breadcrumb-trail")?.textContent).toBe("graftRepo explorerCommitnotes.txt");
+        expect(elementWithDataId("breadcrumb-trail")?.textContent).toBe("graftRepo explorerChangesnotes.txt");
     });
 
     test("with no repo open, shows Repo explorer alone, with no repo step", () => {

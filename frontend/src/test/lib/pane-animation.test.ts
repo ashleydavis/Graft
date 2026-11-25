@@ -5,7 +5,7 @@
 //
 
 import { closingPaneId, openPaneIds, paneAnimationClass } from "../../lib/pane-animation";
-import { changeKey, COMMIT_LINK, COMMITS_LINK, initialRepoExplorerState, IRepoExplorerState } from "../../lib/repo-explorer";
+import { changeKey, CHANGES_LINK, COMMITS_LINK, initialRepoExplorerState, IRepoExplorerState } from "../../lib/repo-explorer";
 
 describe("closingPaneId", () => {
     test("closes the pane that was open when no pane takes its place", () => {
@@ -74,17 +74,17 @@ describe("openPaneIds", () => {
         expect(openPaneIds(explorer, false).filePane).toBeUndefined();
     });
 
-    test("names the changes pane and the open changed file while the Commit link is open and lists it", () => {
+    test("names the changes pane and the open changed file while the Changes link is open and lists it", () => {
         const explorer: IRepoExplorerState = {
             ...initialRepoExplorerState,
-            openLink: COMMIT_LINK,
+            openLink: CHANGES_LINK,
             openChange: changeKey(false, "notes.txt"),
         };
         expect(openPaneIds(explorer, true)).toEqual({
             commitPane: undefined,
             commitDetailsPane: undefined,
             filePane: undefined,
-            changesPane: COMMIT_LINK,
+            changesPane: CHANGES_LINK,
             workingFilePane: changeKey(false, "notes.txt"),
         });
     });
@@ -92,7 +92,7 @@ describe("openPaneIds", () => {
     test("names no changed file's pane while the changes pane does not list the open file", () => {
         const explorer: IRepoExplorerState = {
             ...initialRepoExplorerState,
-            openLink: COMMIT_LINK,
+            openLink: CHANGES_LINK,
             openChange: changeKey(false, "notes.txt"),
         };
         expect(openPaneIds(explorer, false).workingFilePane).toBeUndefined();

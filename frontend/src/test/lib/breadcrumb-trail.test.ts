@@ -207,15 +207,15 @@ describe("explorerPaneSteps", () => {
         ]);
     });
 
-    test("has the Commit step while the changes pane is open with no file open", () => {
+    test("has the Changes step while the changes pane is open with no file open", () => {
         expect(explorerPaneSteps({
             ...initialRepoExplorerState,
-            openLink: "commit",
+            openLink: "changes",
             selectedChange: "unstaged:notes.txt",
         }, undefined)).toEqual([
             {
-                label: "Commit",
-                tooltip: "Commit",
+                label: "Changes",
+                tooltip: "Changes",
                 dataId: "breadcrumb-pane-changes",
                 options: [],
             },
@@ -225,12 +225,12 @@ describe("explorerPaneSteps", () => {
     test("adds the changed file's name, with its path in the tooltip, while its file pane is open", () => {
         expect(explorerPaneSteps({
             ...initialRepoExplorerState,
-            openLink: "commit",
+            openLink: "changes",
             openChange: "staged:docs/new.txt",
         }, "docs/new.txt")).toEqual([
             {
-                label: "Commit",
-                tooltip: "Commit",
+                label: "Changes",
+                tooltip: "Changes",
                 dataId: "breadcrumb-pane-changes",
                 options: [],
             },

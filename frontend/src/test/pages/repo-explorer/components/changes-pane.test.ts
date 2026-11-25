@@ -112,8 +112,8 @@ describe("ChangesPane", () => {
         renderPane({
             changes,
         });
-        expect(elementWithDataId("changes-heading").textContent).toBe("Commit3 files, 2 staged");
-        expect(elementWithDataId("changes-pane").getAttribute("aria-label")).toBe("Commit");
+        expect(elementWithDataId("changes-heading").textContent).toBe("Changes3 files, 2 staged");
+        expect(elementWithDataId("changes-pane").getAttribute("aria-label")).toBe("Changes");
         expect(elementWithDataId("changes-unstaged-heading").textContent).toBe("Unstaged (2)");
         expect(elementWithDataId("changes-staged-heading").textContent).toBe("Staged (2)");
         const sections = Array.from(document.querySelectorAll("section section")).map(section => section.getAttribute("data-id"));

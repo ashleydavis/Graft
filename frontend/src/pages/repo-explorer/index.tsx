@@ -2,9 +2,9 @@
 // The repo explorer page: shows the open repo in the repo details pane. Clicking its Commits link
 // opens the commit pane to its right with the repo's commits, read a page at a time as the list
 // scrolls, clicking a commit opens the commit details pane to its right and clicking a changed file
-// there opens the file pane to its right, like the column view of a file browser. Its Commit link opens the changes pane in
-// place of the commit pane, with the working tree's unstaged and staged files, and clicking a file
-// there opens its file pane. The arrow keys, Enter and Escape move through the panes as in the
+// there opens the file pane to its right, like the column view of a file browser. Its Changes link
+// opens the changes pane in place of the commit pane, with the working tree's unstaged and staged
+// files, and clicking a file there opens its file pane. The arrow keys, Enter and Escape move through the panes as in the
 // column view of macOS Finder. Clicking anywhere in a pane makes it the active pane.
 //
 
@@ -18,7 +18,7 @@ import { commitStagedFiles } from "../../lib/commit";
 import { canReadNextPage, COMMIT_PAGE_SIZE, commitPagesAfterRead, commitPagesReading, ICommitPages, nextPageStart, noCommitPages } from "../../lib/commit-pages";
 import { ICommitPageStart, readCommitPage } from "../../lib/commits";
 import { openPaneIds } from "../../lib/pane-animation";
-import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, closeLinkPane, COMMIT_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, initialRepoExplorerState, IRepoExplorerState, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
+import { activatePane, changeKey, changeKeysOf, closeChangeFilePane, closeCommitDetailsPane, closeFilePane, CHANGES_LINK, COMMITS_LINK, explorerStateAfterKey, findChange, followMovedChange, initialRepoExplorerState, IRepoExplorerState, isExplorerKey, isExplorerKeyTarget, keepListedChanges, selectChange, selectFirstFile, selectCommit, selectFile, selectLink, targetPaneIndex } from "../../lib/repo-explorer";
 import { toggleFileStaged } from "../../lib/stage-file";
 import { IWorkingChanges, IWorkingFile, readWorkingChanges } from "../../lib/working-changes";
 import { AnimatedPane } from "./components/animated-pane";
@@ -74,7 +74,7 @@ export function RepoExplorerPage(): JSX.Element {
 // the left sidebar's link or Ctrl+1 opened it, while the focus would otherwise stay on the link
 // outside the page. It takes the focus and sets up the key listener with the items just drawn as
 // React draws them (in layout effects), before the browser paints, so a key pressed as soon as the
-// page or its items show acts on them. It reads the working tree's changes when the Commit link
+// page or its items show acts on them. It reads the working tree's changes when the Changes link
 // opens the changes pane and again after each stage and unstage, so the lists show what git holds.
 // The changed file's pane is keyed by the number of reads, so its diff is read afresh with the
 // lists. The Commit button commits the staged files with the message in the commit section, then
@@ -100,7 +100,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
     const columnsRef = useRef<HTMLDivElement>(null);
     const dateFormat = Intl.DateTimeFormat().resolvedOptions();
     const isCommitsOpen = explorer.openLink === COMMITS_LINK;
-    const isChangesOpen = explorer.openLink === COMMIT_LINK;
+    const isChangesOpen = explorer.openLink === CHANGES_LINK;
     const { setPaneSteps } = usePaneTrail();
     const { setActivePane } = useActivePane();
 
@@ -244,7 +244,7 @@ export function RepoExplorer({ repoPath }: IRepoExplorerProps): JSX.Element {
 
     useLayoutEffect(() => {
         const items = {
-            links: [COMMITS_LINK, COMMIT_LINK],
+            links: [COMMITS_LINK, CHANGES_LINK],
             commitHashes: commitPages.commits.map(commit => commit.hash),
             filePaths,
             changeKeys: changeKeysOf(changes),

@@ -3,7 +3,7 @@
 #
 # Creates a test repo of the smoke test's own and changes it: a modified file, a deleted file and a
 # new file in a new directory. Starts the real app with remote control on, opens the repo with the
-# welcome page's Open repo button, opens the changes pane with the repo details pane's Commit link,
+# welcome page's Open repo button, opens the changes pane with the repo details pane's Changes link,
 # and checks the unstaged and staged lists, a file's diff, staging each file and unstaging one,
 # what git holds after each and the Git commands the right sidebar shows, then the keys that close
 # and open the panes. See test.md.
@@ -43,10 +43,10 @@ click right-sidebar-toggle
 wait_for_element git-commands-panel 30
 open_repo_with_button "$repo"
 
-click repo-details-commit
+click repo-details-changes
 wait_for_element changes-pane 30
 wait_for_in_view changes-pane 30
-wait_for_text changes-heading "Commit" 30
+wait_for_text changes-heading "Changes" 30
 wait_for_text changes-summary "3 files, 0 staged" 30
 wait_for_text changes-unstaged-heading "Unstaged (3)" 30
 wait_for_text changes-staged-heading "Staged (0)" 30
@@ -107,7 +107,7 @@ wait_for_text git-command-1-text "git status --porcelain=v1 --untracked-files=al
 wait_for_missing_element git-command-2 30
 wait_for_text file-pane-path "README.md" 30
 
-# The keys: Escape closes the file pane, then the changes pane, Enter on the selected Commit link
+# The keys: Escape closes the file pane, then the changes pane, Enter on the selected Changes link
 # opens the changes pane again, Down selects its first row and Enter opens that row's file pane.
 press_key Escape
 wait_for_missing_element file-pane 30

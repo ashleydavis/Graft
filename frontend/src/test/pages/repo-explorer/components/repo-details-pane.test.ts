@@ -1,13 +1,13 @@
 //
 // Tests the repo details pane: renders it for a repo and checks that it shows the repo's name and
-// path in a card headed "Repo" that never shrinks, shows the Commits and Commit links as selected
+// path in a card headed "Repo" that never shrinks, shows the Commits and Changes links as selected
 // and open as it is told, marks the pane active with a border in the style guide's active pane
 // colour and that clicking each link reports its name.
 //
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
-import { COMMIT_LINK, COMMITS_LINK } from "../../../../lib/repo-explorer";
+import { CHANGES_LINK, COMMITS_LINK } from "../../../../lib/repo-explorer";
 import { activePaneClasses } from "../../../../pages/repo-explorer/components/active-pane-style";
 import { openRowClasses } from "../../../../pages/repo-explorer/components/commit-list";
 import { RepoDetailsPane } from "../../../../pages/repo-explorer/components/repo-details-pane";
@@ -109,42 +109,42 @@ describe("RepoDetailsPane", () => {
         expect(onSelectLink).toHaveBeenCalledWith(COMMITS_LINK);
     });
 
-    test("shows the Commit link with its icon below the Commits link, neither selected nor open, while no link is", () => {
+    test("shows the Changes link with its icon below the Commits link, neither selected nor open, while no link is", () => {
         const container = renderPane({
             link: undefined,
             isActive: false,
             onSelectLink: jest.fn(),
         });
-        const link = elementIn(container, "repo-details-commit");
-        expect(link.textContent).toBe("Commit");
+        const link = elementIn(container, "repo-details-changes");
+        expect(link.textContent).toBe("Changes");
         expect(link.querySelector("svg[data-icon=\"pen-to-square\"]")).not.toBeNull();
         expect(link.className).not.toContain("Mui-selected");
         expect(link.getAttribute("aria-current")).toBeNull();
         const rows = Array.from(elementIn(container, "repo-details-links").children).map(row => row.getAttribute("data-id"));
-        expect(rows).toEqual(["repo-details-commits", "repo-details-commit"]);
+        expect(rows).toEqual(["repo-details-commits", "repo-details-changes"]);
     });
 
-    test("shows the Commit link alone as selected and open while the changes pane is open", () => {
+    test("shows the Changes link alone as selected and open while the changes pane is open", () => {
         const container = renderPane({
-            link: COMMIT_LINK,
+            link: CHANGES_LINK,
             isActive: false,
             onSelectLink: jest.fn(),
         });
-        const link = elementIn(container, "repo-details-commit");
+        const link = elementIn(container, "repo-details-changes");
         expect(link.className).toContain("Mui-selected");
         expect(link.className).toContain(openRowClasses);
         expect(link.getAttribute("aria-current")).toBe("true");
         expect(elementIn(container, "repo-details-commits").className).not.toContain("Mui-selected");
     });
 
-    test("reports the Commit link when the user clicks it", () => {
+    test("reports the Changes link when the user clicks it", () => {
         const onSelectLink = jest.fn();
         renderPane({
             link: undefined,
             isActive: false,
             onSelectLink,
         });
-        fireEvent.click(screen.getByText("Commit"));
-        expect(onSelectLink).toHaveBeenCalledWith(COMMIT_LINK);
+        fireEvent.click(screen.getByText("Changes"));
+        expect(onSelectLink).toHaveBeenCalledWith(CHANGES_LINK);
     });
 });

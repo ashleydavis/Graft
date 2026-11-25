@@ -3,7 +3,7 @@
 #
 # Creates a test repo of the smoke test's own, changes notes.txt in it and adds later.txt. Starts
 # the real app with remote control on, opens the repo with the welcome page's Open repo button,
-# opens the changes pane with the repo details pane's Commit link, stages notes.txt and types a
+# opens the changes pane with the repo details pane's Changes link, stages notes.txt and types a
 # commit message. It checks a pre-commit hook that fails shows git's error text and makes no
 # commit, then that the commit goes through once the hook is gone: the staged list empties while
 # later.txt stays unstaged, git's log holds the commit with the whole message and the commit pane
@@ -56,7 +56,7 @@ click right-sidebar-toggle
 wait_for_element git-commands-panel 30
 open_repo_with_button "$repo"
 
-click repo-details-commit
+click repo-details-changes
 wait_for_element changes-pane 30
 wait_for_text "change-unstaged-notes.txt" "notes.txt" 30
 wait_for_element commit-section 30

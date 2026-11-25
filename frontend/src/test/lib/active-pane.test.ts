@@ -4,7 +4,7 @@
 //
 
 import { PANE_OR_PAGE_NAMES, repoExplorerActivePane, selectedPaneOrPage } from "../../lib/active-pane";
-import { COMMIT_LINK, COMMITS_LINK, initialRepoExplorerState, IRepoExplorerState } from "../../lib/repo-explorer";
+import { CHANGES_LINK, COMMITS_LINK, initialRepoExplorerState, IRepoExplorerState } from "../../lib/repo-explorer";
 
 //
 // Makes a repo explorer state with the link open and the pane at the index active.
@@ -30,8 +30,8 @@ describe("repoExplorerActivePane", () => {
     });
 
     test("names the changes pane and its file pane while the Commit link is open", () => {
-        expect(repoExplorerActivePane(explorerState(COMMIT_LINK, 1))).toBe("changes-pane");
-        expect(repoExplorerActivePane(explorerState(COMMIT_LINK, 2))).toBe("working-file-pane");
+        expect(repoExplorerActivePane(explorerState(CHANGES_LINK, 1))).toBe("changes-pane");
+        expect(repoExplorerActivePane(explorerState(CHANGES_LINK, 2))).toBe("working-file-pane");
     });
 });
 

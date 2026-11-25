@@ -44,7 +44,7 @@ press_key Enter
 wait_for_commit_title "Add the notes"
 wait_for_missing_element changes-pane 5
 
-# Clicking the repo details pane's empty space makes it active. Down then selects its Commit link
+# Clicking the repo details pane's empty space makes it active. Down then selects its Changes link
 # and Enter opens the changes pane. Had the commit details pane stayed active, Down would select a
 # file there and Enter would open its file pane instead.
 click repo-details-pane

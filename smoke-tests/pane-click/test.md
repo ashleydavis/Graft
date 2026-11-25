@@ -4,7 +4,7 @@ Smoke test of making a repo explorer pane active by clicking it. It creates a te
 
 It opens the repo explorer from the left sidebar, opens the commit pane with the repo details pane's Commits link, clicks the newest commit, "Change the note", and clicks its changed file, notes.txt, which opens the file pane with the commit details pane active. It clicks the file pane's title bar, then presses Left twice, Down and Enter, and checks the commit details pane shows "Add the notes" and no changes pane opened. That holds only when the click made the file pane active: Left twice then reaches the commit pane, where Down selects the second commit. Had the commit details pane stayed active, Left twice would reach the repo details pane, where Down and Enter open the changes pane.
 
-It then clicks the repo details pane's empty space, presses Down and Enter and checks the changes pane opens. That holds only when the click made the repo details pane active, where Down selects the Commit link. Had the commit details pane stayed active, Down and Enter would open a file's diff instead.
+It then clicks the repo details pane's empty space, presses Down and Enter and checks the changes pane opens. That holds only when the click made the repo details pane active, where Down selects the Changes link. Had the commit details pane stayed active, Down and Enter would open a file's diff instead.
 
 ## How it is invoked
 

@@ -57,8 +57,8 @@ wait_for_missing_element breadcrumb-pane-file 30
 wait_for_element breadcrumb-pane-commit 5
 
 printf 'The changed note.\n' > "$repo/notes.txt" || fail "could not change notes.txt"
-click repo-details-commit
-wait_for_text breadcrumb-pane-changes "Commit" 30
+click repo-details-changes
+wait_for_text breadcrumb-pane-changes "Changes" 30
 wait_for_missing_element breadcrumb-pane-commits 30
 wait_for_missing_element breadcrumb-pane-commit 30
 click "change-unstaged-notes.txt"

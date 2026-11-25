@@ -12,7 +12,7 @@
 // the page passes on. The page reads the open repo from a RepoProvider: it shows when no repo is
 // open and reads another repo afresh when one is opened in its place. It checks the page starts
 // with its panes, or with the message that no repo is open, because the breadcrumb trail names it.
-// Its Commit link opens the changes pane, which reads the working tree's changes, opens a changed
+// Its Changes link opens the changes pane, which reads the working tree's changes, opens a changed
 // file's pane on a click or on Enter, and stages or unstages a file and reads the changes again,
 // with the file's pane following the file to the other list. The commit section commits the
 // staged files with the typed message, clears it and reads the changes again, or shows git's error
@@ -1333,11 +1333,11 @@ describe("RepoExplorerPage pane animation", () => {
         expect(columnOf("commit-details-pane").className).toContain("graft-pane-in");
     });
 
-    test("closes the commit pane as the Commit link opens the changes pane in its place", async () => {
+    test("closes the commit pane as the Changes link opens the changes pane in its place", async () => {
         const ziggy = installFakeTaskZiggy();
         renderRepoExplorerPage("/repo");
         await clickCommitsLink();
-        fireEvent.click(await screen.findByText("Commit"));
+        fireEvent.click(await screen.findByText("Changes"));
         expect(columnOf("commit-pane").className).toContain("graft-pane-out");
         expect(columnOf("changes-pane").className).toContain("graft-pane-in");
         expect(taskTypeAt(ziggy, 1)).toBe("working-changes");
@@ -1405,19 +1405,19 @@ function taskTypeAt(ziggy: FakeTaskZiggy, index: number): string {
 }
 
 //
-// Shows the repo explorer page, clicks its Commit link and ends the working changes task with
+// Shows the repo explorer page, clicks its Changes link and ends the working changes task with
 // `changesJson`.
 //
 async function openChanges(ziggy: FakeTaskZiggy): Promise<void> {
     renderRepoExplorerPage("/repo");
-    fireEvent.click(await screen.findByText("Commit"));
+    fireEvent.click(await screen.findByText("Changes"));
     await screen.findByText("Loading the changes.");
     completeTaskAt(ziggy, 0, changesJson);
     await screen.findByText("Unstaged (1)");
 }
 
 describe("RepoExplorerPage changes pane", () => {
-    test("opens the changes pane to the right of the repo details pane when the Commit link is clicked and reads the changes", async () => {
+    test("opens the changes pane to the right of the repo details pane when the Changes link is clicked and reads the changes", async () => {
         const ziggy = installFakeTaskZiggy();
         await openChanges(ziggy);
         expect(taskTypeAt(ziggy, 0)).toBe("working-changes");
@@ -1434,7 +1434,7 @@ describe("RepoExplorerPage changes pane", () => {
     test("shows why the changes could not be read when the task failed", async () => {
         const ziggy = installFakeTaskZiggy();
         renderRepoExplorerPage("/repo");
-        fireEvent.click(await screen.findByText("Commit"));
+        fireEvent.click(await screen.findByText("Changes"));
         await screen.findByText("Loading the changes.");
         completeTask(ziggy, {
             taskId: "",
@@ -1569,10 +1569,10 @@ describe("RepoExplorerPage changes pane", () => {
     test("the keys open the changes pane, move through its rows, open a file and close the panes", async () => {
         const ziggy = installFakeTaskZiggy();
         renderRepoExplorerPage("/repo");
-        await screen.findByText("Commit");
+        await screen.findByText("Changes");
         pressKey("ArrowDown");
         pressKey("ArrowDown");
-        expect(isSelected("repo-details-commit")).toBe(true);
+        expect(isSelected("repo-details-changes")).toBe(true);
         pressKey("Enter");
         expect(activePaneIds()).toEqual(["changes-pane"]);
         completeTaskAt(ziggy, 0, changesJson);
@@ -1590,7 +1590,7 @@ describe("RepoExplorerPage changes pane", () => {
         expect(activePaneIds()).toEqual(["changes-pane"]);
         pressKey("Escape");
         expect(document.querySelector("[data-id=\"changes-pane\"]")).toBeNull();
-        expect(isSelected("repo-details-commit")).toBe(true);
+        expect(isSelected("repo-details-changes")).toBe(true);
     });
 });
 
