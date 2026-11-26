@@ -54,7 +54,9 @@ press_key o
 press_key p
 press_key e
 press_key n
-if [ "$(value_of command-palette-search)" != "open" ]; then
+# The search box holds the typed text a moment after the keys reach the app, so the test waits for
+# it. Release macOS arm64 run 45782860661 failed reading it while it still held less than "open".
+if ! wait_for_value command-palette-search "open" 30; then
     fail "the palette's search box does not hold open. It holds: $(value_of command-palette-search)"
 fi
 wait_for_missing_element command-toggle-shortcuts-overlay 30
