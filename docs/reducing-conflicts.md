@@ -212,3 +212,9 @@ Tickets that failed to merge, the ticket they clashed with and the files involve
 - Land each ticket soon after it is approved, so the next one rebases onto a recent main.
 - Rebase conflicted tickets as a stack, each on the one before it, never all onto the same main.
 - Chain tickets that edit the same files with dependencies.
+
+### Stacked pass (9 tickets)
+
+- list-keys-3, panes-1 to panes-4, repo-details-1, repo-details-2, shortcuts-overlay-6 and tooltips-1 were rebased as one stack, each onto the one before it, with no checks until the end.
+- The checks ran once on the last ticket. They failed with 10 unit failures and 5 smoke failures, all from the stacked tickets shifting the task indexes, the pane key lists and the link names. One fix commit on the last ticket's branch made them pass, and all 9 landed.
+- Overlaps the stack had to combine: `pane-width.ts` was made by both panes-1 and panes-3, the Git commands panel was changed by repo-details-1, repo-details-2 and tooltips-1, and the tag pane needed the pane features the other tickets added.
