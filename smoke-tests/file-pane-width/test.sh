@@ -103,6 +103,9 @@ open_repo_with_button "$repo"
 # In the narrow window the working file's pane is the page's visible area less the margins.
 click repo-details-changes
 wait_for_element changes-pane 30
+# The changes pane draws its rows after the pane itself, so the click waits for the row. Release
+# macOS arm64 run 45782860661 failed it clicking a row that was not drawn yet.
+wait_for_element "change-unstaged-notes.txt" 30
 click "change-unstaged-notes.txt"
 wait_for_text file-diff "The changed note." 30
 wait_for_narrow_file_pane 30
