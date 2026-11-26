@@ -101,6 +101,7 @@ export function AppLayout(): JSX.Element {
     const theme = useThemeSetting();
     const { repoPath } = useRepo();
     const [gitCommandHistory, setGitCommandHistory] = useState<ReadonlyMap<string, IPageGitCommands>>(new Map());
+    const [gitCommandArrivals, setGitCommandArrivals] = useState<string[]>([]);
     const [paneSteps, setPaneSteps] = useState<ITrailStep[]>([]);
     const [activePane, setActivePane] = useState<PaneOrPage | undefined>(undefined);
     const paneOrPage = selectedPaneOrPage(location.pathname, activePane);
@@ -114,6 +115,7 @@ export function AppLayout(): JSX.Element {
             const data = event.data;
             if (isGitCommandEvent(data)) {
                 setGitCommandHistory(history => addGitCommand(history, event.source, data));
+                setGitCommandArrivals(arrivals => [...arrivals, `${Math.round(performance.now())} ms ${event.source} ${data.command}`]);
             }
         }
 
@@ -123,6 +125,7 @@ export function AppLayout(): JSX.Element {
 
     return (
         <div data-id="app-layout" className="flex h-screen flex-col overflow-hidden">
+            <div data-id="git-command-arrivals" className="hidden">{gitCommandArrivals.join("\n")}</div>
             <TopBar
                 isLeftSidebarMinimised={isLeftSidebarMinimised}
                 onToggleLeftSidebar={toggleLeftSidebar}
