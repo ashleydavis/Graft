@@ -344,6 +344,21 @@ text_of() {
 }
 
 #
+# Prints the text of the element with the data-id, or nothing when the page has no such element.
+# A wait uses it for an element it expects to appear while it waits, where text_of would fail the
+# test at once because the element is not drawn yet.
+# Usage: text_of_if_present <data-id>
+#
+text_of_if_present() {
+    local answer
+    answer="$(control "{\"command\":\"get-text\",\"dataId\":\"$1\"}")"
+    if [ "$(printf '%s' "$answer" | jq -r '.ok')" != "true" ]; then
+        return 0
+    fi
+    printf '%s' "$answer" | jq -r '.value'
+}
+
+#
 # Sets the value of the text box with the data-id to the text, as typing does. The text reaches jq
 # through the environment, as press_key's key does, so any character in it is sent as it is.
 # Usage: type_text <data-id> <text>
@@ -398,6 +413,39 @@ wait_for_text() {
         waited=$((waited + 1))
     done
     fail "$data_id never showed \"$wanted\". It showed: $shown"
+}
+
+#
+# Waits until the two elements show the two texts, one text each in either order, and fails with
+# what they showed when they never do. The app can run two things at the same time, such as the
+# branches and the tags commands a pane queues when a repo opens, and it lists them in the order
+# they finish, which is not fixed. The Release Linux run 45764726375 failed the git-commands smoke
+# test because it asserted one of those orders with wait_for_text; a test that needs both, in
+# whichever order they end up, uses this instead.
+# Usage: wait_for_texts_in_any_order <data-id-a> <text-a> <data-id-b> <text-b> [seconds]
+#
+wait_for_texts_in_any_order() {
+    local data_id_a="$1"
+    local text_a="$2"
+    local data_id_b="$3"
+    local text_b="$4"
+    local seconds="${5:-$WAIT_TIMEOUT_SECONDS}"
+    local waited=0
+    local shown_a=""
+    local shown_b=""
+    while [ "$waited" -lt "$seconds" ]; do
+        shown_a="$(text_of_if_present "$data_id_a")"
+        shown_b="$(text_of_if_present "$data_id_b")"
+        if [ "$shown_a" = "$text_a" ] && [ "$shown_b" = "$text_b" ]; then
+            return 0
+        fi
+        if [ "$shown_a" = "$text_b" ] && [ "$shown_b" = "$text_a" ]; then
+            return 0
+        fi
+        sleep 1
+        waited=$((waited + 1))
+    done
+    fail "$data_id_a showed \"$shown_a\" and $data_id_b showed \"$shown_b\", not \"$text_a\" and \"$text_b\" in either order"
 }
 
 #

@@ -18,9 +18,11 @@ What every smoke test uses: it starts the app, talks to it through the remote co
 - `open_repo_with_button <path>`: opens the repo at the path from the welcome page as a user does. It gives the folder picker the path with `answer_picker`, clicks the welcome page's Open repo button and waits until the repo explorer page shows its repo details pane. Every smoke test that needs an open repo opens it with this.
 - `open_commit_pane`: clicks the repo details pane's Commits link and waits until the commit pane shows. Every smoke test that reads the commits opens the commit pane with it.
 - `text_of <data-id>`: prints the text of the element with the data-id.
+- `text_of_if_present <data-id>`: prints the text of the element with the data-id, or nothing when the page has no such element, for a wait that checks an element which may not be drawn yet.
 - `type_text <data-id> <text>`: sets the value of the text box with the data-id to the text and sends it an input event, so the page sees the text as typed.
 - `value_of <data-id>`: prints the value of the text box with the data-id.
 - `wait_for_text <data-id> <text> [seconds]`: waits until the element's text contains the text.
+- `wait_for_texts_in_any_order <data-id-a> <text-a> <data-id-b> <text-b> [seconds]`: waits until the two elements show the two texts, one text each in either order, for two things the app runs at the same time and lists in whichever order they finish.
 - `wait_for_commit_heading <short hash>`: waits until the commit details pane's heading contains the commit's short hash. It keeps waiting while the pane is drawn afresh and its heading is missing, which `wait_for_text` reports as a failure at once.
 - `wait_for_element <data-id> <seconds>`: waits until the element with the data-id is on the page.
 - `wait_for_missing_element <data-id> <seconds>`: waits until the element with the data-id has gone from the page.

@@ -107,8 +107,10 @@ wait_for_element git-commands-panel 30
 wait_for_text git-commands-empty "This page has run no Git commands." 30
 
 #
-# The commands the repo explorer page runs for the repo details pane when it opens: the tags, read
-# after the branches, so the panel lists them first.
+# The commands the repo explorer page runs for the repo details pane when it opens: the tags and
+# the branches. The pane queues them as two tasks that run at the same time, so the panel lists
+# them in the order they finish, which is either order, and the test accepts both. Release Linux
+# run 45764726375 failed here because it required the tags command first.
 #
 tags_command="git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags"
 branches_command="git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/"
@@ -116,8 +118,7 @@ branches_command="git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' 
 # The repo details pane, active as the repo opens, has run only the two git for-each-ref commands
 # that read the tags and the branches.
 open_repo_with_button "$repo"
-wait_for_text git-command-0-text "$tags_command" 30
-wait_for_text git-command-1-text "$branches_command" 30
+wait_for_texts_in_any_order git-command-0-text "$tags_command" git-command-1-text "$branches_command" 30
 wait_for_missing_element git-command-2 30
 wait_for_text git-commands-directory "cd $repo" 30
 run_shown_commands
@@ -150,8 +151,7 @@ run_shown_commands
 press_key Left
 wait_for_text git-command-0-text "git log --no-show-signature --max-count=50 --branches --remotes HEAD --" 30
 press_key Left
-wait_for_text git-command-0-text "$tags_command" 30
-wait_for_text git-command-1-text "$branches_command" 30
+wait_for_texts_in_any_order git-command-0-text "$tags_command" git-command-1-text "$branches_command" 30
 
 # A click on a file leaves the commit details pane active. Right makes the file pane active, which
 # lists only the git diff-tree for the file's diff.
