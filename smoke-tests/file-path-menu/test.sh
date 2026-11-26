@@ -66,7 +66,7 @@ wait_for_element file-path-menu-copy-full 30
 wait_for_text file-path-menu-copy-full "Copy full file path" 30
 wait_for_text file-path-menu-copy-relative "Copy relative file path" 30
 wait_for_text file-path-menu-copy-name "Copy file name" 30
-wait_for_text file-path-menu-file-manager "Open in file manager" 30
+wait_for_text file-path-menu-file-manager "$(file_manager_label)" 30
 wait_for_text file-path-menu-editor "Open in editor" 30
 click file-path-menu-editor
 wait_for_opened "$repo/notes.txt"

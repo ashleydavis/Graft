@@ -579,6 +579,28 @@ wait_for_in_view_of() {
 }
 
 #
+# Prints the name the file path menu gives its file manager item on the platform under test, as
+# the frontend's fileManagerLabel names it, so a test can wait for it on every platform. The
+# file-path-menu smoke test had "Open in file manager" written out, the Linux name, so Release
+# macOS arm64 run 45764726271 and Release Windows run 45754038276 failed it while the menu showed
+# "Reveal in Finder" on macOS and "Show in Explorer" on Windows.
+# Usage: file_manager_label
+#
+file_manager_label() {
+    case "$ZIGGY_SMOKE_PLATFORM" in
+        macos)
+            printf '%s\n' "Reveal in Finder"
+            ;;
+        windows)
+            printf '%s\n' "Show in Explorer"
+            ;;
+        *)
+            printf '%s\n' "Open in file manager"
+            ;;
+    esac
+}
+
+#
 # Chooses a menu item as a user would, through the native app, so the native app's own actions really happen and any other action reaches the
 # frontend. Usage: choose_menu_item <action>
 #
