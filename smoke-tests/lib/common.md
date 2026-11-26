@@ -27,6 +27,7 @@ What every smoke test uses: it starts the app, talks to it through the remote co
 - `wait_for_texts_in_any_order <data-id-a> <text-a> <data-id-b> <text-b> [seconds]`: waits until the two elements show the two texts, one text each in either order, for two things the app runs at the same time and lists in whichever order they finish.
 - `wait_for_commit_heading <short hash>`: waits until the commit details pane's heading contains the commit's short hash. It keeps waiting while the pane is drawn afresh and its heading is missing, which `wait_for_text` reports as a failure at once.
 - `wait_for_element <data-id> <seconds>`: waits until the element with the data-id is on the page.
+- `element_exists <data-id>`: prints `true` when the element is on the page and `false` when it is not, for a test that loops over data-ids and stops at the first one that is not there.
 - `wait_for_missing_element <data-id> <seconds>`: waits until the element with the data-id has gone from the page.
 - `wait_for_in_view <data-id> <seconds>`: waits until the element's left and right edges are inside the window, so the user can see it.
 - `bounds_of <data-id>`: prints the element's left and right edges in whole pixels from the window's left edge, as `<left> <right>`, so a smoke test can check how wide it is and where it ends.

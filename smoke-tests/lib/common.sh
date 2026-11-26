@@ -631,6 +631,25 @@ wait_for_in_view_of() {
 }
 
 #
+# Prints true when the page has the element with the data-id, and false when it does not. A test
+# that loops over data-ids uses it to stop at the first one that is not there. The check reads the
+# answer and runs jq outside the command substitution, because macOS runs the smoke tests under
+# bash 3.2, which misreads a substitution holding a pipe and quoted JSON: the git-commands and
+# shortcuts-overlay tests printed "[: too many arguments" on every such check and read on past the
+# last element. Release macOS arm64 run 45786995959 failed the git-commands test because of it.
+# Usage: element_exists <data-id>
+#
+element_exists() {
+    local answer
+    answer="$(control "{\"command\":\"exists\",\"dataId\":\"$1\"}")"
+    if [ "$(printf '%s' "$answer" | jq -r '.ok')" = "true" ]; then
+        printf '%s\n' "true"
+    else
+        printf '%s\n' "false"
+    fi
+}
+
+#
 # Prints the name the file path menu gives its file manager item on the platform under test, as
 # the frontend's fileManagerLabel names it, so a test can wait for it on every platform. The
 # file-path-menu smoke test had "Open in file manager" written out, the Linux name, so Release

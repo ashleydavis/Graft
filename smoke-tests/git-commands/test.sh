@@ -47,7 +47,7 @@ check_duration_text() {
 check_durations() {
     local index=0
     while [ "$index" -lt "$MAX_COMMANDS" ]; do
-        if [ "$(control "{\"command\":\"exists\",\"dataId\":\"git-command-$index\"}" | jq -r '.ok')" != "true" ]; then
+        if [ "$(element_exists "git-command-$index")" != "true" ]; then
             break
         fi
         check_duration_text "git-command-$index-duration"
@@ -71,7 +71,7 @@ run_shown_commands() {
     local command
     local output
     while [ "$index" -lt "$MAX_COMMANDS" ]; do
-        if [ "$(control "{\"command\":\"exists\",\"dataId\":\"git-command-$index\"}" | jq -r '.ok')" != "true" ]; then
+        if [ "$(element_exists "git-command-$index")" != "true" ]; then
             break
         fi
         command="$(wait_for_text_of "git-command-$index-text" 30)" || fail "the panel never drew the text of git-command-$index"
