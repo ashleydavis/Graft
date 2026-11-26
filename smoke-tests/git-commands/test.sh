@@ -116,18 +116,6 @@ branches_command="git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' 
 # The repo details pane, active as the repo opens, has run only the two git for-each-ref commands
 # that read the tags and the branches.
 open_repo_with_button "$repo"
-
-# Experiment: print the git-command events in the order the frontend received them, and the panel's
-# two command texts, before the assertions on their order run.
-sleep 5
-echo "ARRIVALS 1: $(control '{"command":"get-text","dataId":"git-command-arrivals"}' | jq -r '.value')"
-sleep 1
-echo "ARRIVALS 2: $(control '{"command":"get-text","dataId":"git-command-arrivals"}' | jq -r '.value')"
-sleep 1
-echo "ARRIVALS 3: $(control '{"command":"get-text","dataId":"git-command-arrivals"}' | jq -r '.value')"
-echo "PANEL 0: $(control '{"command":"get-text","dataId":"git-command-0-text"}' | jq -r '.value // "missing"')"
-echo "PANEL 1: $(control '{"command":"get-text","dataId":"git-command-1-text"}' | jq -r '.value // "missing"')"
-
 wait_for_text git-command-0-text "$tags_command" 30
 wait_for_text git-command-1-text "$branches_command" 30
 wait_for_missing_element git-command-2 30
