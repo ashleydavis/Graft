@@ -29,8 +29,11 @@ opened="$ZIGGY_TEST_DIR/opened.txt"
 #
 if [ "$ZIGGY_SMOKE_PLATFORM" = "windows" ]; then
     editor="$ZIGGY_TEST_DIR/editor.cmd"
-    printf '@echo %%1> "%s"\n' "$opened" > "$editor" || fail "could not write the editor script"
-    editor_setting="cmd /c ${editor//\//\\}"
+    # The batch file writes a path with backslashes, which cmd takes without trouble. The editor
+    # setting keeps forward slashes, because the config file is TOML and a backslash in a basic
+    # string starts an escape, so a Windows path written with them makes the setting unreadable.
+    printf '@echo %%1> "%s"\n' "${opened//\//\\}" > "$editor" || fail "could not write the editor script"
+    editor_setting="cmd /c $editor"
 else
     editor="$ZIGGY_TEST_DIR/editor.sh"
     printf '#!/usr/bin/env bash\nprintf "%%s" "$1" > "%s"\n' "$opened" > "$editor" || fail "could not write the editor script"
