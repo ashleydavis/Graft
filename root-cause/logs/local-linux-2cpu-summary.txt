@@ -1,0 +1,18 @@
+Local runs of the failing test, on Linux, to see whether it reproduces away from the runner.
+
+Commit: 61b94fb (the experiment branch's first commit, which is the failing commit 7a461b5 plus the
+experiment workflow and script).
+Machine: Linux, 24 CPUs, the app built with `bun run build:linux --prefix "$PWD/build"`.
+Command, 5 runs:
+
+    mise exec -- taskset -c 0-1 bash -c 'for i in 1 2 3 4 5; do ZIGGY_SMOKE_BUILD="$PWD/build" bash smoke-tests/run-desktop.sh file-path-menu > "root-cause/logs/local-linux-2cpu-run-$i.txt" 2>&1; done'
+
+Result: 5 of 5 passed. Five earlier runs with no CPU limit also passed.
+
+It does not reproduce here, and the platform is not the failing one: this is Linux, where the app is
+drawn in WebKitGTK, against the macOS arm64 runner's WebKit. The failure is a race between the
+changes task's result being drawn and the next control command arriving, so its outcome depends on
+how fast each side gets there on the machine running it. The macos-26-arm64 runner lost the race 4
+times in 20 with the same test and the same build (root-cause/logs/ci-experiment-45891125521.txt),
+which is the proof used. Whether the Linux machine wins it because git starts faster is not
+measured.
