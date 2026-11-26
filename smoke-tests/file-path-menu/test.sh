@@ -21,20 +21,36 @@ mkdir -p "$repo/docs" || fail "could not create the docs directory"
 printf 'A new file.\n' > "$repo/docs/guide.md" || fail "could not create docs/guide.md"
 
 opened="$ZIGGY_TEST_DIR/opened.txt"
-editor="$ZIGGY_TEST_DIR/editor.sh"
-printf '#!/usr/bin/env bash\nprintf "%%s" "$1" > "%s"\n' "$opened" > "$editor" || fail "could not write the editor script"
-chmod +x "$editor" || fail "could not make the editor script executable"
+#
+# The editor setting is the command Graft starts with the file's full path, and Graft starts it as a
+# program rather than through a shell. Windows cannot start a shebang script that way, so there the
+# editor is a batch file run by cmd, which Windows can start. Release Windows run 45782860995
+# failed this test with the editor never writing anything.
+#
+if [ "$ZIGGY_SMOKE_PLATFORM" = "windows" ]; then
+    editor="$ZIGGY_TEST_DIR/editor.cmd"
+    printf '@echo %%1> "%s"\n' "$opened" > "$editor" || fail "could not write the editor script"
+    editor_setting="cmd /c ${editor//\//\\}"
+else
+    editor="$ZIGGY_TEST_DIR/editor.sh"
+    printf '#!/usr/bin/env bash\nprintf "%%s" "$1" > "%s"\n' "$opened" > "$editor" || fail "could not write the editor script"
+    chmod +x "$editor" || fail "could not make the editor script executable"
+    editor_setting="$editor"
+fi
 
 #
 # Waits until the editor script has written the path, and fails with what it wrote when it never
-# does. Usage: wait_for_opened <path>
+# does. Windows joins the file's path to the repo with a backslash, so both sides are compared with
+# forward slashes. The batch file's echo also ends the path with a carriage return, which is
+# dropped.
+# Usage: wait_for_opened <path>
 #
 wait_for_opened() {
     local waited=0
     local written=""
     while [ "$waited" -lt 300 ]; do
-        written="$(cat "$opened" 2>/dev/null)"
-        if [ "$written" = "$1" ]; then
+        written="$(cat "$opened" 2>/dev/null | tr -d '\r')"
+        if [ "${written//\\//}" = "${1//\\//}" ]; then
             return 0
         fi
         sleep 0.1
@@ -45,7 +61,7 @@ wait_for_opened() {
 
 start_app_on_start_page
 mkdir -p "$ZIGGY_TEST_DIR/config" || fail "could not create the config directory"
-printf 'editor = "%s"\n' "$editor" >> "$ZIGGY_TEST_DIR/config/config.toml" || fail "could not write the editor setting"
+printf 'editor = "%s"\n' "$editor_setting" >> "$ZIGGY_TEST_DIR/config/config.toml" || fail "could not write the editor setting"
 open_repo_with_button "$repo"
 
 # The menu of a commit's changed file row opens without opening the file's pane.
