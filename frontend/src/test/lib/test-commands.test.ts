@@ -638,7 +638,24 @@ describe("elementInsideResult", () => {
         });
     });
 
-    test("fails when the element ends below the container", () => {
+    test("fails when the element ends more than one pixel below the container", () => {
+        expect(elementInsideResult({
+            left: 0,
+            right: 100,
+            top: 380,
+            bottom: 402,
+        }, {
+            left: 0,
+            right: 100,
+            top: 100,
+            bottom: 400,
+        }, "row", "list")).toEqual({
+            ok: false,
+            error: "The element with the data-id row is outside list: its top edge is at 380 and its bottom edge at 402, and list runs from 100 to 400.",
+        });
+    });
+
+    test("allows an edge one pixel outside the container, as a rounded scroll leaves it", () => {
         expect(elementInsideResult({
             left: 0,
             right: 100,
@@ -650,8 +667,20 @@ describe("elementInsideResult", () => {
             top: 100,
             bottom: 400,
         }, "row", "list")).toEqual({
-            ok: false,
-            error: "The element with the data-id row is outside list: its top edge is at 380 and its bottom edge at 401, and list runs from 100 to 400.",
+            ok: true,
+        });
+        expect(elementInsideResult({
+            left: 0,
+            right: 100,
+            top: 99,
+            bottom: 120,
+        }, {
+            left: 0,
+            right: 100,
+            top: 100,
+            bottom: 400,
+        }, "row", "list")).toEqual({
+            ok: true,
         });
     });
 });

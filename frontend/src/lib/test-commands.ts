@@ -358,18 +358,27 @@ export function inViewOfResult(finder: IElementFinder, element: IFoundElement, d
 }
 
 //
+// The pixels an edge may lie beyond its container's and still count as inside. A browser gives
+// edges fractional positions, and rounding them to whole pixels can leave the element one pixel
+// past the container even when the scroll put it at the container's edge. Release Windows run
+// 45754038276 failed list-home-end and page-keys reading a commit row that ended at 690 in a list
+// that ended at 689, for that reason.
+//
+export const IN_VIEW_SLACK_PX = 1;
+
+//
 // Works out the result of the in-view-of command from where the element and its container are:
-// success when the element's top and bottom edges are both inside the container's, and otherwise
-// a failure with where the edges are. Rounding to whole pixels allows for the fractions a scroll
-// can leave.
+// success when the element's top and bottom edges are both inside the container's, allowing the
+// slack, and otherwise a failure with where the edges are. Rounding to whole pixels allows for the
+// fractions a scroll can leave.
 //
 export function elementInsideResult(bounds: IBounds, containerBounds: IBounds, dataId: string, containerDataId: string): ITestResult {
     const top = Math.round(bounds.top);
     const bottom = Math.round(bounds.bottom);
     const containerTop = Math.round(containerBounds.top);
     const containerBottom = Math.round(containerBounds.bottom);
-    if (containerTop <= top) {
-        if (bottom <= containerBottom) {
+    if (containerTop - IN_VIEW_SLACK_PX <= top) {
+        if (bottom <= containerBottom + IN_VIEW_SLACK_PX) {
             return {
                 ok: true,
             };
