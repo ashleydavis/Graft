@@ -25,6 +25,8 @@ Local runs on a 24-CPU machine passed 20 of 20. The failure appears once the run
 
 ## Experiments, both sides
 
+The failure is intermittent, so each side is shown by how many of its runs fail: runs fail with the CI's line with the cause present, and none fail with only the cause removed.
+
 Side A, the cause present:
 
 - `root-cause/experiments/test-fixed-order.sh` is `smoke-tests/git-commands/test.sh` as it was on the failing commit.
