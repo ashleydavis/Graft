@@ -467,7 +467,27 @@ export function moveSelectionByPage(state: IRepoExplorerState, items: IRepoExplo
     if (state.activePaneIndex === 0) {
         return moveSelection(state, items, direction * items.links.length);
     }
+    if (activeSelection(state) === undefined) {
+        return moveSelection(state, items, direction);
+    }
     return moveSelection(state, items, direction * items.pageRowCount);
+}
+
+//
+// Returns the selected item of the list Up and Down move through in the active pane, which is
+// undefined when nothing is selected there.
+//
+function activeSelection(state: IRepoExplorerState): string | undefined {
+    if (state.activePaneIndex === 0) {
+        return state.selectedLink;
+    }
+    if (state.openLink === CHANGES_LINK) {
+        return state.selectedChange;
+    }
+    if (state.activePaneIndex === 2 && state.openPath !== undefined) {
+        return state.selectedPath;
+    }
+    return state.selectedHash;
 }
 
 //

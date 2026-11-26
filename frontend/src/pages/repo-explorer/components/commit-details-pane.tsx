@@ -183,7 +183,7 @@ export function CommitDetailsRow({ isSelected, isOpen, onSelectFile }: ICommitDe
 
     useEffect(() => {
         if (isSelected) {
-            scrollRowIntoView(rowRef.current);
+            scrollRowIntoView(rowRef.current, SCROLL_AREA_DATA_ID);
         }
     }, [isSelected]);
 
