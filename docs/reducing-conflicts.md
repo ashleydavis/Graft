@@ -181,3 +181,34 @@ Tickets that failed to merge, the ticket they clashed with and the files involve
 - Rebase and land conflicted tickets in the same area one at a time instead of in parallel.
 - Keep the header comment of `git-interface.test.zig` general and describe each check beside its test.
 - Describe each operation's command line in the spec once, next to its wrapper, instead of repeating it in several docs.
+
+## Session of 2026-11-26
+
+24 approved tickets sat in the merge queue at once, all built from the same old main, then landed together.
+
+### First train (24 tickets)
+
+- breadcrumb-5, commits-10, commits-11, context-help-4 and shortcuts-overlay-5 landed. The other 19 went to conflicts: 18 conflicted on the train and list-keys-2 broke a unit test.
+- Shared files in the conflict notes: `docs/user-guide.md`, `frontend/src/lib/repo-explorer.ts`, `frontend/src/pages/repo-explorer/index.tsx`, the docs and the smoke tests.
+- list-keys-2 failed because commits-11 removed `start.hash` from the next page task and its End test still expected it.
+
+### Parallel conflicts pass (19 tickets onto main)
+
+- All 19 were rebased onto the same main at once, and the machine's load average reached 235.
+- Each ticket resolved cleanly against main. On the next train only changes-3, commits-14 and context-help-3 landed, and 16 went back to conflicts. list-keys-2 conflicted with changes-3, which renamed `COMMIT_LINK` to `COMMITS_LINK`.
+
+### One at a time pass
+
+- commit-details-2, commits-15, commits-16, context-help-2, file-path-1, list-keys-1 and list-keys-2 landed one ticket at a time, each on the main that held the ones before it. It was slow because each ticket ran the checks twice.
+
+### Causes seen
+
+- Approving 30 tickets in one review session meant 24 reached the merge queue together, all from the same old main.
+- Many tickets edit the same few files (`repo-explorer.ts`, `index.tsx`, the specs and the smoke tests).
+- Rebasing conflicted tickets in parallel onto one main brings them back into conflict with each other.
+
+### Ways to avoid them next time
+
+- Land each ticket soon after it is approved, so the next one rebases onto a recent main.
+- Rebase conflicted tickets as a stack, each on the one before it, never all onto the same main.
+- Chain tickets that edit the same files with dependencies.
