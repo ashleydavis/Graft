@@ -83,8 +83,13 @@ jobs:
 
       # Saved under this platform's own key so package-release, which builds the same release app, finds the Zig part already
       # built. Always, so a job that fails part way still leaves what it compiled.
+      #
+      # Capped so a stuck cache upload fails this step rather than running on to the job's own timeout: a job killed by its
+      # timeout loses its whole log, and run 45790519666 failed the smoke tests at 09:39Z, then spent the rest of the job's
+      # 75 minutes here, so the test failure could not be read at all.
       - name: Save the Zig build caches
         if: always()
+        timeout-minutes: 10
         uses: actions/cache/save@v4
         with:
           path: |
