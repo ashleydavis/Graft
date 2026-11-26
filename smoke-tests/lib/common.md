@@ -21,7 +21,8 @@ What every smoke test uses: it starts the app, talks to it through the remote co
 - `text_of_if_present <data-id>`: prints the text of the element with the data-id, or nothing when the page has no such element, for a wait that checks an element which may not be drawn yet.
 - `type_text <data-id> <text>`: sets the value of the text box with the data-id to the text and sends it an input event, so the page sees the text as typed.
 - `value_of <data-id>`: prints the value of the text box with the data-id.
-- `wait_for_text <data-id> <text> [seconds]`: waits until the element's text contains the text.
+- `wait_for_text <data-id> <text> [seconds]`: waits until the element's text contains the text, and keeps waiting while the element is not drawn yet.
+- `wait_for_text_of <data-id> [seconds]`: waits until the element has text and prints it. It returns 1 rather than failing when it never does, so the caller reads it as `text="$(wait_for_text_of ...)" || fail "message"`, which a command substitution cannot do for `text_of`.
 - `wait_for_texts_in_any_order <data-id-a> <text-a> <data-id-b> <text-b> [seconds]`: waits until the two elements show the two texts, one text each in either order, for two things the app runs at the same time and lists in whichever order they finish.
 - `wait_for_commit_heading <short hash>`: waits until the commit details pane's heading contains the commit's short hash. It keeps waiting while the pane is drawn afresh and its heading is missing, which `wait_for_text` reports as a failure at once.
 - `wait_for_element <data-id> <seconds>`: waits until the element with the data-id is on the page.

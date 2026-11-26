@@ -403,7 +403,7 @@ wait_for_text() {
     local waited=0
     local shown=""
     while [ "$waited" -lt "$seconds" ]; do
-        shown="$(text_of "$data_id")"
+        shown="$(text_of_if_present "$data_id")"
         case "$shown" in
             *"$wanted"*)
                 return 0
@@ -446,6 +446,33 @@ wait_for_texts_in_any_order() {
         waited=$((waited + 1))
     done
     fail "$data_id_a showed \"$shown_a\" and $data_id_b showed \"$shown_b\", not \"$text_a\" and \"$text_b\" in either order"
+}
+
+#
+# Waits until the element with the data-id has text, prints the text and returns 0, or prints
+# nothing and returns 1 when it never does. It does not fail the test itself, because a caller
+# reads it in a command substitution, where fail would end only the substitution and the test
+# would carry on with an empty value: the caller writes `... || fail "what the text was for"`.
+# The Git commands panel draws a command's text and its duration after the command ends, so the
+# git-commands smoke test reads them with this. Release macOS arm64 run 45782860661 failed the test
+# reading a command's text and duration that the panel had not drawn yet.
+# Usage: text="$(wait_for_text_of <data-id> [seconds])" || fail "message"
+#
+wait_for_text_of() {
+    local data_id="$1"
+    local seconds="${2:-$WAIT_TIMEOUT_SECONDS}"
+    local waited=0
+    local shown=""
+    while [ "$waited" -lt "$seconds" ]; do
+        shown="$(text_of_if_present "$data_id")"
+        if [ -n "$shown" ]; then
+            printf '%s\n' "$shown"
+            return 0
+        fi
+        sleep 1
+        waited=$((waited + 1))
+    done
+    return 1
 }
 
 #

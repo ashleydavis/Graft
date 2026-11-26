@@ -35,7 +35,7 @@ MAX_COMMANDS=2
 check_duration_text() {
     local data_id="$1"
     local duration
-    duration="$(text_of "$data_id")"
+    duration="$(wait_for_text_of "$data_id" 30)" || fail "$data_id never showed its duration"
     if [[ ! "$duration" =~ ^([0-9]+\ ms|[0-9]+\.[0-9]\ s|[0-9]+\ min\ [0-9]+\ s)$ ]]; then
         fail "$data_id showed \"$duration\", which is not a duration"
     fi
@@ -74,7 +74,7 @@ run_shown_commands() {
         if [ "$(control "{\"command\":\"exists\",\"dataId\":\"git-command-$index\"}" | jq -r '.ok')" != "true" ]; then
             break
         fi
-        command="$(text_of "git-command-$index-text")"
+        command="$(wait_for_text_of "git-command-$index-text" 30)" || fail "the panel never drew the text of git-command-$index"
         echo "Running the shown command: $directory_command; $command"
         output="$(cd "$ZIGGY_TEST_DIR" && GIT_PAGER=cat bash -c "$directory_command"$'\n'"$command" 2>&1)" \
             || fail "the shown command \"$command\" failed after \"$directory_command\": $output"
