@@ -1049,6 +1049,32 @@ describe("explorerStateAfterKey", () => {
     });
 });
 
+describe("moveSelectionByPage with the repo details pane active", () => {
+    test("moves to the last link by a page down and the first by a page up", () => {
+        const links: IRepoExplorerItems = {
+            ...longItems,
+            links: [COMMITS_LINK, CHANGES_LINK],
+        };
+        expect(moveSelectionByPage(initialRepoExplorerState, links, 1).selectedLink).toBe(CHANGES_LINK);
+        expect(moveSelectionByPage({
+            ...initialRepoExplorerState,
+            selectedLink: CHANGES_LINK,
+        }, links, -1).selectedLink).toBe(COMMITS_LINK);
+    });
+});
+
+describe("maximise and collapse together", () => {
+    test("C leaves the state alone while a pane is maximised", () => {
+        const maximised = toggleMaximise(allOpen, 2);
+        expect(explorerStateAfterKey(maximised, "c", items)).toBe(maximised);
+    });
+
+    test("maximising a collapsed pane opens it in full", () => {
+        const collapsed = toggleCollapsedPane(allOpen, 2);
+        expect(toggleMaximise(collapsed, 2).collapsedPanes).toEqual([]);
+    });
+});
+
 describe("moveSelectionByPage", () => {
     test("moves the selected commit down by the page's rows, then stops at the last commit and back up to the first", () => {
         const start: IRepoExplorerState = {

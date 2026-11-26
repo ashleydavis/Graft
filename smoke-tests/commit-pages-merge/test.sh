@@ -107,7 +107,14 @@ click right-sidebar-toggle
 
 # Escape closes the commit pane and Enter on the selected Commits link opens it again, reading the
 # first page afresh with the newest commit selected.
-press_key Escape
+# A tooltip the pointer left open over the scrolled list takes the first Escape, so press Escape
+# until the commit pane has closed.
+for attempt in 1 2 3 4 5; do
+    press_key Escape
+    if [ "$(control '{"command":"exists","dataId":"commit-pane"}' | jq -r '.ok')" != "true" ]; then
+        break
+    fi
+done
 wait_for_missing_element commit-pane 30
 press_key Enter
 wait_for_element "commit-${hashes[0]}" 30

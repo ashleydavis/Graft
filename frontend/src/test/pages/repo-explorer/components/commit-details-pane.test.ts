@@ -623,7 +623,7 @@ describe("CommitDetailsPane collapse", () => {
         installFakeTaskZiggy();
         const onToggleCollapse = jest.fn();
         render(collapsiblePane(false, onToggleCollapse, jest.fn()));
-        expect(elementWithDataId("commit-details-pane-collapse").nextElementSibling?.getAttribute("data-id")).toBe("commit-details-close");
+        expect(elementWithDataId("commit-details-pane-collapse").nextElementSibling?.getAttribute("data-id")).toBe("commit-details-maximise");
         fireEvent.click(elementWithDataId("commit-details-pane-collapse"));
         expect(onToggleCollapse).toHaveBeenCalledTimes(1);
     });

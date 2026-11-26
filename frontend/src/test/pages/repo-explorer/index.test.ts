@@ -645,7 +645,7 @@ describe("RepoExplorerPage", () => {
         fireEvent.click(elementWithDataId("changed-file-README.md"));
         expect(paneElements().map(pane => pane.getAttribute("data-id"))).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane"]);
         fireEvent.click(elementWithDataId("commit-details-row"));
-        expect((ziggy.addTask as jest.Mock).mock.calls.length).toBe(3);
+        expect(paneTaskCount(ziggy)).toBe(3);
         expect(paneElements().map(pane => pane.getAttribute("data-id"))).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "commit-info-pane"]);
         expect(isSelected("commit-details-row")).toBe(true);
         expect(elementWithDataId("commit-details-row").getAttribute("aria-current")).toBe("true");
@@ -656,6 +656,17 @@ describe("RepoExplorerPage", () => {
         fireEvent.click(elementWithDataId("changed-file-README.md"));
         expect(paneElements().map(pane => pane.getAttribute("data-id"))).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane"]);
         expect(isSelected("commit-details-row")).toBe(false);
+    });
+
+    test("the Commit details pane's collapse and maximise buttons collapse and maximise it", async () => {
+        const ziggy = installFakeTaskZiggy();
+        await openCommitDetails(ziggy);
+        fireEvent.click(elementWithDataId("commit-details-row"));
+        fireEvent.click(elementWithDataId("commit-info-pane-collapse"));
+        expect(document.querySelector("[data-id=\"commit-info-pane-strip\"]")).not.toBeNull();
+        fireEvent.click(elementWithDataId("commit-info-pane-restore"));
+        fireEvent.click(elementWithDataId("commit-info-maximise"));
+        expect(elementWithDataId("commit-info-maximise").getAttribute("aria-label")).toBe("Restore the pane");
     });
 
     test("closes the Commit details pane with its close button and makes the commit details pane active", async () => {
@@ -1004,7 +1015,7 @@ describe("RepoExplorerPage keys", () => {
         expect(isSelected("commit-details-row")).toBe(true);
         expect(paneElements().map(pane => pane.getAttribute("data-id"))).toEqual(["repo-details-pane", "commit-pane", "commit-details-pane", "commit-info-pane"]);
         expect(activePaneIds()).toEqual(["commit-details-pane"]);
-        expect((ziggy.addTask as jest.Mock).mock.calls.length).toBe(3);
+        expect(paneTaskCount(ziggy)).toBe(3);
         pressKey("ArrowUp");
         expect(isSelected("commit-details-row")).toBe(true);
         pressKey("ArrowDown");
@@ -1556,10 +1567,11 @@ describe("RepoExplorerPage commit pages", () => {
         pressKey("End");
         expect(isSelected(`commit-${commitPageJson(49, 1)[0].hash}`)).toBe(true);
         expect(layout.scrollTo).toHaveBeenCalled();
-        expect(ziggy.addTask).toHaveBeenCalledTimes(2);
+        expect(paneTaskCount(ziggy)).toBe(2);
         expect(taskDataAt(ziggy, 1)).toEqual({
             repoPath: "/repo",
             pageSize: 50,
+            branch: null,
             start: {
                 skipCount: 50,
             },
@@ -1594,12 +1606,12 @@ describe("RepoExplorerPage commit pages", () => {
         pressKey("PageDown");
         expect(isSelected(`commit-${commitPageJson(10, 1)[0].hash}`)).toBe(true);
         expect(layout.scrollTo).toHaveBeenCalled();
-        expect(ziggy.addTask).toHaveBeenCalledTimes(1);
+        expect(paneTaskCount(ziggy)).toBe(1);
         for (let press = 0; press < 4; press++) {
             pressKey("PageDown");
         }
         expect(isSelected(`commit-${commitPageJson(49, 1)[0].hash}`)).toBe(true);
-        expect(ziggy.addTask).toHaveBeenCalledTimes(2);
+        expect(paneTaskCount(ziggy)).toBe(2);
         pressKey("PageUp");
         expect(isSelected(`commit-${commitPageJson(39, 1)[0].hash}`)).toBe(true);
         rowHeight.mockRestore();
@@ -2643,7 +2655,7 @@ describe("RepoExplorerPage collapse", () => {
         pressKey("ArrowLeft");
         pressKey("c");
         pressKey("ArrowDown");
-        expect((ziggy.addTask as jest.Mock).mock.calls[2][0].data).toEqual({
+        expect(paneTask(ziggy, 2).data).toEqual({
             repoPath: "/repo",
             hash: secondCommitJson.hash,
         });
@@ -2991,6 +3003,18 @@ describe("RepoExplorerPage tags", () => {
     afterEach(() => {
         (readTags as jest.Mock).mockReset();
         (readTagDetails as jest.Mock).mockReset();
+    });
+
+    test("the tag pane's maximise and collapse buttons maximise and collapse it", async () => {
+        installFakeTaskZiggy();
+        renderRepoExplorerPage("/repos/graft");
+        await screen.findByText("v1.0");
+        fireEvent.click(elementWithDataId("repo-details-tag-v1.0"));
+        fireEvent.click(elementWithDataId("tag-pane-collapse"));
+        expect(document.querySelector("[data-id=\"tag-pane-strip\"]")).not.toBeNull();
+        fireEvent.click(elementWithDataId("tag-pane-restore"));
+        fireEvent.click(elementWithDataId("tag-maximise"));
+        expect(elementWithDataId("tag-maximise").getAttribute("aria-label")).toBe("Restore the pane");
     });
 
     test("reads the repo's tags when it opens and lists them under the Tags heading", async () => {

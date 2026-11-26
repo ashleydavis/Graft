@@ -6,7 +6,7 @@ It presses Down and Enter to open the commit pane, Down and Enter to open the ne
 
 It presses Right to make the commit details pane active, Enter to open the first file and Left to make the commit details pane active with the file pane open. It presses Page Down and checks the file pane shows a file more than one row down, whose row is in view of the pane. It presses Page Down on to the last file, checking each press moves by the same number of rows, checks one more Page Down leaves the last file open and Page Up moves back by a page. It presses Right to make the file pane active, then Page Down and Page Up. It checks the file pane still shows the same file.
 
-Last, it presses Escape three times to close the file pane, the commit details pane and the commit pane, then Page Down and Enter and checks the changes pane opens, so Page Down moved to the last link. It presses Escape, then Page Up and Enter and checks the commit pane opens, so Page Up moved to the first link.
+Last, it presses Escape three times to close the file pane, the commit details pane and the commit pane, then Page Down and Enter and checks the tag pane opens, so Page Down moved to the last row, the test repo's tag. It presses Escape, then Page Up and Enter and checks the commit pane opens, so Page Up moved to the first link.
 
 ## How it is invoked
 

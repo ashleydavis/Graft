@@ -206,7 +206,7 @@ describe("overlayShortcuts", () => {
 //
 // Every pane, in the order PANE_KEYS lists them.
 //
-const everyPane: PaneOrPage[] = ["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane", "changes-pane", "working-file-pane"];
+const everyPane: PaneOrPage[] = ["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane", "changes-pane", "working-file-pane", "tag-pane"];
 
 describe("paneShortcuts", () => {
     test("makes no row for a page with no keys of its own", () => {
@@ -217,6 +217,8 @@ describe("paneShortcuts", () => {
         expect(paneShortcuts("file-pane")).toEqual([
             makeShortcut("file-pane-arrowleft", "Make the commit details pane active", "Left"),
             makeShortcut("file-pane-escape", "Close the file pane", "Escape"),
+            makeShortcut("file-pane-m", "Maximise the pane or put the panes back", "M"),
+            makeShortcut("file-pane-c", "Collapse the pane or restore it", "C"),
         ]);
     });
 
@@ -262,7 +264,7 @@ describe("shortcutGroups", () => {
 
     test("names the group of each pane", () => {
         const titles = everyPane.map(pane => shortcutGroups(pane, listedShortcuts)[0].title);
-        expect(titles).toEqual(["Repo details pane", "Commit pane", "Commit details pane", "File pane", "Changes pane", "File pane"]);
+        expect(titles).toEqual(["Repo details pane", "Commit pane", "Commit details pane", "File pane", "Changes pane", "File pane", "Tag pane"]);
     });
 });
 

@@ -676,9 +676,6 @@ export function moveSelectionByPage(state: IRepoExplorerState, items: IRepoExplo
 // undefined when nothing is selected there.
 //
 function activeSelection(state: IRepoExplorerState): string | undefined {
-    if (state.activePaneIndex === 0) {
-        return state.selectedLink;
-    }
     if (state.openLink === CHANGES_LINK) {
         return state.selectedChange;
     }

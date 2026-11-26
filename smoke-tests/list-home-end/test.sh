@@ -77,8 +77,11 @@ page_end_hash="${hashes[$((PAGE_SIZE - 1))]}"
 start_app_on_start_page
 open_repo_with_button "$repo"
 
-# The repo details pane: End selects the Changes link, so Enter opens the changes pane.
+# The repo details pane: End selects the last row, which is a tag or a branch, and Home the Commits
+# link, so Down and Enter open the changes pane.
 press_key End
+press_key Home
+press_key Down
 press_key Enter
 wait_for_element changes-pane 30
 wait_for_element "change-staged-README.md" 30

@@ -48,27 +48,41 @@ repo_git() {
 }
 
 #
+# Waits until the commit details pane shows the commit with the title. Usage: wait_for_commit_title <title>
+#
+wait_for_commit_title() {
+    local index
+    for index in "${!titles[@]}"; do
+        if [ "${titles[$index]}" = "$1" ]; then
+            wait_for_text commit-details-heading "Commit${hashes[$index]:0:7}" 30
+            return 0
+        fi
+    done
+    fail "no commit in the test repo has the title \"$1\""
+}
+
+#
 # Waits until the commit details pane shows a commit other than the one at the index in titles,
 # then sets shown_index to the index of the commit it shows, so the test knows which commit a key
-# selected. Usage: wait_for_other_commit <index>
+# selected. The pane's heading holds the short hash of its commit. Usage: wait_for_other_commit <index>
 #
 wait_for_other_commit() {
     local waited=0
     local result=""
-    local title=""
+    local heading=""
     local index
     while [ "$waited" -lt 30 ]; do
-        result="$(control '{"command":"get-text","dataId":"commit-details-title"}')"
+        result="$(control '{"command":"get-text","dataId":"commit-details-heading"}')"
         if [ "$(printf '%s' "$result" | jq -r '.ok')" = "true" ]; then
-            title="$(printf '%s' "$result" | jq -r '.value')"
-            if [ "$title" != "${titles[$1]}" ]; then
-                for index in "${!titles[@]}"; do
-                    if [ "${titles[$index]}" = "$title" ]; then
+            heading="$(printf '%s' "$result" | jq -r '.value')"
+            if [ "$heading" != "Commit${hashes[$1]:0:7}" ]; then
+                for index in "${!hashes[@]}"; do
+                    if [ "Commit${hashes[$index]:0:7}" = "$heading" ]; then
                         shown_index="$index"
                         return 0
                     fi
                 done
-                fail "the commit details pane showed \"$title\", which is no commit in the test repo"
+                fail "the commit details pane showed \"$heading\", which is no commit in the test repo"
             fi
         fi
         sleep 1
@@ -244,17 +258,18 @@ sleep 1
 wait_for_text file-pane-path "$(file_name $((FILE_COUNT - file_rows)))" 30
 
 # Escape closes the file pane, the commit details pane and the commit pane, leaving the repo
-# details pane active with the Commits link selected. Page Down moves to the last link, the Commit
-# link, which Enter opens. Page Up moves back to the first, the Commits link.
+# details pane active with the Commits link selected. Page Down moves to the last row, the test
+# repo's only tag, which Enter opens in the tag pane. Page Up moves back to the first, the Commits
+# link.
 press_key Escape
 press_key Escape
 press_key Escape
 wait_for_missing_element commit-pane 30
 press_key PageDown
 press_key Enter
-wait_for_element changes-pane 30
+wait_for_element tag-pane 30
 press_key Escape
-wait_for_missing_element changes-pane 30
+wait_for_missing_element tag-pane 30
 press_key PageUp
 press_key Enter
 wait_for_element "commit-${hashes[0]}" 30

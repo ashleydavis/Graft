@@ -198,4 +198,43 @@ describe("TagPane", () => {
         fireEvent.click(closeButton as Element);
         expect(onClose).toHaveBeenCalledTimes(1);
     });
+
+    test("draws the strip with Tag and the tag's name down it while it is collapsed and reports a click on its restore button", () => {
+        installFakeTaskZiggy();
+        const onToggleCollapse = jest.fn();
+        const { container } = render(createElement(TagPane, {
+            repoPath: "/repo",
+            tagName: "v1.0",
+            isActive: true,
+            isMaximised: false,
+            onToggleMaximise: jest.fn(),
+            isCollapsed: true,
+            onToggleCollapse,
+            dateFormat: DATE_FORMAT,
+            onClose: jest.fn(),
+        }));
+        expect(container.querySelector("[data-id=\"tag-pane\"]")).toBeNull();
+        expect(container.querySelector("[data-id=\"tag-pane-strip-title\"]")?.textContent).toBe("Tag v1.0");
+        fireEvent.click(container.querySelector("[data-id=\"tag-pane-restore\"]") as Element);
+        expect(onToggleCollapse).toHaveBeenCalledTimes(1);
+    });
+
+    test("reports a click on its maximise button and has no collapse button while it is maximised", () => {
+        installFakeTaskZiggy();
+        const onToggleMaximise = jest.fn();
+        const { container } = render(createElement(TagPane, {
+            repoPath: "/repo",
+            tagName: "v1.0",
+            isActive: true,
+            isMaximised: true,
+            onToggleMaximise,
+            isCollapsed: false,
+            onToggleCollapse: jest.fn(),
+            dateFormat: DATE_FORMAT,
+            onClose: jest.fn(),
+        }));
+        expect(container.querySelector("[data-id=\"tag-pane-collapse\"]")).toBeNull();
+        fireEvent.click(container.querySelector("[data-id=\"tag-maximise\"]") as Element);
+        expect(onToggleMaximise).toHaveBeenCalledTimes(1);
+    });
 });

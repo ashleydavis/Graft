@@ -101,7 +101,7 @@ start_app_on_start_page
 open_repo_with_button "$repo"
 
 # In the narrow window the working file's pane is the page's visible area less the margins.
-click repo-details-commit
+click repo-details-changes
 wait_for_element changes-pane 30
 click "change-unstaged-notes.txt"
 wait_for_text file-diff "The changed note." 30
