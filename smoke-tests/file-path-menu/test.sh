@@ -73,7 +73,7 @@ wait_for_opened "$repo/notes.txt"
 wait_for_missing_element file-path-menu 30
 
 # A changes pane row's menu leaves the open file pane on the file it showed.
-click repo-details-commit
+click repo-details-changes
 wait_for_element changes-pane 30
 click "change-unstaged-notes.txt"
 wait_for_text file-pane-path "notes.txt" 30
