@@ -476,6 +476,31 @@ wait_for_text_of() {
 }
 
 #
+# Waits until the text box with the data-id holds the value, and returns 0, or returns 1 when it
+# never does. It does not fail the test itself, for the same reason wait_for_text_of does not: the
+# caller writes `wait_for_value ... || fail "message"`. The palette types each key through the
+# native app, so its search box holds the typed text a moment later. Release macOS arm64 run
+# 45782860661 failed the command-palette smoke test reading the search box before it held "open".
+# Usage: wait_for_value <data-id> <value> [seconds] || fail "message"
+#
+wait_for_value() {
+    local data_id="$1"
+    local wanted="$2"
+    local seconds="${3:-$WAIT_TIMEOUT_SECONDS}"
+    local waited=0
+    local shown=""
+    while [ "$waited" -lt "$seconds" ]; do
+        shown="$(control "{\"command\":\"get-value\",\"dataId\":\"$data_id\"}" | jq -r '.value // empty')"
+        if [ "$shown" = "$wanted" ]; then
+            return 0
+        fi
+        sleep 1
+        waited=$((waited + 1))
+    done
+    return 1
+}
+
+#
 # Waits until the commit details pane's heading shows the commit's short hash, and fails with what
 # it last showed when it never does. Enter on another commit draws the pane afresh, so its heading
 # is missing for a moment, which wait_for_text reports as a failure at once. Up and Down in the
