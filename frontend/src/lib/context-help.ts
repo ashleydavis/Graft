@@ -253,6 +253,24 @@ export const PANE_HELP: Record<ExplorerPane, IViewHelp> = {
             CLICK_TO_ACTIVATE,
         ],
     },
+    "tag-pane": {
+        name: "Tag pane",
+        description: "The open tag's name and the commit it points at, and for an annotated tag its message and who made it and when.",
+        keys: [
+            {
+                keys: ["Left"],
+                text: "Makes the repo details pane active.",
+            },
+            {
+                keys: ["Escape"],
+                text: "Closes the tag pane and makes the repo details pane active.",
+            },
+        ],
+        clicks: [
+            "Click the close button to close the tag pane.",
+            CLICK_TO_ACTIVATE,
+        ],
+    },
 };
 
 //

@@ -52,6 +52,7 @@ export const RELEVANT_ACTIONS: Record<PaneOrPage, string[]> = {
     "file-pane": ["copy", "select-all", "zoom-in-step", "zoom-out-step", "zoom-actual-size"],
     "changes-pane": ["undo", "redo", "cut", "copy", "paste", "select-all"],
     "working-file-pane": ["copy", "select-all", "zoom-in-step", "zoom-out-step", "zoom-actual-size"],
+    "tag-pane": ["copy", "select-all"],
 };
 
 //
