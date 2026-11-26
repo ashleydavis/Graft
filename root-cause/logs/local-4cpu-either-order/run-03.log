@@ -1,0 +1,14 @@
+Building the template for linux...
+--- git-commands
+Created the test repo at /tmp/ziggy-tests/graft-git-commands-1wZkH3/repo:
+3c4f50f (HEAD -> main) Change the note
+eef13fb (tag: v1.0) Add the notes
+45fd1d6 Add the readme
+Running the shown command: cd /tmp/ziggy-tests/graft-git-commands-1wZkH3/repo; git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags
+Running the shown command: cd /tmp/ziggy-tests/graft-git-commands-1wZkH3/repo; git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/
+Running the shown command: cd /tmp/ziggy-tests/graft-git-commands-1wZkH3/repo; git log --no-show-signature --max-count=50 --branches --remotes HEAD --
+Running the shown command: cd /tmp/ziggy-tests/graft-git-commands-1wZkH3/repo; git diff-tree -r --root --no-commit-id --numstat 3c4f50ffc764bc7fc122d0f5c7844145b7e4509b --
+Running the shown command: cd /tmp/ziggy-tests/graft-git-commands-1wZkH3/repo; git diff-tree -r --root --no-commit-id --name-status 3c4f50ffc764bc7fc122d0f5c7844145b7e4509b --
+Running the shown command: cd /tmp/ziggy-tests/graft-git-commands-1wZkH3/repo; git diff-tree -r -p --root --no-commit-id 3c4f50ffc764bc7fc122d0f5c7844145b7e4509b -- notes.txt
+PASSED: git-commands
+Passed 1, failed 0.

@@ -1,0 +1,55 @@
+Produced by: bash smoke-tests/run-desktop.sh git-commands, one run per line, from the worktree worktrees/tmp-root-cause-git-commands on branch tmp-root-cause-git-commands, on 2026-11-26.
+Environment: every run pinned to CPUs 0-3 with taskset -c 0-3; the test was the original one from commit bd3d9cc
+
+run 1 PASSED
+run 2 PASSED
+run 3 PASSED
+run 4 FAILED
+    FAILED: git-command-0-text never showed "git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags". It showed: git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/
+    FAILED: git-commands (exit 1). Its files are in /tmp/ziggy-tests/graft-git-commands-MwDo1J
+    Failed: git-commands
+run 5 PASSED
+run 6 FAILED
+    FAILED: git-command-0-text never showed "git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags". It showed: git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/
+    FAILED: git-commands (exit 1). Its files are in /tmp/ziggy-tests/graft-git-commands-k098R2
+    Failed: git-commands
+run 7 FAILED
+    FAILED: git-command-0-text never showed "git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags". It showed: git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/
+    FAILED: git-commands (exit 1). Its files are in /tmp/ziggy-tests/graft-git-commands-7fSzNM
+    Failed: git-commands
+run 8 PASSED
+run 9 FAILED
+    FAILED: git-command-0-text never showed "git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags". It showed: git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/
+    FAILED: git-commands (exit 1). Its files are in /tmp/ziggy-tests/graft-git-commands-enshze
+    Failed: git-commands
+run 10 PASSED
+run 11 FAILED
+    FAILED: git-command-0-text never showed "git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags". It showed: git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/
+    FAILED: git-commands (exit 1). Its files are in /tmp/ziggy-tests/graft-git-commands-ltSTjr
+    Failed: git-commands
+run 12 PASSED
+run 13 PASSED
+run 14 FAILED
+    FAILED: git-command-0-text never showed "git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags". It showed: git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/
+    FAILED: git-commands (exit 1). Its files are in /tmp/ziggy-tests/graft-git-commands-vfhx3X
+    Failed: git-commands
+run 15 FAILED
+    FAILED: git-commands ran out of time. Its files are in /tmp/ziggy-tests/graft-git-commands-P2G6KP
+    Failed: git-commands
+run 16 FAILED
+    FAILED: git-command-0-text never showed "git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags". It showed: git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/
+    FAILED: git-commands (exit 1). Its files are in /tmp/ziggy-tests/graft-git-commands-BFxuhr
+    Failed: git-commands
+run 17 FAILED
+    FAILED: git-command-0-text never showed "git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags". It showed: git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/
+    FAILED: git-commands (exit 1). Its files are in /tmp/ziggy-tests/graft-git-commands-niQ8kp
+    Failed: git-commands
+run 18 FAILED
+    FAILED: git-command-0-text never showed "git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags". It showed: git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/
+    FAILED: git-commands (exit 1). Its files are in /tmp/ziggy-tests/graft-git-commands-CczNPG
+    Failed: git-commands
+run 19 FAILED
+    FAILED: git-command-0-text never showed "git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags". It showed: git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/
+    FAILED: git-commands (exit 1). Its files are in /tmp/ziggy-tests/graft-git-commands-fTMzfF
+    Failed: git-commands
+run 20 PASSED

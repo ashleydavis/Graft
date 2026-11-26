@@ -1,0 +1,23 @@
+Produced by: bash smoke-tests/run-desktop.sh git-commands, one run per line, from the worktree worktrees/tmp-root-cause-git-commands on branch tmp-root-cause-git-commands, on 2026-11-26.
+Environment: no CPU limit (this machine has 24 CPUs); the test was the original one from commit bd3d9cc
+
+run 1 PASSED
+run 2 PASSED
+run 3 PASSED
+run 4 PASSED
+run 5 PASSED
+run 6 PASSED
+run 7 PASSED
+run 8 PASSED
+run 9 PASSED
+run 10 PASSED
+run 11 PASSED
+run 12 PASSED
+run 13 PASSED
+run 14 PASSED
+run 15 PASSED
+run 16 PASSED
+run 17 PASSED
+run 18 PASSED
+run 19 PASSED
+run 20 PASSED

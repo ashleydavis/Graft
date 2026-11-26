@@ -1,0 +1,53 @@
+Source: gh run view 45776647537 --repo ashleydavis/graft --log, workflow Root cause git-commands, run https://github.com/ashleydavis/graft/actions/runs/45776647537 on branch tmp-root-cause-git-commands at commit 0aa8305.
+Extract: the runner image, every run's result, the failure lines and both phase summaries, copied verbatim from the job log.
+
+repro	Set up job	2026-11-26T07:37:02.4811452Z Version: 20261111.635
+repro	Set up job	2026-11-26T07:37:02.4819450Z Image: ubuntu-26.04
+repro	Set up job	2026-11-26T07:37:02.4820089Z Version: 20261122.9.1
+
+A run 1 PASSED
+A run 2 PASSED
+A run 3 PASSED
+A run 4 PASSED
+A run 5 FAILED
+A run 6 PASSED
+A run 7 PASSED
+A run 8 PASSED
+A run 9 PASSED
+A run 10 PASSED
+A run 11 PASSED
+A run 12 PASSED
+A run 13 FAILED
+A run 14 PASSED
+A run 15 PASSED
+A run 16 PASSED
+A run 17 PASSED
+A run 18 PASSED
+A run 19 PASSED
+A run 20 PASSED
+B run 1 PASSED
+B run 2 PASSED
+B run 3 PASSED
+B run 4 PASSED
+B run 5 PASSED
+B run 6 PASSED
+B run 7 PASSED
+B run 8 PASSED
+B run 9 PASSED
+B run 10 PASSED
+B run 11 PASSED
+B run 12 PASSED
+B run 13 PASSED
+B run 14 PASSED
+B run 15 PASSED
+B run 16 PASSED
+B run 17 PASSED
+B run 18 PASSED
+B run 19 PASSED
+B run 20 PASSED
+
+FAILED: git-command-0-text never showed "git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags". It showed: git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/
+FAILED: git-command-0-text never showed "git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags". It showed: git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/
+
+PHASE A: passed 18, failed 2 of 20
+PHASE B: passed 20, failed 0 of 20

@@ -1,0 +1,37 @@
+Building the template for linux...
+--- git-commands
+Created the test repo at /tmp/ziggy-tests/graft-git-commands-P2G6KP/repo:
+3c4f50f (HEAD -> main) Change the note
+eef13fb (tag: v1.0) Add the notes
+45fd1d6 Add the readme
+The app's log:
+SPLASH-EVENT started 1795677525819
+SPLASH-EVENT app-started 1795677525895
+The state file /tmp/ziggy-tests/graft-git-commands-P2G6KP/state/state.json does not exist yet, so the app starts with an empty state.
+SPLASH-EVENT app-web-view-created 1795677525978
+Killed
+FAILED: no answer from the control connection to {"command":"ready"}
+jq: error (at <stdin>:0): Cannot index string with string "ok"
+jq: parse error: Expected string key before ':' at line 1, column 5
+FAILED: git-commands ran out of time. Its files are in /tmp/ziggy-tests/graft-git-commands-P2G6KP
+--- the end of app.log:
+SPLASH-EVENT started 1795677525819
+SPLASH-EVENT app-started 1795677525895
+The state file /tmp/ziggy-tests/graft-git-commands-P2G6KP/state/state.json does not exist yet, so the app starts with an empty state.
+SPLASH-EVENT app-web-view-created 1795677525978
+Killed
+--- the end of remote-control-server.log:
+The remote control server is listening: the app on 127.0.0.1:34951, the script on 127.0.0.1:39495.
+No app connected to port 34951 as window 1 within 90000 ms, so this line got AppNotConnected: {"command":"ready"}
+No app connected to port 34951 as window 1 within 90000 ms, so this line got AppNotConnected: {"command":"ready"}
+No app connected to port 34951 as window 1 within 90000 ms, so this line got AppNotConnected: {"command":"ready"}
+No app connected to port 34951 as window 1 within 90000 ms, so this line got AppNotConnected: {"command":"ready"}
+No app connected to port 34951 as window 1 within 90000 ms, so this line got AppNotConnected: {"command":"ready"}
+No app connected to port 34951 as window 1 within 90000 ms, so this line got AppNotConnected: {"command":"ready"}
+No app connected to port 34951 as window 1 within 90000 ms, so this line got AppNotConnected: {"command":"ready"}
+No app connected to port 34951 as window 1 within 90000 ms, so this line got AppNotConnected: {"command":"ready"}
+No app connected to port 34951 as window 1 within 90000 ms, so this line got AppNotConnected: {"command":"ready"}
+No app connected to port 34951 as window 1 within 90000 ms, so this line got AppNotConnected: {"command":"ready"}
+No app connected to port 34951 as window 1 within 90000 ms, so this line got AppNotConnected: {"command":"ready"}
+Passed 0, failed 1.
+Failed: git-commands

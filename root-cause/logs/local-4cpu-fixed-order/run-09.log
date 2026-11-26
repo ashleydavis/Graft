@@ -1,0 +1,19 @@
+Building the template for linux...
+--- git-commands
+Created the test repo at /tmp/ziggy-tests/graft-git-commands-enshze/repo:
+3c4f50f (HEAD -> main) Change the note
+eef13fb (tag: v1.0) Add the notes
+45fd1d6 Add the readme
+FAILED: git-command-0-text never showed "git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags". It showed: git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/
+FAILED: git-commands (exit 1). Its files are in /tmp/ziggy-tests/graft-git-commands-enshze
+--- the end of app.log:
+SPLASH-EVENT started 1795677394104
+SPLASH-EVENT app-started 1795677394177
+The state file /tmp/ziggy-tests/graft-git-commands-enshze/state/state.json does not exist yet, so the app starts with an empty state.
+SPLASH-EVENT app-web-view-created 1795677394265
+SPLASH-EVENT frontend-ready-received 1795677394476
+SPLASH-EVENT app-web-view-visible 1795677394477
+--- the end of remote-control-server.log:
+The remote control server is listening: the app on 127.0.0.1:34293, the script on 127.0.0.1:41163.
+Passed 0, failed 1.
+Failed: git-commands

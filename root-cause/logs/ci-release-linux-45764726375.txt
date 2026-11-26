@@ -1,0 +1,30 @@
+Source: gh run view 45764726375 --repo ashleydavis/graft --log (Release Linux, job app-smoke-tests, commit bd3d9cc7559119883af233776d79955a85477b14, run https://github.com/ashleydavis/graft/actions/runs/45764726375).
+Extract: the runner image lines, the git-commands scenario's whole block, and the run's summary, copied verbatim.
+
+app-smoke-tests	Set up job	2026-11-26T05:55:34.8329466Z Version: 20261111.635
+app-smoke-tests	Set up job	2026-11-26T05:55:34.8340601Z Image: ubuntu-26.04
+app-smoke-tests	Set up job	2026-11-26T05:55:34.8341499Z Version: 20261116.202.1
+
+app-smoke-tests	Run the smoke tests	2026-11-26T05:59:54.0972707Z --- git-commands
+app-smoke-tests	Run the smoke tests	2026-11-26T05:59:54.1378679Z Created the test repo at /tmp/ziggy-tests/graft-git-commands-VSj1ER/repo:
+app-smoke-tests	Run the smoke tests	2026-11-26T05:59:54.1391759Z 3c4f50f (HEAD -> main) Change the note
+app-smoke-tests	Run the smoke tests	2026-11-26T05:59:54.1392374Z eef13fb (tag: v1.0) Add the notes
+app-smoke-tests	Run the smoke tests	2026-11-26T05:59:54.1392662Z 45fd1d6 Add the readme
+app-smoke-tests	Run the smoke tests	2026-11-26T06:00:26.6096302Z FAILED: git-command-0-text never showed "git for-each-ref --sort=refname '--format=%(refname:strip=2)' refs/tags". It showed: git for-each-ref --sort=refname '--format=%(HEAD) %(refname)' refs/heads/
+app-smoke-tests	Run the smoke tests	2026-11-26T06:00:26.7420195Z FAILED: git-commands (exit 1). Its files are in /tmp/ziggy-tests/graft-git-commands-VSj1ER
+app-smoke-tests	Run the smoke tests	2026-11-26T06:00:26.7444951Z --- the end of app.log:
+app-smoke-tests	Run the smoke tests	2026-11-26T06:00:26.7470933Z ziggy native app: no graphics card could be set up, so the web view draws without one.
+app-smoke-tests	Run the smoke tests	2026-11-26T06:00:26.7471601Z SPLASH-EVENT started 1795672794473
+app-smoke-tests	Run the smoke tests	2026-11-26T06:00:26.7471951Z SPLASH-EVENT app-started 1795672794565
+app-smoke-tests	Run the smoke tests	2026-11-26T06:00:26.7472583Z The state file /tmp/ziggy-tests/graft-git-commands-VSj1ER/state/state.json does not exist yet, so the app starts with an empty state.
+app-smoke-tests	Run the smoke tests	2026-11-26T06:00:26.7473209Z SPLASH-EVENT app-web-view-created 1795672794576
+app-smoke-tests	Run the smoke tests	2026-11-26T06:00:26.7473643Z libEGL warning: DRI3 error: Could not get DRI3 device
+app-smoke-tests	Run the smoke tests	2026-11-26T06:00:26.7474376Z libEGL warning: Ensure your X server supports DRI3 to get accelerated rendering
+app-smoke-tests	Run the smoke tests	2026-11-26T06:00:26.7475091Z SPLASH-EVENT frontend-ready-received 1795672794745
+app-smoke-tests	Run the smoke tests	2026-11-26T06:00:26.7475805Z SPLASH-EVENT app-web-view-visible 1795672794745
+app-smoke-tests	Run the smoke tests	2026-11-26T06:00:26.7499608Z --- the end of remote-control-server.log:
+app-smoke-tests	Run the smoke tests	2026-11-26T06:00:26.7520165Z The remote control server is listening: the app on 127.0.0.1:35551, the script on 127.0.0.1:36271.
+
+app-smoke-tests	Run the smoke tests	2026-11-26T06:03:31.1117705Z Passed 50, failed 1.
+app-smoke-tests	Run the smoke tests	2026-11-26T06:03:31.1118066Z Failed: git-commands
+app-smoke-tests	Run the smoke tests	2026-11-26T06:03:31.8606872Z error: script "test:smoke" exited with code 1
