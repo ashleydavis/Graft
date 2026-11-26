@@ -76,17 +76,34 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-graft-zig-build-
 
       # A step that hits its own timeout fails normally and keeps its log, so a hang shows up in the log.
+      #
+      # The output is kept in a file as well, so the failing test can still be read when the job's own
+      # log is not: runs 45790519666 and 45815238631 failed the smoke tests here, then lost
+      # communication with the server during the cache save, and neither job's log exists.
       - name: Run the smoke tests
         timeout-minutes: 45
         shell: bash
-        run: bun run test:smoke
+        run: |
+          set -o pipefail
+          bun run test:smoke 2>&1 | tee smoke-tests.log
+
+      # Uploaded before the cache save, which is where those two runs died, so the step's output
+      # survives even when the job does not.
+      - name: Keep the smoke tests' output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-smoke-tests-log
+          path: smoke-tests.log
+          if-no-files-found: warn
 
       # Saved under this platform's own key so package-release, which builds the same release app, finds the Zig part already
       # built. Always, so a job that fails part way still leaves what it compiled.
       #
       # Capped so a stuck cache upload fails this step rather than running on to the job's own timeout: a job killed by its
       # timeout loses its whole log, and run 45790519666 failed the smoke tests at 09:39Z, then spent the rest of the job's
-      # 75 minutes here, so the test failure could not be read at all.
+      # 75 minutes here, so the test failure could not be read at all. The cap did not save run 45815238631's log, which is
+      # why the smoke step's output is uploaded above.
       - name: Save the Zig build caches
         if: always()
         timeout-minutes: 10
