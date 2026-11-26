@@ -209,6 +209,10 @@ describe("overlayShortcuts", () => {
 const everyPane: PaneOrPage[] = ["repo-details-pane", "commit-pane", "commit-details-pane", "file-pane", "changes-pane", "working-file-pane"];
 
 describe("paneShortcuts", () => {
+    test("makes no row for a page with no keys of its own", () => {
+        expect(paneShortcuts("welcome-page")).toEqual([]);
+    });
+
     test("makes a row for each of the file pane's keys, named after the pane and the key", () => {
         expect(paneShortcuts("file-pane")).toEqual([
             makeShortcut("file-pane-arrowleft", "Make the commit details pane active", "Left"),

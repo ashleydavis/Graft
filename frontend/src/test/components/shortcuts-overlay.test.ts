@@ -562,20 +562,20 @@ describe("ShortcutsOverlay", () => {
         expect(shownGroups()).toEqual(["shortcut-group-commit-pane", "shortcut-group-general"]);
         expect(overlayElement("shortcut-group-commit-pane-title")?.textContent).toBe("Commit pane");
         expect(shownShortcuts()).toEqual([
-            "shortcut-commits-arrowup",
-            "shortcut-commits-arrowdown",
-            "shortcut-commits-arrowleft",
-            "shortcut-commits-arrowright",
-            "shortcut-commits-enter",
-            "shortcut-commits-escape",
+            "shortcut-commit-pane-arrowup",
+            "shortcut-commit-pane-arrowdown",
+            "shortcut-commit-pane-arrowleft",
+            "shortcut-commit-pane-arrowright",
+            "shortcut-commit-pane-enter",
+            "shortcut-commit-pane-escape",
             "shortcut-open-repo",
             "shortcut-toggle-shortcuts-overlay",
             "shortcut-toggle-shortcuts-overlay-ctrl",
             "shortcut-quit",
         ]);
-        expect(overlayElement("shortcut-commits-arrowup-label")?.textContent).toBe("Select the commit above");
-        expect(overlayElement("shortcut-commits-arrowup-keys")?.textContent).toBe("Up");
-        expect(overlayElement("shortcut-commits-enter-keys")?.textContent).toBe("Enter");
+        expect(overlayElement("shortcut-commit-pane-arrowup-label")?.textContent).toBe("Select the commit above");
+        expect(overlayElement("shortcut-commit-pane-arrowup-keys")?.textContent).toBe("Up");
+        expect(overlayElement("shortcut-commit-pane-enter-keys")?.textContent).toBe("Enter");
     });
 
     test("another active pane puts its group first", async () => {
@@ -584,7 +584,7 @@ describe("ShortcutsOverlay", () => {
         await pressQuestionMark(ziggy);
         expect(shownGroups()).toEqual(["shortcut-group-file-pane", "shortcut-group-general"]);
         expect(overlayElement("shortcut-group-file-pane-title")?.textContent).toBe("File pane");
-        expect(shownShortcuts().slice(0, 2)).toEqual(["shortcut-file-arrowleft", "shortcut-file-escape"]);
+        expect(shownShortcuts().slice(0, 2)).toEqual(["shortcut-file-pane-arrowleft", "shortcut-file-pane-escape"]);
         setPaneOrPage(undefined);
         expect(shownGroups()).toEqual(["shortcut-group-general"]);
     });
@@ -594,7 +594,7 @@ describe("ShortcutsOverlay", () => {
         await pressQuestionMark(ziggy);
         typeSearch("ENTER");
         expect(shownGroups()).toEqual(["shortcut-group-commit-pane"]);
-        expect(shownShortcuts()).toEqual(["shortcut-commits-enter"]);
+        expect(shownShortcuts()).toEqual(["shortcut-commit-pane-enter"]);
         typeSearch("o");
         expect(shownGroups()).toEqual(["shortcut-group-commit-pane", "shortcut-group-general"]);
         typeSearch("quit");
