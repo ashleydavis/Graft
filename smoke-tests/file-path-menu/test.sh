@@ -66,6 +66,9 @@ open_repo_with_button "$repo"
 
 # The menu of a commit's changed file row opens without opening the file's pane.
 open_commit_pane
+# The commit pane draws its rows after the pane itself, so the click waits for the row. Release
+# macOS arm64 run 45786995959 failed it clicking a commit that was not drawn yet.
+wait_for_element "commit-$head_hash" 30
 click "commit-$head_hash"
 wait_for_text changed-file-notes.txt "notes.txt" 30
 click changed-file-menu-notes.txt
