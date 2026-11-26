@@ -771,11 +771,11 @@ describe("explorerStateAfterKey", () => {
     });
 
     test("Home and End select the first and last link in the repo details pane", () => {
-        expect(explorerStateAfterKey(initialRepoExplorerState, "End", items).selectedLink).toBe(COMMIT_LINK);
+        expect(explorerStateAfterKey(initialRepoExplorerState, "End", items).selectedLink).toBe(CHANGES_LINK);
         expect(explorerStateAfterKey(initialRepoExplorerState, "Home", items).selectedLink).toBe(COMMITS_LINK);
         expect(explorerStateAfterKey({
             ...initialRepoExplorerState,
-            selectedLink: COMMIT_LINK,
+            selectedLink: CHANGES_LINK,
         }, "Home", items).selectedLink).toBe(COMMITS_LINK);
     });
 

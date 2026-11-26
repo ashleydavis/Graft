@@ -73,12 +73,11 @@ commit_count="${#hashes[@]}"
 [ "$commit_count" -gt "$PAGE_SIZE" ] || fail "the test repo has $commit_count commits, which fit on one page"
 last_hash="${hashes[$((commit_count - 1))]}"
 page_end_hash="${hashes[$((PAGE_SIZE - 1))]}"
-page_end_title="$(repo_git log -1 --format=%s "$page_end_hash")" || fail "could not read the title of $page_end_hash"
 
 start_app_on_start_page
 open_repo_with_button "$repo"
 
-# The repo details pane: End selects the Commit link, so Enter opens the changes pane.
+# The repo details pane: End selects the Changes link, so Enter opens the changes pane.
 press_key End
 press_key Enter
 wait_for_element changes-pane 30
@@ -113,20 +112,22 @@ press_key End
 wait_for_in_view_of "commit-$page_end_hash" commit-list-scroll 30
 wait_for_element "commit-${hashes[$PAGE_SIZE]}" 30
 press_key Enter
-wait_for_commit_title "$page_end_title"
+wait_for_commit_heading "${page_end_hash:0:7}"
 
 # Back in the commit pane with the details open, End opens the last commit, the repo's first, now
 # its page is read, and Home opens the newest, each in view.
 press_key Left
 press_key End
-wait_for_commit_title "Add the readme"
+wait_for_commit_heading "${last_hash:0:7}"
 wait_for_in_view_of "commit-$last_hash" commit-list-scroll 30
 press_key Home
-wait_for_commit_title "Add many files"
+wait_for_commit_heading "${hashes[0]:0:7}"
 wait_for_in_view_of "commit-${hashes[0]}" commit-list-scroll 30
 
 # The commit details pane: Enter opens the first file, which is selected as the list opens. With
-# the file pane open, End shows the last file's diff and Home the first's, each in view.
+# the file pane open, End shows the last file's diff, in view, and Home selects the "Commit details"
+# row above the first file, which opens the "Commit details" pane in the file pane's place, in view.
+# Down then shows the first file's diff again.
 press_key Right
 wait_for_text changed-files-heading "Files changed ($FILE_COUNT)" 30
 press_key Enter
@@ -136,6 +137,10 @@ press_key End
 wait_for_text file-pane-path "$(file_name "$FILE_COUNT")" 30
 wait_for_in_view_of "changed-file-$(file_name "$FILE_COUNT")" commit-details-scroll 30
 press_key Home
+wait_for_element commit-info-pane 30
+wait_for_missing_element file-pane 30
+wait_for_in_view_of commit-details-row commit-details-scroll 30
+press_key Down
 wait_for_text file-pane-path "$(file_name 1)" 30
 wait_for_in_view_of "changed-file-$(file_name 1)" commit-details-scroll 30
 
@@ -153,6 +158,6 @@ wait_for_text file-pane-path "$(file_name 1)" 30
 press_key Escape
 wait_for_missing_element file-pane 30
 press_key End
-wait_for_commit_title "Add the readme"
+wait_for_commit_heading "${last_hash:0:7}"
 press_key Home
-wait_for_commit_title "Add many files"
+wait_for_commit_heading "${hashes[0]:0:7}"
