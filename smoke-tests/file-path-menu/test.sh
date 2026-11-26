@@ -97,6 +97,10 @@ wait_for_missing_element file-path-menu 30
 # A changes pane row's menu leaves the open file pane on the file it showed.
 click repo-details-changes
 wait_for_element changes-pane 30
+# The changes pane draws its rows after the pane itself, so the click waits for the row. Release
+# macOS arm64 run 45815238348 failed it clicking the row before it was drawn, with "No element has
+# the data-id change-unstaged-notes.txt.".
+wait_for_element "change-unstaged-notes.txt" 30
 click "change-unstaged-notes.txt"
 wait_for_text file-pane-path "notes.txt" 30
 click "change-unstaged-menu-docs/guide.md"
