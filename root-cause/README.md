@@ -13,7 +13,7 @@ Failed: git-commands
 
 The full extract is `logs/ci-release-linux-45764726375.txt`.
 
-The same test failed the same way in Release macOS arm64 runs 45764726271 and 45754038345. Those runs also fail `file-path-menu`, which is a separate matter: that test waits for "Open in file manager", the Linux label, and macOS shows "Reveal in Finder". Release Windows run 45764726292 ran 54 minutes without finishing its smoke step and is not explained by this cause.
+The same test failed the same way in Release macOS arm64 runs 45764726271 and 45754038345. Those runs also fail `file-path-menu`, which is a separate matter: that test waits for "Open in file manager", the Linux label, and macOS shows "Reveal in Finder". Release Windows run 45764726292 is not covered here: its "Run the smoke tests" step has no conclusion and the job ended after 54 minutes, so it did not report a failing test this investigation could use.
 
 ## Root cause
 
