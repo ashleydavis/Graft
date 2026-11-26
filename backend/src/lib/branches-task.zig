@@ -58,12 +58,6 @@ pub fn branches_task_handler(comptime run_git: git_interface.RunGit) BranchesTas
             _ = timers;
             assert(context.task_id.len > 0);
 
-            // Experiment only: hold the branches command long enough that it always finishes after
-            // the tags command, so which command the panel lists first is fixed for every run.
-            // Both sides of the experiment use this build, so it is not a difference between them,
-            // and this file changes only on the experiment branch.
-            io.sleep(.fromMilliseconds(250), .awake) catch {};
-
             const branches = try git_branch.read_branches(
                 io,
                 services,
